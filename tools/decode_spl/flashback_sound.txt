@@ -1,0 +1,442 @@
+CODE:00070622 _res_splForLevel:dc.l _res_level1_spl
+CODE:00070626                 dc.l _res_level1_spl
+CODE:0007062A                 dc.l _res_level3_spl
+CODE:0007062E                 dc.l _res_level3_spl
+CODE:00070632                 dc.l _res_level3_spl
+CODE:00070636                 dc.l _res_level4_spl
+CODE:0007063A                 dc.l _res_level4_spl
+
+
+CODE:0000BC9C _res_level1:    dc.l _res_level1_ct  // 0
+CODE:0000BCA0                 dc.l _res_level2_lev // 4
+CODE:0000BCA4                 dc.l _res_level1_pal // 8
+CODE:0000BCA8                 dc.l _res_level1_mbk // 12
+CODE:0000BCAC                 dc.l _res_level1_sgd // 16
+CODE:0000BCB0                 dc.l _res_level1_pge+1 // 20
+CODE:0000BCB4                 dc.l _res_level1_rpc // 24
+CODE:0000BCB8                 dc.l _res_level1_txt // 28
+CODE:0000BCBC                 dc.w 0 // 32
+CODE:0000BCBE                 dc.l byte_70672 // 34
+CODE:0000BCC2                 dc.l _res_sndFileNames // 38
+CODE:0000BCC6                 dc.l _res_level1_obc // 42
+CODE:0000BCCA                 dc.l _res_level1_spc
+CODE:0000BCCE                 dc.l _res_level1_ani
+
+
+CODE:0000B63C snd_playSound:                          ; CODE XREF: sub_1CB0+420p
+CODE:0000B63C                                         ; sub_1CB0+462p ...
+CODE:0000B63C                 movem.l d1-a5,-(sp)
+CODE:0000B640                 ext.w   d0
+CODE:0000B642                 move.w  d0,d7
+CODE:0000B644                 cmp.w   #68,d7
+CODE:0000B648                 blt.w   sound
+CODE:0000B64C                 cmp.w   #75,d7
+CODE:0000B650                 ble.w   music
+CODE:0000B654 
+CODE:0000B654 sound:                                  ; CODE XREF: snd_playSound+Cj
+CODE:0000B654                 movea.l (_snd_offsetTable).l,a0
+CODE:0000B65A                 move.b  (a0,d7.w),d7
+CODE:0000B65E                 beq.w   return
+CODE:0000B662                 subq.w  #1,d7
+CODE:0000B664 
+CODE:0000B664 music:                                  ; CODE XREF: snd_playSound+14j
+CODE:0000B664                 lsl.w   #2,d7
+CODE:0000B666                 lea     (_snd_dataTable).l,a0
+CODE:0000B66C                 move.l  (a0,d7.w),d0
+CODE:0000B670                 beq.w   return
+CODE:0000B674                 bpl.w   loc_B68A
+CODE:0000B678                 neg.l   d0              ; < 0, in-game music case
+CODE:0000B67A                 move.l  d0,(_snd_ingameMusicToPlay).l
+CODE:0000B680                 clr.l   (_snd_ingameMusicOffset).l
+CODE:0000B686                 bra.w   return
+CODE:0000B68A ; ---------------------------------------------------------------------------
+CODE:0000B68A 
+CODE:0000B68A loc_B68A:                               ; CODE XREF: snd_playSound+38j
+CODE:0000B68A                 move.l  d0,d6
+CODE:0000B68C                 move.w  d2,d3
+CODE:0000B68E                 move.w  #650,d2
+CODE:0000B692                 moveq   #0,d1
+CODE:0000B694                 moveq   #3,d0
+CODE:0000B696                 tst.l   (_snd_ingameMusicToPlay).l
+CODE:0000B69C                 bne.w   loc_B6FE
+CODE:0000B6A0                 moveq   #0,d0
+CODE:0000B6A2                 lea     (_snd_table1).l,a0
+CODE:0000B6A8                 lea     (_snd_table2).l,a1
+CODE:0000B6AE                 moveq   #0,d0
+CODE:0000B6B0 
+CODE:0000B6B0 loop1:                                  ; CODE XREF: snd_playSound+88j
+CODE:0000B6B0                 cmp.l   (a1)+,d6
+CODE:0000B6B2                 bne.w   loc_B6BC
+CODE:0000B6B6                 cmpa.l  (a0),a2
+CODE:0000B6B8                 beq.w   loc_B6FE
+CODE:0000B6BC 
+CODE:0000B6BC loc_B6BC:                               ; CODE XREF: snd_playSound+76j
+CODE:0000B6BC                 addq.w  #4,a0
+CODE:0000B6BE                 addq.w  #1,d0
+CODE:0000B6C0                 cmp.w   #4,d0
+CODE:0000B6C4                 bne.w   loop1
+CODE:0000B6C8                 move.w  (_playingSoundCounter).l,d0
+CODE:0000B6CE                 lea     (_snd_table1).l,a0
+CODE:0000B6D4                 move.w  d0,d1
+CODE:0000B6D6                 lsl.w   #2,d1
+CODE:0000B6D8                 move.l  a2,(a0,d1.w)
+CODE:0000B6DC                 lea     (_snd_table2).l,a0
+CODE:0000B6E2                 move.l  d6,(a0,d1.w)
+CODE:0000B6E6                 addq.w  #1,(_playingSoundCounter).l
+CODE:0000B6EC                 cmpi.w  #4,(_playingSoundCounter).l
+CODE:0000B6F4                 blt.w   loc_B6FE
+CODE:0000B6F8                 clr.w   (_playingSoundCounter).l
+CODE:0000B6FE 
+CODE:0000B6FE loc_B6FE:                               ; CODE XREF: snd_playSound+60j
+CODE:0000B6FE                                         ; snd_playSound+7Cj ...
+CODE:0000B6FE                 moveq   #0,d1
+CODE:0000B700                 bset    d0,d1
+CODE:0000B702                 move.w  d1,($DFF096).l
+CODE:0000B708                 lea     ($DFF0A0).l,a1  ; aud0lch
+CODE:0000B70E                 lsl.w   #4,d0
+CODE:0000B710                 adda.w  d0,a1
+CODE:0000B712                 move.w  #1500,d0
+CODE:0000B716 
+CODE:0000B716 loc_B716:                               ; CODE XREF: snd_playSound+DAj
+CODE:0000B716                 dbf     d0,loc_B716
+CODE:0000B71A                 move.l  d6,(a1)         ; aud0lch
+CODE:0000B71C                 lea     ((_snd_dataTable+$190)).l,a0
+CODE:0000B722                 move.l  (a0,d7.w),d0
+CODE:0000B726                 lsr.l   #1,d0
+CODE:0000B728                 move.w  d0,4(a1)        ; aud0len
+CODE:0000B72C                 move.w  d2,6(a1)        ; aud0per
+CODE:0000B730                 move.w  d3,8(a1)        ; aud0vol
+CODE:0000B734                 ori.w   #-$8000,d1
+CODE:0000B738                 move.w  d1,($DFF096).l
+CODE:0000B73E                 move.w  #1,4(a1)
+CODE:0000B744 
+CODE:0000B744 return:                                 ; CODE XREF: snd_playSound+22j
+CODE:0000B744                                         ; snd_playSound+34j ...
+CODE:0000B744                 movem.l (sp)+,d1-a5
+CODE:0000B748                 rts     
+CODE:0000B748 ; End of function snd_playSound
+
+
+
+BSS:000320D6 _snd_table1:    ds.b 2
+BSS:000320D8                 ds.b 1
+BSS:000320D9                 ds.b 1
+BSS:000320DA                 ds.b 1
+BSS:000320DB                 ds.b 1
+BSS:000320DC                 ds.b 1
+BSS:000320DD                 ds.b 1
+BSS:000320DE                 ds.b 1
+BSS:000320DF                 ds.b 1
+BSS:000320E0                 ds.b 1
+BSS:000320E1                 ds.b 1
+BSS:000320E2                 ds.b 1
+BSS:000320E3                 ds.b 1
+BSS:000320E4                 ds.b 1
+BSS:000320E5                 ds.b 1
+BSS:000320E6 _snd_table2:    ds.b 2
+BSS:000320E8                 ds.b 1
+BSS:000320E9                 ds.b 1
+BSS:000320EA                 ds.b 1
+BSS:000320EB                 ds.b 1
+BSS:000320EC                 ds.b 1
+BSS:000320ED                 ds.b 1
+BSS:000320EE                 ds.b 1
+BSS:000320EF                 ds.b 1
+BSS:000320F0                 ds.b 1
+BSS:000320F1                 ds.b 1
+BSS:000320F2                 ds.b 1
+BSS:000320F3                 ds.b 1
+BSS:000320F4                 ds.b 1
+BSS:000320F5                 ds.b 1
+
+
+CODE:0000FEBA                 move.l  34(a0),d3       ; snd_offsets
+CODE:0000FEBE                 move.l  d3,(_snd_offsetTable).l
+CODE:0000FEC4                 move.l  d3,(dword_320B6).l
+CODE:0000FECA                 tst.l   d3
+CODE:0000FECC                 bmi.w   loc_FEE0
+CODE:0000FED0                 clr.w   (_playingSoundCounter).l
+CODE:0000FED6                 clr.w   (word_320BA).l
+CODE:0000FEDC                 bsr.w   loadLevelDataSPL
+
+
+CODE:0000FF64 loadLevelDataSPL:                       ; CODE XREF: playCutscene+672p
+CODE:0000FF64                                         ; loadLevelData+3A4p
+CODE:0000FF64                 move.l  a0,-(sp)
+CODE:0000FF66                 lea     (_snd_dataTable).l,a3
+CODE:0000FF6C                 lea     ((_snd_dataTable+$190)).l,a4
+CODE:0000FF72                 move.w  #89,d0
+CODE:0000FF76 
+CODE:0000FF76 loc_FF76:                               ; CODE XREF: loadLevelDataSPL+16j
+CODE:0000FF76                 clr.l   (a3)+
+CODE:0000FF78                 clr.l   (a4)+
+CODE:0000FF7A                 dbf     d0,loc_FF76
+CODE:0000FF7E                 lea     (_snd_dataTable).l,a3
+CODE:0000FF84                 lea     ((_snd_dataTable+$190)).l,a4
+CODE:0000FF8A                 cmpi.b  #4,(_currentLevel).l
+CODE:0000FF92                 beq.w   loc_FFA2
+CODE:0000FF96                 cmpi.b  #6,(_currentLevel).l
+CODE:0000FF9E                 bne.w   loc_FFBC
+CODE:0000FFA2 
+CODE:0000FFA2 loc_FFA2:                               ; CODE XREF: loadLevelDataSPL+2Ej
+CODE:0000FFA2                 lea     (loc_B7A2).l,a1
+CODE:0000FFA8                 adda.l  #$21C,a1
+CODE:0000FFAE                 move.l  #loc_389C,d0
+CODE:0000FFB4                 addi.l  #100,d0
+CODE:0000FFBA                 move.l  d0,(a1)
+CODE:0000FFBC 
+CODE:0000FFBC loc_FFBC:                               ; CODE XREF: loadLevelDataSPL+3Aj
+CODE:0000FFBC                 movea.l d3,a2
+CODE:0000FFBE                 clr.b   $40(a2)
+CODE:0000FFC2                 moveq   #0,d0
+CODE:0000FFC4                 move.b  (_currentLevel).l,d0
+CODE:0000FFCA                 lsl.w   #2,d0
+CODE:0000FFCC                 lea     (_res_splForLevel).l,a0
+CODE:0000FFD2                 move.l  (a0,d0.w),d3
+CODE:0000FFD6                 jsr     getFileSize
+CODE:0000FFDC                 tst.l   d0
+CODE:0000FFDE                 beq.w   loc_10058
+CODE:0000FFE2                 tst.b   (_cut_moduleMusicLoaded).l
+CODE:0000FFE8                 bne.w   loc_10062
+CODE:0000FFEC                 bsr.w   mallocSize_
+CODE:0000FFF0                 tst.l   d0
+CODE:0000FFF2                 beq.w   loc_10062
+CODE:0000FFF6                 move.l  d0,d4
+CODE:0000FFF8                 jsr     readFile
+CODE:0000FFFE 
+CODE:0000FFFE loc_FFFE:                               ; DATA XREF: CODE:0001890Eo
+CODE:0000FFFE                 move.l  d4,(_levelSplDataBuffer).l
+CODE:00010004                 move.l  (_mallocSize).l,(_levelSplDataSize).l
+CODE:0001000E                 movea.l d4,a5
+CODE:00010010                 move.w  #65,d7
+CODE:00010014 
+CODE:00010014 loop1:                                  ; CODE XREF: loadLevelDataSPL+CAj
+CODE:00010014                                         ; loadLevelDataSPL+F0j
+CODE:00010014                 move.b  (a2)+,d0
+CODE:00010016                 beq.w   loc_10036
+CODE:0001001A                 moveq   #0,d0
+CODE:0001001C                 move.w  (a5)+,d0
+CODE:0001001E                 bmi.w   loc_1003A
+CODE:00010022                 addq.w  #1,d0
+CODE:00010024                 bclr    #0,d0
+CODE:00010028                 move.l  a5,(a3)+
+CODE:0001002A                 move.l  d0,(a4)+
+CODE:0001002C                 adda.l  d0,a5
+CODE:0001002E                 dbf     d7,loop1
+CODE:00010032                 bra.w   loc_10058
+CODE:00010036 ; ---------------------------------------------------------------------------
+CODE:00010036 
+CODE:00010036 loc_10036:                              ; CODE XREF: loadLevelDataSPL+B2j
+CODE:00010036                 moveq   #0,d0
+CODE:00010038                 move.w  (a5)+,d0
+CODE:0001003A 
+CODE:0001003A loc_1003A:                              ; CODE XREF: loadLevelDataSPL+BAj
+CODE:0001003A                 tst.w   d0
+CODE:0001003C                 bmi.w   loc_10048
+CODE:00010040                 addq.w  #1,d0
+CODE:00010042                 bclr    #0,d0
+CODE:00010046                 adda.l  d0,a5
+CODE:00010048 
+CODE:00010048 loc_10048:                              ; CODE XREF: loadLevelDataSPL+D8j
+CODE:00010048                 move.l  #0,(a3)+
+CODE:0001004E                 move.l  #0,(a4)+
+CODE:00010054                 dbf     d7,loop1
+CODE:00010058 
+CODE:00010058 loc_10058:                              ; CODE XREF: loadLevelDataSPL+7Aj
+CODE:00010058                                         ; loadLevelDataSPL+CEj
+CODE:00010058                 sf      (byte_3212A).l
+CODE:0001005E                 movea.l (sp)+,a0
+CODE:00010060                 rts     
+CODE:00010062 ; ---------------------------------------------------------------------------
+CODE:00010062 
+CODE:00010062 loc_10062:                              ; CODE XREF: loadLevelDataSPL+84j
+CODE:00010062                                         ; loadLevelDataSPL+8Ej
+CODE:00010062                 move.l  (_levelSplDataBuffer).l,d0
+CODE:00010068                 move.l  (_levelSplDataSize).l,(_mallocSize).l
+CODE:00010072                 tst.b   (_cut_moduleMusicLoaded).l
+CODE:00010078                 bne.w   loc_100C0
+CODE:0001007C                 moveq   #0,d1
+CODE:0001007E                 bset    #1,d1
+CODE:00010082                 bset    #$11,d1
+CODE:00010086                 movem.l d3/a0,-(sp)
+CODE:0001008A                 movea.l (start+4).l,a6
+CODE:00010090                 jsr     -$D8(a6)
+CODE:00010094                 movem.l (sp)+,d3/a0
+CODE:00010098                 subi.l  #$400,d0
+CODE:0001009E                 move.l  d0,(_mallocSize).l
+CODE:000100A4                 jsr     mallocSize_
+CODE:000100AA                 tst.l   d0
+CODE:000100AC                 beq.w   loc_10168
+CODE:000100B0                 move.l  d0,(_levelSplDataBuffer).l
+CODE:000100B6                 move.l  (_mallocSize).l,(_levelSplDataSize).l
+CODE:000100C0 
+CODE:000100C0 loc_100C0:                              ; CODE XREF: loadLevelDataSPL+114j
+CODE:000100C0                 move.l  d0,d4
+CODE:000100C2                 movea.l d4,a1
+CODE:000100C4                 adda.l  (_mallocSize).l,a1
+CODE:000100CA                 jsr     sub_1802E
+CODE:000100D0                 movea.l d4,a5
+CODE:000100D2                 move.w  #$41,d7 ; 'A'
+CODE:000100D6 
+CODE:000100D6 loc_100D6:                              ; CODE XREF: loadLevelDataSPL+1C2j
+CODE:000100D6                                         ; loadLevelDataSPL+1FAj
+CODE:000100D6                 move.l  (dword_326A0).l,d1
+CODE:000100DC                 move.l  #word_322EE,d2
+CODE:000100E2                 moveq   #2,d3
+CODE:000100E4                 jsr     sub_18154
+CODE:000100EA                 move.b  (a2)+,d0
+CODE:000100EC                 beq.w   loc_1012E
+CODE:000100F0                 moveq   #0,d0
+CODE:000100F2                 move.w  (word_322EE).l,d0
+CODE:000100F8                 bmi.w   loc_10136
+CODE:000100FC                 addq.w  #1,d0
+CODE:000100FE 
+CODE:000100FE loc_100FE:
+CODE:000100FE                 bclr    #0,d0
+CODE:00010102                 move.l  d4,d1
+CODE:00010104                 add.l   d0,d1
+CODE:00010106                 cmp.l   a1,d1
+CODE:00010108                 bge.w   loc_10162
+CODE:0001010C                 move.l  (dword_326A0).l,d1
+CODE:00010112                 move.l  d4,d2
+CODE:00010114                 move.l  d0,d3
+CODE:00010116                 jsr     sub_18154
+CODE:0001011C                 movea.l d4,a6
+CODE:0001011E                 clr.w   (a6)
+CODE:00010120                 move.l  d4,(a3)+
+CODE:00010122                 move.l  d0,(a4)+
+CODE:00010124                 add.l   d0,d4
+CODE:00010126                 dbf     d7,loc_100D6
+CODE:0001012A                 bra.w   loc_10162
+CODE:0001012E ; ---------------------------------------------------------------------------
+CODE:0001012E 
+CODE:0001012E loc_1012E:                              ; CODE XREF: loadLevelDataSPL+188j
+CODE:0001012E                 moveq   #0,d0
+CODE:00010130                 move.w  (word_322EE).l,d0
+CODE:00010136 
+CODE:00010136 loc_10136:                              ; CODE XREF: loadLevelDataSPL+194j
+CODE:00010136                 tst.w   d0
+CODE:00010138                 bmi.w   loc_10152
+CODE:0001013C                 addq.w  #1,d0
+CODE:0001013E                 bclr    #0,d0
+CODE:00010142                 move.l  (dword_326A0).l,d1
+CODE:00010148                 move.l  d0,d2
+CODE:0001014A                 moveq   #0,d3
+CODE:0001014C                 jsr     sub_18168
+CODE:00010152 
+CODE:00010152 loc_10152:                              ; CODE XREF: loadLevelDataSPL+1D4j
+CODE:00010152                 move.l  #0,(a3)+
+CODE:00010158                 move.l  #0,(a4)+
+CODE:0001015E                 dbf     d7,loc_100D6
+CODE:00010162 
+CODE:00010162 loc_10162:                              ; CODE XREF: loadLevelDataSPL+1A4j
+CODE:00010162                                         ; loadLevelDataSPL+1C6j
+CODE:00010162                 jsr     sub_1817C ; setup music vbector
+CODE:00010168 
+CODE:00010168 loc_10168:                              ; CODE XREF: loadLevelDataSPL+148j
+CODE:00010168                 sf      (byte_3212A).l
+CODE:0001016E                 movea.l (sp)+,a0
+CODE:00010170                 rts     
+CODE:00010170 ; End of function loadLevelDataSPL
+
+
+
+// 2CE36
+CODE:00070672 _res_level1_snd_offsets:dc.b 1
+CODE:00070773                 dc.b   0 ;  
+CODE:00070774 _res_level2_snd_offsets:dc.b 1  
+CODE:00070874                 dc.b $28, 0
+CODE:00070876 _res_level_dt_snd_offsets:dc.l $1000304, $5060008, $90A0B00, $10, $11121314, $161718
+
+CODE:00070976                 dc.b $1F, 0
+CODE:00070978 _res_level3_1_snd_offsets:dc.b 1        ; DATA XREF: CODE:0000BD60o
+
+CODE:00070A78                 dc.b $29, 0
+CODE:00070A7A _res_level3_2_snd_offsets:dc.l $1000304, $5060008, $90A0B0C, 0, $11121314, $161718
+
+CODE:00070B7A                 dc.b $25, 0
+CODE:00070B7C _res_level4_1_snd_offsets:dc.l $1000304, $5060000, $90A0B0C, 0, $11000000, $161718
+
+CODE:00070C7C                 dc.b $24, 0
+CODE:00070C7E _res_level4_2_snd_offsets:dc.l $1000304, $5060000, $90A0B0C, 0, $11000000, $161718
+
+CODE:00071F5A                 align 4
+CODE:00071F5A ; end of 'CODE'
+
+CODE:000700E0 byte_700E0:     dc.b 0                  ; DATA XREF: CODE:0007050Ao
+CODE:000700E1 aSoundPneuma05_:dc.b 'sound/pneuma05.spl',0
+// 2C8A4
+
+
+CODE:0007050A _res_level1_snd_filenames:dc.l byte_700E0 ; DATA XREF: CODE:0000BCC2o
+CODE:0007050A                                         ; CODE:0000BCF8o ...
+CODE:0007050E                 dc.l unk_700F4
+CODE:00070512                 dc.l unk_70108
+CODE:00070516                 dc.l unk_7011C
+CODE:0007051A                 dc.l unk_70130
+CODE:0007051E                 dc.l unk_7013C
+CODE:00070522                 dc.l unk_7014D
+CODE:00070526                 dc.l unk_70161
+CODE:0007052A                 dc.l unk_70171
+CODE:0007052E                 dc.l unk_70181
+CODE:00070532                 dc.l unk_70192
+CODE:00070536                 dc.l unk_701A4
+CODE:0007053A                 dc.l unk_701B3
+CODE:0007053E                 dc.l unk_701C6
+CODE:00070542                 dc.l unk_701D6
+CODE:00070546                 dc.l unk_701E6
+CODE:0007054A                 dc.l unk_701F8
+CODE:0007054E                 dc.l unk_7020D
+CODE:00070552                 dc.l unk_70221
+CODE:00070556                 dc.l unk_70233
+CODE:0007055A                 dc.l unk_70245
+CODE:0007055E                 dc.l unk_70255
+CODE:00070562                 dc.l unk_70268
+CODE:00070566                 dc.l unk_70276
+CODE:0007056A                 dc.l unk_70282
+CODE:0007056E                 dc.l unk_70292
+CODE:00070572                 dc.l unk_7029F
+CODE:00070576                 dc.l unk_702AC
+CODE:0007057A                 dc.l unk_702BF
+CODE:0007057E                 dc.l unk_702D1
+CODE:00070582                 dc.l unk_702E1
+CODE:00070586                 dc.l unk_702F5
+CODE:0007058A                 dc.l unk_70308
+CODE:0007058E                 dc.l 0
+CODE:00070592                 dc.l unk_70329
+CODE:00070596                 dc.l 0
+CODE:0007059A                 dc.l unk_70345
+CODE:0007059E                 dc.l unk_70356
+CODE:000705A2                 dc.l unk_7036A
+CODE:000705A6                 dc.l unk_70380
+CODE:000705AA                 dc.l unk_7038F
+CODE:000705AE                 dc.l unk_7039E
+CODE:000705B2                 dc.l unk_703AB
+CODE:000705B6                 dc.l unk_703BC
+CODE:000705BA                 dc.l unk_703C9
+CODE:000705BE                 dc.l unk_703D5
+CODE:000705C2                 dc.l unk_703E1
+CODE:000705C6                 dc.l unk_703ED
+CODE:000705CA                 dc.l unk_703FB
+CODE:000705CE                 dc.l unk_70409
+CODE:000705D2                 dc.l unk_70417
+CODE:000705D6                 dc.l unk_70426
+CODE:000705DA                 dc.l unk_70437
+CODE:000705DE                 dc.l unk_70442
+CODE:000705E2                 dc.l unk_70451
+CODE:000705E6                 dc.l unk_70460
+CODE:000705EA                 dc.l unk_7046F
+CODE:000705EE                 dc.l unk_7047E
+CODE:000705F2                 dc.l unk_7048C
+CODE:000705F6                 dc.l unk_7049F
+CODE:000705FA                 dc.l unk_704AC
+CODE:000705FE                 dc.l unk_704BA
+CODE:00070602                 dc.l unk_704CA
+CODE:00070606                 dc.l unk_704D7
+CODE:0007060A                 dc.l unk_704E3
+CODE:0007060E                 dc.l unk_704F1
+CODE:00070612                 dc.l 0
+CODE:00070616                 dc.l 0
+CODE:0007061A                 dc.l 0
+CODE:0007061E                 dc.l $FFFFFFFE
+
