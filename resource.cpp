@@ -64,7 +64,7 @@ void Resource::load_FIB(const char *fileName) {
 		0xDE, 0xEB, 0xF3, 0xF8, 0xFB, 0xFD, 0xFE, 0xFF,
 		0x00, 0x01, 0x02, 0x03, 0x05, 0x08, 0x0D, 0x15
 	};
-	sprintf(_entryName, "%s.FIB", fileName);
+	snprintf(_entryName, sizeof(_entryName), "%s.FIB", fileName);
 	File f;
 	if (f.open(_entryName, _dataPath, "rb")) {
 		_numSfx = f.readUint16LE();
@@ -113,7 +113,7 @@ void Resource::load_FIB(const char *fileName) {
 
 void Resource::load_MAP_menu(const char *fileName, uint8 *dstPtr) {
 	debug(DBG_RES, "Resource::load_MAP_menu('%s')", fileName);
-	sprintf(_entryName, "%s.MAP", fileName);
+	snprintf(_entryName, sizeof(_entryName), "%s.MAP", fileName);
 	File f;
 	if (f.open(_entryName, _dataPath, "rb")) {
 		if (f.size() != 0x3800 * 4) {
@@ -130,7 +130,7 @@ void Resource::load_MAP_menu(const char *fileName, uint8 *dstPtr) {
 
 void Resource::load_PAL_menu(const char *fileName, uint8 *dstPtr) {
 	debug(DBG_RES, "Resource::load_PAL_menu('%s')", fileName);
-	sprintf(_entryName, "%s.PAL", fileName);
+	snprintf(_entryName, sizeof(_entryName), "%s.PAL", fileName);
 	File f;
 	if (f.open(_entryName, _dataPath, "rb")) {
 		if (f.size() != 768) {
@@ -147,7 +147,7 @@ void Resource::load_PAL_menu(const char *fileName, uint8 *dstPtr) {
 
 void Resource::load_SPR_OFF(const char *fileName, uint8 *sprData) {
 	debug(DBG_RES, "Resource::load_SPR_OFF('%s')", fileName);
-	sprintf(_entryName, "%s.OFF", fileName);
+	snprintf(_entryName, sizeof(_entryName), "%s.OFF", fileName);
 	File f;
 	if (f.open(_entryName, _dataPath, "rb")) {
 		int len = f.size();
@@ -194,7 +194,7 @@ void Resource::load_CINE() {
 	}
 	debug(DBG_RES, "Resource::load_CINE('%s')", baseName);
 	if (_cine_off == 0) {
-		sprintf(_entryName, "%s.BIN", baseName);
+		snprintf(_entryName, sizeof(_entryName), "%s.BIN", baseName);
 		File f;
 		if (f.open(_entryName, _dataPath, "rb")) {
 			int len = f.size();
@@ -211,7 +211,7 @@ void Resource::load_CINE() {
 		}
 	}
 	if (_cine_txt == 0) {
-		sprintf(_entryName, "%s.TXT", baseName);
+		snprintf(_entryName, sizeof(_entryName), "%s.TXT", baseName);
 		File f;
 		if (f.open(_entryName, _dataPath, "rb")) {
 			int len = f.size();
@@ -328,24 +328,24 @@ void Resource::load(const char *objName, int objType) {
 	LoadStub loadStub = 0;
 	switch (objType) {
 	case OT_MBK:
-		sprintf(_entryName, "%s.MBK", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.MBK", objName);
 		loadStub = &Resource::load_MBK;
 		break;
 	case OT_PGE:
-		sprintf(_entryName, "%s.PGE", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.PGE", objName);
 		loadStub = &Resource::load_PGE;
 		break;
 	case OT_PAL:
-		sprintf(_entryName, "%s.PAL", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.PAL", objName);
 		loadStub = &Resource::load_PAL;
 		break;
 	case OT_CT:
-		sprintf(_entryName, "%s.CT", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.CT", objName);
 		loadStub = &Resource::load_CT;
 		break;
 	case OT_MAP:
 		debug(DBG_RES, "ouverture map (map)");
-		sprintf(_entryName, "%s.MAP", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.MAP", objName);
 		loadStub = &Resource::load_MAP;
 		break;
 	case OT_SPC:
@@ -353,47 +353,47 @@ void Resource::load(const char *objName, int objType) {
 		loadStub = &Resource::load_SPC;
 		break;
 	case OT_RP:
-		sprintf(_entryName, "%s.RP", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.RP", objName);
 		loadStub = &Resource::load_RP;
 		break;
 	case OT_SPR:
-		sprintf(_entryName, "%s.SPR", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.SPR", objName);
 		loadStub = &Resource::load_SPR;
 		break;
 	case OT_SPRM:
-		sprintf(_entryName, "%s.SPR", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.SPR", objName);
 		loadStub = &Resource::load_SPRM;
 		break;
 	case OT_ICN:
-		sprintf(_entryName, "%s.ICN", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.ICN", objName);
 		loadStub = &Resource::load_ICN;
 		break;
 	case OT_FNT:
-		sprintf(_entryName, "%s.FNT", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.FNT", objName);
 		loadStub = &Resource::load_FNT;
 		break;
 	case OT_OBJ:
-		sprintf(_entryName, "%s.OBJ", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.OBJ", objName);
 		loadStub = &Resource::load_OBJ;
 		break;
 	case OT_ANI:
-		sprintf(_entryName, "%s.ANI", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.ANI", objName);
 		loadStub = &Resource::load_ANI;
 		break;
 	case OT_TBN:
-		sprintf(_entryName, "%s.TBN", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.TBN", objName);
 		loadStub = &Resource::load_TBN;
 		break;
 	case OT_CMD:
-		sprintf(_entryName, "%s.CMD", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.CMD", objName);
 		loadStub = &Resource::load_CMD;
 		break;
 	case OT_POL:
-		sprintf(_entryName, "%s.POL", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.POL", objName);
 		loadStub = &Resource::load_POL;
 		break;
 	case OT_CMP:
-		sprintf(_entryName, "%s.CMP", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.CMP", objName);
 		loadStub = &Resource::load_CMP;
 		break;
 	case OT_OBC:
