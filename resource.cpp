@@ -855,6 +855,9 @@ void Resource::load_SPL(int num, const uint8 *map) {
 	if (!f.open(fileName, _dataPath, "rb")) {
 		return;
 	}
+	for (int i = 0; i < _numSfx; ++i) {
+		free(_sfxList[i].data);
+	}
 	free(_sfxList);
 	_numSfx = 66;
 	_sfxList = (SoundFx *)calloc(_numSfx, sizeof(SoundFx));
