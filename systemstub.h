@@ -63,18 +63,18 @@ struct SystemStub {
 
 	virtual ~SystemStub() {}
 
-	virtual void init(const char *title, uint16 w, uint16 h) = 0;
+	virtual void init(const char *title, int w, int h) = 0;
 	virtual void destroy() = 0;
 
-	virtual void setPalette(const uint8 *pal, uint16 n) = 0;
-	virtual void setPaletteEntry(uint8 i, const Color *c) = 0;
-	virtual void getPaletteEntry(uint8 i, Color *c) = 0;
-	virtual void setOverscanColor(uint8 i) = 0;
-	virtual void copyRect(int16 x, int16 y, uint16 w, uint16 h, const uint8 *buf, uint32 pitch) = 0;
-	virtual void updateScreen(uint8 shakeOffset) = 0;
+	virtual void setPalette(const uint8 *pal, int n) = 0;
+	virtual void setPaletteEntry(int i, const Color *c) = 0;
+	virtual void getPaletteEntry(int i, Color *c) = 0;
+	virtual void setOverscanColor(int i) = 0;
+	virtual void copyRect(int x, int y, int w, int h, const uint8 *buf, int pitch) = 0;
+	virtual void updateScreen(int shakeOffset) = 0;
 
 	virtual void processEvents() = 0;
-	virtual void sleep(uint32 duration) = 0;
+	virtual void sleep(int duration) = 0;
 	virtual uint32 getTimeStamp() = 0;
 
 	virtual void startAudio(AudioCallback callback, void *param) = 0;
@@ -101,6 +101,6 @@ struct MutexStack {
 };
 
 extern SystemStub *SystemStub_SDL_create();
-extern SystemStub *SystemStub_Win32_create();
+extern SystemStub *SystemStub_SDL13_create();
 
 #endif // __SYSTEMSTUB_H__

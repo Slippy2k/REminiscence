@@ -41,16 +41,16 @@ struct SystemStub_SDL : SystemStub {
 	uint16 _numBlitRects;
 
 	virtual ~SystemStub_SDL() {}
-	virtual void init(const char *title, uint16 w, uint16 h);
+	virtual void init(const char *title, int w, int h);
 	virtual void destroy();
-	virtual void setPalette(const uint8 *pal, uint16 n);
-	virtual void setPaletteEntry(uint8 i, const Color *c);
-	virtual void getPaletteEntry(uint8 i, Color *c);
-	virtual void setOverscanColor(uint8 i);
-	virtual void copyRect(int16 x, int16 y, uint16 w, uint16 h, const uint8 *buf, uint32 pitch);
-	virtual void updateScreen(uint8 shakeOffset);
+	virtual void setPalette(const uint8 *pal, int n);
+	virtual void setPaletteEntry(int i, const Color *c);
+	virtual void getPaletteEntry(int i, Color *c);
+	virtual void setOverscanColor(int i);
+	virtual void copyRect(int x, int y, int w, int h, const uint8 *buf, int pitch);
+	virtual void updateScreen(int shakeOffset);
 	virtual void processEvents();
-	virtual void sleep(uint32 duration);
+	virtual void sleep(int duration);
 	virtual uint32 getTimeStamp();
 	virtual void startAudio(AudioCallback callback, void *param);
 	virtual void stopAudio();
@@ -72,7 +72,7 @@ SystemStub *SystemStub_SDL_create() {
 	return new SystemStub_SDL();
 }
 
-void SystemStub_SDL::init(const char *title, uint16 w, uint16 h) {
+void SystemStub_SDL::init(const char *title, int w, int h) {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
 	SDL_ShowCursor(SDL_DISABLE);
 	SDL_WM_SetCaption(title, NULL);
@@ -104,7 +104,7 @@ void SystemStub_SDL::destroy() {
 	SDL_Quit();
 }
 
-void SystemStub_SDL::setPalette(const uint8 *pal, uint16 n) {
+void SystemStub_SDL::setPalette(const uint8 *pal, int n) {
 	assert(n <= 256);
 	for (int i = 0; i < n; ++i) {
 		uint8 r = pal[i * 3 + 0];
@@ -114,25 +114,25 @@ void SystemStub_SDL::setPalette(const uint8 *pal, uint16 n) {
 	}
 }
 
-void SystemStub_SDL::setPaletteEntry(uint8 i, const Color *c) {
+void SystemStub_SDL::setPaletteEntry(int i, const Color *c) {
 	uint8 r = (c->r << 2) | (c->r & 3);
 	uint8 g = (c->g << 2) | (c->g & 3);
 	uint8 b = (c->b << 2) | (c->b & 3);
 	_pal[i] = SDL_MapRGB(_screen->format, r, g, b);
 }
 
-void SystemStub_SDL::getPaletteEntry(uint8 i, Color *c) {
+void SystemStub_SDL::getPaletteEntry(int i, Color *c) {
 	SDL_GetRGB(_pal[i], _screen->format, &c->r, &c->g, &c->b);
 	c->r >>= 2;
 	c->g >>= 2;
 	c->b >>= 2;
 }
 
-void SystemStub_SDL::setOverscanColor(uint8 i) {
+void SystemStub_SDL::setOverscanColor(int i) {
 	_overscanColor = i;
 }
 
-void SystemStub_SDL::copyRect(int16 x, int16 y, uint16 w, uint16 h, const uint8 *buf, uint32 pitch) {
+void SystemStub_SDL::copyRect(int x, int y, int w, int h, const uint8 *buf, int pitch) {
 	if (_numBlitRects >= MAX_BLIT_RECTS) {
 		warning("SystemStub_SDL::copyRect() Too many blit rects, you may experience graphical glitches");
 	} else {
@@ -192,7 +192,7 @@ void SystemStub_SDL::copyRect(int16 x, int16 y, uint16 w, uint16 h, const uint8 
 	}
 }
 
-void SystemStub_SDL::updateScreen(uint8 shakeOffset) {
+void SystemStub_SDL::updateScreen(int shakeOffset) {
 	const int mul = _scalers[_scaler].factor;
 	if (shakeOffset == 0) {
 		for (int i = 0; i < _numBlitRects; ++i) {
@@ -446,7 +446,7 @@ void SystemStub_SDL::processEvents() {
 	}
 }
 
-void SystemStub_SDL::sleep(uint32 duration) {
+void SystemStub_SDL::sleep(int duration) {
 	SDL_Delay(duration);
 }
 
