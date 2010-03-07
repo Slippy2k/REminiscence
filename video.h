@@ -62,6 +62,7 @@ struct Video {
 	void updateScreen();
 	void fullRefresh();
 	void fadeOut();
+	void fadeOutPalette();
 	void setPaletteSlotBE(int palSlot, int palNum);
 	void setPaletteSlotLE(int palSlot, const uint8 *palData);
 	void setTextPalette();

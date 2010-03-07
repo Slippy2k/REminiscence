@@ -210,7 +210,7 @@ static uint16 blendPixel16(uint16 colorSrc, uint16 colorDst, uint32 mask, int st
 	const uint32 pSrc = (colorSrc | (colorSrc << 16)) & mask;
 	const uint32 pDst = (colorDst | (colorDst << 16)) & mask;
 	const uint32 pRes = ((pDst - pSrc) * step / 16 + pSrc) & mask;
-	return (pRes & 0xFFFF) | (pRes >> 16);
+	return pRes | (pRes >> 16);
 }
 
 void SystemStub_SDL::updateScreen(int shakeOffset) {
@@ -222,7 +222,7 @@ void SystemStub_SDL::updateScreen(int shakeOffset) {
 		const SDL_PixelFormat *pf = _screenSurface->format;
 		const uint32 colorMask = (pf->Gmask << 16) | (pf->Rmask | pf->Bmask);
 		const uint16 *screenBuffer = _screenBuffer + _screenW + 1;
-		for (int i = 0; i < 16; ++i) {
+		for (int i = 1; i <= 16; ++i) {
 			for (int x = 0; x < _screenH * _screenW; ++x) {
 				tempScreenBuffer[_screenW + 1 + x] = blendPixel16(_fadeScreenBuffer[x], screenBuffer[x], colorMask, i);
 			}
