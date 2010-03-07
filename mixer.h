@@ -76,19 +76,9 @@ struct Mixer {
 template <class T>
 int resampleLinear(T *sample, int pos, int step, int fracBits) {
 	const int inputPos = pos >> fracBits;
-	const int inputFrac = (1 << fracBits) - 1;
+	const int inputFrac = pos & ((1 << fracBits) - 1);
 	int out = sample->getPCM(inputPos);
 	out += (sample->getPCM(inputPos + 1) - out) * inputFrac >> fracBits;
-	return out;
-}
-
-template <class T>
-int resample3Pt(T *sample, int pos, int step, int fracBits) {
-	const int inputPos = pos >> fracBits;
-	const int inputFrac = (1 << fracBits) - 1;
-	int out = sample->getPCM(inputPos) >> 1;
-	out += sample->getPCM(inputPos + ((inputFrac - (step >> 1)) >> fracBits)) >> 2;
-	out += sample->getPCM(inputPos + ((inputFrac + (step >> 1)) >> fracBits)) >> 2;
 	return out;
 }
 

@@ -24,7 +24,7 @@
 struct SystemStub_SDL : SystemStub {
 	enum {
 		MAX_BLIT_RECTS = 200,
-		SOUND_SAMPLE_RATE = 11025,
+		SOUND_SAMPLE_RATE = 22050,
 		JOYSTICK_COMMIT_VALUE = 3200
 	};
 

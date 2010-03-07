@@ -138,7 +138,7 @@ void SfxPlayer::mixSamples(int8 *buf, int samplesLen) {
 					curLen = 0;
 				}
 				while (count--) {
-					int out = resample3Pt(si, pos, deltaPos, FRAC_BITS);
+					int out = resampleLinear(si, pos, deltaPos, FRAC_BITS);
 					Mixer::addclamp(*mixbuf++, out * si->vol / 64);
 					pos += deltaPos;
 				}
