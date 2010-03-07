@@ -3,7 +3,7 @@ SDL_CFLAGS = `sdl-config --cflags`
 SDL_LIBS = `sdl-config --libs`
 
 DEFINES = -DBYPASS_PROTECTION
-#DEFINES = -DBYPASS_PROTECTION -DNDEBUG
+#DEFINES = -DBYPASS_PROTECTION -DENABLE_PASSWORD_MENU -DNDEBUG
 
 CXX = g++
 CXXFLAGS:= -g -O -Wall -Wuninitialized -Wshadow -Wimplicit -Wundef -Wreorder -Wnon-virtual-dtor -Wno-multichar

@@ -310,15 +310,21 @@ bool Menu::handleTitleScreen(uint8 &new_skill, uint8 &new_level) {
 	_charVar4 = 0;
 	_charVar5 = 0;
 	_ply->play(1);
-#ifdef USE_ORIGINAL_MENU
-	int menu_strings[5] = { LocaleData::LI_07_START, LocaleData::LI_08_SKILL, LocaleData::LI_09_PASSWORD, LocaleData::LI_10_INFO, LocaleData::LI_11_QUIT };
-	int menu_options[5] = { MENU_OPTION_ITEM_START, MENU_OPTION_ITEM_SKILL, MENU_OPTION_ITEM_PASSWORD, MENU_OPTION_ITEM_INFO, MENU_OPTION_ITEM_QUIT };
-	int menu_items_count = 5;
+	static const struct {
+		int str;
+		int opt;
+	} menu_items[] = {
+		{ LocaleData::LI_07_START, MENU_OPTION_ITEM_START },
+#ifdef ENABLE_PASSWORD_MENU
+		{ LocaleData::LI_08_SKILL, MENU_OPTION_ITEM_SKILL },
+		{ LocaleData::LI_09_PASSWORD, MENU_OPTION_ITEM_PASSWORD },
 #else
-	int menu_strings[4] = { LocaleData::LI_07_START, LocaleData::LI_06_LEVEL, LocaleData::LI_10_INFO, LocaleData::LI_11_QUIT };
-	int menu_options[4] = { MENU_OPTION_ITEM_START, MENU_OPTION_ITEM_LEVEL, MENU_OPTION_ITEM_INFO, MENU_OPTION_ITEM_QUIT };
-	int menu_items_count = 4;
+		{ LocaleData::LI_06_LEVEL, MENU_OPTION_ITEM_LEVEL },
 #endif
+		{ LocaleData::LI_10_INFO, MENU_OPTION_ITEM_INFO },
+		{ LocaleData::LI_11_QUIT, MENU_OPTION_ITEM_QUIT }
+	};
+	static const int menu_items_count = ARRAYSIZE(menu_items);
 	while (!quit_loop) {
 		if (reinit_screen) {
 			_vid->fadeOut();
@@ -332,7 +338,7 @@ bool Menu::handleTitleScreen(uint8 &new_skill, uint8 &new_level) {
 		int selected_menu_entry = -1;
 		const int y_start = 26 - menu_items_count * 2;
 		for (int i = 0; i < menu_items_count; ++i) {
-			drawString(_res->getMenuString(menu_strings[i]), y_start + i * 2, 20, (i == menu_entry) ? 2 : 3);
+			drawString(_res->getMenuString(menu_items[i].str), y_start + i * 2, 20, (i == menu_entry) ? 2 : 3);
 		}
 
 		_vid->updateScreen();
@@ -361,7 +367,7 @@ bool Menu::handleTitleScreen(uint8 &new_skill, uint8 &new_level) {
 		}
 
 		if (selected_menu_entry != -1) {
-			switch (menu_options[selected_menu_entry]) {
+			switch (menu_items[selected_menu_entry].opt) {
 			case MENU_OPTION_ITEM_START:
 				new_level = 0;
 				quit_loop = true;
