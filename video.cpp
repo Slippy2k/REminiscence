@@ -111,6 +111,9 @@ void Video::fullRefresh() {
 }
 
 void Video::fadeOut() {
+#if 1
+	_stub->fadeScreen();
+#else
 	debug(DBG_VIDEO, "Video::fadeOut()");
 	for (int step = 16; step >= 0; --step) {
 		for (int c = 0; c < 256; ++c) {
@@ -125,6 +128,7 @@ void Video::fadeOut() {
 		updateScreen();
 		_stub->sleep(50);
 	}
+#endif
 }
 
 void Video::setPaletteSlotBE(int palSlot, int palNum) {
