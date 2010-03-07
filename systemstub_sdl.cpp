@@ -30,8 +30,7 @@ struct SystemStub_SDL : SystemStub {
 
 	uint8 *_screenBuffer;
 	uint16 *_fadeScreenBuffer;
-	SDL_Surface *_screen;
-	SDL_Surface *_sclscreen;
+	SDL_Surface *_screenSurface;
 	bool _fullscreen;
 	uint8 _scaler;
 	uint8 _overscanColor;
@@ -115,7 +114,7 @@ void SystemStub_SDL::setPalette(const uint8 *pal, int n) {
 		uint8 r = pal[i * 3 + 0];
 		uint8 g = pal[i * 3 + 1];
 		uint8 b = pal[i * 3 + 2];
-		_pal[i] = SDL_MapRGB(_screen->format, r, g, b);
+		_pal[i] = SDL_MapRGB(_screenSurface->format, r, g, b);
 	}
 }
 
@@ -123,11 +122,11 @@ void SystemStub_SDL::setPaletteEntry(int i, const Color *c) {
 	uint8 r = (c->r << 2) | (c->r & 3);
 	uint8 g = (c->g << 2) | (c->g & 3);
 	uint8 b = (c->b << 2) | (c->b & 3);
-	_pal[i] = SDL_MapRGB(_screen->format, r, g, b);
+	_pal[i] = SDL_MapRGB(_screenSurface->format, r, g, b);
 }
 
 void SystemStub_SDL::getPaletteEntry(int i, Color *c) {
-	SDL_GetRGB(_pal[i], _screen->format, &c->r, &c->g, &c->b);
+	SDL_GetRGB(_pal[i], _screenSurface->format, &c->r, &c->g, &c->b);
 	c->r >>= 2;
 	c->g >>= 2;
 	c->b >>= 2;
@@ -220,20 +219,19 @@ void SystemStub_SDL::updateScreen(int shakeOffset) {
 		const int tempScreenBufferSize = (_screenH + 2) * (_screenW + 2) * sizeof(uint16);
 		uint16 *tempScreenBuffer = (uint16 *)calloc(tempScreenBufferSize, 1);
 		assert(tempScreenBuffer);
-		const SDL_PixelFormat *pf = _screen->format;
+		const SDL_PixelFormat *pf = _screenSurface->format;
 		const uint32 colorMask = (pf->Gmask << 16) | (pf->Rmask | pf->Bmask);
 		const uint16 *screenBuffer = (uint16 *)_screenBuffer + _screenW + 1;
 		for (int i = 0; i < 16; ++i) {
 			for (int x = 0; x < _screenH * _screenW; ++x) {
 				tempScreenBuffer[_screenW + 1 + x] = blendPixel16(_fadeScreenBuffer[x], screenBuffer[x], colorMask, i);
 			}
-			SDL_LockSurface(_sclscreen);
-			uint16 *dst = (uint16 *)_sclscreen->pixels;
+			SDL_LockSurface(_screenSurface);
+			uint16 *dst = (uint16 *)_screenSurface->pixels;
 			const uint16 *src = tempScreenBuffer + _screenW + 1;
-			(*_scalers[_scaler].proc)(dst, _sclscreen->pitch, src, _screenW, _screenW, _screenH);
-			SDL_UnlockSurface(_sclscreen);
-			SDL_BlitSurface(_sclscreen, 0, _screen, 0);
-			SDL_UpdateRect(_screen, 0, 0, _screenW * mul, _screenH * mul);
+			(*_scalers[_scaler].proc)(dst, _screenSurface->pitch, src, _screenW, _screenW, _screenH);
+			SDL_UnlockSurface(_screenSurface);
+			SDL_UpdateRect(_screenSurface, 0, 0, _screenW * mul, _screenH * mul);
 			SDL_Delay(30);
 		}
 		free(tempScreenBuffer);
@@ -244,49 +242,34 @@ void SystemStub_SDL::updateScreen(int shakeOffset) {
 			SDL_Rect *br = &_blitRects[i];
 			int16 dx = br->x * mul;
 			int16 dy = br->y * mul;
-			SDL_LockSurface(_sclscreen);
-			uint16 *dst = (uint16 *)_sclscreen->pixels + dy * _sclscreen->pitch / 2 + dx;
+			SDL_LockSurface(_screenSurface);
+			uint16 *dst = (uint16 *)_screenSurface->pixels + dy * _screenSurface->pitch / 2 + dx;
 			const uint16 *src = (uint16 *)_screenBuffer + (br->y + 1) * _screenW + (br->x + 1);
-			(*_scalers[_scaler].proc)(dst, _sclscreen->pitch, src, _screenW, br->w, br->h);
-			SDL_UnlockSurface(_sclscreen);
+			(*_scalers[_scaler].proc)(dst, _screenSurface->pitch, src, _screenW, br->w, br->h);
+			SDL_UnlockSurface(_screenSurface);
 			br->x *= mul;
 			br->y *= mul;
 			br->w *= mul;
 			br->h *= mul;
-			SDL_BlitSurface(_sclscreen, br, _screen, br);
 		}
-		SDL_UpdateRects(_screen, _numBlitRects, _blitRects);
+		SDL_UpdateRects(_screenSurface, _numBlitRects, _blitRects);
 	} else {
-		SDL_LockSurface(_sclscreen);
+		SDL_LockSurface(_screenSurface);
 		uint16 w = _screenW;
 		uint16 h = _screenH - shakeOffset;
-		uint16 *dst = (uint16 *)_sclscreen->pixels;
+		uint16 *dst = (uint16 *)_screenSurface->pixels + shakeOffset * mul * _screenSurface->pitch / 2;
 		const uint16 *src = (uint16 *)_screenBuffer + _screenW + 1;
-		(*_scalers[_scaler].proc)(dst, _sclscreen->pitch, src, _screenW, w, h);
-		SDL_UnlockSurface(_sclscreen);
+		(*_scalers[_scaler].proc)(dst, _screenSurface->pitch, src, _screenW, w, h);
+		SDL_UnlockSurface(_screenSurface);
 
-		SDL_Rect bsr, bdr;
-		bdr.x = 0;
-		bdr.y = 0;
-		bdr.w = _screenW * mul;
-		bdr.h = shakeOffset * mul;
-		SDL_FillRect(_screen, &bdr, _pal[_overscanColor]);
+		SDL_Rect r;
+		r.x = 0;
+		r.y = 0;
+		r.w = _screenW * mul;
+		r.h = shakeOffset * mul;
+		SDL_FillRect(_screenSurface, &r, _pal[_overscanColor]);
 
-		bsr.x = 0;
-		bsr.y = 0;
-		bsr.w = _screenW * mul;
-		bsr.h = (_screenH - shakeOffset) * mul;
-		bdr.x = 0;
-		bdr.y = shakeOffset * mul;
-		bdr.w = bsr.w;
-		bdr.h = bsr.h;
-		SDL_BlitSurface(_sclscreen, &bsr, _screen, &bdr);
-
-		bdr.x = 0;
-		bdr.y = 0;
-		bdr.w = _screenW * mul;
-		bdr.h = _screenH * mul;
-		SDL_UpdateRects(_screen, 1, &bdr);
+		SDL_UpdateRect(_screenSurface, 0, 0, _screenW * mul, _screenH * mul);
 	}
 	_numBlitRects = 0;
 }
@@ -542,14 +525,9 @@ void SystemStub_SDL::unlockMutex(void *mutex) {
 void SystemStub_SDL::prepareGfxMode() {
 	int w = _screenW * _scalers[_scaler].factor;
 	int h = _screenH * _scalers[_scaler].factor;
-	_screen = SDL_SetVideoMode(w, h, 16, _fullscreen ? (SDL_FULLSCREEN | SDL_HWSURFACE) : SDL_HWSURFACE);
-	if (!_screen) {
+	_screenSurface = SDL_SetVideoMode(w, h, 16, _fullscreen ? (SDL_FULLSCREEN | SDL_HWSURFACE) : SDL_HWSURFACE);
+	if (!_screenSurface) {
 		error("SystemStub_SDL::prepareGfxMode() Unable to allocate _screen buffer");
-	}
-	const SDL_PixelFormat *pf = _screen->format;
-	_sclscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 16, pf->Rmask, pf->Gmask, pf->Bmask, pf->Amask);
-	if (!_sclscreen) {
-		error("SystemStub_SDL::prepareGfxMode() Unable to allocate _sclscreen buffer");
 	}
 	forceGfxRedraw();
 }
@@ -563,24 +541,18 @@ void SystemStub_SDL::cleanupGfxMode() {
 		free(_fadeScreenBuffer);
 		_fadeScreenBuffer = 0;
 	}
-	if (_sclscreen) {
-		SDL_FreeSurface(_sclscreen);
-		_sclscreen = 0;
-	}
-	if (_screen) {
+	if (_screenSurface) {
 		// freed by SDL_Quit()
-		_screen = 0;
+		_screenSurface = 0;
 	}
 }
 
 void SystemStub_SDL::switchGfxMode(bool fullscreen, uint8 scaler) {
-	SDL_Surface *prev_sclscreen = _sclscreen;
-	SDL_FreeSurface(_screen);
+	SDL_FreeSurface(_screenSurface);
 	_fullscreen = fullscreen;
 	_scaler = scaler;
 	prepareGfxMode();
-	SDL_BlitSurface(prev_sclscreen, NULL, _sclscreen, NULL);
-	SDL_FreeSurface(prev_sclscreen);
+	forceGfxRedraw();
 }
 
 void SystemStub_SDL::flipGfx() {
