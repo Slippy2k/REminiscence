@@ -23,6 +23,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
+#include <stdint.h>
 
 #include "sys.h"
 #include "util.h"
