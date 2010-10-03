@@ -90,12 +90,17 @@ struct Resource {
 		OT_OBC
 	};
 
+	enum ResourceType {
+		kResourceTypePC,
+		kResourceTypeAmiga
+	};
+
 	static const uint16 _voicesOffsetsTable[];
 	static const char *_amigaLevelNamesTable[];
 
 	const char *_dataPath;
 	Version _ver;
-	bool _useAmigaData;
+	ResourceType _resType;
 	char _entryName[32];
 	uint8 *_fnt;
 	MbkEntry *_mbk;
@@ -162,7 +167,7 @@ struct Resource {
 	void load_POL(File *pf);
 	void load_CMP(File *pf);
 	void load_VCE(int num, int segment, uint8 **buf, uint32 *bufSize);
-	void load_SPL(int num, const uint8 *map);
+	void load_SPL(int num);
 	const uint8 *getGameString(int num) {
 		return _stringsTable + READ_LE_UINT16(_stringsTable + num * 2);
 	}

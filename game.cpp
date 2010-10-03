@@ -1122,16 +1122,16 @@ void Game::loadLevelData() {
 	_res.load(lvl->name, Resource::OT_MAP);
 	_res.load(lvl->name, Resource::OT_PAL);
 	_res.load(lvl->name2, Resource::OT_PGE);
-	if (_res._useAmigaData) {
+	if (_res._resType == Resource::kResourceTypeAmiga) {
 		_res.load(Resource::_amigaLevelNamesTable[_currentLevel], Resource::OT_OBC);
 	} else {
 		_res.load(lvl->name2, Resource::OT_OBJ);
 	}
 	_res.load(lvl->name2, Resource::OT_ANI);
 	_res.load(lvl->name2, Resource::OT_TBN);
-	if (_res._useAmigaData) {
+	if (_res._resType == Resource::kResourceTypeAmiga) {
 		static const int spl[] = { 1, 1, 3, 3, 3, 4, 4 };
-		_res.load_SPL(spl[_currentLevel], 0);
+		_res.load_SPL(spl[_currentLevel]);
 	}
 
 	_cut._id = lvl->cutscene_id;
@@ -1199,7 +1199,7 @@ void Game::playSound(uint8 sfxId, uint8 softVol) {
 			MixerChunk mc;
 			mc.data = sfx->data;
 			mc.len = sfx->len;
-			const int freq = _res._useAmigaData ? 3546897 / 650 : 6000;
+			const int freq = _res._resType == Resource::kResourceTypeAmiga ? 3546897 / 650 : 6000;
 			_mix.play(&mc, freq, Mixer::MAX_VOLUME >> softVol);
 		}
 	} else {

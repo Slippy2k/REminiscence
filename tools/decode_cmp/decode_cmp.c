@@ -48,7 +48,7 @@ static int movel(const unsigned char *d) {
 }
 
 static int movew(const unsigned char *d) {
-	int i = (d[0] << 16) | d[1];
+	int i = (d[0] << 8) | d[1];
 	return i;
 }
 

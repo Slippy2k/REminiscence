@@ -25,7 +25,7 @@ Resource::Resource(const char *dataPath, Version ver) {
 	memset(this, 0, sizeof(Resource));
 	_dataPath = dataPath;
 	_ver = ver;
-	_useAmigaData = false;
+	_resType = kResourceTypePC;
 	_memBuf = (uint8 *)malloc(0xE000);
 }
 
@@ -848,7 +848,7 @@ void Resource::load_VCE(int num, int segment, uint8 **buf, uint32 *bufSize) {
 	}
 }
 
-void Resource::load_SPL(int num, const uint8 *map) {
+void Resource::load_SPL(int num) {
 	char fileName[32];
 	snprintf(fileName, sizeof(fileName), "level%d.SPL", num);
 	File f;
@@ -871,7 +871,7 @@ void Resource::load_SPL(int num, const uint8 *map) {
 			continue;
 		}
 		assert(size != 0 && (size & 1) == 0);
-		if (i != 64 && (!map || map[i] != 0)) {
+		if (i != 64) {
 			_sfxList[i].offset = offset;
 			_sfxList[i].len = size;
 			_sfxList[i].data = (uint8 *)malloc(size);

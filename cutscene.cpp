@@ -962,7 +962,7 @@ void Cutscene::mainLoop(uint16 offset) {
 void Cutscene::load(uint16 cutName) {
 	assert(cutName != 0xFFFF);
 	const char *name = _namesTable[cutName & 0xFF];
-	if (_res->_useAmigaData) {
+	if (_res->_resType == Resource::kResourceTypeAmiga) {
 		if (strncmp(name, "INTRO", 5) == 0) {
 			name = "INTRO";
 		}
