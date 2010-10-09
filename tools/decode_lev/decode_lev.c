@@ -1,19 +1,21 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 #include <png.h>
 #include "unpack.h"
 
 static void write_png_image_data(const char *file_path, const unsigned char *image_data, const unsigned char *image_clut, int w, int h) {
 	int x, y, x_offset;
+	FILE *fp;
 
 	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	assert(png_ptr);
 	png_infop info_ptr = png_create_info_struct(png_ptr);
 	assert(info_ptr);
 
-	FILE *fp = fopen(file_path, "wb");
+	fp = fopen(file_path, "wb");
 	assert(fp);
 	png_init_io(png_ptr, fp);
 
@@ -91,15 +93,140 @@ static int movew(const unsigned char *d) {
 	return i;
 }
 
-static void print_lev_hdr(int room, const unsigned char *p) {
-	printf("room %d : 0x%04X 0x%04X 0x%04X\n", room, movel(p + 0), movel(p + 4), movel(p + 8));
+static void print_lev_hdr(int room, const unsigned char *p, int size) {
+	int i;
+
+	printf("room %d size %d :", room, size);
+	for (i = 10; i < 16; i += 2) {
+		printf(" %04X", movew(p + i));
+	}
+	printf("\n");
 }
 
-static void decode_lev_picture(int room, const unsigned char *p, const unsigned char *mbk) {
+static int _rightMasksTable[] = { 1, 3, 7, 0xF, 0x1F, 0x3F, 0x7F, 0xFF, 0x1FF, 0x3FF, 0x7FF, 0xFFF, 0x1FFF, 0x3FFF, 0x7FFF };
+static int _leftMasksTable[] = { 0xFFFE, 0xFFFC, 0xFFF8, 0xFFF0, 0xFFE0, 0xFFC0, 0xFF80, 0xFF00, 0xFE00, 0xFC00, 0xF800, 0xF000, 0xE000, 0xC000, 0x8000, 0x7FFF, 0x3FFF, 0x1FFF, 0xFFF, 0x7FF, 0x3FF, 0x1FF, 0xFF, 0x7F, 0x3F, 0x1F, 0xF, 7, 3, 1 };
+
+static int _bitmapColorKey = 8;
+
+static void blitBitmapBlock(unsigned char *dst, int x, int y, int w, int h, unsigned char *src, unsigned char *mask, int size) {
+	int i, j, c;
+	int planar_size;
+//	static const int plane_size = 32 * 224;
+
+	++w;
+	++h;
+	planar_size = w * 2 * h;
+	if (planar_size != size) printf("planar_size %d size %d\n", planar_size, size);
+
+	if (x < 0 || y < 0) return; /* TEMP */
+
+	dst += y * 256 + x;
+
+	for (y = 0; y < h; ++y) {
+		for (x = 0; x < w * 2; ++x) {
+			for (i = 0; i < 8; ++i) {
+				const int c_mask = 1 << (7 - i);
+				c = 0;
+				for (j = 0; j < 4; ++j) {
+					if (src[j * planar_size] & mask[j * planar_size] & c_mask) {
+						c |= 1 << j;
+					}
+				}
+if (c != _bitmapColorKey)
+				dst[8 * x + i] = c;
+			}
+			++src;
+			++mask;
+		}
+		dst += 256;
+	}
+}
+
+static void copySGD(unsigned char *a4, unsigned char *a5) {
+	const unsigned char *a6;
+	int d6, i;
+
+	d6 = movew(a4); a4 += 2;
+	d6 &= 0x7FFF;
+	a6 = a4 + d6;
+	do {
+		d6 = *a4++;
+		if ((d6 & 0x80) == 0) {
+//			d6 = -(d6 - 0x7F) * 2; // (256 - i) / 2
+			for (i = 0; i < d6 + 1; ++i) {
+				*a5++ = *a4++;
+			}
+		} else {
+			d6 = -((signed char)d6);
+			for (i = 0; i < d6 + 1; ++i) {
+				*a5++ = *a4;
+			}
+			++a4;
+		}
+	} while (a4 < a6);
+}
+
+static int _sgdLoopCount, _sgdDecodeLen;
+static unsigned char *_sgdData, *_sgdDecodeBuf, *_roomBitmapBuffer;
+
+static void loadSGD(unsigned char *a1) {
+	int d4, d3, d2, d1, d0, i;
+	unsigned char *a2, *a3, *a4, *a5, *a0;
+
+//	word_2A31A = 1;
+	_sgdLoopCount = movew(a1); a1 += 2;
+	--_sgdLoopCount;
+	do {
+		d2 = movew(a1); a1 += 2;
+		d0 = movew(a1); a1 += 2;
+		d1 = movew(a1); a1 += 2;
+// printf("loadSGD d2=0x%X d1=0x%X d0=0x%X _sgdLoopCount %d\n", d2, d0, d1, _sgdLoopCount);
+		if (d2 != 0xFFFF) {
+			d2 &= ~(1 << 15);
+			a4 = _sgdData;
+			d3 = movel(a4 + d2 * 4);
+			if (d3 < 0) {
+				d3 = -d3;
+				a4 += d3;
+				d3 = movew(a4); a4 += 2;
+				if (_sgdDecodeLen != d2) {
+					_sgdDecodeLen = d2;
+					a2 = _sgdDecodeBuf;
+					for (i = 0; i < d3; ++i) {
+						a2[i] = a4[i];
+					}
+					a0 = _sgdDecodeBuf;	
+				}
+			} else {
+				a4 += d3;
+				if (_sgdDecodeLen != d2) {
+					_sgdDecodeLen = d2;
+					a5 = _sgdDecodeBuf;
+					copySGD(a4, a5);
+				}
+			}
+			a0 = _sgdDecodeBuf;
+			d2 = 0;
+			d3 = 0;
+			d2 = a0[0];
+			++d2;
+			d2 >>= 1;
+			--d2;
+			d3 = a0[1];
+			a5 = a0 + 4; // src
+			d4 = movew(a0 + 2);
+			a2 = a0 + d4 + 4; // mask
+			blitBitmapBlock(_roomBitmapBuffer, (short)d0, (short)d1, d2, d3, a5, a2, d4);
+		}
+		--_sgdLoopCount;
+	} while (_sgdLoopCount >= 0);
+}
+
+static void decode_lev_picture(int room, unsigned char *p, unsigned char *mbk) {
 	int offset, d0, d1, d3, d4, d7, ret, len, size = 0;
-	const unsigned char *a1, *a5, *a6;
+	unsigned char *a1, *a5, *a6;
 	unsigned char *a0, *a4;
-	int mbk_uncompressed;
+	int i, mbk_uncompressed;
 
 	offset = movew(p + 12);
 	// copy unk_2801A, 224 * 4 * BE16
@@ -126,7 +253,7 @@ loc_E28E:
 //	d0 = d0 * 6;
 //	move.w  4(a2,d0.w),d1
 	d1 = movew(mbk + d0 * 6 + 4);
-printf("d0=%d d1(len)=%X offset=%X d7=%d\n", d0, movew(mbk + d0 * 6 + 4), movel(mbk + d0 * 6), d7);
+// printf("d0=%d d1(len)=%X offset=%X d7=%d\n", d0, movew(mbk + d0 * 6 + 4), movel(mbk + d0 * 6), d7);
 	if ((d1 & 0x8000) != 0) { // uncompressed
 		mbk_uncompressed = 1;
 //		neg.w d1
@@ -157,8 +284,9 @@ printf("d0=%d d1(len)=%X offset=%X d7=%d\n", d0, movew(mbk + d0 * 6 + 4), movel(
 		size += d1 * 2;
 	} else {
 		assert(!mbk_uncompressed);
-printf("d3=%d\n", d3 );
-		do {
+// printf("d3=%d\n", d3 );
+		for (i = 0; i < d3 + 1; ++i) {
+//		do {
 			d4 = *a1++;
 			d4 <<= 5;
 //			a6 = a5 + d4;
@@ -166,13 +294,34 @@ printf("d3=%d\n", d3 );
 //			a3 += 32;
 // printf("copy d4 %d 16\n", d4);
 			size += 32;
-		} while (d3-- > 0);
+//		} while (d3-- > 0);
+		}
 	}
 	if (d7 == 0) goto loc_E28E;
 printf("size %d strip %d (%d, %d) src_len %d offset %d\n", size, size / 224, 256 / 2 * 224, size + 224 * 8 * 2, a1 - p, offset );
+	if (p[1] != 0) {
+memset(_roomBitmapBuffer, 0, 256 * 224);
+		offset = movew(p + 10);
+		loadSGD(p + offset);
+//		word_2A31A = 1;
+{
+	int i;
+	char name[64];
+	unsigned char pal[256 * 3];
+
+	snprintf(name, sizeof(name), "room_%02d.png", room);
+	for (i = 0; i < 256; ++i) {
+		pal[i * 3] = pal[i * 3 + 1] = pal[i * 3 + 2] = rand() & 255;
+	}
+	write_png_image_data(name, _roomBitmapBuffer, pal, 256, 224);
+}
+	}
+//	a1 = _sgdDecodeBuf + 6;
+//	memset(a1, 0xFF, 224 * 8 * 8);
+//	loadLevelMapHelper();
 }
 
-static void decode_lev(const unsigned char *a4, const unsigned char *mbk) {
+static void decode_lev(const unsigned char *a4, unsigned char *mbk) {
 	int i, offsets[64], offset_prev, ret, size;
 
 	for (i = 0; i < 64; ++i) {
@@ -186,7 +335,7 @@ static void decode_lev(const unsigned char *a4, const unsigned char *mbk) {
 			if (size != 0) {
 				ret = delphine_unpack(a4 + offsets[i] - 4, buf);
 				assert(ret);
-				print_lev_hdr(i, buf);
+				print_lev_hdr(i, buf, size);
 				decode_lev_picture(i, buf, mbk);
 			}
 		}
@@ -194,12 +343,30 @@ static void decode_lev(const unsigned char *a4, const unsigned char *mbk) {
 	}
 }
 
+static unsigned char *load_file_sgd(unsigned char *a1) {
+	int d0;
+	unsigned char *a4, *a5;
+
+	d0 = movel(a1);
+	printf("SGD length %d\n", d0);
+	a4 = a1 + d0;
+	a1 += 256;
+//	a5 = a1;
+	a5 = malloc(74935);
+	delphine_unpack(a4, a5);
+	return a5;
+}
+
 int main(int argc, char *argv[]) {
 	unsigned char *lev_data, *mbk_data;
-	if (argc == 3) {
+	if (argc == 4) {
 		lev_data = load_file(argv[1]);
 		mbk_data = load_file(argv[2]);
+		_sgdData = load_file_sgd(load_file(argv[3]));
+		_sgdDecodeBuf = malloc(7174);
+		_roomBitmapBuffer = malloc(43014 * 16);
 		decode_lev(lev_data, mbk_data);
+		printf("done\n");
 	}
 	return 0;
 }

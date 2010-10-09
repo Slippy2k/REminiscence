@@ -15,7 +15,7 @@ typedef struct {
 } unpack_context_t;
 
 
-extern int delphine_unpack(const uint8 *src, uint8 *dst);
+extern int delphine_unpack(const uint8 *src, uint8 *dst); // a4, a5
 
 
 #endif
