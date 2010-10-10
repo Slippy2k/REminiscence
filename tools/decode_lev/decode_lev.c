@@ -46,26 +46,24 @@ static void write_png_image_data(const char *file_path, const unsigned char *ima
 
 
 #define DECODE_BUFSIZE 65536
-static unsigned char buf[DECODE_BUFSIZE];
+static unsigned char _decodeLevBuf[DECODE_BUFSIZE];
 static unsigned char pic[DECODE_BUFSIZE];
 static unsigned char tmp[DECODE_BUFSIZE];
+static unsigned char _tmpBuf[DECODE_BUFSIZE];
 
 static unsigned char *load_file(const char *file_path) {
 	unsigned char *ptr = NULL;
 	int sz;
 	FILE *fp = fopen(file_path, "r");
-	if (fp) {
-		fseek(fp, 0, SEEK_END);
-		sz = ftell(fp);
-		fseek(fp, 0, SEEK_SET);
-		ptr = malloc(sz);
-		if (ptr) {
-			fread(ptr, sz, 1, fp);
-		}
-		fclose(fp);
-		printf("loaded file '%s' size %d\n", file_path, sz);
-	}
+	assert(fp);
+	fseek(fp, 0, SEEK_END);
+	sz = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	ptr = malloc(sz);
 	assert(ptr);
+	fread(ptr, sz, 1, fp);
+	fclose(fp);
+	printf("loaded file '%s' size %d\n", file_path, sz);
 	return ptr;
 }
 
@@ -106,7 +104,7 @@ static void print_lev_hdr(int room, const unsigned char *p, int size) {
 static int _rightMasksTable[] = { 1, 3, 7, 0xF, 0x1F, 0x3F, 0x7F, 0xFF, 0x1FF, 0x3FF, 0x7FF, 0xFFF, 0x1FFF, 0x3FFF, 0x7FFF };
 static int _leftMasksTable[] = { 0xFFFE, 0xFFFC, 0xFFF8, 0xFFF0, 0xFFE0, 0xFFC0, 0xFF80, 0xFF00, 0xFE00, 0xFC00, 0xF800, 0xF000, 0xE000, 0xC000, 0x8000, 0x7FFF, 0x3FFF, 0x1FFF, 0xFFF, 0x7FF, 0x3FF, 0x1FF, 0xFF, 0x7F, 0x3F, 0x1F, 0xF, 7, 3, 1 };
 
-static int _bitmapColorKey = 8;
+static int _bitmapColorKey = 0;
 
 static void blitBitmapBlock(unsigned char *dst, int x, int y, int w, int h, unsigned char *src, unsigned char *mask, int size) {
 	int i, j, c;
@@ -118,7 +116,7 @@ static void blitBitmapBlock(unsigned char *dst, int x, int y, int w, int h, unsi
 	planar_size = w * 2 * h;
 	if (planar_size != size) printf("planar_size %d size %d\n", planar_size, size);
 
-	if (x < 0 || y < 0) return; /* TEMP */
+	if (x < 0 || y < 0) return; /* TODO */
 
 	dst += y * 256 + x;
 
@@ -128,15 +126,17 @@ static void blitBitmapBlock(unsigned char *dst, int x, int y, int w, int h, unsi
 				const int c_mask = 1 << (7 - i);
 				c = 0;
 				for (j = 0; j < 4; ++j) {
-					if (src[j * planar_size] & mask[j * planar_size] & c_mask) {
-						c |= 1 << j;
+					if (src[j * planar_size] & c_mask) {
+						if (!mask || (mask[j * planar_size] & c_mask) != 0) {
+							c |= 1 << j;
+						}
 					}
 				}
-if (c != _bitmapColorKey)
 				dst[8 * x + i] = c;
 			}
 			++src;
-			++mask;
+			if (mask)
+				++mask;
 		}
 		dst += 256;
 	}
@@ -152,7 +152,6 @@ static void copySGD(unsigned char *a4, unsigned char *a5) {
 	do {
 		d6 = *a4++;
 		if ((d6 & 0x80) == 0) {
-//			d6 = -(d6 - 0x7F) * 2; // (256 - i) / 2
 			for (i = 0; i < d6 + 1; ++i) {
 				*a5++ = *a4++;
 			}
@@ -166,8 +165,77 @@ static void copySGD(unsigned char *a4, unsigned char *a5) {
 	} while (a4 < a6);
 }
 
-static int _sgdLoopCount, _sgdDecodeLen;
-static unsigned char *_sgdData, *_sgdDecodeBuf, *_roomBitmapBuffer;
+static int _sgdLoopCount, _sgdDecodeLen, _sgdRoomBuf;
+static unsigned char *_sgdData, *_sgdDecodeBuf, *_roomBitmapBuf;
+static unsigned char _roomPalBuf[256 * 3];
+static unsigned char _roomOffset10DataBuf[224 * 8], _roomOffset12DataBuf[224 * 8];
+
+static void loadLevelMapHelper() {
+	unsigned char *a0, *a1, *a2, *a3, *a4, *a5, *d7; 
+	int x, y, d0, d3, n, i;
+
+	if (_sgdRoomBuf == 0) {
+		a0 = _roomOffset10DataBuf;
+		a1 = _sgdDecodeBuf + 6;
+		d7 = a1;
+		a1 += 224 * 32;
+		a5 = _tmpBuf;
+		for (y = 0; y < 224 / 8; ++y) { // d2
+			a4 = a1;
+			for (x = 0; x < 256 / 8; ++x) { // d1
+				d0 = movew(a0); a0 += 2;
+				a3 = a1;
+				d3 = d0;
+				d0 &= 0x7FF;
+				if (d0 != 0) {
+					a2 = a5 + d0 * 32;
+blitBitmapBlock(_roomBitmapBuf, x * 8, y * 8, 2 - 1, 8 - 1, a2, 0, 0);
+continue;
+			
+					if ((d3 & (1 << 12)) != 0) { // yflip ?
+//						sub_EC94();
+					}
+					if ((d3 & (1 << 11)) != 0) { // xflip ?
+//						sub_ED06();
+					}
+					for (n = 0; n < 4; ++n) {
+						for (i = 0; i < 8; ++i) {
+							a1[32 * i] = *a2++;
+						}
+						a1 += 7168;
+					}
+					d3 &= 0xDFFF;
+					d0 = d3;
+					d0 &= 0x6000;
+					if (d0 != 0) {
+						for (i = 0; i < 8; ++i) {
+							a1[32 * i] = 0;
+						}
+					}
+/*
+					if ((d3 & (1 << 15)) != 0) {
+						a6 = a0 - 2 - _roomOffset10DataBuf + _roomOffset12DataBuf;
+						d0 = movew(a6);
+						a2 += 32;
+						a6 = unk_28012;
+						a1 = d7;
+						for (i = 0; i < 8; ++i) {
+							d5 = a2[8] | a2[16] | a2[24];
+							*a1 = ~d5;
+							a1 += 32;
+						}
+					}
+*/
+				}
+			}
+			++d7;
+			a1 = a3 + 1;
+		}
+		d7 += 224;
+		a1 = a4 + 256;
+	}
+//loc_E84E:
+}
 
 static void loadSGD(unsigned char *a1) {
 	int d4, d3, d2, d1, d0, i;
@@ -175,6 +243,7 @@ static void loadSGD(unsigned char *a1) {
 
 //	word_2A31A = 1;
 	_sgdLoopCount = movew(a1); a1 += 2;
+printf("loadSGD _sgdLoopCount %d\n", _sgdLoopCount );
 	--_sgdLoopCount;
 	do {
 		d2 = movew(a1); a1 += 2;
@@ -216,27 +285,39 @@ static void loadSGD(unsigned char *a1) {
 			a5 = a0 + 4; // src
 			d4 = movew(a0 + 2);
 			a2 = a0 + d4 + 4; // mask
-			blitBitmapBlock(_roomBitmapBuffer, (short)d0, (short)d1, d2, d3, a5, a2, d4);
+			blitBitmapBlock(_roomBitmapBuf, (short)d0, (short)d1, d2, d3, a5, a2, d4);
 		}
 		--_sgdLoopCount;
 	} while (_sgdLoopCount >= 0);
 }
 
-static void decode_lev_picture(int room, unsigned char *p, unsigned char *mbk) {
-	int offset, d0, d1, d3, d4, d7, ret, len, size = 0;
-	unsigned char *a1, *a5, *a6;
-	unsigned char *a0, *a4;
+static int convert_amiga_color(unsigned char *p, int color) {
+	int i;
+
+	for (i = 2; i >= 0; --i) {
+		p[i] = ((color & 15) << 4) | (color & 15);
+		color >>= 4;
+	}
+}
+
+static void decode_lev_picture(int level, int room, unsigned char *p, unsigned char *mbk, unsigned char *pal) {
+	int offset, d0, d1, d2, d3, d4, d7, ret, len, size = 0;
+	unsigned char *a0, *a1, *a3, *a4, *a5, *a6;
 	int i, mbk_uncompressed;
+	char name[64];
+
+	_sgdRoomBuf = 0;
 
 	offset = movew(p + 12);
-	// copy unk_2801A, 224 * 4 * BE16
+	memcpy(_roomOffset12DataBuf, p + offset, 896 * 2);
 	if (p[1] == 0) {
-		// copy unk_2871A, 224 * 4 * BE16
+		offset = movew(p + 10);
+		memcpy(_roomOffset10DataBuf, p + offset, 896 * 2);
 	}
 	offset = movew(p + 14);
 	// decode to unk_26124
 //	a2 = _levelDataFileName_mbk;
-//	a3 = _objectData; // tmpBuf
+	a3 = _tmpBuf;
 //	memset(a3, 0, 8 * 4);
 	a0 = pic;
 	a1 = p + offset;
@@ -276,52 +357,54 @@ loc_E28E:
 	d3 = *a1++;
 	if (d3 == 255) {
 		d1 <<= 4;
-//		d2 = d1 * 2;
-//		copy a6 -> a3, d1 * BE16
-//		a3 += d2;
-//		byte_303BE = a3;
-// printf("copy d1 %d\n", d1);
-		size += d1 * 2;
+		d2 = d1 * 2;
+		memcpy(a3, a6, d2);
+		a3 += d2;
+//		dword_303BE = a3;
 	} else {
 		assert(!mbk_uncompressed);
-// printf("d3=%d\n", d3 );
 		for (i = 0; i < d3 + 1; ++i) {
-//		do {
 			d4 = *a1++;
 			d4 <<= 5;
-//			a6 = a5 + d4;
-//			copy a6 -> a3, 16 * BE16
-//			a3 += 32;
-// printf("copy d4 %d 16\n", d4);
-			size += 32;
-//		} while (d3-- > 0);
+			a6 = a5 + d4;
+			memcpy(a3, a6, 16 * 2);
+			a3 += 32;
 		}
+//		dword_303BE = a3;
 	}
 	if (d7 == 0) goto loc_E28E;
-printf("size %d strip %d (%d, %d) src_len %d offset %d\n", size, size / 224, 256 / 2 * 224, size + 224 * 8 * 2, a1 - p, offset );
+	memset(_roomBitmapBuf, 0, 256 * 224);
 	if (p[1] != 0) {
-memset(_roomBitmapBuffer, 0, 256 * 224);
 		offset = movew(p + 10);
 		loadSGD(p + offset);
-//		word_2A31A = 1;
-{
-	int i;
-	char name[64];
-	unsigned char pal[256 * 3];
-
-	snprintf(name, sizeof(name), "room_%02d.png", room);
-	for (i = 0; i < 256; ++i) {
-		pal[i * 3] = pal[i * 3 + 1] = pal[i * 3 + 2] = rand() & 255;
-	}
-	write_png_image_data(name, _roomBitmapBuffer, pal, 256, 224);
-}
+		_sgdRoomBuf = 1;
 	}
 //	a1 = _sgdDecodeBuf + 6;
 //	memset(a1, 0xFF, 224 * 8 * 8);
-//	loadLevelMapHelper();
+	loadLevelMapHelper();
+	a0 = p + 2;
+	d1 = movew(a0); a0 += 2;
+	assert(d1 < 6);
+	a3 = pal + d1 * 32;
+	for (i = 0; i < 16; ++i) {
+		d2 = movew(a3); a3 += 2;
+		convert_amiga_color(_roomPalBuf + (16 + i) * 3, d2);
+	}
+	d1 = movew(a0); a0 += 2;
+	if (0) { // (byte_31D30 & 0x80) == 0
+		d1 = movew(a0); a0 += 2;
+	}
+	assert(d1 < 6);
+	a3 = pal + d1 * 32;
+	for (i = 0; i < 16; ++i) {
+		d2 = movew(a3); a3 += 2;
+		convert_amiga_color(_roomPalBuf + i * 3, d2);
+	}
+	snprintf(name, sizeof(name), "level_%d_room_%02d.png", level, room);
+	write_png_image_data(name, _roomBitmapBuf, _roomPalBuf, 256, 224);
 }
 
-static void decode_lev(const unsigned char *a4, unsigned char *mbk) {
+static void decode_lev(int level, const unsigned char *a4, unsigned char *mbk, unsigned char *pal) {
 	int i, offsets[64], offset_prev, ret, size;
 
 	for (i = 0; i < 64; ++i) {
@@ -333,10 +416,10 @@ static void decode_lev(const unsigned char *a4, unsigned char *mbk) {
 		if (offset_prev != 0) {
 			size = offsets[i] - offset_prev;
 			if (size != 0) {
-				ret = delphine_unpack(a4 + offsets[i] - 4, buf);
+				ret = delphine_unpack(a4 + offsets[i] - 4, _decodeLevBuf);
 				assert(ret);
-				print_lev_hdr(i, buf, size);
-				decode_lev_picture(i, buf, mbk);
+				print_lev_hdr(i, _decodeLevBuf, size);
+				decode_lev_picture(level, i, _decodeLevBuf, mbk, pal);
 			}
 		}
 		offset_prev = offsets[i];
@@ -357,15 +440,38 @@ static unsigned char *load_file_sgd(unsigned char *a1) {
 	return a5;
 }
 
+static const char *lev_names[] = {
+	"level1.lev", "level2_1.lev", "dt.LEV", "level3_1.lev", "level3_1.lev", "level4_1.LEV", "level4_2.lev"
+};
+
+static const char *pal_names[] = {
+	"level1.pal", "level2.PAL", "dt.PAL", "level3_1.pal", "level3_1.pal", "level4_1.PAL", "level4_2.pal"
+};
+
+static const char *mbk_names[] = {
+	"level1.mbk", "level2.MBK", "dt.MBK", "level3_1.mbk", "level3_1.mbk", "level4_1.MBK", "level4_2.mbk"
+};
+
+static const char *sgd_name = "level1.sgd";
+
 int main(int argc, char *argv[]) {
-	unsigned char *lev_data, *mbk_data;
-	if (argc == 4) {
-		lev_data = load_file(argv[1]);
-		mbk_data = load_file(argv[2]);
-		_sgdData = load_file_sgd(load_file(argv[3]));
+	int i;
+	char path[1024];
+	unsigned char *lev_data, *pal_data, *mbk_data;
+
+	if (argc == 3) {
+		i = atoi(argv[2]);
+		snprintf(path, sizeof(path), "%s/%s", argv[1], lev_names[i]);
+		lev_data = load_file(path);
+		snprintf(path, sizeof(path), "%s/%s", argv[1], pal_names[i]);
+		pal_data = load_file(path);
+		snprintf(path, sizeof(path), "%s/%s", argv[1], mbk_names[i]);
+		mbk_data = load_file(path);
+		snprintf(path, sizeof(path), "%s/%s", argv[1], sgd_name);
+		_sgdData = load_file_sgd(load_file(path));
 		_sgdDecodeBuf = malloc(7174);
-		_roomBitmapBuffer = malloc(43014 * 16);
-		decode_lev(lev_data, mbk_data);
+		_roomBitmapBuf = malloc(43014 * 16);
+		decode_lev(i, lev_data, mbk_data, pal_data);
 		printf("done\n");
 	}
 	return 0;
