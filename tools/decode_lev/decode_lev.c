@@ -109,7 +109,6 @@ static int _bitmapColorKey = 0;
 static void blitBitmapBlock(unsigned char *dst, int x, int y, int w, int h, unsigned char *src, unsigned char *mask, int size) {
 	int i, j, c;
 	int planar_size;
-//	static const int plane_size = 32 * 224;
 
 	++w;
 	++h;
@@ -126,18 +125,78 @@ static void blitBitmapBlock(unsigned char *dst, int x, int y, int w, int h, unsi
 				const int c_mask = 1 << (7 - i);
 				c = 0;
 				for (j = 0; j < 4; ++j) {
-					if (src[j * planar_size] & c_mask) {
-						if (!mask || (mask[j * planar_size] & c_mask) != 0) {
-							c |= 1 << j;
-						}
+					if (src[j * planar_size] & mask[j * planar_size] & c_mask) {
+						c |= 1 << j;
 					}
 				}
 				dst[8 * x + i] = c;
 			}
 			++src;
-			if (mask)
-				++mask;
+			++mask;
 		}
+		dst += 256;
+	}
+}
+
+static void blit_4v_8x8(unsigned char *dst, int x, int y, unsigned char *src) {
+	int i, color, mask, bit;
+
+	dst += (y * 256 + x) * 8;
+	for (y = 0; y < 8; ++y) {
+		for (i = 0; i < 8; ++i) {
+			mask = 1 << (7 - i);
+			color = 0;
+			for (bit = 0; bit < 4; ++bit) {
+				if (src[8 * bit] & mask) {
+					color |= 1 << bit;
+				}
+			}
+			dst[i] = color;
+		}
+		++src;
+		dst += 256;
+	}
+}
+
+static void blit_mask_4v_8x8(unsigned char *dst, int x, int y, unsigned char *src, unsigned char *src_mask) {
+	int i, color, mask, bit;
+
+	dst += (y * 256 + x) * 8;
+	for (y = 0; y < 8; ++y) {
+		for (i = 0; i < 8; ++i) {
+			mask = 1 << (7 - i);
+			for (bit = 0; bit < 4; ++bit) {
+				if (src[8 * bit] & src_mask[8 * bit] & mask) {
+					color |= 1 << bit;
+				}
+			}
+			dst[i] = color;
+		}
+		++src;
+		dst += 256;
+	}
+}
+
+static void clear_5v_8x8(unsigned char *dst, int x, int y) {
+	int i;
+
+	dst += (y * 256 + x) * 8;
+	for (y = 0; y < 8; ++y) {
+		for (i = 0; i < 8; ++i) {
+			dst[i] &= ~(1 << 5);
+		}
+		dst += 256;
+	}
+}
+
+static void blit_5v_4x8(unsigned char *dst, int x, int y, unsigned char *src) {
+	int i, color;
+
+	dst += (y * 256 + x) * 8;
+	for (i = 0; i < 8; ++i) {
+		color = src[8] | src[16] | src[24];
+		color |= *src++;
+		*dst = ~color;
 		dst += 256;
 	}
 }
@@ -169,10 +228,41 @@ static int _sgdLoopCount, _sgdDecodeLen, _sgdRoomBuf;
 static unsigned char *_sgdData, *_sgdDecodeBuf, *_roomBitmapBuf;
 static unsigned char _roomPalBuf[256 * 3];
 static unsigned char _roomOffset10DataBuf[224 * 8], _roomOffset12DataBuf[224 * 8];
+static unsigned char byte_28012[8];
+static unsigned char _tileTable[32];
+static unsigned char _tileLookupTable[256];
+
+static unsigned char *sub_EC94(unsigned char *a2) {
+	int i, j;
+	unsigned char *a0 = &_tileTable[32];
+
+	a2 += 24;
+	for (j = 0; j < 4; ++j) {
+		for (i = 0; i < 8; ++i) {
+			--a0;
+			*a0 = *a2++;
+		}
+		a2 -= 16;
+	}
+	assert(a0 == _tileTable);
+	return _tileTable;
+}
+
+static unsigned char *sub_ED06(unsigned char *a2) {
+	int i;
+	unsigned char *a0 = &_tileTable[0];
+	unsigned char *a1 = &_tileLookupTable[0];
+
+	for (i = 0; i < 32; ++i) {
+		*a0++ = a1[*a2];
+		++a2;
+	}
+	return _tileTable;
+}
 
 static void loadLevelMapHelper() {
-	unsigned char *a0, *a1, *a2, *a3, *a4, *a5, *d7; 
-	int x, y, d0, d3, n, i;
+	unsigned char *a0, *a1, *a2, *a3, *a4, *a5, *a6, *d7;
+	int x, y, d0, d3, d5, n, i, j;
 
 	if (_sgdRoomBuf == 0) {
 		a0 = _roomOffset10DataBuf;
@@ -189,43 +279,52 @@ static void loadLevelMapHelper() {
 				d0 &= 0x7FF;
 				if (d0 != 0) {
 					a2 = a5 + d0 * 32;
-blitBitmapBlock(_roomBitmapBuf, x * 8, y * 8, 2 - 1, 8 - 1, a2, 0, 0);
-continue;
-			
-					if ((d3 & (1 << 12)) != 0) { // yflip ?
-//						sub_EC94();
+					if ((d3 & (1 << 12)) != 0) {
+						a2 = sub_EC94(a2);
 					}
-					if ((d3 & (1 << 11)) != 0) { // xflip ?
-//						sub_ED06();
+					if ((d3 & (1 << 11)) != 0) {
+						a2 = sub_ED06(a2);
 					}
+#if 0
 					for (n = 0; n < 4; ++n) {
 						for (i = 0; i < 8; ++i) {
 							a1[32 * i] = *a2++;
 						}
-						a1 += 7168;
+						a1 += 224 * 32;
 					}
+#else
+					blit_4v_8x8(_roomBitmapBuf, x, y, a2);
+#endif
+// if (_currentLevel != 0)
 					d3 &= 0xDFFF;
 					d0 = d3;
 					d0 &= 0x6000;
 					if (d0 != 0) {
+#if 0
 						for (i = 0; i < 8; ++i) {
 							a1[32 * i] = 0;
 						}
+#else
+						clear_5v_8x8(_roomBitmapBuf, x, y);
+#endif
 					}
-/*
 					if ((d3 & (1 << 15)) != 0) {
-						a6 = a0 - 2 - _roomOffset10DataBuf + _roomOffset12DataBuf;
+						a6 = a0 - 2 - _roomOffset10DataBuf + _roomOffset12DataBuf; // 287A1 - 280A1
 						d0 = movew(a6);
 						a2 += 32;
-						a6 = unk_28012;
+#if 0
 						a1 = d7;
 						for (i = 0; i < 8; ++i) {
 							d5 = a2[8] | a2[16] | a2[24];
+							d5 |= *a2++;
 							*a1 = ~d5;
 							a1 += 32;
 						}
+#else
+						blit_5v_4x8(_roomBitmapBuf, x, y, a2);
+#endif
+
 					}
-*/
 				}
 			}
 			++d7;
@@ -235,6 +334,91 @@ continue;
 		a1 = a4 + 256;
 	}
 //loc_E84E:
+	a0 = _roomOffset12DataBuf;
+	a1 = _sgdDecodeBuf + 6;
+	d7 = a1;
+	a1 += 7168;
+	a2 = _tmpBuf;
+	for (y = 0; y < 224 / 8; ++y) { // d2
+		a4 = a1;
+		for (x = 0; x < 256 / 8; ++x) { // d1
+			d0 = movew(a0); a0 += 2;
+			a3 = a1;
+			d0 &= 0x7FF;
+			if (d0 != 0 && _sgdRoomBuf != 0) {
+				d0 -= 896;
+			}
+			if (d0 != 0) {
+				a2 = a5 + d0 * 32;
+				if (d3 & (1 << 12)) {
+					a2 = sub_EC94(a2);
+				}
+				if (d3 & (1 << 11)) {
+					a2 = sub_ED06(a2);
+				}
+// if (_currentLevel != 0)
+				d3 &= 0xDFFF;
+				a6 = byte_28012;
+				for (i = 0; i < 8; ++i) {
+					d5 = a2[8] | a2[16] | a2[24];
+					d5 |= *a2++;
+					*a6++ = ~d5;
+				}
+				a2 -= 8;
+#if 0
+				for (j = 0; j < 4; ++j) {
+					a6 = byte_28012;
+					for (i = 0; i < 8; ++i) {
+						d0 = *a6++;
+						a1[i * 32] &= d0;
+						d0 = *a2++;
+						a1[i * 32] |= d0;
+					}
+					a1 += 7168;
+				}
+#else
+//				blit_mask_4v_8x8(_roomBitmapBuf, x, y, a2, a6);
+#endif
+/*
+				d0 = d3;
+				if ((d0 & 0x6000) == 0) {
+					a6 = byte_28012;
+					for (i = 0; i < 8; ++i) {
+						d0 = *a6++;
+						a1[i * 32] &= d0;
+						a1[i * 32] |= ~d0;
+					}
+				} else {
+					a6 = byte_28012;
+					for (i = 0; i < 8; ++i) {
+						d0 = *a6++;
+						a1[i * 32] &= d0;
+					}
+				}
+				if ((d3 & (1 << 15)) != 0) {
+					a6 = byte_28012;
+					a1 = d7;
+					for (i = 0; i < 8; ++i) {
+						d0 = *a6++;
+						d3 = *a1;
+						d3 = ~d3;
+						d0 = ~d0;
+						d3 |= d0;
+						d3 = ~d3;
+						*a1 = d3;
+						a1 += 32;
+					}
+				}
+*/
+			}
+			d7 += 1;
+			a1 = a3;
+			++a1;
+		}
+		d7 += 224;
+		a1 = a4;
+		a1 += 256;
+	}
 }
 
 static void loadSGD(unsigned char *a1) {
@@ -398,7 +582,7 @@ loc_E28E:
 	a3 = pal + d1 * 32;
 	for (i = 0; i < 16; ++i) {
 		d2 = movew(a3); a3 += 2;
-		convert_amiga_color(_roomPalBuf + i * 3, d2);
+		convert_amiga_color(_roomPalBuf + (0 + i) * 3, d2);
 	}
 	snprintf(name, sizeof(name), "level_%d_room_%02d.png", level, room);
 	write_png_image_data(name, _roomBitmapBuf, _roomPalBuf, 256, 224);
@@ -455,10 +639,19 @@ static const char *mbk_names[] = {
 static const char *sgd_name = "level1.sgd";
 
 int main(int argc, char *argv[]) {
-	int i;
+	int i, b, mask;
 	char path[1024];
 	unsigned char *lev_data, *pal_data, *mbk_data;
 
+	for (i = 0; i < 256; ++i) {
+		mask = 0;
+		for (b = 0; b < 8; ++b) {
+			if (i & (1 << b)) {
+				mask |= 1 << (7 - b);
+			}
+		}
+		_tileLookupTable[i] = mask;
+	}
 	if (argc == 3) {
 		i = atoi(argv[2]);
 		snprintf(path, sizeof(path), "%s/%s", argv[1], lev_names[i]);
