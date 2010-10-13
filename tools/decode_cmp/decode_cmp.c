@@ -179,7 +179,7 @@ static void blit_5p(unsigned char *dst, int w, int h, unsigned char *src, int pl
 			for (i = 0; i < 8; ++i) {
 				const int c_mask = 1 << (7 - i);
 				if (*src & c_mask) {
-//					dst[320 * y + 8 * x + i] |= 1 << 5;
+					dst[320 * y + 8 * x + i] |= 1 << 4;
 				}
 			}
 			++src;
@@ -211,7 +211,7 @@ static void image_decode_cmp(unsigned char *p) {
 //	dump_file(0, buf[0], size);
 	blit_5p(buf[1], 160 / 4, 224, buf[0] + 6, 160 / 4 * 224);
 	for (i = 0; i < 32; ++i) {
-		convert_amiga_color(pal + 3 * i, i < 16 ? word_12DBC[i] : word_12DDC[i]);
+		convert_amiga_color(pal + 3 * i, i < 16 ? word_12DBC[i] : word_12DDC[i - 16]);
 	}
 	write_png_image_data("present.png", buf[1], pal, 320, 224);
 }
