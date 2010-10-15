@@ -101,11 +101,6 @@ static void print_lev_hdr(int room, const unsigned char *p, int size) {
 	printf("\n");
 }
 
-static int _rightMasksTable[] = { 1, 3, 7, 0xF, 0x1F, 0x3F, 0x7F, 0xFF, 0x1FF, 0x3FF, 0x7FF, 0xFFF, 0x1FFF, 0x3FFF, 0x7FFF };
-static int _leftMasksTable[] = { 0xFFFE, 0xFFFC, 0xFFF8, 0xFFF0, 0xFFE0, 0xFFC0, 0xFF80, 0xFF00, 0xFE00, 0xFC00, 0xF800, 0xF000, 0xE000, 0xC000, 0x8000, 0x7FFF, 0x3FFF, 0x1FFF, 0xFFF, 0x7FF, 0x3FF, 0x1FF, 0xFF, 0x7F, 0x3F, 0x1F, 0xF, 7, 3, 1 };
-
-static int _bitmapColorKey = 0;
-
 static void blitBitmapBlock(unsigned char *dst, int x, int y, int w, int h, unsigned char *src, unsigned char *mask, int size) {
 	int i, j, c;
 	int planar_size;
@@ -138,7 +133,7 @@ static void blitBitmapBlock(unsigned char *dst, int x, int y, int w, int h, unsi
 	}
 }
 
-static void blit_4v_8x8(unsigned char *dst, int x, int y, unsigned char *src) {
+static void blit_4v_8x8(unsigned char *dst, int x, int y, unsigned char *src, int shift) {
 	int i, color, mask, bit;
 
 	dst += (y * 256 + x) * 8;
@@ -151,52 +146,105 @@ static void blit_4v_8x8(unsigned char *dst, int x, int y, unsigned char *src) {
 					color |= 1 << bit;
 				}
 			}
-			dst[i] = color;
+			dst[i] = color << shift;
 		}
 		++src;
 		dst += 256;
 	}
 }
 
-static void blit_mask_4v_8x8(unsigned char *dst, int x, int y, unsigned char *src, unsigned char *src_mask) {
-	int i, color, mask, bit;
+static void blit_mask_4v_8x8(unsigned char *dst, int x, int y, unsigned char *src, unsigned char *src_mask, int shift) {
+	int i, color, mask, bit, tmp, mask_color;
 
 	dst += (y * 256 + x) * 8;
 	for (y = 0; y < 8; ++y) {
 		for (i = 0; i < 8; ++i) {
 			mask = 1 << (7 - i);
+			color = dst[i] >> shift;
+			mask_color = 0;
 			for (bit = 0; bit < 4; ++bit) {
-				if (src[8 * bit] & src_mask[8 * bit] & mask) {
-					color |= 1 << bit;
+				tmp = (color & src_mask[8 * bit] & mask) | (src[8 * bit] & mask);
+				if (tmp) {
+					mask_color |= 1 << bit;
 				}
 			}
-			dst[i] = color;
+			dst[i] = mask_color << shift;
 		}
 		++src;
+		++src_mask;
 		dst += 256;
 	}
 }
 
-static void clear_5v_8x8(unsigned char *dst, int x, int y) {
+static void clear_1v_8x8(unsigned char *dst, int x, int y, int shift) {
 	int i;
 
 	dst += (y * 256 + x) * 8;
 	for (y = 0; y < 8; ++y) {
 		for (i = 0; i < 8; ++i) {
-			dst[i] &= ~(1 << 5);
+			dst[i] &= ~(1 << shift);
 		}
 		dst += 256;
 	}
 }
 
-static void blit_5v_4x8(unsigned char *dst, int x, int y, unsigned char *src) {
-	int i, color;
+static void blit_mask_1v_8x8(unsigned char *dst, int x, int y, unsigned char *src_mask, int shift, int or_mask) {
+	int i, mask, tmp;
 
 	dst += (y * 256 + x) * 8;
-	for (i = 0; i < 8; ++i) {
+	for (y = 0; y < 8; ++y) {
+		for (i = 0; i < 8; ++i) {
+			mask = 1 << (7 - i);
+			tmp = dst[i] & *src_mask & mask;
+			if (tmp == 0) {
+				dst[i] &= ~(1 << shift);
+			}
+#if 0
+			if (or_mask && tmp == 0) {
+				dst[i] |= (1 << shift);
+			}
+#endif
+		}
+		++src_mask;
+		dst += 256;
+	}
+}
+
+static void blit_not_1v_8x8(unsigned char *dst, int x, int y, unsigned char *src, int shift) {
+	int i, color, mask;
+
+	dst += (y * 256 + x) * 8;
+	for (y = 0; y < 8; ++y) {
 		color = src[8] | src[16] | src[24];
 		color |= *src++;
-		*dst = ~color;
+		for (i = 0; i < 8; ++i) {
+			mask = 1 << (7 - i);
+			if (~color & mask) {
+				dst[i] |= 1 << shift;
+			} else {
+				dst[i] &= ~(1 << shift);
+			}
+		}
+		dst += 256;
+	}
+}
+
+static void blit_mask_not_1v_8x8(unsigned char *dst, int x, int y, unsigned char *src_mask, int shift) {
+	int i, color, mask, d0, d3;
+
+	dst += (y * 256 + x) * 8;
+	for (y = 0; y < 8; ++y) {
+		d0 = *src_mask++;
+		color = *dst;
+		for (i = 0; i < 8; ++i) {
+			mask = 1 << (7 - i);
+			d3 = (~color | ~d0);
+			if (~d3 & mask) {
+				dst[i] |= 1 << shift;
+			} else {
+				dst[i] &= ~(1 << shift);
+			}
+		}
 		dst += 256;
 	}
 }
@@ -293,7 +341,8 @@ static void loadLevelMapHelper() {
 						a1 += 224 * 32;
 					}
 #else
-					blit_4v_8x8(_roomBitmapBuf, x, y, a2);
+					blit_4v_8x8(_roomBitmapBuf, x, y, a2, 1);
+					a2 += 32;
 #endif
 // if (_currentLevel != 0)
 					d3 &= 0xDFFF;
@@ -305,13 +354,13 @@ static void loadLevelMapHelper() {
 							a1[32 * i] = 0;
 						}
 #else
-						clear_5v_8x8(_roomBitmapBuf, x, y);
+//						clear_1v_8x8(_roomBitmapBuf, x, y, 5);
 #endif
 					}
 					if ((d3 & (1 << 15)) != 0) {
 						a6 = a0 - 2 - _roomOffset10DataBuf + _roomOffset12DataBuf; // 287A1 - 280A1
 						d0 = movew(a6);
-						a2 += 32;
+						a2 -= 32;
 #if 0
 						a1 = d7;
 						for (i = 0; i < 8; ++i) {
@@ -321,29 +370,29 @@ static void loadLevelMapHelper() {
 							a1 += 32;
 						}
 #else
-						blit_5v_4x8(_roomBitmapBuf, x, y, a2);
+						blit_not_1v_8x8(_roomBitmapBuf, x, y, a2, 0);
 #endif
-
 					}
 				}
+				++d7; // 32
+				a1 = a3 + 1;
 			}
-			++d7;
-			a1 = a3 + 1;
+			d7 += 224;
+			a1 = a4 + 256;
 		}
-		d7 += 224;
-		a1 = a4 + 256;
 	}
 //loc_E84E:
 	a0 = _roomOffset12DataBuf;
 	a1 = _sgdDecodeBuf + 6;
 	d7 = a1;
 	a1 += 7168;
-	a2 = _tmpBuf;
+	a5 = _tmpBuf;
 	for (y = 0; y < 224 / 8; ++y) { // d2
 		a4 = a1;
 		for (x = 0; x < 256 / 8; ++x) { // d1
 			d0 = movew(a0); a0 += 2;
 			a3 = a1;
+			d3 = d0;
 			d0 &= 0x7FF;
 			if (d0 != 0 && _sgdRoomBuf != 0) {
 				d0 -= 896;
@@ -377,47 +426,43 @@ static void loadLevelMapHelper() {
 					a1 += 7168;
 				}
 #else
-//				blit_mask_4v_8x8(_roomBitmapBuf, x, y, a2, a6);
+				a6 = byte_28012;
+				blit_mask_4v_8x8(_roomBitmapBuf, x, y, a2, a6, 1);
 #endif
-/*
 				d0 = d3;
 				if ((d0 & 0x6000) == 0) {
 					a6 = byte_28012;
-					for (i = 0; i < 8; ++i) {
+/*					for (i = 0; i < 8; ++i) {
 						d0 = *a6++;
 						a1[i * 32] &= d0;
 						a1[i * 32] |= ~d0;
-					}
+					}*/
+					blit_mask_1v_8x8(_roomBitmapBuf, x, y, a6, 5, 1);
 				} else {
 					a6 = byte_28012;
-					for (i = 0; i < 8; ++i) {
+/*					for (i = 0; i < 8; ++i) {
 						d0 = *a6++;
 						a1[i * 32] &= d0;
-					}
+					}*/
+					blit_mask_1v_8x8(_roomBitmapBuf, x, y, a6, 5, 0);
 				}
 				if ((d3 & (1 << 15)) != 0) {
 					a6 = byte_28012;
-					a1 = d7;
+/*					a1 = d7;
 					for (i = 0; i < 8; ++i) {
 						d0 = *a6++;
-						d3 = *a1;
-						d3 = ~d3;
-						d0 = ~d0;
-						d3 |= d0;
-						d3 = ~d3;
-						*a1 = d3;
-						a1 += 32;
-					}
+						d3 = a1[i * 32];
+						d3 = ~d3 | ~d0;
+						a1[i * 32] = ~d3;
+					}*/
+					blit_mask_not_1v_8x8(_roomBitmapBuf, x, y, a6, 0);
 				}
-*/
 			}
 			d7 += 1;
-			a1 = a3;
-			++a1;
+			a1 = a3 + 1;
 		}
 		d7 += 224;
-		a1 = a4;
-		a1 += 256;
+		a1 = a4 + 256;
 	}
 }
 
@@ -502,7 +547,7 @@ static void decode_lev_picture(int level, int room, unsigned char *p, unsigned c
 	// decode to unk_26124
 //	a2 = _levelDataFileName_mbk;
 	a3 = _tmpBuf;
-//	memset(a3, 0, 8 * 4);
+	memset(a3, 0, 8 * 4);
 	a0 = pic;
 	a1 = p + offset;
 	d7 = 0;
@@ -546,7 +591,7 @@ loc_E28E:
 		a3 += d2;
 //		dword_303BE = a3;
 	} else {
-		assert(!mbk_uncompressed);
+//		assert(!mbk_uncompressed);
 		for (i = 0; i < d3 + 1; ++i) {
 			d4 = *a1++;
 			d4 <<= 5;
@@ -565,6 +610,7 @@ loc_E28E:
 	}
 //	a1 = _sgdDecodeBuf + 6;
 //	memset(a1, 0xFF, 224 * 8 * 8);
+//	for (i = 0; i < 256 * 224; ++i) _roomBitmapBuf[i] = 0x1F;
 	loadLevelMapHelper();
 	a0 = p + 2;
 	d1 = movew(a0); a0 += 2;

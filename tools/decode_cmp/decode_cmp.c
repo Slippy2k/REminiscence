@@ -155,7 +155,6 @@ static void cutscene_decode_cmp(const unsigned char *d4) {
 
 static void blit_5p(unsigned char *dst, int w, int h, unsigned char *src, int plane_size) {
 	int x, y, i, j, c;
-	unsigned char *src_p5 = src + plane_size * 4;
 
 	printf("blit_5p plane_size %d w %d h %d\n", plane_size, w, h);
 	for (y = 0; y < h; ++y) {
@@ -163,24 +162,12 @@ static void blit_5p(unsigned char *dst, int w, int h, unsigned char *src, int pl
 			for (i = 0; i < 8; ++i) {
 				const int c_mask = 1 << (7 - i);
 				c = 0;
-				for (j = 0; j < 4; ++j) {
+				for (j = 0; j < 5; ++j) {
 					if (src[j * plane_size] & c_mask) {
 						c |= 1 << j;
 					}
 				}
 				dst[320 * y + 8 * x + i] = c;
-			}
-			++src;
-		}
-	}
-	src = src_p5;
-	for (y = 0; y < h; ++y) {
-		for (x = 0; x < w; ++x) {
-			for (i = 0; i < 8; ++i) {
-				const int c_mask = 1 << (7 - i);
-				if (*src & c_mask) {
-					dst[320 * y + 8 * x + i] |= 1 << 4;
-				}
 			}
 			++src;
 		}
@@ -191,12 +178,12 @@ static const int word_12DBC[] = { 0, 0x123, 0x12, 0x134, 0x433, 0x453, 0x46, 0x2
 static const int word_12DDC[] = { 0x17B, 0x788, 0xB84, 0xC92, 0x49C, 0xF00, 0x9A8, 0x9AA, 0xCA7, 0xEA3, 0x8BD, 0xBBB, 0xEC7, 0xBCD, 0xDDB, 0xEED };
 
 static int convert_amiga_color(unsigned char *p, int color) {
-	p[0] = (color >> 8) & 15;
-	p[1] = (color >> 4) & 15;
-	p[2] = (color >> 0) & 15;
-	p[0] <<= 4;
-	p[1] <<= 4;
-	p[2] <<= 4;
+	int i, c;
+
+	for (i = 2; i >= 0; --i) {
+		c = color & 15; color >>= 4;
+		p[i] = (c << 4) | c;
+	}
 }
 
 static void image_decode_cmp(unsigned char *p) {
@@ -208,7 +195,6 @@ static void image_decode_cmp(unsigned char *p) {
 	ret = delphine_unpack(p + packed_size - 4, buf[0]);
 	assert(ret);
 	printf("size %d\n", size);
-//	dump_file(0, buf[0], size);
 	blit_5p(buf[1], 160 / 4, 224, buf[0] + 6, 160 / 4 * 224);
 	for (i = 0; i < 32; ++i) {
 		convert_amiga_color(pal + 3 * i, i < 16 ? word_12DBC[i] : word_12DDC[i - 16]);
