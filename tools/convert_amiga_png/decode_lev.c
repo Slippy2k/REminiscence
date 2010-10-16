@@ -700,7 +700,9 @@ int main(int argc, char *argv[]) {
 		}
 		_tileLookupTable[i] = mask;
 	}
-	if (argc == 3) {
+	if (argc == 2) {
+		decode_cmp(argv[1]);
+	} else if (argc == 3) {
 		i = atoi(argv[2]);
 		snprintf(path, sizeof(path), "%s/%s", argv[1], lev_names[i]);
 		lev_data = load_file(path);

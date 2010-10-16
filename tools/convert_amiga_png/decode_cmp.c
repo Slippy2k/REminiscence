@@ -202,15 +202,11 @@ static void image_decode_cmp(unsigned char *p) {
 	write_png_image_data("present.png", buf[1], pal, 320, 224);
 }
 
-int main(int argc, char *argv[]) {
-	if (argc > 1) {
-		const char *filepath = argv[1];
-		if (strstr(filepath, "present.cmp")) {
-			image_decode_cmp(load_file(filepath));
-			return;
-		}
-		cutscene_decode_cmp(load_file(filepath));
+void decode_cmp(const char *filepath) {
+	if (strstr(filepath, "present.cmp")) {
+		image_decode_cmp(load_file(filepath));
+		return;
 	}
-	return 0;
+	cutscene_decode_cmp(load_file(filepath));
 }
 

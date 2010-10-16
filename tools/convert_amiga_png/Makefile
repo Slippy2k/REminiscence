@@ -1,11 +1,11 @@
 
 CFLAGS += -g
 
-all: decode_lev
+all: convert_amiga_png
 
-decode_lev: decode_lev.o unpack.o
+convert_amiga_png: decode_cmp.o decode_lev.o unpack.o
 	gcc -o $@ $^ -lz -lpng
 
 clean:
-	rm -f *.o decode_lev
+	rm -f *.o convert_amiga_png
 
