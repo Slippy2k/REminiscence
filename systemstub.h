@@ -102,6 +102,5 @@ struct MutexStack {
 };
 
 extern SystemStub *SystemStub_SDL_create();
-extern SystemStub *SystemStub_SDL13_create();
 
 #endif // __SYSTEMSTUB_H__
