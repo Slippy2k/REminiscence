@@ -10,20 +10,6 @@
 
 static unsigned char buf[2][DECODE_BUFSIZE];
 
-static void dump_file(int i, const unsigned char *p, int size) {
-	char filename[512];
-	FILE *fp;
-	int count;
-
-	snprintf(filename, sizeof(filename), "%d.cmp.dump", i);
-	fp = fopen(filename, "w");
-	if (fp) {
-		count = fwrite(p, 1, size, fp);
-		assert(count == size);
-		fclose(fp);
-	}
-}
-
 static void cutscene_decode_cmp(const unsigned char *d4) {
 #if 0
 	int d0;

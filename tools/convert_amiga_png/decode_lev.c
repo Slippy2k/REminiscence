@@ -3,28 +3,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "unpack.h"
 #include "util.h"
+#include "unpack.h"
 
 #define DECODE_BUFSIZE (65536 * 4)
 static unsigned char _decodeLevBuf[DECODE_BUFSIZE];
 static unsigned char pic[DECODE_BUFSIZE];
 static unsigned char tmp[DECODE_BUFSIZE];
 static unsigned char _tmpBuf[DECODE_BUFSIZE];
-
-static void dump_file(int i, const unsigned char *p, int size) {
-	char filename[512];
-	FILE *fp;
-	int count;
-
-	snprintf(filename, sizeof(filename), "%d.cmp.dump", i);
-	fp = fopen(filename, "w");
-	if (fp) {
-		count = fwrite(p, 1, size, fp);
-		assert(count == size);
-		fclose(fp);
-	}
-}
 
 static void print_lev_hdr(int room, const unsigned char *p, int size) {
 	int i;
@@ -641,6 +627,9 @@ int main(int argc, char *argv[]) {
 		} else if (strstr(argv[1], ".spr")) {
 			unsigned char *ptr = load_file(argv[1]);
 			decode_spr(ptr, _file_size);
+		} else if (strstr(argv[1], ".spm")) {
+			unsigned char *ptr = load_file(argv[1]);
+			decode_spm(ptr, _file_size);
 		}
 	} else if (argc == 3) {
 		i = atoi(argv[2]);

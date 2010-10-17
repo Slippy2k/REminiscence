@@ -62,3 +62,16 @@ unsigned char *load_file(const char *file_path) {
 	return ptr;
 }
 
+void dump_file(int i, const unsigned char *p, int size) {
+	char filename[512];
+	FILE *fp;
+	int count;
+
+	snprintf(filename, sizeof(filename), "%02d.dump", i);
+	fp = fopen(filename, "w");
+	assert(fp);
+	count = fwrite(p, 1, size, fp);
+	assert(count == size);
+	fclose(fp);
+}
+

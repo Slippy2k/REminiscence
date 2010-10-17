@@ -6,7 +6,7 @@ void write_png_image_data(const char *file_path, const unsigned char *image_data
 
 int _file_size;
 unsigned char *load_file(const char *file_path);
-
+void dump_file(int i, const unsigned char *p, int size);
 
 static inline int movel(const unsigned char *d) {
 	int i = (d[0] << 24) | (d[1] << 16) | (d[2] << 8) | d[3];
