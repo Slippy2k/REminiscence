@@ -13,7 +13,7 @@ static inline uint32_t READ_BE_UINT32(const uint8_t *ptr) {
 }
 
 uint8_t *decodeLzss(File &f);
-uint8_t *decodeC103(const uint8_t *a3, uint8_t *a0, int w, int h);
-uint8_t *decodeC211(const uint8_t *a3, uint8_t *a0, int w, int h);
+void decodeC103(const uint8_t *a3, uint8_t *a0, int w, int h);
+void decodeC211(const uint8_t *a3, uint8_t *a0, int w, int h);
 
 #endif

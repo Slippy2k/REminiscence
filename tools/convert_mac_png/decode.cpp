@@ -100,7 +100,7 @@ static void stack_push(const uint8_t *ptr, int counter) {
 	++sp;
 }
 
-uint8_t *decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h) {
+void decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h) {
 	uint8_t d0;
 	int d1;
 	int carry_set;
@@ -128,7 +128,7 @@ uint8_t *decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h) {
 				--d1;
 				if (d1 == 0) {
 //					printf("SP %d\n", sp);
-					if (sp <= 0) return a0;
+					assert(sp > 0);
 					--stack[sp - 1].counter;
 					if (stack[sp - 1].counter >= 0) {
 						a3 = stack[sp - 1].ptr;
@@ -143,40 +143,17 @@ uint8_t *decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h) {
 			}
 		} else {
 			if ((d0 & 0x80) == 0) {
-				--d1;
-				if (d1 == 0) {
-					return a0;
+				if (d1 == 1) {
+					return;
 				}
-				d0 = *a3++;
-//				d0 = a1[d0];
-//				if (d7 >= d5) continue;
-				do {
-//					if (d3 >= d4) {
-//						++a0;
-//					} else {
-						*a0++ = d0;
-//					}
-//					++d3;
-					--d1;
-				} while (d1 > -1);
+				memset(a0, *a3++, d1);
+				a0 += d1;
 			} else {
-//				if (d7 >= d5) { a3 += d1; continue; }
-				--d1;
-//				d0 = 0;
-				do {
-//					if (d3 >= d4) {
-//						++a0;
-//						++a3;
-//					} else {
-						d0 = *a3++;
-						*a0++ = d0;
-//					}
-//					++d3;
-					--d1;
-				} while (d1 > -1);
+				memmove(a0, a3, d1);
+				a0 += d1;
+				a3 += d1;
 			}
 		}
 	}
-	return a0;
 }
 
