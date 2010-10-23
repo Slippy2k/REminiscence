@@ -218,9 +218,44 @@ static void decodeImageData(const char *name, const uint8_t *ptr) {
 	}
 }
 
+static void checkAmigaData(ResourceMac &res) {
+	static const char *levels[] = { "1", "2", "3", "4-1", "4-2", "5-1", "5-2" };
+	char name[64];
+	for (int i = 0; i < 7; ++i) {
+		// .PGE
+		snprintf(name, sizeof(name), "Level %s objects", levels[i]);
+		uint8_t *ptr = decodeResourceData(res, name, true);
+		assert(ptr);
+		static const int pgeCount[] = { 0x6B, 0x100, 0xB0, 0xBE, 0x5A, 0x6D, 0xA9 };
+		assert(READ_BE_UINT16(ptr) == pgeCount[i]);
+		free(ptr);
+		// .ANI
+		snprintf(name, sizeof(name), "Level %s sequences", levels[i]);
+		ptr = decodeResourceData(res, name, true);
+		assert(ptr);
+		assert(READ_BE_UINT16(ptr) == 0x48D);
+		free(ptr);
+		// .OBJ
+		snprintf(name, sizeof(name), "Level %s conditions", levels[i]);
+		ptr = decodeResourceData(res, name, true);
+		assert(ptr);
+		assert(READ_BE_UINT16(ptr) == 0xE6);
+		free(ptr);
+	}
+	for (int i = 0; i < 5; ++i) {
+		// .CT
+		snprintf(name, sizeof(name), "Level %d map", i + 1);
+		uint8_t *ptr = decodeResourceData(res, name, true);
+		assert(ptr);
+//		assert(ptrDataSize == 0x1D00);
+		free(ptr);
+	}
+}
+
 int main(int argc, char *argv[]) {
 	if (argc > 1) {
 		ResourceMac res(argv[1]);
+		checkAmigaData(res);
 		uint8_t *ptr = decodeResourceData(res, "Flashback colors", false);
 		readClut(ptr);
 		free(ptr);
