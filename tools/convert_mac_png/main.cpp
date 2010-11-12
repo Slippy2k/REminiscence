@@ -252,9 +252,36 @@ static void checkAmigaData(ResourceMac &res) {
 	}
 }
 
+static void decodeSoundData(ResourceMac &res) {
+	const unsigned char id[4] = { 's','n','d',' ' };
+	const int type = res.findTypeById(id);
+	for (int i = 0; i < res._types[type].count; ++i) {
+		const ResourceEntry *entry = &res._entries[type][i];
+		res._f.seek(res._dataOffset + entry->dataOffset);
+		const uint32_t dataSize = res._f.readUint32BE();
+		uint8_t *data = (uint8_t *)malloc(dataSize);
+		res._f.read(data, dataSize);
+		printf("Sound %d size %d\n", i, dataSize);
+		File f;
+		char tmpPath[128];
+		snprintf(tmpPath, sizeof(tmpPath), "/tmp/%d.raw", getpid());
+		f.open(tmpPath, "wb");
+		f.write(data, dataSize);
+		free(data);
+		char path[128];
+		snprintf(path, sizeof(path), "DUMP/%03d.wav", i);
+		char cmd[256];
+		const int rate = 3546897 / 650;
+		snprintf(cmd, sizeof(cmd), "sox -r %d -e unsigned -b 8 -c 1 %s %s", rate, tmpPath, path);
+		system(cmd);
+		unlink(tmpPath);
+	}
+}
+
 int main(int argc, char *argv[]) {
 	if (argc > 1) {
 		ResourceMac res(argv[1]);
+		decodeSoundData(res);
 		checkAmigaData(res);
 		uint8_t *ptr = decodeResourceData(res, "Flashback colors", false);
 		readClut(ptr);

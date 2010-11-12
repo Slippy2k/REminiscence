@@ -39,7 +39,7 @@ void ResourceMac::loadMap() {
 	_f.seek(mapOffset + _map.typesOffset + 2);
 	_types = (ResourceType *)calloc(_map.typesCount, sizeof(ResourceType));
 	for (int i = 0; i < _map.typesCount; ++i) {
-		_f.seek(4, SEEK_CUR);
+		_f.read(_types[i].id, 4);
 		_types[i].count = _f.readUint16BE() + 1;
 		_types[i].startOffset = _f.readUint16BE();
 	}
@@ -77,5 +77,14 @@ const ResourceEntry *ResourceMac::findEntry(const char *name) const {
 		}
 	}
 	return 0;
+}
+
+int ResourceMac::findTypeById(const unsigned char id[4]) const {
+	for (int i = 0; i < _map.typesCount; ++i) {
+		if (memcmp(_types[i].id, id, 4) == 0) {
+			return i;
+		}
+	}
+	return -1;
 }
 

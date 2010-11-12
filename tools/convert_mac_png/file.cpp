@@ -136,3 +136,8 @@ uint32_t File::readUint32BE() {
 	uint16_t lo = readUint16BE();
 	return (hi << 16) | lo;
 }
+
+void File::write(void *ptr, uint32_t len) {
+	_impl->write(ptr, len);
+}
+

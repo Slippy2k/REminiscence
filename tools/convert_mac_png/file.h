@@ -25,6 +25,7 @@ struct File {
 	uint32_t readUint32LE();
 	uint16_t readUint16BE();
 	uint32_t readUint32BE();
+	void write(void *ptr, uint32_t len);
 };
 
 #endif

@@ -12,6 +12,7 @@ struct ResourceMap {
 };
 
 struct ResourceType {
+	unsigned char id[4];
 	uint16_t count;
 	uint16_t startOffset;
 };
@@ -41,6 +42,7 @@ struct ResourceMac {
 
 	void loadMap();
 	const ResourceEntry *findEntry(const char *name) const;
+	int findTypeById(const unsigned char id[4]) const;
 };
 
 #endif
