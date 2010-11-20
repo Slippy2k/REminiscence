@@ -80,9 +80,9 @@ void decodeC103(const uint8_t *a3, uint8_t *a0, int w, int h) {
 }
 
 void decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h) {
-	static struct {
+	struct {
 		const uint8_t *ptr;
-		int counter;
+		int repeatCount;
 	} stack[512];
 	uint8_t d0;
 	uint8_t *baseA0 = a0;
@@ -107,8 +107,8 @@ void decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h) {
 				--d1;
 				if (d1 == 0) {
 					assert(SP > 0);
-					--stack[SP - 1].counter;
-					if (stack[SP - 1].counter >= 0) {
+					--stack[SP - 1].repeatCount;
+					if (stack[SP - 1].repeatCount >= 0) {
 						a3 = stack[SP - 1].ptr;
 					} else {
 						--SP;
@@ -116,7 +116,7 @@ void decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h) {
 				} else {
 					assert(SP < sizeof(stack) / sizeof(stack[0]));
 					stack[SP].ptr = a3;
-					stack[SP].counter = d1;
+					stack[SP].repeatCount = d1;
 					++SP;
 				}
 			} else {
@@ -128,12 +128,11 @@ void decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h) {
 					return;
 				}
 				memset(a0, *a3++, d1);
-				a0 += d1;
 			} else {
-				memmove(a0, a3, d1);
-				a0 += d1;
+				memcpy(a0, a3, d1);
 				a3 += d1;
 			}
+			a0 += d1;
 		}
 	}
 }
