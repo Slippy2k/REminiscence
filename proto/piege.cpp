@@ -1,8 +1,8 @@
 
-#include "cutscene.h"
-#include "resource.h"
-#include "systemstub.h"
+//#include "cutscene.h"
+#include "resource_data.h"
 #include "game.h"
+#include "util.h"
 
 
 void Game::pge_resetGroups() {
@@ -97,7 +97,7 @@ void Game::pge_loadForCurrentLevel(uint16 idx) {
 		ObjectNode *on = _res._objectNodesMap[init_pge->obj_node_number];
 		Object *obj = on->objects;
 		int i = 0;
-		while (obj->type != live_pge->obj_type) {
+		while (obj->type != live_pge->obj_type && i < on->num_objects) {
 			++i;
 			++obj;
 		}
@@ -116,8 +116,8 @@ void Game::pge_process(LivePGE *pge) {
 	if (le) {
 		pge_setupNextAnimFrame(pge, le);
 	}
-	const uint8 *anim_data = _res._ani + READ_LE_UINT16(_res._ani + 2 * pge->obj_type);
-	if (READ_LE_UINT16(anim_data) <= pge->anim_seq) {
+	const uint8 *anim_data = _res._ani + READ_BE_UINT16(_res._ani + 2 * pge->obj_type);
+	if (READ_BE_UINT16(anim_data) <= pge->anim_seq) {
 		InitPGE *init_pge = pge->init_PGE;
 		assert(init_pge->obj_node_number < _res._numObjectNodes);
 		ObjectNode *on = _res._objectNodesMap[init_pge->obj_node_number];
@@ -129,7 +129,7 @@ void Game::pge_process(LivePGE *pge) {
 			}
 			uint16 _ax = pge_execute(pge, init_pge, obj);
 			if (_ax != 0) {
-				anim_data = _res._ani + READ_LE_UINT16(_res._ani + 2 * pge->obj_type);
+				anim_data = _res._ani + READ_BE_UINT16(_res._ani + 2 * pge->obj_type);
 				uint8 snd = anim_data[2];
 				if (snd) {
 					pge_playAnimSound(pge, snd);
@@ -183,12 +183,12 @@ void Game::pge_setupNextAnimFrame(LivePGE *pge, GroupPGE *le) {
 	return;
 
 set_anim:
-	const uint8 *anim_data = _res._ani + READ_LE_UINT16(_res._ani + pge->obj_type * 2);
+	const uint8 *anim_data = _res._ani + READ_BE_UINT16(_res._ani + pge->obj_type * 2);
 	uint8 _dh = anim_data[0];
 	uint8 _dl = pge->anim_seq;
 	const uint8 *anim_frame = anim_data + 6 + _dl * 4;
 	while (_dh > _dl) {
-		if (READ_LE_UINT16(anim_frame) != 0xFFFF) {
+		if (READ_BE_UINT16(anim_frame) != 0xFFFF) {
 			if (_pge_currentPiegeFacingDir) {
 				pge->pos_x -= (int8)anim_frame[2];
 			} else {
@@ -222,13 +222,13 @@ void Game::pge_playAnimSound(LivePGE *pge, uint16 arg2) {
 
 void Game::pge_setupAnim(LivePGE *pge) {
 	debug(DBG_PGE, "Game::pge_setupAnim() pgeNum=%d", pge - &_pgeLive[0]);
-	const uint8 *anim_data = _res._ani + READ_LE_UINT16(_res._ani + pge->obj_type * 2);
+	const uint8 *anim_data = _res._ani + READ_BE_UINT16(_res._ani + pge->obj_type * 2);
 	if (anim_data[0] < pge->anim_seq) {
 		pge->anim_seq = 0;
 	}
 	const uint8 *anim_frame = anim_data + 6 + pge->anim_seq * 4;
-	if (READ_LE_UINT16(anim_frame) != 0xFFFF) {
-		uint16 fl = READ_LE_UINT16(anim_frame);
+	if (READ_BE_UINT16(anim_frame) != 0xFFFF) {
+		uint16 fl = READ_BE_UINT16(anim_frame);
 		if (pge->flags & 1) {
 			fl ^= 0x8000;
 			pge->pos_x -= (int8)anim_frame[2];
@@ -241,10 +241,10 @@ void Game::pge_setupAnim(LivePGE *pge) {
 			pge->flags |= 2;
 		}
 		pge->flags &= ~8;
-		if (READ_LE_UINT16(anim_data + 4) & 0xFF) {
+		if (READ_BE_UINT16(anim_data + 4) & 0xFF) {
 			pge->flags |= 8;
 		}
-		pge->anim_number = READ_LE_UINT16(anim_frame) & 0x7FFF;
+		pge->anim_number = READ_BE_UINT16(anim_frame) & 0x7FFF;
 	}
 }
 
@@ -354,13 +354,13 @@ void Game::pge_prepare() {
 }
 
 void Game::pge_setupDefaultAnim(LivePGE *pge) {
-	const uint8 *anim_data = _res._ani + READ_LE_UINT16(_res._ani + pge->obj_type * 2);
+	const uint8 *anim_data = _res._ani + READ_BE_UINT16(_res._ani + pge->obj_type * 2);
 	if (pge->anim_seq < anim_data[0]) {
 		pge->anim_seq = 0;
 	}
 	const uint8 *anim_frame = anim_data + 6 + pge->anim_seq * 4;
-	if (READ_LE_UINT16(anim_frame) != 0xFFFF) {
-		uint16 f = READ_LE_UINT16(anim_data);
+	if (READ_BE_UINT16(anim_frame) != 0xFFFF) {
+		uint16 f = READ_BE_UINT16(anim_data);
 		if (pge->flags & 1) {
 			f ^= 0x8000;
 		}
@@ -369,10 +369,10 @@ void Game::pge_setupDefaultAnim(LivePGE *pge) {
 			pge->flags |= 2;
 		}
 		pge->flags &= ~8;
-		if (READ_LE_UINT16(anim_data + 4) & 0xFFFF) {
+		if (READ_BE_UINT16(anim_data + 4) & 0xFFFF) {
 			pge->flags |= 8;
 		}
-		pge->anim_number = READ_LE_UINT16(anim_frame) & 0x7FFF;
+		pge->anim_number = READ_BE_UINT16(anim_frame) & 0x7FFF;
 		debug(DBG_PGE, "Game::pge_setupDefaultAnim() pgeNum=%d pge->flags=0x%X pge->anim_number=0x%X pge->anim_seq=0x%X", pge - &_pgeLive[0], pge->flags, pge->anim_number, pge->anim_seq);
 	}
 }
@@ -482,10 +482,8 @@ void Game::pge_addToCurrentRoomList(LivePGE *pge, uint8 room) {
 
 void Game::pge_getInput() {
 	inp_update();
+#if 0
 	_inp_lastKeysHit = _stub->_pi.dirMask;
-	if (_stub->_pi.mirrorMode && (_inp_lastKeysHit & 0xC)) {
-		_inp_lastKeysHit ^= 0xC; // invert left/right
-	}
 	if ((_inp_lastKeysHit & 0xC) && (_inp_lastKeysHit & 0x3)) {
 		const uint8 mask = (_inp_lastKeysHit & 0xF0) | (_inp_lastKeysHitLeftRight & 0xF);
 		_pge_inpKeysMask = mask;
@@ -503,6 +501,7 @@ void Game::pge_getInput() {
 	if (_stub->_pi.shift) {
 		_pge_inpKeysMask |= 0x40;
 	}
+#endif
 }
 
 int Game::pge_op_isInpUp(ObjectOpcodeArgs *args) {
@@ -1279,9 +1278,11 @@ int Game::pge_op_decLifeCounter(ObjectOpcodeArgs *args) {
 }
 
 int Game::pge_op_playCutscene(ObjectOpcodeArgs *args) {
+#if 0
 	if (_deathCutsceneCounter == 0) {
 		_cut._id = args->a;
 	}
+#endif
 	return 1;
 }
 
@@ -1293,10 +1294,12 @@ int Game::pge_op_isTempVar2Set(ObjectOpcodeArgs *args) {
 }
 
 int Game::pge_op_playDeathCutscene(ObjectOpcodeArgs *args) {
+#if 0
 	if (_deathCutsceneCounter == 0) {
 		_deathCutsceneCounter = args->pge->init_PGE->counter_values[3] + 1;
 		_cut._deathCutsceneId = args->a;
 	}
+#endif
 	return 1;
 }
 
@@ -1416,7 +1419,9 @@ int Game::pge_op_setCollisionState2(ObjectOpcodeArgs *args) {
 
 int Game::pge_op_saveState(ObjectOpcodeArgs *args) {
 	_saveStateCompleted = true;
+#if 0
 	_validSaveState = saveGameState(0);
+#endif
 	return 0xFFFF;
 }
 
@@ -1899,7 +1904,9 @@ int Game::pge_op_changeRoom(ObjectOpcodeArgs *args) {
 			if (_currentRoom != live_pge_2->room_location) {
 				_currentRoom = live_pge_2->room_location;
 				loadLevelMap();
+#if 0
 				_vid.fullRefresh();
+#endif
 			}
 		}
 		pge_setupDefaultAnim(live_pge_2);
@@ -1927,7 +1934,9 @@ int Game::pge_op_changeLevel(ObjectOpcodeArgs *args) {
 }
 
 int Game::pge_op_shakeScreen(ObjectOpcodeArgs *args) {
+#if 0
 	_vid._shakeOffset = getRandomNumber() & 7;
+#endif
 	return 0xFFFF;
 }
 
@@ -2156,7 +2165,7 @@ void Game::pge_removeFromInventory(LivePGE *pge1, LivePGE *pge2, LivePGE *pge3) 
 
 int Game::pge_ZOrderByAnimY(LivePGE *pge1, LivePGE *pge2, uint8 comp, uint8 comp2) {
 	if (pge1 != pge2) {
-		uint16 off = READ_LE_UINT16(_res._ani + pge1->obj_type * 2);
+		uint16 off = READ_BE_UINT16(_res._ani + pge1->obj_type * 2);
 		if (_res._ani[off + 3] == comp) {
 			return 1;
 		}
@@ -2166,7 +2175,7 @@ int Game::pge_ZOrderByAnimY(LivePGE *pge1, LivePGE *pge2, uint8 comp, uint8 comp
 
 int Game::pge_ZOrderByAnimYIfType(LivePGE *pge1, LivePGE *pge2, uint8 comp, uint8 comp2) {
 	if (pge1->init_PGE->object_type == comp2) {
-		uint16 off = READ_LE_UINT16(_res._ani + pge1->obj_type * 2);
+		uint16 off = READ_BE_UINT16(_res._ani + pge1->obj_type * 2);
 		if (_res._ani[off + 3] == comp) {
 			return 1;
 		}

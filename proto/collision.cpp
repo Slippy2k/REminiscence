@@ -1,6 +1,7 @@
 
 #include "game.h"
-#include "resource.h"
+#include "resource_data.h"
+#include "util.h"
 
 
 void Game::col_prepareRoomState() {

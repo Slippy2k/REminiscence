@@ -144,8 +144,8 @@ void Resource::load_SPR_OFF(const char *fileName, uint8 *sprData) {
 		}
 		const uint8 *p = offData;
 		uint16 pos;
-		while ((pos = READ_LE_UINT16(p)) != 0xFFFF) {
-			uint32 off = READ_LE_UINT32(p + 2);
+		while ((pos = READ_BE_UINT16(p)) != 0xFFFF) {
+			uint32 off = READ_BE_UINT32(p + 2);
 			if (off == 0xFFFFFFFF) {
 				_spr_off[pos] = 0;
 			} else {

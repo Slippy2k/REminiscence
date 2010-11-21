@@ -4,8 +4,8 @@
 #include <string.h>
 #include "file.h"
 
-uint8_t *decodeLzss(File &f) {
-	const uint32_t decodedSize = f.readUint32BE();
+uint8_t *decodeLzss(File &f, uint32_t &decodedSize) {
+	decodedSize = f.readUint32BE();
 	printf("decodeLzss decodedSize %d\n", decodedSize);
 	uint8_t *dst = (uint8_t *)malloc(decodedSize);
 	int count = 0;
@@ -29,7 +29,7 @@ uint8_t *decodeLzss(File &f) {
 	return dst;
 }
 
-void decodeC103(const uint8_t *a3, uint8_t *a0, int w, int h) {
+void decodeC103(const uint8_t *a3, uint8_t *a0, int pitch, int w, int h) {
 	uint8_t *baseA0 = a0;
 	uint8_t d0;
 	int d3 = 0;
@@ -40,7 +40,7 @@ void decodeC103(const uint8_t *a3, uint8_t *a0, int w, int h) {
 	uint8_t a1[0x1000];
 
 	for (int y = 0; y < h; ++y) {
-		a0 = baseA0 + y * w;
+		a0 = baseA0 + y * pitch;
 		for (int x = 0; x < w; ++x) {
 			assert(d6 >= 0);
 			if (d6 == 0) {

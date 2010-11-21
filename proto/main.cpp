@@ -1,34 +1,33 @@
 
 #include <SDL.h>
 #include <SDL_opengl.h>
-#include "mac_data.h"
+#include "game.h"
+#include "resource_data.h"
 #include "resource_mac.h"
+#include "util.h"
 
 static const char *gWindowWindowTitle = "Flashback: The Quest For Identity";
 static const int gWindowW = 512;
 static const int gWindowH = 448;
 static const int gTickDuration = 10;
 
-struct Game {
-	ResourceMac _res;
+struct Test {
+	ResourceData _resData;
 	GLuint _textureId;
 
-	Game(const char *filePath)
-		: _res(filePath) {
+	Test(const char *filePath)
+		: _resData(filePath) {
 	}
 
 	void init() {
-		decodeClutData(_res);
-		uint8_t *ptr = decodeResourceData(_res, "Title 3", false);
-		_textureId = decodeImageData("Title 3", ptr);
+		_resData.loadClutData();
+		_resData.loadIconData();
+		_resData.loadPersoData();
+
+		uint8_t *ptr = _resData.decodeResourceData("Title 3", false);
+		_textureId = decodeImageData(_resData, "Title 3", ptr);
 		printf("_textureId %d\n", _textureId);
 		free(ptr);
-	}
-
-	void startLevel(int level);
-	void quitLevel();
-
-	void doTick() {
 	}
 
 	void doFrame() {
@@ -68,21 +67,44 @@ static void doTick() {
 	glEnd();
 }
 
+static void uploadTexture(GLuint textureId, const uint8_t *imageData, const Color *clut, int w, int h) {
+	uint8_t *texData = (uint8_t *)malloc(w * h * 3);
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x) {
+			const Color &c = clut[imageData[y * w + x]];
+			texData[(y * w + x) * 3] = c.r;
+			texData[(y * w + x) * 3 + 1] = c.g;
+			texData[(y * w + x) * 3 + 2] = c.b;
+		}
+	}
+	glBindTexture(GL_TEXTURE_2D, textureId);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexImage2D(GL_TEXTURE_2D, 0, 3, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
+	free(texData);
+}
+
 int main(int argc, char *argv[]) {
 	if (argc != 2) {
 		printf("%s datafile", argv[0]);
 		return 0;
 	}
-	Game game(argv[1]);
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_SetVideoMode(gWindowW, gWindowH, 0, SDL_OPENGL | SDL_RESIZABLE);
 	SDL_WM_SetCaption(gWindowWindowTitle, 0);
 	glEnable(GL_TEXTURE_2D);
+
+	Test t(argv[1]);
+	t.init();
+	Game game(t._resData);
+	game.initGame();
+
 	glViewport(0, 0, gWindowW, gWindowH);
 	bool quitGame = false;
-	game.init();
 	while (!quitGame) {
 		SDL_Event ev;
 		while (SDL_PollEvent(&ev)) {
@@ -92,10 +114,10 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 		}
-//		doTick();
 		game.doTick();
 		doFrame(gWindowW, gWindowH);
-		game.doFrame();
+		uploadTexture(t._textureId, game._frontLayer, game._palette, Game::kScreenWidth, Game::kScreenHeight);
+		t.doFrame();
 		SDL_GL_SwapBuffers();
 		SDL_Delay(gTickDuration);
 	}

@@ -1,11 +1,9 @@
 
 #include "resource.h"
-#include "systemstub.h"
 #include "video.h"
 
 
-Video::Video(Resource *res, SystemStub *stub)
-	: _res(res), _stub(stub) {
+Video::Video()
 	_frontLayer = (uint8 *)malloc(GAMESCREEN_W * GAMESCREEN_H);
 	memset(_frontLayer, 0, GAMESCREEN_W * GAMESCREEN_H);
 	_backLayer = (uint8 *)malloc(GAMESCREEN_W * GAMESCREEN_H);
@@ -132,7 +130,7 @@ void Video::setPaletteSlotBE(int palSlot, int palNum) {
 void Video::setPaletteSlotLE(int palSlot, const uint8 *palData) {
 	debug(DBG_VIDEO, "Video::setPaletteSlotLE()");
 	for (int i = 0; i < 16; ++i) {
-		uint16 color = READ_LE_UINT16(palData); palData += 2;
+		uint16 color = READ_BE_UINT16(palData); palData += 2;
 		Color c;
 		c.b = (color & 0x00F) << 2;
 		c.g = (color & 0x0F0) >> 2;
@@ -161,7 +159,7 @@ void Video::setPalette0xF() {
 void Video::copyLevelMap(int level, int room) {
 	debug(DBG_VIDEO, "Video::copyLevelMap(%d)", room);
 	assert(room < 0x40);
-	int32 off = READ_LE_UINT32(_res->_map + room * 6);
+	int32 off = READ_BE_UINT32(_res->_map + room * 6);
 	if (off == 0) {
 		error("Invalid room %d", room);
 	}
@@ -182,7 +180,7 @@ void Video::copyLevelMap(int level, int room) {
 	if (packed) {
 		uint8 *vid = _frontLayer;
 		for (int i = 0; i < 4; ++i) {
-			uint16 sz = READ_LE_UINT16(p); p += 2;
+			uint16 sz = READ_BE_UINT16(p); p += 2;
 			decodeLevelMap(sz, p, _res->_memBuf); p += sz;
 			memcpy(vid, _res->_memBuf, 256 * 56);
 			vid += 256 * 56;

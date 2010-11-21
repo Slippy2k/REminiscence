@@ -3,16 +3,9 @@
 #define __GAME_H__
 
 #include "intern.h"
-#include "cutscene.h"
-#include "menu.h"
-#include "mixer.h"
-#include "mod_player.h"
-#include "resource.h"
-#include "sfx_player.h"
-#include "video.h"
+#include "resource_data.h"
 
 struct File;
-struct SystemStub;
 
 struct Game {
 	typedef int (Game::*pge_OpcodeProc)(ObjectOpcodeArgs *args);
@@ -24,7 +17,9 @@ struct Game {
 		CT_UP_ROOM    = 0x00,
 		CT_DOWN_ROOM  = 0x40,
 		CT_RIGHT_ROOM = 0x80,
-		CT_LEFT_ROOM  = 0xC0
+		CT_LEFT_ROOM  = 0xC0,
+		kScreenWidth = 256 * 2,
+		kScreenHeight = 224 * 2
 	};
 
 	static const Level _gameLevels[];
@@ -41,21 +36,12 @@ struct Game {
 	static const char *_monsterNames[];
 	static const pge_OpcodeProc _pge_opcodeTable[];
 	static const uint8 _pge_modKeysTable[];
-	static const uint8 _protectionCodeData[];
-	static const uint8 _protectionPal[];
 
-	Cutscene _cut;
-	Menu _menu;
-	Mixer _mix;
-	ModPlayer _modPly;
-	Resource _res;
-	SfxPlayer _sfxPly;
-	Video _vid;
-	SystemStub *_stub;
-	const char *_savePath;
+	ResourceData &_res;
 
-	const uint8 *_stringsTable;
-	const char **_textsTable;
+	uint8_t *_frontLayer, *_backLayer;
+	Color _palette[256];
+
 	uint8 _currentLevel;
 	uint8 _skillLevel;
 	uint32 _score;
@@ -84,23 +70,20 @@ struct Game {
 	uint16 _deathCutsceneCounter;
 	bool _saveStateCompleted;
 
-	Game(SystemStub *, const char *dataPath, const char *savePath, Version ver);
+	Game(ResourceData &);
 
-	void run();
 	void resetGameState();
-	void mainLoop();
-	void updateTiming();
+	void initGame();
+	void doTick();
 	void playCutscene(int id = -1);
 	void loadLevelMap();
 	void loadLevelData();
-	void start();
 	void drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask);
 	void drawCurrentInventoryItem();
 	void printLevelCode();
 	void showFinalScore();
 	bool handleConfigPanel();
 	bool handleContinueAbort();
-	bool handleProtectionScreen();
 	void printSaveStateCompleted();
 	void drawLevelTexts();
 	void drawStoryTexts();
@@ -351,24 +334,9 @@ struct Game {
 	// input
 	uint8 _inp_lastKeysHit;
 	uint8 _inp_lastKeysHitLeftRight;
-	bool _inp_replay;
-	bool _inp_record;
-	File *_inp_demo;
 
 	void inp_handleSpecialKeys();
 	void inp_update();
-
-
-	// save/load state
-	uint8 _stateSlot;
-	bool _validSaveState;
-
-	void makeGameDemoName(char *buf);
-	void makeGameStateName(uint8 slot, char *buf);
-	bool saveGameState(uint8 slot);
-	bool loadGameState(uint8 slot);
-	void saveState(File *f);
-	void loadState(File *f);
 };
 
 #endif // __GAME_H__

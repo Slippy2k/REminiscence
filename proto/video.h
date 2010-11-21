@@ -9,8 +9,8 @@ struct SystemStub;
 
 struct Video {
 	enum {
-		GAMESCREEN_W = 256,
-		GAMESCREEN_H = 224,
+		GAMESCREEN_W = 256 * 2,
+		GAMESCREEN_H = 224 * 2,
 		SCREENBLOCK_W = 8,
 		SCREENBLOCK_H = 8,
 		CHAR_W = 8,
@@ -21,9 +21,6 @@ struct Video {
 	static const uint8 _conradPal2[];
 	static const uint8 _textPal[];
 	static const uint8 _palSlot0xF[];
-
-	Resource *_res;
-	SystemStub *_stub;
 
 	uint8 *_frontLayer;
 	uint8 *_backLayer;
@@ -38,7 +35,7 @@ struct Video {
 	bool _fullRefresh;
 	uint8 _shakeOffset;
 
-	Video(Resource *res, SystemStub *stub);
+	Video();
 	~Video();
 
 	void markBlockAsDirty(int16 x, int16 y, uint16 w, uint16 h);

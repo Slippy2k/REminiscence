@@ -5,7 +5,7 @@ SDL_LIBS   = `sdl-config --libs` -lGL
 CXX = g++
 CXXFLAGS += -g -O -Wall -Wuninitialized -Wno-sign-compare $(SDL_CFLAGS)
 
-SRCS = decode.cpp file.cpp game.cpp mac_data.cpp main.cpp resource_mac.cpp
+SRCS = collision.cpp decode.cpp file.cpp game.cpp main.cpp piege.cpp resource_data.cpp resource_mac.cpp staticres.cpp util.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)

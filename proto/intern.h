@@ -70,17 +70,6 @@ enum Version {
 	VER_SP
 };
 
-struct Color {
-	uint8 r;
-	uint8 g;
-	uint8 b;
-};
-
-struct Point {
-	int16 x;
-	int16 y;
-};
-
 struct Level {
 	const char *name;
 	const char *name2;
