@@ -24,7 +24,6 @@ void ResourceMac::loadMap() {
 	_f.seek(83);
 	uint32_t dataSize = _f.readUint32BE();
 	uint32_t resourceOffset = 128 + ((dataSize + 127) & ~127);
-	printf("resourceOffset = 0x%X\n", resourceOffset);
 
 	_f.seek(resourceOffset);
 	_dataOffset = resourceOffset + _f.readUint32BE();
@@ -45,7 +44,6 @@ void ResourceMac::loadMap() {
 	}
 	_entries = (ResourceEntry **)calloc(_map.typesCount, sizeof(ResourceEntry *));
 	for (int i = 0; i < _map.typesCount; ++i) {
-		printf("entry type %d\n", i);
 		_f.seek(mapOffset + _map.typesOffset + _types[i].startOffset, SEEK_SET);
 		_entries[i] = (ResourceEntry *)calloc(_types[i].count, sizeof(ResourceEntry));
 		for (int j = 0; j < _types[i].count; ++j) {
@@ -62,7 +60,6 @@ void ResourceMac::loadMap() {
 				assert(len < sizeof(_entries[i][j].name) - 1);
 				_f.read(_entries[i][j].name, len);
 				_entries[i][j].name[len] = '\0';
-				printf("Entry %d name '%s'\n", j, _entries[i][j].name);
 			}
 		}
 	}

@@ -26,15 +26,21 @@ struct ResourceData {
 	uint8_t *_ani;
 	uint8_t *_icn;
 	uint8_t *_perso;
+	uint8_t *_spc;
 
 	ResourceData(const char *filePath)
 		: _res(filePath) {
 	}
 
 	int getSpriteFrame(int i) const {
+// FIXME
 		if (i < 0x230) return i;
 		if (i < 0x28E) return i - 0x22F;
 		return i - 0x28E + 0x230;
+	}
+	const uint8_t *getAniData(int i) const {
+		const uint32_t offset = READ_BE_UINT16(_ani + 2 + i * 2);
+		return _ani + offset;
 	}
 
 	void setupLevelClut(int num, Color *clut);
@@ -48,11 +54,12 @@ struct ResourceData {
 	void loadPersoData();
 	void loadLevelData(int level);
 	void loadLevelRoom(int level, int i, uint8_t *dst, int dstPitch);
+	void loadLevelObjects(int level);
 	const uint8_t *getImageData(const uint8_t *ptr, int i);
 	void decodeImageData(const uint8_t *ptr, int i, uint8_t *dst, int dstPitch);
 };
 
-int decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr);
+void decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr);
 
 #endif
 

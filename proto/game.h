@@ -7,6 +7,21 @@
 
 struct File;
 
+struct PlayerInput {
+	enum {
+		DIR_UP    = 1 << 0,
+		DIR_DOWN  = 1 << 1,
+		DIR_LEFT  = 1 << 2,
+		DIR_RIGHT = 1 << 3
+	};
+	uint8 dirMask;
+	bool enter;
+	bool space;
+	bool shift;
+	bool backspace;
+	bool escape;
+};
+
 struct Game {
 	typedef int (Game::*pge_OpcodeProc)(ObjectOpcodeArgs *args);
 	typedef int (Game::*pge_ZOrderCallback)(LivePGE *, LivePGE *, uint8, uint8);
@@ -41,6 +56,7 @@ struct Game {
 
 	uint8_t *_frontLayer, *_backLayer;
 	Color _palette[256];
+	PlayerInput _pi;
 
 	uint8 _currentLevel;
 	uint8 _skillLevel;
@@ -90,6 +106,7 @@ struct Game {
 	void prepareAnims();
 	void prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy);
 	void drawAnims();
+	void drawPiege(LivePGE *pge, int x, int y);
 	void drawAnimBuffer(uint8 stateNum, AnimBufferState *state);
 	void drawObject(const uint8 *dataPtr, int16 x, int16 y, uint8 flags);
 	void drawObjectFrame(const uint8 *dataPtr, int16 x, int16 y, uint8 flags);

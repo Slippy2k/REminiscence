@@ -23,14 +23,14 @@ struct Test {
 		_resData.loadClutData();
 		_resData.loadIconData();
 		_resData.loadPersoData();
-
-		uint8_t *ptr = _resData.decodeResourceData("Title 3", false);
-		_textureId = decodeImageData(_resData, "Title 3", ptr);
-		printf("_textureId %d\n", _textureId);
-		free(ptr);
 	}
 
-	void doFrame() {
+	void doFrame(int w, int h) {
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0, w, 0, h, 0, 1);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
 		if (_textureId != -1) {
 			glBindTexture(GL_TEXTURE_2D, _textureId);
 			glBegin(GL_QUADS);
@@ -46,15 +46,6 @@ struct Test {
 		}
 	}
 };
-
-static void doFrame(int w, int h) {
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, w, 0, h, 0, 1);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-//	glScalef(1., -1., 1.);
-}
 
 static void doTick() {
 	glClearColor(0, 0, 0, 0);
@@ -86,9 +77,52 @@ static void uploadTexture(GLuint textureId, const uint8_t *imageData, const Colo
 	free(texData);
 }
 
+static void updateInput(int keyCode, bool pressed, PlayerInput &pi) {
+	switch (keyCode) {
+	case SDLK_LEFT:
+		if (!pressed) {
+			pi.dirMask &= ~PlayerInput::DIR_LEFT;
+		} else {
+			pi.dirMask |= PlayerInput::DIR_LEFT;
+		}
+		break;
+	case SDLK_RIGHT:
+		if (!pressed) {
+			pi.dirMask &= ~PlayerInput::DIR_RIGHT;
+		} else {
+			pi.dirMask |= PlayerInput::DIR_RIGHT;
+		}
+		break;
+	case SDLK_UP:
+		if (!pressed) {
+			pi.dirMask &= ~PlayerInput::DIR_UP;
+		} else {
+			pi.dirMask |= PlayerInput::DIR_UP;
+		}
+		break;
+	case SDLK_DOWN:
+		if (!pressed) {
+			pi.dirMask &= ~PlayerInput::DIR_DOWN;
+		} else {
+			pi.dirMask |= PlayerInput::DIR_DOWN;
+		}
+		break;
+	case SDLK_SPACE:
+		pi.space = pressed;
+		break;
+	case SDLK_RSHIFT:
+	case SDLK_LSHIFT:
+		pi.shift = pressed;
+		break;
+	case SDLK_RETURN:
+		pi.enter = pressed;
+		break;
+	}
+}
+
 int main(int argc, char *argv[]) {
-	if (argc != 2) {
-		printf("%s datafile", argv[0]);
+	if (argc < 2) {
+		printf("%s datafile level", argv[0]);
 		return 0;
 	}
 	SDL_Init(SDL_INIT_VIDEO);
@@ -101,6 +135,10 @@ int main(int argc, char *argv[]) {
 	Test t(argv[1]);
 	t.init();
 	Game game(t._resData);
+	game._currentLevel = 0;
+	if (argc >= 3) {
+		game._currentLevel = atoi(argv[2]);
+	}
 	game.initGame();
 
 	glViewport(0, 0, gWindowW, gWindowH);
@@ -112,12 +150,17 @@ int main(int argc, char *argv[]) {
 			case SDL_QUIT:
 				quitGame = true;
 				break;
+			case SDL_KEYDOWN:
+				updateInput(ev.key.keysym.sym, true, game._pi);
+				break;
+			case SDL_KEYUP:
+				updateInput(ev.key.keysym.sym, false, game._pi);
+				break;
 			}
 		}
 		game.doTick();
-		doFrame(gWindowW, gWindowH);
 		uploadTexture(t._textureId, game._frontLayer, game._palette, Game::kScreenWidth, Game::kScreenHeight);
-		t.doFrame();
+		t.doFrame(gWindowW, gWindowH);
 		SDL_GL_SwapBuffers();
 		SDL_Delay(gTickDuration);
 	}

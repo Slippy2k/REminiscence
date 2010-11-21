@@ -8,10 +8,11 @@
 #include "resource_mac.h"
 
 static const int levelsColorOffset[] = { 24, 28, 36, 40, 44 }; // red palette: 32
+static const int levelsIndex[] = { 1, 2, 3, 4, 4, 5, 5 };
 
-void ResourceData::setupLevelClut(int num, Color *clut) {
+void ResourceData::setupLevelClut(int level, Color *clut) {
 	memset(clut, 0, 256 * sizeof(Color));
-	assert(num >= 0 && num < 6);
+	const int num = levelsIndex[level] - 1;
 	const int offset = levelsColorOffset[num];
 	for (int i = 0; i < 4; ++i) {
 		copyClut16(clut, i, offset + i);
@@ -23,20 +24,20 @@ void ResourceData::setupLevelClut(int num, Color *clut) {
 	copyClut16(clut, 0xD, 0x38);
 }
 
-static uint32_t resourceDataSize = 0;
+static uint32_t _resourceDataSize = 0;
 
 uint8_t *ResourceData::decodeResourceData(const char *name, bool decompressLzss) {
 	uint8_t *data = 0;
 	const ResourceEntry *entry = _res.findEntry(name);
 	if (entry) {
 		_res._f.seek(_res._dataOffset + entry->dataOffset);
-		resourceDataSize = _res._f.readUint32BE();
-		printf("decodeResourceData name '%s' dataSize %d\n", name, resourceDataSize);
+		_resourceDataSize = _res._f.readUint32BE();
+		printf("decodeResourceData name '%s' dataSize %d\n", name, _resourceDataSize);
 		if (decompressLzss) {
-			data = decodeLzss(_res._f, resourceDataSize);
+			data = decodeLzss(_res._f, _resourceDataSize);
 		} else {
-			data = (uint8_t *)malloc(resourceDataSize);
-			_res._f.read(data, resourceDataSize);
+			data = (uint8_t *)malloc(_resourceDataSize);
+			_res._f.read(data, _resourceDataSize);
 		}
 	}
 	return data;
@@ -56,7 +57,7 @@ static void setGrayImageClut(Color *imageClut) {
 	}
 }
 
-int decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr) {
+void decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr) {
 	static const int levelsColorOffset[] = { 24, 28, 36, 40, 44 }; // red palette: 32
 	Color imageClut[256];
 	memset(imageClut, 0, sizeof(imageClut));
@@ -122,7 +123,6 @@ int decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr)
 	for (int i = 0; i < count; ++i) {
 		imageOffsets[i] = READ_BE_UINT32(ptr); ptr += 4;
 	}
-	int ret = -1;
 	for (int i = 0; i < count; ++i) {
 		printf("image %d/%d offset 0x%X\n", 1 + i, count, imageOffsets[i]);
 		ptr = basePtr + imageOffsets[i];
@@ -143,30 +143,8 @@ int decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr)
 			decodeC103(ptr, imageData8, w, w, h);
 			break;
 		}
-		if (count == 1 && i == 0) {
-			GLuint textureId;
-			glGenTextures(1, &textureId);
-			uint8_t *texData = (uint8_t *)malloc(w * h * 3);
-			for (int y = 0; y < h; ++y) {
-				for (int x = 0; x < w; ++x) {
-					const Color &c = imageClut[imageData8[y * w + x]];
-					texData[(y * w + x) * 3] = c.r;
-					texData[(y * w + x) * 3 + 1] = c.g;
-					texData[(y * w + x) * 3 + 2] = c.b;
-				}
-			}
-			glBindTexture(GL_TEXTURE_2D, textureId);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			glTexImage2D(GL_TEXTURE_2D, 0, 3, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
-			ret = textureId;
-			free(texData);
-		}
 		free(imageData8);
 	}
-	return ret;
 }
 
 void ResourceData::decodeDataPGE(const uint8_t *ptr) {
@@ -298,7 +276,7 @@ void ResourceData::loadLevelData(int i) {
 	snprintf(name, sizeof(name), "Level %s conditions", levels[i]);
 	ptr = decodeResourceData(name, true);
 	assert(READ_BE_UINT16(ptr) == 0xE6);
-	decodeDataOBJ(ptr, resourceDataSize);
+	decodeDataOBJ(ptr, _resourceDataSize);
 	free(ptr);
 	// .CT
 	snprintf(name, sizeof(name), "Level %c map", levels[i][0]);
@@ -309,7 +287,7 @@ void ResourceData::loadLevelData(int i) {
 
 void ResourceData::loadLevelRoom(int level, int i, uint8_t *dst, int dstPitch) {
 	char name[64];
-	snprintf(name, sizeof(name), "Level %d Room %d", level + 1, i);
+	snprintf(name, sizeof(name), "Level %d Room %d", levelsIndex[level], i);
 	uint8_t *ptr = decodeResourceData(name, true);
 	assert(ptr);
 	if (ptr) {
@@ -318,11 +296,19 @@ void ResourceData::loadLevelRoom(int level, int i, uint8_t *dst, int dstPitch) {
 	}
 }
 
+void ResourceData::loadLevelObjects(int level) {
+	char name[64];
+	snprintf(name, sizeof(name), "Objects %d", levelsIndex[level]);
+	_spc = decodeResourceData(name, true);
+	assert(_spc);
+}
+
 const uint8_t *ResourceData::getImageData(const uint8_t *ptr, int i) {
 	const uint8_t *basePtr = ptr;
 	const uint16_t sig = READ_BE_UINT16(ptr); ptr += 2;
 	assert(sig == 0xC211);
 	const int count = READ_BE_UINT16(ptr); ptr += 2;
+	assert(i < count);
 	ptr += 4;
 	const uint32_t offset = READ_BE_UINT32(ptr + i * 4);
 	return (offset != 0) ? basePtr + offset : 0;
@@ -333,7 +319,7 @@ void ResourceData::decodeImageData(const uint8_t *ptr, int i, uint8_t *dst, int 
 	const uint16_t sig = READ_BE_UINT16(ptr); ptr += 2;
 	assert(sig == 0xC211 || sig == 0xC103);
 	const int count = READ_BE_UINT16(ptr); ptr += 2;
-	assert(count < kImageOffsetsCount && i < count);
+	assert(i < count);
 	ptr += 4;
 	const uint32_t offset = READ_BE_UINT32(ptr + i * 4);
 	if (offset != 0) {

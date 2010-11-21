@@ -51,11 +51,6 @@ inline uint16 READ_LE_UINT16(const void *ptr) {
 	return (b[1] << 8) | b[0];
 }
 
-inline uint32 READ_LE_UINT32(const void *ptr) {
-	const uint8 *b = (const uint8 *)ptr;
-	return (b[3] << 24) | (b[2] << 16) | (b[1] << 8) | b[0];
-}
-
 template<typename T>
 inline void SWAP(T &a, T &b) {
 	T tmp = a;
