@@ -1,0 +1,5 @@
+utilisation des datas MAC
+reutilisation du code game.cpp + video.cpp
+choix du niveau par ligne de commande
+mainloop, event based : queueEvent, doTick
+scaler2x pour les cutscenes

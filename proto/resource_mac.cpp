@@ -79,12 +79,3 @@ const ResourceEntry *ResourceMac::findEntry(const char *name) const {
 	return 0;
 }
 
-int ResourceMac::findTypeById(const unsigned char id[4]) const {
-	for (int i = 0; i < _map.typesCount; ++i) {
-		if (memcmp(_types[i].id, id, 4) == 0) {
-			return i;
-		}
-	}
-	return -1;
-}
-

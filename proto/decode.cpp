@@ -84,16 +84,15 @@ void decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h) {
 		const uint8_t *ptr;
 		int repeatCount;
 	} stack[512];
-	uint8_t d0;
 	uint8_t *baseA0 = a0;
-	int Y = 0;
-	int SP = 0;
+	int y = 0;
+	int sp = 0;
 
 	while (1) {
-		d0 = *a3++;
+		uint8_t d0 = *a3++;
 		if ((d0 & 0x80) != 0) {
-			++Y;
-			a0 = baseA0 + Y * pitch;
+			++y;
+			a0 = baseA0 + y * pitch;
 		}
 		int d1 = d0 & 0x1F;
 		if (d1 == 0) {
@@ -106,18 +105,18 @@ void decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h) {
 			if ((d0 & 0x80) == 0) {
 				--d1;
 				if (d1 == 0) {
-					assert(SP > 0);
-					--stack[SP - 1].repeatCount;
-					if (stack[SP - 1].repeatCount >= 0) {
-						a3 = stack[SP - 1].ptr;
+					assert(sp > 0);
+					--stack[sp - 1].repeatCount;
+					if (stack[sp - 1].repeatCount >= 0) {
+						a3 = stack[sp - 1].ptr;
 					} else {
-						--SP;
+						--sp;
 					}
 				} else {
-					assert(SP < sizeof(stack) / sizeof(stack[0]));
-					stack[SP].ptr = a3;
-					stack[SP].repeatCount = d1;
-					++SP;
+					assert(sp < sizeof(stack) / sizeof(stack[0]));
+					stack[sp].ptr = a3;
+					stack[sp].repeatCount = d1;
+					++sp;
 				}
 			} else {
 				a0 += d1;
