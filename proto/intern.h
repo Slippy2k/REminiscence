@@ -1,23 +1,6 @@
-/* REminiscence - Flashback interpreter
- * Copyright (C) 2005-2010 Gregory Montoir
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
-
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- */
-
-#ifndef __INTERN_H__
-#define __INTERN_H__
+#ifndef INTERN_H__
+#define INTERN_H__
 
 #include <cstdio>
 #include <cstring>
@@ -46,30 +29,12 @@ inline uint32 READ_BE_UINT32(const void *ptr) {
 	return (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
 }
 
-inline uint16 READ_LE_UINT16(const void *ptr) {
-	const uint8 *b = (const uint8 *)ptr;
-	return (b[1] << 8) | b[0];
-}
-
 template<typename T>
 inline void SWAP(T &a, T &b) {
 	T tmp = a;
 	a = b;
 	b = tmp;
 }
-
-enum Version {
-	VER_FR,
-	VER_EN,
-	VER_DE,
-	VER_SP
-};
-
-struct Level {
-	const char *name;
-	const char *name2;
-	uint16 cutscene_id;
-};
 
 struct InitPGE {
 	uint16 type;
@@ -166,16 +131,6 @@ struct CollisionSlot {
 	uint16 index;
 };
 
-struct MbkEntry {
-	uint16 offset;
-	uint16 len;
-};
-
-struct BankSlot {
-	uint16 entryNum;
-	uint8 *ptr;
-};
-
 struct CollisionSlot2 {
 	CollisionSlot2 *next_slot;
 	int8 *unk2;
@@ -195,4 +150,4 @@ struct SoundFx {
 	uint8 *data;
 };
 
-#endif // __INTERN_H__
+#endif // INTERN_H__

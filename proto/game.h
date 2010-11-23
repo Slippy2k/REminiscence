@@ -1,25 +1,22 @@
 
-#ifndef __GAME_H__
-#define __GAME_H__
+#ifndef GAME_H__
+#define GAME_H__
 
 #include "intern.h"
 #include "resource_data.h"
 
-struct File;
-
 struct PlayerInput {
 	enum {
-		DIR_UP    = 1 << 0,
-		DIR_DOWN  = 1 << 1,
-		DIR_LEFT  = 1 << 2,
-		DIR_RIGHT = 1 << 3
+		kDirectionUp    = 1 << 0,
+		kDirectionDown  = 1 << 1,
+		kDirectionLeft  = 1 << 2,
+		kDirectionRight = 1 << 3
 	};
 	uint8 dirMask;
 	bool enter;
 	bool space;
 	bool shift;
 	bool backspace;
-	bool escape;
 };
 
 struct Game {
@@ -29,25 +26,16 @@ struct Game {
 	typedef int (Game::*col_Callback2)(LivePGE *, int16, int16, int16);
 
 	enum {
-		CT_UP_ROOM    = 0x00,
-		CT_DOWN_ROOM  = 0x40,
-		CT_RIGHT_ROOM = 0x80,
-		CT_LEFT_ROOM  = 0xC0,
+		kCtRoomTop = 0x00,
+		kCtRoomBottom = 0x40,
+		kCtRoomRight = 0x80,
+		kCtRoomLeft = 0xC0,
 		kScreenWidth = 256 * 2,
 		kScreenHeight = 224 * 2
 	};
 
-	static const Level _gameLevels[];
 	static const uint16 _scoreTable[];
-	static const uint8 _monsterListLevel1[];
-	static const uint8 _monsterListLevel2[];
-	static const uint8 _monsterListLevel3[];
-	static const uint8 _monsterListLevel4_1[];
-	static const uint8 _monsterListLevel4_2[];
-	static const uint8 _monsterListLevel5_1[];
-	static const uint8 _monsterListLevel5_2[];
 	static const uint8 *_monsterListLevels[];
-	static const uint8 _monsterPals[4][32];
 	static const char *_monsterNames[];
 	static const pge_OpcodeProc _pge_opcodeTable[];
 	static const uint8 _pge_modKeysTable[];
@@ -77,12 +65,6 @@ struct Game {
 	AnimBufferState _animBuffer2State[42];
 	AnimBufferState _animBuffer3State[12];
 	AnimBuffers _animBuffers;
-	uint8 _bankData[0x7000];
-	uint8 *_firstBankData;
-	uint8 *_lastBankData;
-	BankSlot _bankSlots[49];
-	BankSlot *_curBankSlot;
-	const uint8 *_bankDataPtrs;
 	uint16 _deathCutsceneCounter;
 	bool _saveStateCompleted;
 
@@ -353,4 +335,4 @@ struct Game {
 	void inp_update();
 };
 
-#endif // __GAME_H__
+#endif // GAME_H__

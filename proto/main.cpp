@@ -81,30 +81,30 @@ static void updateInput(int keyCode, bool pressed, PlayerInput &pi) {
 	switch (keyCode) {
 	case SDLK_LEFT:
 		if (!pressed) {
-			pi.dirMask &= ~PlayerInput::DIR_LEFT;
+			pi.dirMask &= ~PlayerInput::kDirectionLeft;
 		} else {
-			pi.dirMask |= PlayerInput::DIR_LEFT;
+			pi.dirMask |= PlayerInput::kDirectionLeft;
 		}
 		break;
 	case SDLK_RIGHT:
 		if (!pressed) {
-			pi.dirMask &= ~PlayerInput::DIR_RIGHT;
+			pi.dirMask &= ~PlayerInput::kDirectionRight;
 		} else {
-			pi.dirMask |= PlayerInput::DIR_RIGHT;
+			pi.dirMask |= PlayerInput::kDirectionRight;
 		}
 		break;
 	case SDLK_UP:
 		if (!pressed) {
-			pi.dirMask &= ~PlayerInput::DIR_UP;
+			pi.dirMask &= ~PlayerInput::kDirectionUp;
 		} else {
-			pi.dirMask |= PlayerInput::DIR_UP;
+			pi.dirMask |= PlayerInput::kDirectionUp;
 		}
 		break;
 	case SDLK_DOWN:
 		if (!pressed) {
-			pi.dirMask &= ~PlayerInput::DIR_DOWN;
+			pi.dirMask &= ~PlayerInput::kDirectionDown;
 		} else {
-			pi.dirMask |= PlayerInput::DIR_DOWN;
+			pi.dirMask |= PlayerInput::kDirectionDown;
 		}
 		break;
 	case SDLK_SPACE:

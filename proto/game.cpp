@@ -79,8 +79,6 @@ void Game::initGame() {
 //	_vid._unkPalSlot1 = 0;
 //	_vid._unkPalSlot2 = 0;
 	_score = 0;
-	_firstBankData = _bankData;
-	_lastBankData = _bankData + sizeof(_bankData);
 	loadLevelData();
 	resetGameState();
 }
@@ -305,23 +303,23 @@ bool Game::handleConfigPanel() {
 		inp_update();
 
 		int prev = current;
-		if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_UP;
+		if (_stub->_pi.dirMask & PlayerInput::kDirectionUp) {
+			_stub->_pi.dirMask &= ~PlayerInput::kDirectionUp;
 			current = (current + 3) % 4;
 		}
-		if (_stub->_pi.dirMask & PlayerInput::DIR_DOWN) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_DOWN;
+		if (_stub->_pi.dirMask & PlayerInput::kDirectionDown) {
+			_stub->_pi.dirMask &= ~PlayerInput::kDirectionDown;
 			current = (current + 1) % 4;
 		}
-		if (_stub->_pi.dirMask & PlayerInput::DIR_LEFT) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_LEFT;
+		if (_stub->_pi.dirMask & PlayerInput::kDirectionLeft) {
+			_stub->_pi.dirMask &= ~PlayerInput::kDirectionLeft;
 			--_stateSlot;
 			if (_stateSlot < 1) {
 				_stateSlot = 1;
 			}
 		}
-		if (_stub->_pi.dirMask & PlayerInput::DIR_RIGHT) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_RIGHT;
+		if (_stub->_pi.dirMask & PlayerInput::kDirectionRight) {
+			_stub->_pi.dirMask &= ~PlayerInput::kDirectionRight;
 			++_stateSlot;
 			if (_stateSlot > 99) {
 				_stateSlot = 99;
@@ -370,15 +368,15 @@ bool Game::handleContinueAbort() {
 		_vid.drawString(str, (256 - strlen(str) * 8) / 2, 112, colors[1]);
 		sprintf(textBuf, "SCORE  %08u", _score);
 		_vid.drawString(textBuf, 64, 154, 0xE3);
-		if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_UP;
+		if (_stub->_pi.dirMask & PlayerInput::kDirectionUp) {
+			_stub->_pi.dirMask &= ~PlayerInput::kDirectionUp;
 			if (current_color > 0) {
 				SWAP(colors[current_color], colors[current_color - 1]);
 				--current_color;
 			}
 		}
-		if (_stub->_pi.dirMask & PlayerInput::DIR_DOWN) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_DOWN;
+		if (_stub->_pi.dirMask & PlayerInput::kDirectionDown) {
+			_stub->_pi.dirMask &= ~PlayerInput::kDirectionDown;
 			if (current_color < 1) {
 				SWAP(colors[current_color], colors[current_color + 1]);
 				++current_color;
@@ -519,7 +517,7 @@ void Game::prepareAnims() {
 			prepareAnimsHelper(pge, 0, 0);
 			pge = pge->next_PGE_in_room;
 		}
-		pge_room = _res._ctData[CT_UP_ROOM + _currentRoom];
+		pge_room = _res._ctData[kCtRoomTop + _currentRoom];
 		if (pge_room >= 0 && pge_room < 0x40) {
 			pge = _pge_liveTable1[pge_room];
 			while (pge) {
@@ -529,7 +527,7 @@ void Game::prepareAnims() {
 				pge = pge->next_PGE_in_room;
 			}
 		}
-		pge_room = _res._ctData[CT_DOWN_ROOM + _currentRoom];
+		pge_room = _res._ctData[kCtRoomBottom + _currentRoom];
 		if (pge_room >= 0 && pge_room < 0x40) {
 			pge = _pge_liveTable1[pge_room];
 			while (pge) {
@@ -539,7 +537,7 @@ void Game::prepareAnims() {
 				pge = pge->next_PGE_in_room;
 			}
 		}
-		pge_room = _res._ctData[CT_LEFT_ROOM + _currentRoom];
+		pge_room = _res._ctData[kCtRoomLeft + _currentRoom];
 		if (pge_room >= 0 && pge_room < 0x40) {
 			pge = _pge_liveTable1[pge_room];
 			while (pge) {
@@ -549,7 +547,7 @@ void Game::prepareAnims() {
 				pge = pge->next_PGE_in_room;
 			}
 		}
-		pge_room = _res._ctData[CT_RIGHT_ROOM + _currentRoom];
+		pge_room = _res._ctData[kCtRoomRight + _currentRoom];
 		if (pge_room >= 0 && pge_room < 0x40) {
 			pge = _pge_liveTable1[pge_room];
 			while (pge) {
@@ -991,10 +989,6 @@ void Game::loadLevelData() {
 	_curMonsterNum = 0xFFFF;
 	_curMonsterFrame = 0;
 
-	_curBankSlot = &_bankSlots[0];
-	_curBankSlot->entryNum = 0xFFFF;
-	_curBankSlot->ptr = 0;
-	_firstBankData = _bankData;
 	_printLevelCodeCounter = 150;
 
 	_col_slots2Cur = _col_slots2;
@@ -1161,22 +1155,22 @@ void Game::handleInventory() {
 			_stub->sleep(80);
 			inp_update();
 
-			if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
-				_stub->_pi.dirMask &= ~PlayerInput::DIR_UP;
+			if (_stub->_pi.dirMask & PlayerInput::kDirectionUp) {
+				_stub->_pi.dirMask &= ~PlayerInput::kDirectionUp;
 				if (current_line < num_lines - 1) {
 					++current_line;
 					current_item = current_line * 4;
 				}
 			}
-			if (_stub->_pi.dirMask & PlayerInput::DIR_DOWN) {
-				_stub->_pi.dirMask &= ~PlayerInput::DIR_DOWN;
+			if (_stub->_pi.dirMask & PlayerInput::kDirectionDown) {
+				_stub->_pi.dirMask &= ~PlayerInput::kDirectionDown;
 				if (current_line > 0) {
 					--current_line;
 					current_item = current_line * 4;
 				}
 			}
-			if (_stub->_pi.dirMask & PlayerInput::DIR_LEFT) {
-				_stub->_pi.dirMask &= ~PlayerInput::DIR_LEFT;
+			if (_stub->_pi.dirMask & PlayerInput::kDirectionLeft) {
+				_stub->_pi.dirMask &= ~PlayerInput::kDirectionLeft;
 				if (current_item > 0) {
 					int item_num = current_item % 4;
 					if (item_num > 0) {
@@ -1184,8 +1178,8 @@ void Game::handleInventory() {
 					}
 				}
 			}
-			if (_stub->_pi.dirMask & PlayerInput::DIR_RIGHT) {
-				_stub->_pi.dirMask &= ~PlayerInput::DIR_RIGHT;
+			if (_stub->_pi.dirMask & PlayerInput::kDirectionRight) {
+				_stub->_pi.dirMask &= ~PlayerInput::kDirectionRight;
 				if (current_item < num_items - 1) {
 					int item_num = current_item % 4;
 					if (item_num < 3) {

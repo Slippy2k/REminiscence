@@ -110,7 +110,6 @@ struct Game {
 	void playCutscene(int id = -1);
 	void loadLevelMap();
 	void loadLevelData();
-	void start();
 	void drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask);
 	void drawCurrentInventoryItem();
 	void printLevelCode();

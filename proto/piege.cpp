@@ -210,10 +210,10 @@ void Game::pge_playAnimSound(LivePGE *pge, uint16 arg2) {
 		if (_currentRoom == pge->room_location) {
 			playSound(sfxId, 0);
 		} else {
-			if (_res._ctData[CT_DOWN_ROOM + _currentRoom] == pge->room_location ||
-				_res._ctData[CT_UP_ROOM + _currentRoom] == pge->room_location ||
-				_res._ctData[CT_RIGHT_ROOM + _currentRoom] == pge->room_location ||
-				_res._ctData[CT_LEFT_ROOM + _currentRoom] == pge->room_location) {
+			if (_res._ctData[kCtRoomBottom + _currentRoom] == pge->room_location ||
+				_res._ctData[kCtRoomTop + _currentRoom] == pge->room_location ||
+				_res._ctData[kCtRoomRight + _currentRoom] == pge->room_location ||
+				_res._ctData[kCtRoomLeft + _currentRoom] == pge->room_location) {
 				playSound(sfxId, 1);
 			}
 		}
@@ -400,16 +400,16 @@ void Game::pge_setupOtherPieges(LivePGE *pge, InitPGE *init_pge) {
 	const int8 *room_ct_data = 0;
 	if (pge->pos_x <= -10) {
 		pge->pos_x += 256;
-		room_ct_data = &_res._ctData[CT_LEFT_ROOM];
+		room_ct_data = &_res._ctData[kCtRoomLeft];
 	} else if (pge->pos_x >= 256) {
 		pge->pos_x -= 256;
-		room_ct_data = &_res._ctData[CT_RIGHT_ROOM];
+		room_ct_data = &_res._ctData[kCtRoomRight];
 	} else if (pge->pos_y < 0) {
 		pge->pos_y += 216;
-		room_ct_data = &_res._ctData[CT_UP_ROOM];
+		room_ct_data = &_res._ctData[kCtRoomTop];
 	} else if (pge->pos_y >= 216) {
 		pge->pos_y -= 216;
-		room_ct_data = &_res._ctData[CT_DOWN_ROOM];
+		room_ct_data = &_res._ctData[kCtRoomBottom];
 	}
 	if (room_ct_data) {
 		int8 room = pge->room_location;
@@ -430,7 +430,7 @@ void Game::pge_setupOtherPieges(LivePGE *pge, InitPGE *init_pge) {
 					}
 					pge_it = pge_it->next_PGE_in_room;
 				}
-				room = _res._ctData[CT_UP_ROOM + _currentRoom];
+				room = _res._ctData[kCtRoomTop + _currentRoom];
 				if (room >= 0 && room < 0x40) {
 					pge_it = _pge_liveTable1[room];
 					while (pge_it) {
@@ -441,7 +441,7 @@ void Game::pge_setupOtherPieges(LivePGE *pge, InitPGE *init_pge) {
 						pge_it = pge_it->next_PGE_in_room;
 					}
 				}
-				room = _res._ctData[CT_DOWN_ROOM + _currentRoom];
+				room = _res._ctData[kCtRoomBottom + _currentRoom];
 				if (room >= 0 && room < 0x40) {
 					pge_it = _pge_liveTable1[room];
 					while (pge_it) {
@@ -1019,7 +1019,7 @@ int Game::pge_o_unk0x40(ObjectOpcodeArgs *args) {
 				if (var12 < 0) {
 					--col_area;
 					if (col_area < 0) return 0;
-					pge_room = _res._ctData[CT_LEFT_ROOM + pge_room];
+					pge_room = _res._ctData[kCtRoomLeft + pge_room];
 					if (pge_room < 0) return 0;
 					var12 = 15;
 					var2 = &_res._ctData[0x101] + pge_room * 0x70 + grid_pos_y * 2 + 15 + 0x10;
@@ -1056,7 +1056,7 @@ int Game::pge_o_unk0x40(ObjectOpcodeArgs *args) {
 				if (var12 == 0x10) {
 					++col_area;
 					if (col_area > 2) return 0;
-					pge_room = _res._ctData[CT_RIGHT_ROOM + pge_room];
+					pge_room = _res._ctData[kCtRoomRight + pge_room];
 					if (pge_room < 0) return 0;
 
 					var12 = 0;
@@ -1116,10 +1116,10 @@ int Game::pge_op_removePiegeIfNotNear(ObjectOpcodeArgs *args) {
 	if (pge->room_location & 0x80) goto kill_pge;
 	if (pge->room_location > 0x3F) goto kill_pge;
 	if (pge->room_location == _currentRoom) goto skip_pge;
-	if (pge->room_location == _res._ctData[CT_UP_ROOM + _currentRoom]) goto skip_pge;
-	if (pge->room_location == _res._ctData[CT_DOWN_ROOM + _currentRoom]) goto skip_pge;
-	if (pge->room_location == _res._ctData[CT_RIGHT_ROOM + _currentRoom]) goto skip_pge;
-	if (pge->room_location == _res._ctData[CT_LEFT_ROOM + _currentRoom]) goto skip_pge;
+	if (pge->room_location == _res._ctData[kCtRoomTop + _currentRoom]) goto skip_pge;
+	if (pge->room_location == _res._ctData[kCtRoomBottom + _currentRoom]) goto skip_pge;
+	if (pge->room_location == _res._ctData[kCtRoomRight + _currentRoom]) goto skip_pge;
+	if (pge->room_location == _res._ctData[kCtRoomLeft + _currentRoom]) goto skip_pge;
 
 kill_pge:
 	pge->flags &= ~4;
@@ -1338,11 +1338,11 @@ int Game::pge_o_unk0x5F(ObjectOpcodeArgs *args) {
 			}
 		}
 		if (grid_pos_x < 0) {
-			pge_room = _res._ctData[CT_LEFT_ROOM + pge_room];
+			pge_room = _res._ctData[kCtRoomLeft + pge_room];
 			if (pge_room < 0 || pge_room >= 0x40) return 0;
 			grid_pos_x += 16;
 		} else if (grid_pos_x > 15) {
-			pge_room = _res._ctData[CT_RIGHT_ROOM + pge_room];
+			pge_room = _res._ctData[kCtRoomRight + pge_room];
 			if (pge_room < 0 || pge_room >= 0x40) return 0;
 			grid_pos_x -= 16;
 		}
@@ -1462,7 +1462,7 @@ int Game::pge_o_unk0x6A(ObjectOpcodeArgs *args) {
 				if (varA < 0) {
 					--col_area;
 					if (col_area < 0) return 0;
-					pge_room = _res._ctData[CT_LEFT_ROOM + pge_room];
+					pge_room = _res._ctData[kCtRoomLeft + pge_room];
 					if (pge_room < 0) return 0;
 					varA = 0xF;
 					ct_data = &_res._ctData[0x101] + pge_room * 0x70 + grid_pos_y * 2 + 0x10 + varA;
@@ -1501,7 +1501,7 @@ int Game::pge_o_unk0x6A(ObjectOpcodeArgs *args) {
 				if (varA == 0x10) {
 					++col_area;
 					if (col_area > 2) return 0;
-					pge_room = _res._ctData[CT_RIGHT_ROOM + pge_room];
+					pge_room = _res._ctData[kCtRoomRight + pge_room];
 					if (pge_room < 0) return 0;
 					varA = 0;
 					ct_data = &_res._ctData[0x100] + pge_room * 0x70 + grid_pos_y * 2 + 0x10 + varA;
@@ -1674,7 +1674,7 @@ int Game::pge_op_isBelowConrad(ObjectOpcodeArgs *args) {
 			return 0xFFFF;
 		}
 	} else if (!(_si->room_location & 0x80) && _si->room_location < 0x40) {
-		if (pge_conrad->room_location == _res._ctData[CT_UP_ROOM + _si->room_location]) {
+		if (pge_conrad->room_location == _res._ctData[kCtRoomTop + _si->room_location]) {
 			return 0xFFFF;
 		}
 	}
@@ -1689,7 +1689,7 @@ int Game::pge_op_isAboveConrad(ObjectOpcodeArgs *args) {
 			return 0xFFFF;
 		}
 	} else if (!(_si->room_location & 0x80) && _si->room_location < 0x40) {
-		if (pge_conrad->room_location == _res._ctData[CT_DOWN_ROOM + _si->room_location]) {
+		if (pge_conrad->room_location == _res._ctData[kCtRoomBottom + _si->room_location]) {
 			return 0xFFFF;
 		}
 	}
@@ -1725,10 +1725,10 @@ int Game::pge_op_isNotFacingConrad(ObjectOpcodeArgs *args) {
 		} else if (args->a == 0) {
 			if (!(pge->room_location & 0x80) && pge->room_location < 0x40) {
 				if (_pge_currentPiegeFacingDir) {
-					if (pge_conrad->room_location == _res._ctData[CT_RIGHT_ROOM + pge->room_location])
+					if (pge_conrad->room_location == _res._ctData[kCtRoomRight + pge->room_location])
 						return 0xFFFF;
 				} else {
-					if (pge_conrad->room_location == _res._ctData[CT_LEFT_ROOM + pge->room_location])
+					if (pge_conrad->room_location == _res._ctData[kCtRoomLeft + pge->room_location])
 						return 0xFFFF;
 				}
 			}
@@ -1766,10 +1766,10 @@ int Game::pge_op_isFacingConrad(ObjectOpcodeArgs *args) {
 		} else if (args->a == 0) {
 			if (!(pge->room_location & 0x80) && pge->room_location < 0x40) {
 				if (_pge_currentPiegeFacingDir) {
-					if (pge_conrad->room_location == _res._ctData[CT_LEFT_ROOM + pge->room_location])
+					if (pge_conrad->room_location == _res._ctData[kCtRoomLeft + pge->room_location])
 						return 0xFFFF;
 				} else {
-					if (pge_conrad->room_location == _res._ctData[CT_RIGHT_ROOM + pge->room_location])
+					if (pge_conrad->room_location == _res._ctData[kCtRoomRight + pge->room_location])
 						return 0xFFFF;
 				}
 			}
