@@ -136,7 +136,7 @@ void decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr
 		switch (sig) {
 		case 0xC211:
 			printf("dim %d,%d bounds %d,%d,%d,%d\n", w, h, ptr[0], ptr[1], ptr[2], ptr[3]);
-			decodeC211(ptr + 4, imageData8, w, h);
+			decodeC211(ptr + 4, imageData8, w, h, false);
 			break;
 		case 0xC103:
 			printf("dim %d,%d\n", w, h);
@@ -282,6 +282,7 @@ void ResourceData::loadMonsterData(const char *name, Color *clut) {
 	}
 }
 
+// TODO: unload
 void ResourceData::loadLevelData(int i) {
 	static const char *levels[] = { "1", "2", "3", "4-1", "4-2", "5-1", "5-2" };
 	char name[64];
@@ -337,7 +338,7 @@ if (i >= count) fprintf(stdout, "getImageData i %d count %d\n", i, count);
 	return (offset != 0) ? basePtr + offset : 0;
 }
 
-void ResourceData::decodeImageData(const uint8_t *ptr, int i, uint8_t *dst, int dstPitch) {
+void ResourceData::decodeImageData(const uint8_t *ptr, int i, uint8_t *dst, int dstPitch, bool xflip) {
 	const uint8_t *basePtr = ptr;
 	const uint16_t sig = READ_BE_UINT16(ptr); ptr += 2;
 	assert(sig == 0xC211 || sig == 0xC103);
@@ -351,7 +352,7 @@ void ResourceData::decodeImageData(const uint8_t *ptr, int i, uint8_t *dst, int 
 		const int h = READ_BE_UINT16(ptr); ptr += 2;
 		switch (sig) {
 		case 0xC211:
-			decodeC211(ptr + 4, dst, dstPitch, h);
+			decodeC211(ptr + 4, dst, dstPitch, h, xflip);
 			break;
 		case 0xC103:
 			decodeC103(ptr, dst, dstPitch, w, h);

@@ -81,7 +81,7 @@ struct ResourceData {
 	void loadLevelRoom(int level, int i, uint8_t *dst, int dstPitch);
 	void loadLevelObjects(int level);
 	const uint8_t *getImageData(const uint8_t *ptr, int i);
-	void decodeImageData(const uint8_t *ptr, int i, uint8_t *dst, int dstPitch);
+	void decodeImageData(const uint8_t *ptr, int i, uint8_t *dst, int dstPitch, bool xflip = false);
 };
 
 void decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr);

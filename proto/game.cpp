@@ -223,7 +223,8 @@ void Game::drawCurrentInventoryItem() {
 	uint16 src = _pgeLive[0].current_inventory_PGE;
 	if (src != 0xFF) {
 		_currentIcon = _res._pgeInit[src].icon_num;
-		drawIcon(_currentIcon, 232, 8, 0xA);
+assert(_currentIcon > 9);
+		drawIcon(_currentIcon - 9, 232, 8, 0xA);
 	}
 }
 
@@ -645,22 +646,28 @@ fprintf(stdout, "anim %d bounds %d,%d,%d,%d flags 0x%X\n", pge->anim_number, dat
 		y = y * 2 - dataPtr[3] / 2;
 		_res.decodeImageData(_res._spc, pge->anim_number, _frontLayer + kScreenWidth * y + x, kScreenWidth);
 	} else {
+		const bool xflip = (pge->flags & 2);
 		if (pge->index == 0) {
 			const int frame = _res.getPersoFrame(pge->anim_number);
 fprintf(stdout, "frame %d anim_number %d index %d\n", frame, pge->anim_number, pge->index);
 			const uint8_t *dataPtr = _res.getImageData(_res._perso, frame);
 			if (!dataPtr) return;
 fprintf(stdout, "anim %d bounds %d,%d,%d,%d flags 0x%X\n", pge->anim_number, dataPtr[0], dataPtr[1], dataPtr[2], dataPtr[3], pge->flags);
-			x = x * 2 - dataPtr[1];
+			x = x * 2;
+			if (!xflip) {
+				x -= dataPtr[1];
+			} else {
+				x += dataPtr[1];
+			}
 			y = y * 2 - dataPtr[3];
-			_res.decodeImageData(_res._perso, frame, _frontLayer + kScreenWidth * y + x, kScreenWidth);
+			_res.decodeImageData(_res._perso, frame, _frontLayer + kScreenWidth * y + x , kScreenWidth, xflip);
 		} else {
 			const int frame = _res.getMonsterFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._monster, frame);
 			if (!dataPtr) return;
 			x = x * 2 - dataPtr[1];
 			y = y * 2 - dataPtr[3];
-			_res.decodeImageData(_res._monster, frame, _frontLayer + kScreenWidth * y + x, kScreenWidth);
+			_res.decodeImageData(_res._monster, frame, _frontLayer + kScreenWidth * y + x, kScreenWidth, xflip);
 		}
 	}
 }

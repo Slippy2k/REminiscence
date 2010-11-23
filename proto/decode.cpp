@@ -79,7 +79,7 @@ void decodeC103(const uint8_t *a3, uint8_t *a0, int pitch, int w, int h) {
 	}
 }
 
-void decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h) {
+void decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h, bool xflip) {
 	struct {
 		const uint8_t *ptr;
 		int repeatCount;
@@ -119,19 +119,37 @@ void decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h) {
 					++sp;
 				}
 			} else {
-				a0 += d1;
+				if (xflip) {
+					a0 -= d1;
+				} else {
+					a0 += d1;
+				}
 			}
 		} else {
 			if ((d0 & 0x80) == 0) {
 				if (d1 == 1) {
 					return;
 				}
-				memset(a0, *a3++, d1);
+				if (xflip) {
+					const uint8_t code = *a3++;
+					for (int i = 0; i < d1; ++i) {
+						*a0-- = code;
+					}
+				} else {
+					memset(a0, *a3++, d1);
+					a0 += d1;
+				}
 			} else {
-				memcpy(a0, a3, d1);
-				a3 += d1;
+				if (xflip) {
+					for (int i = 0; i < d1; ++i) {
+						*a0-- = *a3++;
+					}
+				} else {
+					memcpy(a0, a3, d1);
+					a0 += d1;
+					a3 += d1;
+				}
 			}
-			a0 += d1;
 		}
 	}
 }
