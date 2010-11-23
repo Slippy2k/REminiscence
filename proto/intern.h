@@ -17,7 +17,6 @@ typedef int8_t int8;
 typedef uint16_t uint16;
 typedef int16_t int16;
 typedef uint32_t uint32;
-typedef int32_t int32;
 
 inline uint16 READ_BE_UINT16(const void *ptr) {
 	const uint8 *b = (const uint8 *)ptr;
@@ -142,12 +141,6 @@ struct InventoryItem {
 	uint8 icon_num;
 	InitPGE *init_pge;
 	LivePGE *live_pge;
-};
-
-struct SoundFx {
-	uint32 offset;
-	uint16 len;
-	uint8 *data;
 };
 
 #endif // INTERN_H__

@@ -657,7 +657,7 @@ fprintf(stdout, "anim %d bounds %d,%d,%d,%d flags 0x%X\n", pge->anim_number, dat
 			if (!xflip) {
 				x -= dataPtr[1];
 			} else {
-				x += dataPtr[1];
+				x += dataPtr[1] - 1;
 			}
 			y = y * 2 - dataPtr[3];
 			_res.decodeImageData(_res._perso, frame, _frontLayer + kScreenWidth * y + x , kScreenWidth, xflip);

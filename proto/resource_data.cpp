@@ -2,29 +2,30 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <SDL_opengl.h>
 #include "decode.h"
 #include "resource_data.h"
 #include "resource_mac.h"
 
 static const int levelsColorOffset[] = { 24, 28, 36, 40, 44 }; // red palette: 32
-static const int levelsIndex[] = { 1, 2, 3, 4, 4, 5, 5 };
+static const int levelsIntegerIndex[] = { 1, 2, 3, 4, 4, 5, 5 };
+static const char *levelsStringIndex[] = { "1", "2", "3", "4-1", "4-2", "5-1", "5-2" };
 
 void ResourceData::setupLevelClut(int level, Color *clut) {
-	memset(clut, 0, 256 * sizeof(Color));
-	const int num = levelsIndex[level] - 1;
+	const int num = levelsIntegerIndex[level] - 1;
 	const int offset = levelsColorOffset[num];
 	for (int i = 0; i < 4; ++i) {
 		copyClut16(clut, i, offset + i);
 		copyClut16(clut, 8 + i, offset + i);
 	}
-	copyClut16(clut, 0x4, 0x30);
+	copyClut16(clut, 4, 0x30);
+	// 5 is monster palette
+	clearClut16(clut, 6);
 	copyClut16(clut, 0xA, levelsColorOffset[0] + 2);
 	copyClut16(clut, 0xC, 0x37);
 	copyClut16(clut, 0xD, 0x38);
+	clearClut16(clut, 0xE);
+	clearClut16(clut, 0xF);
 }
-
-static uint32_t _resourceDataSize = 0;
 
 uint8_t *ResourceData::decodeResourceData(const char *name, bool decompressLzss) {
 	uint8_t *data = 0;
@@ -47,6 +48,10 @@ enum {
 	kImageOffsetsCount = 2048
 };
 
+void ResourceData::clearClut16(Color *clut, uint8_t dest) {
+	memset(&clut[dest * 16], 0, 16 * sizeof(Color));
+}
+
 void ResourceData::copyClut16(Color *clut, uint8_t dest, uint8_t src) {
 	memcpy(&clut[dest * 16], &_clut[src * 16], 16 * sizeof(Color));
 }
@@ -58,7 +63,6 @@ static void setGrayImageClut(Color *clut) {
 }
 
 void decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr) {
-	static const int levelsColorOffset[] = { 24, 28, 36, 40, 44 }; // red palette: 32
 	Color clut[256];
 	memset(clut, 0, sizeof(clut));
 	if (strncmp(name, "Title", 5) == 0) {
@@ -243,7 +247,6 @@ void ResourceData::decodeDataCLUT(const uint8_t *ptr) {
 		_clut[i].g = ptr[0]; ptr += 2;
 		_clut[i].b = ptr[0]; ptr += 2;
 	}
-	printf("_clutSize %d\n", _clutSize);
 }
 
 void ResourceData::loadClutData() {
@@ -272,6 +275,8 @@ void ResourceData::loadMonsterData(const char *name, Color *clut) {
 		{ "glue", "Alien", 0x36 },
 		{ 0, 0, 0 }
 	};
+	free(_monster);
+	_monster = 0;
 	for (int i = 0; data[i].id; ++i) {
 		if (strcmp(data[i].id, name) == 0) {
 			_monster = decodeResourceData(data[i].name, true);
@@ -282,35 +287,46 @@ void ResourceData::loadMonsterData(const char *name, Color *clut) {
 	}
 }
 
-// TODO: unload
+void ResourceData::unloadLevelData() {
+	free(_ani);
+	_ani = 0;
+	ObjectNode *prevNode = 0;
+	for (int i = 0; i < _numObjectNodes; ++i) {
+		if (prevNode != _objectNodesMap[i]) {
+			free(_objectNodesMap[i]);
+			prevNode = _objectNodesMap[i];
+		}
+	}
+	_numObjectNodes = 0;
+	free(_ctData);
+}
+
 void ResourceData::loadLevelData(int i) {
-	static const char *levels[] = { "1", "2", "3", "4-1", "4-2", "5-1", "5-2" };
 	char name[64];
 	// .PGE
-	snprintf(name, sizeof(name), "Level %s objects", levels[i]);
+	snprintf(name, sizeof(name), "Level %s objects", levelsStringIndex[i]);
 	uint8_t *ptr = decodeResourceData(name, true);
 	decodeDataPGE(ptr);
 	free(ptr);
 	// .ANI
-	snprintf(name, sizeof(name), "Level %s sequences", levels[i]);
+	snprintf(name, sizeof(name), "Level %s sequences", levelsStringIndex[i]);
 	_ani = decodeResourceData(name, true);
 	assert(READ_BE_UINT16(_ani) == 0x48D);
 	// .OBJ
-	snprintf(name, sizeof(name), "Level %s conditions", levels[i]);
+	snprintf(name, sizeof(name), "Level %s conditions", levelsStringIndex[i]);
 	ptr = decodeResourceData(name, true);
 	assert(READ_BE_UINT16(ptr) == 0xE6);
 	decodeDataOBJ(ptr, _resourceDataSize);
 	free(ptr);
 	// .CT
-	snprintf(name, sizeof(name), "Level %c map", levels[i][0]);
-	ptr = decodeResourceData(name, true);
-	memcpy(_ctData, ptr, sizeof(_ctData));
-	free(ptr);
+	snprintf(name, sizeof(name), "Level %c map", levelsStringIndex[i][0]);
+	_ctData = (int8_t *)decodeResourceData(name, true);
+	assert(_resourceDataSize == 0x1D00);
 }
 
 void ResourceData::loadLevelRoom(int level, int i, uint8_t *dst, int dstPitch) {
 	char name[64];
-	snprintf(name, sizeof(name), "Level %d Room %d", levelsIndex[level], i);
+	snprintf(name, sizeof(name), "Level %d Room %d", levelsIntegerIndex[level], i);
 	uint8_t *ptr = decodeResourceData(name, true);
 	assert(ptr);
 	if (ptr) {
@@ -321,7 +337,7 @@ void ResourceData::loadLevelRoom(int level, int i, uint8_t *dst, int dstPitch) {
 
 void ResourceData::loadLevelObjects(int level) {
 	char name[64];
-	snprintf(name, sizeof(name), "Objects %d", levelsIndex[level]);
+	snprintf(name, sizeof(name), "Objects %d", levelsIntegerIndex[level]);
 	_spc = decodeResourceData(name, true);
 	assert(_spc);
 }
@@ -331,7 +347,6 @@ const uint8_t *ResourceData::getImageData(const uint8_t *ptr, int i) {
 	const uint16_t sig = READ_BE_UINT16(ptr); ptr += 2;
 	assert(sig == 0xC211);
 	const int count = READ_BE_UINT16(ptr); ptr += 2;
-if (i >= count) fprintf(stdout, "getImageData i %d count %d\n", i, count);
 	assert(i < count);
 	ptr += 4;
 	const uint32_t offset = READ_BE_UINT32(ptr + i * 4);
