@@ -1,4 +1,2 @@
 fix piege display (add xflip, yflip)
-choix du niveau par ligne de commande
-mainloop, event based : queueEvent, doTick
 scaler2x pour les cutscenes

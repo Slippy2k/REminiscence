@@ -573,11 +573,11 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy) {
 		assert(pge->anim_number < 1287);
 //		const uint8 *dataPtr = _res._spr_off[pge->anim_number];
 // TODO: _perso
-		const uint8 *dataPtr = _res.getImageData(_res._perso, _res.getSpriteFrame(pge->anim_number));
-		if (dataPtr == 0) {
-			return;
-		}
-
+		const uint8 *dataPtr = 0; //_res.getImageData(_res._perso, _res.getSpriteFrame(pge->anim_number));
+//		if (dataPtr == 0) {
+//			return;
+//		}
+#if 0
 		if (pge->flags & 2) {
 			xpos = (int8)dataPtr[0] + dx + pge->pos_x;
 			uint8 _cl = dataPtr[2];
@@ -592,6 +592,10 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy) {
 		}
 
 		ypos = dy + pge->pos_y - (int8)dataPtr[1] + 2;
+#else
+		xpos = dx + pge->pos_x;
+		ypos = dy + pge->pos_y + 2;
+#endif
 		if (xpos <= -32 || xpos >= 256 || ypos < -48 || ypos >= 224) {
 			return;
 		}
@@ -633,19 +637,33 @@ void Game::drawAnims() {
 }
 
 void Game::drawPiege(LivePGE *pge, int x, int y) {
+	// TODO: xflip, yflip, clipping
 	if (pge->flags & 8) {
 		// object
 		const uint8_t *dataPtr = _res.getImageData(_res._spc, pge->anim_number);
 if (!dataPtr) return;
-		fprintf(stdout, "anim %d bounds %d,%d,%d,%d flags 0x%X\n", pge->anim_number, dataPtr[0], dataPtr[1], dataPtr[2], dataPtr[3], pge->flags);
+fprintf(stdout, "anim %d bounds %d,%d,%d,%d flags 0x%X\n", pge->anim_number, dataPtr[0], dataPtr[1], dataPtr[2], dataPtr[3], pge->flags);
 		x = x * 2 - dataPtr[1] / 2;
 		y = y * 2 - dataPtr[3] / 2;
 		_res.decodeImageData(_res._spc, pge->anim_number, _frontLayer + kScreenWidth * y + x, kScreenWidth);
 	} else {
-		const int frame = _res.getSpriteFrame(pge->anim_number);
-		x *= 2;
-		y *= 2;
-		_res.decodeImageData(_res._perso, frame, _frontLayer + kScreenWidth * y + x, kScreenWidth);
+		if (pge->index == 0) {
+			const int frame = _res.getPersoFrame(pge->anim_number);
+fprintf(stdout, "frame %d anim_number %d index %d\n", frame, pge->anim_number, pge->index);
+			const uint8_t *dataPtr = _res.getImageData(_res._perso, frame);
+			if (!dataPtr) return;
+fprintf(stdout, "anim %d bounds %d,%d,%d,%d flags 0x%X\n", pge->anim_number, dataPtr[0], dataPtr[1], dataPtr[2], dataPtr[3], pge->flags);
+			x = x * 2 - dataPtr[1];
+			y = y * 2 - dataPtr[3];
+			_res.decodeImageData(_res._perso, frame, _frontLayer + kScreenWidth * y + x, kScreenWidth);
+		} else {
+			const int frame = _res.getMonsterFrame(pge->anim_number);
+			const uint8_t *dataPtr = _res.getImageData(_res._monster, frame);
+			if (!dataPtr) return;
+			x = x * 2 - dataPtr[1];
+			y = y * 2 - dataPtr[3];
+			_res.decodeImageData(_res._monster, frame, _frontLayer + kScreenWidth * y + x, kScreenWidth);
+		}
 	}
 }
 
@@ -665,12 +683,7 @@ void Game::drawAnimBuffer(uint8 stateNum, AnimBufferState *state) {
 					break;
 				}
 #if 0
-				if (!(state->dataPtr[-2] & 0x80)) {
-					decodeCharacterFrame(state->dataPtr, _res._memBuf);
-					drawCharacter(_res._memBuf, state->x, state->y, state->dataPtr[-1], state->dataPtr[-2], pge->flags);
-				} else {
-					drawCharacter(state->dataPtr, state->x, state->y, state->dataPtr[-1], state->dataPtr[-2], pge->flags);
-				}
+				drawCharacter(state->dataPtr, state->x, state->y, state->dataPtr[-1], state->dataPtr[-2], pge->flags);
 #endif
 				drawPiege(pge, state->x, state->y);
 			} else {
@@ -806,40 +819,6 @@ void Game::drawObjectFrame(const uint8 *dataPtr, int16 x, int16 y, uint8 flags) 
 #endif
 }
 
-void Game::decodeCharacterFrame(const uint8 *dataPtr, uint8 *dstPtr) {
-	int n = READ_BE_UINT16(dataPtr); dataPtr += 2;
-	uint16 len = n * 2;
-	uint8 *dst = dstPtr + 0x400;
-	while (n--) {
-		uint8 c = *dataPtr++;
-		dst[0] = (c & 0xF0) >> 4;
-		dst[1] = (c & 0x0F) >> 0;
-		dst += 2;
-	}
-	dst = dstPtr;
-	const uint8 *src = dstPtr + 0x400;
-	do {
-		uint8 c1 = *src++;
-		if (c1 == 0xF) {
-			uint8 c2 = *src++;
-			uint16 c3 = *src++;
-			if (c2 == 0xF) {
-				c1 = *src++;
-				c2 = *src++;
-				c3 = (c3 << 4) | c1;
-				len -= 2;
-			}
-			memset(dst, c2, c3 + 4);
-			dst += c3 + 4;
-			len -= 3;
-		} else {
-			*dst++ = c1;
-			--len;
-		}
-	} while (len != 0);
-}
-
-
 void Game::drawCharacter(const uint8 *dataPtr, int16 pos_x, int16 pos_y, uint8 a, uint8 b, uint8 flags) {
 #if 0
 	debug(DBG_GAME, "Game::drawCharacter(0x%X, %d, %d, 0x%X, 0x%X, 0x%X)", dataPtr, pos_x, pos_y, a, b, flags);
@@ -946,41 +925,6 @@ void Game::drawCharacter(const uint8 *dataPtr, int16 pos_x, int16 pos_y, uint8 a
 #endif
 }
 
-uint8 *Game::loadBankData(uint16 mbkEntryNum) {
-#if 0
-	debug(DBG_GAME, "Game::loadBankData(%d)", mbkEntryNum);
-	MbkEntry *me = &_res._mbk[mbkEntryNum];
-	const uint16 avail = _lastBankData - _firstBankData;
-	const uint16 size = (me->len & 0x7FFF) * 32;
-	if (avail < size) {
-		_curBankSlot = &_bankSlots[0];
-		_curBankSlot->entryNum = 0xFFFF;
-		_curBankSlot->ptr = 0;
-		_firstBankData = _bankData;
-	}
-	_curBankSlot->entryNum = mbkEntryNum;
-	_curBankSlot->ptr = _firstBankData;
-	++_curBankSlot;
-	_curBankSlot->entryNum = 0xFFFF;
-	_curBankSlot->ptr = 0;
-	const uint8 *data = _res._mbkData + me->offset;
-	if (me->len & 0x8000) {
-		warning("Uncompressed bank data %d", mbkEntryNum);
-		memcpy(_firstBankData, data, size);
-	} else {
-		assert(me->offset != 0);
-		if (!delphine_unpack(_firstBankData, data, 0)) {
-			error("Bad CRC for bank data %d", mbkEntryNum);
-		}
-	}
-	uint8 *bankData = _firstBankData;
-	_firstBankData += size;
-	assert(_firstBankData < _lastBankData);
-	return bankData;
-#endif
-	return 0;
-}
-
 int Game::loadMonsterSprites(LivePGE *pge) {
 	debug(DBG_GAME, "Game::loadMonsterSprites()");
 	InitPGE *init_pge = pge->init_PGE;
@@ -1004,6 +948,7 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 	_curMonsterFrame = mList[0];
 	if (_curMonsterNum != mList[1]) {
 		_curMonsterNum = mList[1];
+		_res.loadMonsterData(_monsterNames[_curMonsterNum], _palette);
 #if 0
 		_res.load(_monsterNames[_curMonsterNum], Resource::OT_SPRM);
 		_res.load_SPR_OFF(_monsterNames[_curMonsterNum], _res._sprm);
@@ -1072,17 +1017,6 @@ void Game::loadLevelData() {
 	}
 	pge_resetGroups();
 //	_validSaveState = false;
-}
-
-uint8 *Game::findBankData(uint16 entryNum) {
-	BankSlot *slot = &_bankSlots[0];
-	while (slot->entryNum != 0xFFFF) {
-		if (slot->entryNum == entryNum) {
-			return slot->ptr;
-		}
-		++slot;
-	}
-	return 0;
 }
 
 void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {

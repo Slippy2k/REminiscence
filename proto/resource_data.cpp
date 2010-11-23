@@ -47,35 +47,35 @@ enum {
 	kImageOffsetsCount = 2048
 };
 
-void ResourceData::copyClut16(Color *imageClut, uint8_t dest, uint8_t src) {
-	memcpy(&imageClut[dest * 16], &_clut[src * 16], 16 * sizeof(Color));
+void ResourceData::copyClut16(Color *clut, uint8_t dest, uint8_t src) {
+	memcpy(&clut[dest * 16], &_clut[src * 16], 16 * sizeof(Color));
 }
 
-static void setGrayImageClut(Color *imageClut) {
+static void setGrayImageClut(Color *clut) {
 	for (int i = 0; i < 256; ++i) {
-		imageClut[i].r = imageClut[i].g = imageClut[i].b = i;
+		clut[i].r = clut[i].g = clut[i].b = i;
 	}
 }
 
 void decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr) {
 	static const int levelsColorOffset[] = { 24, 28, 36, 40, 44 }; // red palette: 32
-	Color imageClut[256];
-	memset(imageClut, 0, sizeof(imageClut));
+	Color clut[256];
+	memset(clut, 0, sizeof(clut));
 	if (strncmp(name, "Title", 5) == 0) {
 		switch (name[6] - '1') {
 		case 0:
-			setGrayImageClut(imageClut);
+			setGrayImageClut(clut);
 			break;
 		case 1:
-			memcpy(imageClut, &resData._clut[192], 192 * sizeof(Color));
+			memcpy(clut, &resData._clut[192], 192 * sizeof(Color));
 			break;
 		case 2:
 		case 3:
 		case 4:
-			memcpy(imageClut, &resData._clut[0], 192 * sizeof(Color));
+			memcpy(clut, &resData._clut[0], 192 * sizeof(Color));
 			break;
 		case 5:
-			setGrayImageClut(imageClut);
+			setGrayImageClut(clut);
 			break;
 		}
 	} else if (strncmp(name, "Level", 5) == 0) {
@@ -83,35 +83,35 @@ void decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr
 		assert(num >= 0 && num < 6);
 		const int offset = levelsColorOffset[num];
 		for (int i = 0; i < 4; ++i) {
-			resData.copyClut16(imageClut, i, offset + i);
-			resData.copyClut16(imageClut, 8 + i, offset + i);
+			resData.copyClut16(clut, i, offset + i);
+			resData.copyClut16(clut, 8 + i, offset + i);
 		}
-		resData.copyClut16(imageClut, 0x4, 0x30);
-		resData.copyClut16(imageClut, 0xD, 0x38);
+		resData.copyClut16(clut, 0x4, 0x30);
+		resData.copyClut16(clut, 0xD, 0x38);
 	} else if (strncmp(name, "Objects", 7) == 0) {
 		const int num = name[8] - '1';
 		assert(num >= 0 && num < 6);
 		const int offset = levelsColorOffset[num];
 		for (int i = 0; i < 4; ++i) {
-			resData.copyClut16(imageClut, i, offset + i);
+			resData.copyClut16(clut, i, offset + i);
 		}
-		resData.copyClut16(imageClut, 0x4, 0x30);
+		resData.copyClut16(clut, 0x4, 0x30);
 	} else if (strcmp(name, "Icons") == 0) {
-		resData.copyClut16(imageClut, 0xA, levelsColorOffset[0] + 2);
-		resData.copyClut16(imageClut, 0xC, 0x37);
-		resData.copyClut16(imageClut, 0xD, 0x38);
+		resData.copyClut16(clut, 0xA, levelsColorOffset[0] + 2);
+		resData.copyClut16(clut, 0xC, 0x37);
+		resData.copyClut16(clut, 0xD, 0x38);
 	} else if (strcmp(name, "Font") == 0) {
-		resData.copyClut16(imageClut, 0xC, 0x37);
+		resData.copyClut16(clut, 0xC, 0x37);
 	} else if (strcmp(name, "Alien") == 0) {
-		resData.copyClut16(imageClut, 0x5, 0x36);
+		resData.copyClut16(clut, 0x5, 0x36);
 	} else if (strcmp(name, "Junky") == 0) {
-		resData.copyClut16(imageClut, 0x5, 0x32);
+		resData.copyClut16(clut, 0x5, 0x32);
 	} else if (strcmp(name, "Mercenary") == 0) {
-		resData.copyClut16(imageClut, 0x5, 0x34);
+		resData.copyClut16(clut, 0x5, 0x34);
 	} else if (strcmp(name, "Replicant") == 0) {
-		resData.copyClut16(imageClut, 0x5, 0x35);
+		resData.copyClut16(clut, 0x5, 0x35);
 	} else if (strcmp(name, "Person") == 0) {
-		resData.copyClut16(imageClut, 0x4, 0x30); // red: 0x31
+		resData.copyClut16(clut, 0x4, 0x30); // red: 0x31
 	}
 	const uint8_t *basePtr = ptr;
 	const uint16_t sig = READ_BE_UINT16(ptr); ptr += 2;
@@ -260,6 +260,28 @@ void ResourceData::loadPersoData() {
 	_perso = decodeResourceData("Person", true);
 }
 
+void ResourceData::loadMonsterData(const char *name, Color *clut) {
+	static const struct {
+		const char *id;
+		const char *name;
+		int index;
+	} data[] = {
+		{ "junky", "Junky", 0x32 },
+		{ "mercenai", "Mercenary", 0x34 },
+		{ "replican", "Replicant", 0x35 },
+		{ "glue", "Alien", 0x36 },
+		{ 0, 0, 0 }
+	};
+	for (int i = 0; data[i].id; ++i) {
+		if (strcmp(data[i].id, name) == 0) {
+			_monster = decodeResourceData(data[i].name, true);
+			assert(_monster);
+			copyClut16(clut, 5, data[i].index);
+			break;
+		}
+	}
+}
+
 void ResourceData::loadLevelData(int i) {
 	static const char *levels[] = { "1", "2", "3", "4-1", "4-2", "5-1", "5-2" };
 	char name[64];
@@ -308,6 +330,7 @@ const uint8_t *ResourceData::getImageData(const uint8_t *ptr, int i) {
 	const uint16_t sig = READ_BE_UINT16(ptr); ptr += 2;
 	assert(sig == 0xC211);
 	const int count = READ_BE_UINT16(ptr); ptr += 2;
+if (i >= count) fprintf(stdout, "getImageData i %d count %d\n", i, count);
 	assert(i < count);
 	ptr += 4;
 	const uint32_t offset = READ_BE_UINT32(ptr + i * 4);
@@ -336,48 +359,4 @@ void ResourceData::decodeImageData(const uint8_t *ptr, int i, uint8_t *dst, int 
 		}
 	}
 }
-
-#if 0
-int main(int argc, char *argv[]) {
-	if (argc > 1) {
-		ResourceMac res(argv[1]);
-		decodeSoundData(res);
-		checkAmigaData(res);
-		uint8_t *ptr = decodeResourceData(res, "Flashback colors", false);
-		readClut(ptr);
-		free(ptr);
-		char name[64];
-		for (int i = 1; i <= 6; ++i) {
-			snprintf(name, sizeof(name), "Title %d", i);
-			uint8_t *ptr = decodeResourceData(res, name, i == 6);
-			assert(ptr);
-			decodeImageData(name, ptr);
-			free(ptr);
-		}
-		for (int level = 1; level <= 5; ++level) {
-			for (int i = 0; i <= 64; ++i) {
-				snprintf(name, sizeof(name), "Level %d Room %d", level, i);
-				uint8_t *ptr = decodeResourceData(res, name, true);
-				if (ptr) {
-					decodeImageData(name, ptr);
-					free(ptr);
-				}
-			}
-			snprintf(name, sizeof(name), "Objects %d", level);
-			uint8_t *ptr = decodeResourceData(res, name, true);
-			assert(ptr);
-			decodeImageData(name, ptr);
-			free(ptr);
-		}
-		static const char *objects[] = { "Icons", "Font", "Alien", "Junky", "Mercenary", "Replicant", "Person", 0 };
-		for (int i = 0; objects[i]; ++i) {
-			uint8_t *ptr = decodeResourceData(res, objects[i], true);
-			assert(ptr);
-			decodeImageData(objects[i], ptr);
-			free(ptr);
-		}
-	}
-	return 0;
-}
-#endif
 

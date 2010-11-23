@@ -27,16 +27,40 @@ struct ResourceData {
 	uint8_t *_icn;
 	uint8_t *_perso;
 	uint8_t *_spc;
+	uint8_t *_monster;
 
 	ResourceData(const char *filePath)
 		: _res(filePath) {
 	}
 
-	int getSpriteFrame(int i) const {
-// FIXME
-		if (i < 0x230) return i;
-		if (i < 0x28E) return i - 0x22F;
-		return i - 0x28E + 0x230;
+	int getPersoFrame(int anim) const {
+		static const int data[] = {
+			0x000, 0x22E,
+			0x28E, 0x2E9,
+			0x386, 0x386,
+			0x49E, 0x506,
+			-1
+		};
+		return findAniFrame(data, anim);
+	}
+	int getMonsterFrame(int anim) const {
+		static const int data[] = {
+			0x22F, 0x28D, // junky
+			0x2EA, 0x30D, // mercenai
+			0x387, 0x42F, // replican
+			0x430, 0x4E8, // glue
+			-1
+		};
+		return findAniFrame(data, anim);
+	}
+	static int findAniFrame(const int *data, int anim) {
+		for (int i = 0; data[i] != -1; i += 2) {
+			if (anim >= data[i] && anim <= data[i + 1]) {
+				return anim - data[i];
+			}
+		}
+		assert(0);
+		return 0;
 	}
 	const uint8_t *getAniData(int i) const {
 		const uint32_t offset = READ_BE_UINT16(_ani + 2 + i * 2);
@@ -52,6 +76,7 @@ struct ResourceData {
 	void loadClutData();
 	void loadIconData();
 	void loadPersoData();
+	void loadMonsterData(const char *name, Color *clut);
 	void loadLevelData(int level);
 	void loadLevelRoom(int level, int i, uint8_t *dst, int dstPitch);
 	void loadLevelObjects(int level);

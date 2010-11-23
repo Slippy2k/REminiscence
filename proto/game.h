@@ -110,16 +110,13 @@ struct Game {
 	void drawAnimBuffer(uint8 stateNum, AnimBufferState *state);
 	void drawObject(const uint8 *dataPtr, int16 x, int16 y, uint8 flags);
 	void drawObjectFrame(const uint8 *dataPtr, int16 x, int16 y, uint8 flags);
-	void decodeCharacterFrame(const uint8 *dataPtr, uint8 *dstPtr);
 	void drawCharacter(const uint8 *dataPtr, int16 x, int16 y, uint8 a, uint8 b, uint8 flags);
-	uint8 *loadBankData(uint16 MbkEntryNum);
 	int loadMonsterSprites(LivePGE *pge);
 	void playSound(uint8 sfxId, uint8 softVol);
 	uint16 getRandomNumber();
 	void changeLevel();
 	uint16 getLineLength(const uint8 *str) const;
 	void handleInventory();
-	uint8 *findBankData(uint16 entryNum);
 
 
 	// pieges
