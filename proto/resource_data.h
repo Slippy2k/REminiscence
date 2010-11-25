@@ -49,23 +49,28 @@ struct ResourceData {
 		static const int data[] = {
 			0x000, 0x22E,
 			0x28E, 0x2E9,
-			0x386, 0x386,
 			0x4E9, 0x506,
 			-1
 		};
-		return findAniFrame(data, anim);
+		int offset = 0;
+		for (int i = 0; data[i] != -1; i += 2) {
+			if (anim >= data[i] && anim <= data[i + 1]) {
+				return offset + anim - data[i];
+			}
+			const int count = data[i + 1] + 1 - data[i];
+			offset += count;
+		}
+		assert(0);
+		return 0;
 	}
 	int getMonsterFrame(int anim) const {
 		static const int data[] = {
-			0x22F, 0x28D, // junky
-			0x2EA, 0x30D, // mercenai
-			0x387, 0x42F, // replican
-			0x430, 0x4E8, // glue
+			0x22F, 0x28D, // junky - 94
+			0x2EA, 0x387, // mercenai - 156
+			0x387, 0x42F, // replican - 169
+			0x430, 0x4E8, // glue - 185
 			-1
 		};
-		return findAniFrame(data, anim);
-	}
-	static int findAniFrame(const int *data, int anim) {
 		for (int i = 0; data[i] != -1; i += 2) {
 			if (anim >= data[i] && anim <= data[i + 1]) {
 				return anim - data[i];
