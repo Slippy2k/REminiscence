@@ -56,12 +56,6 @@ void ResourceData::copyClut16(Color *clut, uint8_t dest, uint8_t src) {
 	memcpy(&clut[dest * 16], &_clut[src * 16], 16 * sizeof(Color));
 }
 
-static void setGrayImageClut(Color *clut) {
-	for (int i = 0; i < 256; ++i) {
-		clut[i].r = clut[i].g = clut[i].b = i;
-	}
-}
-
 #if 0
 void decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr) {
 	Color clut[256];

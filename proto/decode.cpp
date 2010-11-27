@@ -31,7 +31,6 @@ uint8_t *decodeLzss(File &f, uint32_t &decodedSize) {
 }
 
 void decodeC103(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
-//	uint8_t *baseA0 = a0;
 	uint8_t d0;
 	int d3 = 0;
 	int d7 = 1;
@@ -41,7 +40,6 @@ void decodeC103(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
 	uint8_t a1[0x1000];
 
 	for (int y = 0; y < h; ++y) {
-//		a0 = baseA0 + y * pitch;
 		for (int x = 0; x < w; ++x) {
 			assert(d6 >= 0);
 			if (d6 == 0) {
@@ -58,12 +56,10 @@ void decodeC103(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
 					a1[d3] = d0;
 					++d3;
 					d3 &= d5;
-//					*a0++ = d0;
 					buf->setPixel(x, y, w, h, d0);
 					continue;
 				}
-				d1 = a3[0] * 256 + a3[1];
-				a3 += 2;
+				d1 = READ_BE_UINT16(a3); a3 += 2;
 				d6 = d1;
 				d1 &= d5;
 				++d1;
@@ -75,7 +71,6 @@ void decodeC103(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
 			d1 &= d5;
 			a1[d3++] = d0;
 			d3 &= d5;
-//			*a0++ = d0;
 			buf->setPixel(x, y, w, h, d0);
 			--d6;
 		}
@@ -87,7 +82,6 @@ void decodeC211(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
 		const uint8_t *ptr;
 		int repeatCount;
 	} stack[512];
-//	uint8_t *baseA0 = a0;
 	int y = 0;
 	int x = 0;
 	int sp = 0;
@@ -97,12 +91,10 @@ void decodeC211(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
 		if ((d0 & 0x80) != 0) {
 			++y;
 			x = 0;
-//			a0 = baseA0 + y * pitch;
 		}
 		int d1 = d0 & 0x1F;
 		if (d1 == 0) {
-			d1 = a3[0] * 256 + a3[1];
-			a3 += 2;
+			d1 = READ_BE_UINT16(a3); a3 += 2;
 		}
 		const int carry_set = (d0 & 0x40) != 0;
 		d0 <<= 2;
@@ -124,11 +116,6 @@ void decodeC211(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
 					++sp;
 				}
 			} else {
-//				if (xflip) {
-//					a0 -= d1;
-//				} else {
-//					a0 += d1;
-//				}
 				x += d1;
 			}
 		} else {
@@ -136,29 +123,11 @@ void decodeC211(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
 				if (d1 == 1) {
 					return;
 				}
-//				if (xflip) {
-//					const uint8_t code = *a3++;
-//					for (int i = 0; i < d1; ++i) {
-//						*a0-- = code;
-//					}
-//				} else {
-//					memset(a0, *a3++, d1);
-//					a0 += d1;
-//				}
 				const uint8_t color = *a3++;
 				for (int i = 0; i < d1; ++i) {
 					buf->setPixel(x++, y, w, h, color);
 				}
 			} else {
-//				if (xflip) {
-//					for (int i = 0; i < d1; ++i) {
-//						*a0-- = *a3++;
-//					}
-//				} else {
-//					memcpy(a0, a3, d1);
-//					a0 += d1;
-//					a3 += d1;
-//				}
 				for (int i = 0; i < d1; ++i) {
 					buf->setPixel(x++, y, w, h, *a3++);
 				}

@@ -616,7 +616,7 @@ void Game::drawAnims() {
 	drawAnimBuffer(3, _animBuffer3State);
 }
 
-static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, bool xflip, uint8 *dstPtr, const uint8_t *dataPtr) {
+static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, bool xflip, bool erase, uint8 *dstPtr, const uint8_t *dataPtr) {
 	buf->ptr = dstPtr;
 	buf->w = buf->pitch = Game::kScreenWidth;
 	buf->h = Game::kScreenHeight;
@@ -632,6 +632,7 @@ static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, bool xflip, uint8 
 		}
 		buf->y -= (int16)READ_BE_UINT16(dataPtr + 6);
 	}
+	buf->erase = erase;
 }
 
 void Game::drawPiege(LivePGE *pge, int x, int y) {
@@ -640,7 +641,7 @@ void Game::drawPiege(LivePGE *pge, int x, int y) {
 		// object
 		const uint8_t *dataPtr = _res.getImageData(_res._spc, pge->anim_number);
 if (!dataPtr) return;
-		initDecodeBuffer(&buf, x, y, false, _frontLayer, dataPtr);
+		initDecodeBuffer(&buf, x, y, false, _eraseBackground,  _frontLayer, dataPtr);
 		_res.decodeImageData(_res._spc, pge->anim_number, &buf);
 	} else {
 		const bool xflip = (pge->flags & 2);
@@ -648,13 +649,13 @@ if (!dataPtr) return;
 			const int frame = _res.getPersoFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._perso, frame);
 if (!dataPtr) return;
-			initDecodeBuffer(&buf, x, y, xflip, _frontLayer, dataPtr);
+			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
 			_res.decodeImageData(_res._perso, frame, &buf);
 		} else {
 			const int frame = _res.getMonsterFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._monster, frame);
 if (!dataPtr) return;
-			initDecodeBuffer(&buf, x, y, xflip, _frontLayer, dataPtr);
+			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
 			_res.decodeImageData(_res._monster, frame, &buf);
 		}
 	}
@@ -719,7 +720,7 @@ void Game::loadLevelMap() {
 	debug(DBG_GAME, "Game::loadLevelMap() room=%d", _currentRoom);
 	_currentIcon = 0xFF;
 	DecodeBuffer buf;
-	initDecodeBuffer(&buf, 0, 0, false, _frontLayer, 0);
+	initDecodeBuffer(&buf, 0, 0, false, true, _frontLayer, 0);
 	_res.loadLevelRoom(_currentLevel, _currentRoom, &buf);
 	memcpy(_backLayer, _frontLayer, kScreenWidth * kScreenHeight);
 	_res.setupLevelClut(_currentLevel, _palette);
@@ -788,7 +789,7 @@ void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
 	_vid.markBlockAsDirty(x, y, 16, 16);
 #endif
 	DecodeBuffer buf;
-	initDecodeBuffer(&buf, x * 2, y * 2, false, _frontLayer, 0);
+	initDecodeBuffer(&buf, x * 2, y * 2, false, true, _frontLayer, 0);
 	_res.decodeImageData(_res._icn, iconNum, &buf);
 }
 
