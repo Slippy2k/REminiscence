@@ -62,6 +62,7 @@ static void setGrayImageClut(Color *clut) {
 	}
 }
 
+#if 0
 void decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr) {
 	Color clut[256];
 	memset(clut, 0, sizeof(clut));
@@ -150,6 +151,7 @@ void decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr
 		free(imageData8);
 	}
 }
+#endif
 
 void ResourceData::decodeDataPGE(const uint8_t *ptr) {
 	const uint8_t *startPtr = ptr;
@@ -324,13 +326,13 @@ void ResourceData::loadLevelData(int i) {
 	assert(_resourceDataSize == 0x1D00);
 }
 
-void ResourceData::loadLevelRoom(int level, int i, uint8_t *dst, int dstPitch) {
+void ResourceData::loadLevelRoom(int level, int i, DecodeBuffer *buf) {
 	char name[64];
 	snprintf(name, sizeof(name), "Level %d Room %d", levelsIntegerIndex[level], i);
 	uint8_t *ptr = decodeResourceData(name, true);
 	assert(ptr);
 	if (ptr) {
-		decodeImageData(ptr, 0, dst, dstPitch);
+		decodeImageData(ptr, 0, buf);
 		free(ptr);
 	}
 }
@@ -353,7 +355,7 @@ const uint8_t *ResourceData::getImageData(const uint8_t *ptr, int i) {
 	return (offset != 0) ? basePtr + offset : 0;
 }
 
-void ResourceData::decodeImageData(const uint8_t *ptr, int i, uint8_t *dst, int dstPitch, bool xflip) {
+void ResourceData::decodeImageData(const uint8_t *ptr, int i, DecodeBuffer *dst) {
 	const uint8_t *basePtr = ptr;
 	const uint16_t sig = READ_BE_UINT16(ptr); ptr += 2;
 	assert(sig == 0xC211 || sig == 0xC103);
@@ -367,10 +369,10 @@ void ResourceData::decodeImageData(const uint8_t *ptr, int i, uint8_t *dst, int 
 		const int h = READ_BE_UINT16(ptr); ptr += 2;
 		switch (sig) {
 		case 0xC211:
-			decodeC211(ptr + 4, dst, dstPitch, h, xflip);
+			decodeC211(ptr + 4, w, h, dst);
 			break;
 		case 0xC103:
-			decodeC103(ptr, dst, dstPitch, w, h);
+			decodeC103(ptr, w, h, dst);
 			break;
 		}
 	}

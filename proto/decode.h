@@ -14,7 +14,33 @@ static inline uint32_t READ_BE_UINT32(const uint8_t *ptr) {
 }
 
 uint8_t *decodeLzss(File &f, uint32_t &decodedSize);
-void decodeC103(const uint8_t *a3, uint8_t *a0, int pitch, int w, int h);
-void decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h, bool xflip);
+
+struct DecodeBuffer {
+	uint8_t *ptr;
+	int w, h, pitch;
+	int x, y;
+	bool xflip, yflip;
+
+	void setPixel(int src_x, int src_y, int src_w, int src_h, uint8_t color) {
+		if (xflip) {
+			src_x = src_w - 1 - src_x;
+		}
+		src_x += x;
+		if (yflip) {
+			src_y = src_h - 1 - src_y;
+		}
+		src_y += y;
+		if (src_x < 0 || src_x >= w) { 
+			return;
+		}
+		if (src_y < 0 || src_y >= h) {
+			return;
+		}
+		ptr[src_y * pitch + src_x] = color;
+	}
+};
+
+void decodeC103(const uint8_t *a3, int w, int h, DecodeBuffer *buf);
+void decodeC211(const uint8_t *a3, int w, int h, DecodeBuffer *buf);
 
 #endif

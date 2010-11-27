@@ -223,8 +223,7 @@ void Game::drawCurrentInventoryItem() {
 	uint16 src = _pgeLive[0].current_inventory_PGE;
 	if (src != 0xFF) {
 		_currentIcon = _res._pgeInit[src].icon_num;
-assert(_currentIcon > 9);
-		drawIcon(_currentIcon - 9, 232, 8, 0xA);
+		drawIcon(_currentIcon, 232, 8, 0xA);
 	}
 }
 
@@ -576,25 +575,8 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy) {
 //		if (dataPtr == 0) {
 //			return;
 //		}
-#if 0
-		if (pge->flags & 2) {
-			xpos = (int8)dataPtr[0] + dx + pge->pos_x;
-			uint8 _cl = dataPtr[2];
-			if (_cl & 0x40) {
-				_cl = dataPtr[3];
-			} else {
-				_cl &= 0x3F;
-			}
-			xpos -= _cl;
-		} else {
-			xpos = dx + pge->pos_x - (int8)dataPtr[0];
-		}
-
-		ypos = dy + pge->pos_y - (int8)dataPtr[1] + 2;
-#else
 		xpos = dx + pge->pos_x;
 		ypos = dy + pge->pos_y + 2;
-#endif
 		if (xpos <= -32 || xpos >= 256 || ypos < -48 || ypos >= 224) {
 			return;
 		}
@@ -608,7 +590,6 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy) {
 			_animBuffers.addState(0, xpos, ypos, dataPtr, pge);
 		}
 	} else {
-fprintf(stdout, "pge->anim_number %d pos %d,%d (%d,%d) pgeNum %d\n", pge->anim_number, dx, dy, pge->pos_x + 8, pge->pos_y + 2, pge - &_pgeLive[0]);
 //		assert(pge->anim_number < _res._numSpc);
 //		const uint8 *dataPtr = _res._spc + READ_BE_UINT16(_res._spc + pge->anim_number * 2);
 		const uint8_t *dataPtr = 0;
@@ -635,39 +616,46 @@ void Game::drawAnims() {
 	drawAnimBuffer(3, _animBuffer3State);
 }
 
+static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, bool xflip, uint8 *dstPtr, const uint8_t *dataPtr) {
+	buf->ptr = dstPtr;
+	buf->w = buf->pitch = Game::kScreenWidth;
+	buf->h = Game::kScreenHeight;
+	buf->xflip = xflip;
+	buf->yflip = false;
+	buf->x = x * 2;
+	buf->y = y * 2;
+	if (dataPtr) {
+		if (xflip) {
+			buf->x += (int16)READ_BE_UINT16(dataPtr + 4) - READ_BE_UINT16(dataPtr) - 1;
+		} else {
+			buf->x -= (int16)READ_BE_UINT16(dataPtr + 4);
+		}
+		buf->y -= (int16)READ_BE_UINT16(dataPtr + 6);
+	}
+}
+
 void Game::drawPiege(LivePGE *pge, int x, int y) {
-	// TODO: xflip, yflip, clipping
+	DecodeBuffer buf;
 	if (pge->flags & 8) {
 		// object
 		const uint8_t *dataPtr = _res.getImageData(_res._spc, pge->anim_number);
 if (!dataPtr) return;
-fprintf(stdout, "anim %d bounds %d,%d,%d,%d flags 0x%X\n", pge->anim_number, dataPtr[0], dataPtr[1], dataPtr[2], dataPtr[3], pge->flags);
-		x = x * 2 - dataPtr[1] / 2;
-		y = y * 2 - dataPtr[3] / 2;
-		_res.decodeImageData(_res._spc, pge->anim_number, _frontLayer + kScreenWidth * y + x, kScreenWidth);
+		initDecodeBuffer(&buf, x, y, false, _frontLayer, dataPtr);
+		_res.decodeImageData(_res._spc, pge->anim_number, &buf);
 	} else {
 		const bool xflip = (pge->flags & 2);
 		if (pge->index == 0) {
 			const int frame = _res.getPersoFrame(pge->anim_number);
-fprintf(stdout, "frame %d anim_number %d index %d\n", frame, pge->anim_number, pge->index);
 			const uint8_t *dataPtr = _res.getImageData(_res._perso, frame);
-			if (!dataPtr) return;
-fprintf(stdout, "anim %d bounds %d,%d,%d,%d flags 0x%X\n", pge->anim_number, dataPtr[0], dataPtr[1], dataPtr[2], dataPtr[3], pge->flags);
-			x = x * 2;
-			if (!xflip) {
-				x -= dataPtr[1];
-			} else {
-				x += dataPtr[1] - 1;
-			}
-			y = y * 2 - dataPtr[3];
-			_res.decodeImageData(_res._perso, frame, _frontLayer + kScreenWidth * y + x , kScreenWidth, xflip);
+if (!dataPtr) return;
+			initDecodeBuffer(&buf, x, y, xflip, _frontLayer, dataPtr);
+			_res.decodeImageData(_res._perso, frame, &buf);
 		} else {
 			const int frame = _res.getMonsterFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._monster, frame);
-			if (!dataPtr) return;
-			x = x * 2 - dataPtr[1];
-			y = y * 2 - dataPtr[3];
-			_res.decodeImageData(_res._monster, frame, _frontLayer + kScreenWidth * y + x, kScreenWidth, xflip);
+if (!dataPtr) return;
+			initDecodeBuffer(&buf, x, y, xflip, _frontLayer, dataPtr);
+			_res.decodeImageData(_res._monster, frame, &buf);
 		}
 	}
 }
@@ -687,247 +675,11 @@ void Game::drawAnimBuffer(uint8 stateNum, AnimBufferState *state) {
 				if (stateNum == 1 && (_blinkingConradCounter & 1)) {
 					break;
 				}
-#if 0
-				drawCharacter(state->dataPtr, state->x, state->y, state->dataPtr[-1], state->dataPtr[-2], pge->flags);
-#endif
-				drawPiege(pge, state->x, state->y);
-			} else {
-//				drawObject(state->dataPtr, state->x, state->y, pge->flags);
-				drawPiege(pge, state->x, state->y);
 			}
+			drawPiege(pge, state->x, state->y);
 			--state;
 		} while (--numAnims != 0);
 	}
-}
-
-void Game::drawObject(const uint8 *dataPtr, int16 x, int16 y, uint8 flags) {
-#if 0
-	debug(DBG_GAME, "Game::drawObject() dataPtr[]=0x%X dx=%d dy=%d",  dataPtr[0], (int8)dataPtr[1], (int8)dataPtr[2]);
-	assert(dataPtr[0] < 0x4A);
-	uint8 slot = _res._rp[dataPtr[0]];
-	uint8 *data = findBankData(slot);
-	if (data == 0) {
-		data = loadBankData(slot);
-	}
-	_bankDataPtrs = data;
-	int16 posy = y - (int8)dataPtr[2];
-	int16 posx = x;
-	if (flags & 2) {
-		posx += (int8)dataPtr[1];
-	} else {
-		posx -= (int8)dataPtr[1];
-	}
-	int i = dataPtr[5];
-	dataPtr += 6;
-	while (i--) {
-		drawObjectFrame(dataPtr, posx, posy, flags);
-		dataPtr += 4;
-	}
-#endif
-}
-
-void Game::drawObjectFrame(const uint8 *dataPtr, int16 x, int16 y, uint8 flags) {
-#if 0
-	debug(DBG_GAME, "Game::drawObjectFrame(0x%X, %d, %d, 0x%X)", dataPtr, x, y, flags);
-	const uint8 *src = _bankDataPtrs + dataPtr[0] * 32;
-
-	int16 sprite_y = y + dataPtr[2];
-	int16 sprite_x;
-	if (flags & 2) {
-		sprite_x = x - dataPtr[1] - (((dataPtr[3] & 0xC) + 4) * 2);
-	} else {
-		sprite_x = x + dataPtr[1];
-	}
-
-	uint8 sprite_flags = dataPtr[3];
-	if (flags & 2) {
-		sprite_flags ^= 0x10;
-	}
-
-	uint8 sprite_h = (((sprite_flags >> 0) & 3) + 1) * 8;
-	uint8 sprite_w = (((sprite_flags >> 2) & 3) + 1) * 8;
-
-	int size = sprite_w * sprite_h / 2;
-	for (int i = 0; i < size; ++i) {
-		uint8 col = *src++;
-		_res._memBuf[i * 2 + 0] = (col & 0xF0) >> 4;
-		_res._memBuf[i * 2 + 1] = (col & 0x0F) >> 0;
-	}
-
-	src = _res._memBuf;
-	bool sprite_mirror_x = false;
-	int16 sprite_clipped_w;
-	if (sprite_x >= 0) {
-		sprite_clipped_w = sprite_x + sprite_w;
-		if (sprite_clipped_w < 256) {
-			sprite_clipped_w = sprite_w;
-		} else {
-			sprite_clipped_w = 256 - sprite_x;
-			if (sprite_flags & 0x10) {
-				sprite_mirror_x = true;
-				src += sprite_w - 1;
-			}
-		}
-	} else {
-		sprite_clipped_w = sprite_x + sprite_w;
-		if (!(sprite_flags & 0x10)) {
-			src -= sprite_x;
-			sprite_x = 0;
-		} else {
-			sprite_mirror_x = true;
-			src += sprite_x + sprite_w - 1;
-			sprite_x = 0;
-		}
-	}
-	if (sprite_clipped_w <= 0) {
-		return;
-	}
-
-	int16 sprite_clipped_h;
-	if (sprite_y >= 0) {
-		sprite_clipped_h = 224 - sprite_h;
-		if (sprite_y < sprite_clipped_h) {
-			sprite_clipped_h = sprite_h;
-		} else {
-			sprite_clipped_h = 224 - sprite_y;
-		}
-	} else {
-		sprite_clipped_h = sprite_h + sprite_y;
-		src -= sprite_w * sprite_y;
-		sprite_y = 0;
-	}
-	if (sprite_clipped_h <= 0) {
-		return;
-	}
-
-	if (!sprite_mirror_x && (sprite_flags & 0x10)) {
-		src += sprite_w - 1;
-	}
-
-	uint32 dst_offset = 256 * sprite_y + sprite_x;
-	uint8 sprite_col_mask = (flags & 0x60) >> 1;
-
-	if (_eraseBackground) {
-		if (!(sprite_flags & 0x10)) {
-			_vid.drawSpriteSub1(src, _vid._frontLayer + dst_offset, sprite_w, sprite_clipped_h, sprite_clipped_w, sprite_col_mask);
-		} else {
-			_vid.drawSpriteSub2(src, _vid._frontLayer + dst_offset, sprite_w, sprite_clipped_h, sprite_clipped_w, sprite_col_mask);
-		}
-	} else {
-		if (!(sprite_flags & 0x10)) {
-			_vid.drawSpriteSub3(src, _vid._frontLayer + dst_offset, sprite_w, sprite_clipped_h, sprite_clipped_w, sprite_col_mask);
-		} else {
-			_vid.drawSpriteSub4(src, _vid._frontLayer + dst_offset, sprite_w, sprite_clipped_h, sprite_clipped_w, sprite_col_mask);
-		}
-	}
-	_vid.markBlockAsDirty(sprite_x, sprite_y, sprite_clipped_w, sprite_clipped_h);
-#endif
-}
-
-void Game::drawCharacter(const uint8 *dataPtr, int16 pos_x, int16 pos_y, uint8 a, uint8 b, uint8 flags) {
-#if 0
-	debug(DBG_GAME, "Game::drawCharacter(0x%X, %d, %d, 0x%X, 0x%X, 0x%X)", dataPtr, pos_x, pos_y, a, b, flags);
-
-	bool var16 = false; // sprite_mirror_y
-	if (b & 0x40) {
-		b &= 0xBF;
-		SWAP(a, b);
-		var16 = true;
-	}
-	uint16 sprite_h = a;
-	uint16 sprite_w = b;
-
-	const uint8 *src = dataPtr;
-	bool var14 = false;
-
-	int16 sprite_clipped_w;
-	if (pos_x >= 0) {
-		if (pos_x + sprite_w < 256) {
-			sprite_clipped_w = sprite_w;
-		} else {
-			sprite_clipped_w = 256 - pos_x;
-			if (flags & 2) {
-				var14 = true;
-				if (var16) {
-					src += (sprite_w - 1) * sprite_h;
-				} else {
-					src += sprite_w - 1;
-				}
-			}
-		}
-	} else {
-		sprite_clipped_w = pos_x + sprite_w;
-		if (!(flags & 2)) {
-			if (var16) {
-				src -= sprite_h * pos_x;
-				pos_x = 0;
-			} else {
-				src -= pos_x;
-				pos_x = 0;
-			}
-		} else {
-			var14 = true;
-			if (var16) {
-				src += sprite_h * (pos_x + sprite_w - 1);
-				pos_x = 0;
-			} else {
-				src += pos_x + sprite_w - 1;
-				var14 = true;
-				pos_x = 0;
-			}
-		}
-	}
-	if (sprite_clipped_w <= 0) {
-		return;
-	}
-
-	int16 sprite_clipped_h;
-	if (pos_y >= 0) {
-		if (pos_y < 224 - sprite_h) {
-			sprite_clipped_h = sprite_h;
-		} else {
-			sprite_clipped_h = 224 - pos_y;
-		}
-	} else {
-		sprite_clipped_h = sprite_h + pos_y;
-		if (var16) {
-			src -= pos_y;
-		} else {
-			src -= sprite_w * pos_y;
-		}
-		pos_y = 0;
-	}
-	if (sprite_clipped_h <= 0) {
-		return;
-	}
-
-	if (!var14 && (flags & 2)) {
-		if (var16) {
-			src += sprite_h * (sprite_w - 1);
-		} else {
-			src += sprite_w - 1;
-		}
-	}
-
-	uint32 dst_offset = 256 * pos_y + pos_x;
-	uint8 sprite_col_mask = ((flags & 0x60) == 0x60) ? 0x50 : 0x40;
-
-	debug(DBG_GAME, "dst_offset=0x%X src_offset=0x%X", dst_offset, src - dataPtr);
-	if (!(flags & 2)) {
-		if (var16) {
-			_vid.drawSpriteSub5(src, _vid._frontLayer + dst_offset, sprite_h, sprite_clipped_h, sprite_clipped_w, sprite_col_mask);
-		} else {
-			_vid.drawSpriteSub3(src, _vid._frontLayer + dst_offset, sprite_w, sprite_clipped_h, sprite_clipped_w, sprite_col_mask);
-		}
-	} else {
-		if (var16) {
-			_vid.drawSpriteSub6(src, _vid._frontLayer + dst_offset, sprite_h, sprite_clipped_h, sprite_clipped_w, sprite_col_mask);
-		} else {
-			_vid.drawSpriteSub4(src, _vid._frontLayer + dst_offset, sprite_w, sprite_clipped_h, sprite_clipped_w, sprite_col_mask);
-		}
-	}
-	_vid.markBlockAsDirty(pos_x, pos_y, sprite_clipped_w, sprite_clipped_h);
-#endif
 }
 
 int Game::loadMonsterSprites(LivePGE *pge) {
@@ -966,7 +718,9 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 void Game::loadLevelMap() {
 	debug(DBG_GAME, "Game::loadLevelMap() room=%d", _currentRoom);
 	_currentIcon = 0xFF;
-	_res.loadLevelRoom(_currentLevel, _currentRoom, _frontLayer, kScreenWidth);
+	DecodeBuffer buf;
+	initDecodeBuffer(&buf, 0, 0, false, _frontLayer, 0);
+	_res.loadLevelRoom(_currentLevel, _currentRoom, &buf);
 	memcpy(_backLayer, _frontLayer, kScreenWidth * kScreenHeight);
 	_res.setupLevelClut(_currentLevel, _palette);
 }
@@ -1033,9 +787,9 @@ void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
 	_vid.drawSpriteSub1(buf, _vid._frontLayer + x + y * 256, 16, 16, 16, colMask << 4);
 	_vid.markBlockAsDirty(x, y, 16, 16);
 #endif
-	x *= 2;
-	y *= 2;
-	_res.decodeImageData(_res._icn, iconNum, _frontLayer + y * kScreenWidth + x, kScreenWidth);
+	DecodeBuffer buf;
+	initDecodeBuffer(&buf, x * 2, y * 2, false, _frontLayer, 0);
+	_res.decodeImageData(_res._icn, iconNum, &buf);
 }
 
 void Game::playSound(uint8 sfxId, uint8 softVol) {

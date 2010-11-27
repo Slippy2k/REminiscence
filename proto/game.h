@@ -90,9 +90,6 @@ struct Game {
 	void drawAnims();
 	void drawPiege(LivePGE *pge, int x, int y);
 	void drawAnimBuffer(uint8 stateNum, AnimBufferState *state);
-	void drawObject(const uint8 *dataPtr, int16 x, int16 y, uint8 flags);
-	void drawObjectFrame(const uint8 *dataPtr, int16 x, int16 y, uint8 flags);
-	void drawCharacter(const uint8 *dataPtr, int16 x, int16 y, uint8 a, uint8 b, uint8 flags);
 	int loadMonsterSprites(LivePGE *pge);
 	void playSound(uint8 sfxId, uint8 softVol);
 	uint16 getRandomNumber();

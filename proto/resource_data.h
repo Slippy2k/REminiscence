@@ -3,6 +3,7 @@
 #define RESOURCE_DATA_H__
 
 #include "intern.h"
+#include "decode.h"
 #include "resource_mac.h"
 
 struct Color {
@@ -97,13 +98,11 @@ struct ResourceData {
 	void loadMonsterData(const char *name, Color *clut);
 	void unloadLevelData();
 	void loadLevelData(int level);
-	void loadLevelRoom(int level, int i, uint8_t *dst, int dstPitch);
+	void loadLevelRoom(int level, int i, DecodeBuffer *dst);
 	void loadLevelObjects(int level);
 	const uint8_t *getImageData(const uint8_t *ptr, int i);
-	void decodeImageData(const uint8_t *ptr, int i, uint8_t *dst, int dstPitch, bool xflip = false);
+	void decodeImageData(const uint8_t *ptr, int i, DecodeBuffer *dst);
 };
-
-void decodeImageData(ResourceData &resData, const char *name, const uint8_t *ptr);
 
 #endif
 
