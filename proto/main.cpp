@@ -22,6 +22,7 @@ struct Test {
 	void init() {
 		_resData.loadClutData();
 		_resData.loadIconData();
+		_resData.loadFontData();
 		_resData.loadPersoData();
 	}
 

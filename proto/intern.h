@@ -53,7 +53,7 @@ struct InitPGE {
 	uint8 mirror_x;
 	uint8 flags;
 	uint8 unk1C; // collidable, collision_data_len
-	uint8 text_num;
+	uint16 text_num;
 };
 
 struct LivePGE {

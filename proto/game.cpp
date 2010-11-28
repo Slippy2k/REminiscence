@@ -412,16 +412,16 @@ bool Game::handleContinueAbort() {
 #endif
 
 void Game::printLevelCode() {
-#if 0
 	if (_printLevelCodeCounter != 0) {
 		--_printLevelCodeCounter;
 		if (_printLevelCodeCounter != 0) {
-			char levelCode[50];
-			sprintf(levelCode, "CODE: %s", _menu._passwords[_currentLevel][_skillLevel]);
-			_vid.drawString(levelCode, (kScreenWidth - strlen(levelCode) * 8) / 2, 16, 0xE7);
+#if 0
+			char buf[50];
+			snprintf(buf, sizeof(buf), "CODE: %s", _menu._passwords[_currentLevel][_skillLevel]);
+			drawString(buf, (kScreenWidth - strlen(buf) * 8) / 2, 16, 0xE7);
+#endif
 		}
 	}
-#endif
 }
 
 void Game::printSaveStateCompleted() {
@@ -444,11 +444,8 @@ void Game::drawLevelTexts() {
 		if (_textToDisplay == 0xFFFF) {
 			uint8 icon_num = obj - 1;
 			drawIcon(icon_num, 80, 8, 0xA);
-#if 0
-			uint8 txt_num = pge->init_PGE->text_num;
-			const char *str = (const char *)_res._tbn + READ_BE_UINT16(_res._tbn + txt_num * 2);
-			_vid.drawString(str, (176 - strlen(str) * 8) / 2, 26, 0xE6);
-#endif
+			const unsigned char *str = _res.getStringData(pge->init_PGE->text_num);
+			drawString(str, (176 - *str * 8) / 2, 26, 0xE6);
 			if (icon_num == 2) {
 				printSaveStateCompleted();
 				return;
@@ -461,8 +458,8 @@ void Game::drawLevelTexts() {
 }
 
 void Game::drawStoryTexts() {
-#if 0
 	if (_textToDisplay != 0xFFFF) {
+#if 0
 		uint16 text_col_mask = 0xE8;
 		const uint8 *str = _res.getGameString(_textToDisplay);
 		memcpy(_vid._tempLayer, _vid._frontLayer, kScreenWidth * kScreenHeight);
@@ -504,9 +501,9 @@ void Game::drawStoryTexts() {
 			++str;
 			memcpy(_vid._frontLayer, _vid._tempLayer, kScreenWidth * kScreenHeight);
 		}
+#endif
 		_textToDisplay = 0xFFFF;
 	}
-#endif
 }
 
 void Game::prepareAnims() {
@@ -617,6 +614,7 @@ void Game::drawAnims() {
 }
 
 static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, bool xflip, bool erase, uint8 *dstPtr, const uint8_t *dataPtr) {
+	memset(buf, 0, sizeof(DecodeBuffer));
 	buf->ptr = dstPtr;
 	buf->w = buf->pitch = Game::kScreenWidth;
 	buf->h = Game::kScreenHeight;
@@ -636,9 +634,9 @@ static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, bool xflip, bool e
 }
 
 void Game::drawPiege(LivePGE *pge, int x, int y) {
+	// TODO: factorize
 	DecodeBuffer buf;
 	if (pge->flags & 8) {
-		// object
 		const uint8_t *dataPtr = _res.getImageData(_res._spc, pge->anim_number);
 if (!dataPtr) return;
 		initDecodeBuffer(&buf, x, y, false, _eraseBackground,  _frontLayer, dataPtr);
@@ -661,11 +659,19 @@ if (!dataPtr) return;
 	}
 }
 
+void Game::drawString(const unsigned char *str, int x, int y, int color) {
+	for (int i = 0; i < *str; ++i) {
+		DecodeBuffer buf;
+		initDecodeBuffer(&buf, x + i * 8, y, false, true, _frontLayer, 0);
+		_res.decodeImageData(_res._fnt, str[i + 1] - 32, &buf);
+	}
+}
+
 void Game::drawAnimBuffer(uint8 stateNum, AnimBufferState *state) {
 	debug(DBG_GAME, "Game::drawAnimBuffer() state=%d", stateNum);
 	assert(stateNum < 4);
 	_animBuffers._states[stateNum] = state;
-	uint8 lastPos = _animBuffers._curPos[stateNum];
+	const uint8 lastPos = _animBuffers._curPos[stateNum];
 	if (lastPos != 0xFF) {
 		uint8 numAnims = lastPos + 1;
 		state += lastPos;
@@ -789,7 +795,7 @@ void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
 	_vid.markBlockAsDirty(x, y, 16, 16);
 #endif
 	DecodeBuffer buf;
-	initDecodeBuffer(&buf, x * 2, y * 2, false, true, _frontLayer, 0);
+	initDecodeBuffer(&buf, x, y, false, true, _frontLayer, 0);
 	_res.decodeImageData(_res._icn, iconNum, &buf);
 }
 

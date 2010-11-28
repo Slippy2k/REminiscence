@@ -22,8 +22,18 @@ void ResourceData::setupLevelClut(int level, Color *clut) {
 	clearClut16(clut, 6);
 	copyClut16(clut, 0xA, levelsColorOffset[0] + 2);
 	copyClut16(clut, 0xC, 0x37);
+	// patch text color
+	setClut(&clut[0xC1], 0xEE, 0xAA, 0);
 	copyClut16(clut, 0xD, 0x38);
+#if 0
+	static const uint16_t textPal[] = {
+		0x000, 0x111, 0x222, 0xEEF, 0xF00, 0xFF0, 0xEA0, 0xFB0,
+		0xEA0, 0xEA0, 0xAAA, 0x0F0, 0xCCC, 0xDDF, 0xEEE, 0xEEE
+	};
+	setAmigaClut16(clut, 0xE, textPal);
+#else
 	clearClut16(clut, 0xE);
+#endif
 	clearClut16(clut, 0xF);
 }
 
@@ -54,6 +64,26 @@ void ResourceData::clearClut16(Color *clut, uint8_t dest) {
 
 void ResourceData::copyClut16(Color *clut, uint8_t dest, uint8_t src) {
 	memcpy(&clut[dest * 16], &_clut[src * 16], 16 * sizeof(Color));
+}
+
+void ResourceData::setAmigaClut16(Color *clut, uint8_t dest, const uint16_t *data) {
+	clut += dest * 16;
+	for (int i = 0; i < 16; ++i) {
+		uint8_t c[3];
+		for (int j = 0; j < 3; ++j) {
+			const uint8_t color = (data[i] >> (j * 4)) & 15;
+			c[j] = color * 16 + color;
+		}
+		clut[i].r = c[2];
+		clut[i].g = c[1];
+		clut[i].b = c[0];
+	}
+}
+
+void ResourceData::setClut(Color *clut, int r, int g, int b) {
+	clut->r = r;
+	clut->g = g;
+	clut->b = b;
 }
 
 #if 0
@@ -173,8 +203,7 @@ void ResourceData::decodeDataPGE(const uint8_t *ptr) {
 		pge->flags = *ptr++;
 		pge->unk1C = *ptr++;
 		++ptr;
-		pge->text_num = *ptr++;
-		++ptr;
+		pge->text_num = READ_BE_UINT16(ptr); ptr += 2;
 	}
 	fprintf(stdout, "decodeDataPGE %d\n", ptr - startPtr);
 }
@@ -255,6 +284,10 @@ void ResourceData::loadIconData() {
 	_icn = decodeResourceData("Icons", true);
 }
 
+void ResourceData::loadFontData() {
+	_fnt = decodeResourceData("Font", true);
+}
+
 void ResourceData::loadPersoData() {
 	_perso = decodeResourceData("Person", true);
 }
@@ -295,6 +328,7 @@ void ResourceData::unloadLevelData() {
 	}
 	_numObjectNodes = 0;
 	free(_ctData);
+	free(_tbn);
 }
 
 void ResourceData::loadLevelData(int i) {
@@ -318,6 +352,9 @@ void ResourceData::loadLevelData(int i) {
 	snprintf(name, sizeof(name), "Level %c map", levelsStringIndex[i][0]);
 	_ctData = (int8_t *)decodeResourceData(name, true);
 	assert(_resourceDataSize == 0x1D00);
+	// .TBN
+	snprintf(name, sizeof(name), "Level %s names", levelsStringIndex[i]);
+	_tbn = decodeResourceData(name, false);
 }
 
 void ResourceData::loadLevelRoom(int level, int i, DecodeBuffer *buf) {

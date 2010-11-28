@@ -89,6 +89,7 @@ struct Game {
 	void prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy);
 	void drawAnims();
 	void drawPiege(LivePGE *pge, int x, int y);
+	void drawString(const unsigned char *str, int x, int y, int color);
 	void drawAnimBuffer(uint8 stateNum, AnimBufferState *state);
 	int loadMonsterSprites(LivePGE *pge);
 	void playSound(uint8 sfxId, uint8 softVol);

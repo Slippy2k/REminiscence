@@ -27,9 +27,11 @@ struct ResourceData {
 	int8 *_ctData;
 	uint8_t *_ani;
 	uint8_t *_icn;
+	uint8_t *_fnt;
 	uint8_t *_perso;
 	uint8_t *_spc;
 	uint8_t *_monster;
+	uint8_t *_tbn;
 
 	ResourceData(const char *filePath)
 		: _res(filePath) {
@@ -39,9 +41,11 @@ struct ResourceData {
 		memset(_objectNodesMap, 0, sizeof(_objectNodesMap));
 		_ani = 0;
 		_icn = 0;
+		_fnt = 0;
 		_perso = 0;
 		_spc = 0;
 		_monster = 0;
+		_tbn = 0;
 	}
 	~ResourceData() {
 	}
@@ -84,16 +88,24 @@ struct ResourceData {
 		const uint32_t offset = READ_BE_UINT16(_ani + 2 + i * 2);
 		return _ani + offset;
 	}
+	const uint8_t *getStringData(int i) {
+		const int count = READ_BE_UINT16(_tbn);
+		assert(i < count);
+		return _tbn + READ_BE_UINT16(_tbn + 2 + i * 2);
+	}
 
 	void setupLevelClut(int num, Color *clut);
 	uint8_t *decodeResourceData(const char *name, bool decompressLzss);
 	void clearClut16(Color *clut, uint8_t dest);
 	void copyClut16(Color *clut, uint8_t dest, uint8_t src);
+	void setAmigaClut16(Color *clut, uint8_t dest, const uint16_t *data);
+	void setClut(Color *clut, int r, int g, int b);
 	void decodeDataPGE(const uint8_t *ptr);
 	void decodeDataOBJ(const uint8_t *ptr, int unpackedSize);
 	void decodeDataCLUT(const uint8_t *ptr);
 	void loadClutData();
 	void loadIconData();
+	void loadFontData();
 	void loadPersoData();
 	void loadMonsterData(const char *name, Color *clut);
 	void unloadLevelData();
