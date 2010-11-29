@@ -67,6 +67,9 @@ struct Game {
 	AnimBuffers _animBuffers;
 	uint16 _deathCutsceneCounter;
 	bool _saveStateCompleted;
+	bool _inventoryOn;
+	int _inventoryCurrentItem;
+	InventoryItem _inventoryItems[24];
 
 	Game(ResourceData &);
 
@@ -96,7 +99,8 @@ struct Game {
 	uint16 getRandomNumber();
 	void changeLevel();
 	uint16 getLineLength(const uint8 *str) const;
-	void handleInventory();
+	void initInventory();
+	void doInventory();
 
 
 	// pieges

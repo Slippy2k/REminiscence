@@ -118,6 +118,10 @@ static void updateInput(int keyCode, bool pressed, PlayerInput &pi) {
 	case SDLK_RETURN:
 		pi.enter = pressed;
 		break;
+	case SDLK_BACKSPACE:
+	case SDLK_TAB:
+		pi.backspace = pressed;
+		break;
 	}
 }
 
@@ -141,7 +145,6 @@ int main(int argc, char *argv[]) {
 		game._currentLevel = atoi(argv[2]);
 	}
 	game.initGame();
-
 	glViewport(0, 0, gWindowW, gWindowH);
 	bool quitGame = false;
 	while (!quitGame) {
@@ -159,7 +162,15 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 		}
-		game.doTick();
+		if (game._pi.backspace) {
+			game._pi.backspace = false;
+			game.initInventory();
+		}
+		if (game._inventoryOn) {
+			game.doInventory();
+		} else {
+			game.doTick();
+		}
 		uploadTexture(t._textureId, game._frontLayer, game._palette, Game::kScreenWidth, Game::kScreenHeight);
 		t.doFrame(gWindowW, gWindowH);
 		SDL_GL_SwapBuffers();
