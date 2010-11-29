@@ -70,6 +70,8 @@ struct Game {
 	bool _inventoryOn;
 	int _inventoryCurrentItem;
 	InventoryItem _inventoryItems[24];
+	uint16_t _cutId;
+	uint16_t _cutDeathCutsceneId;
 
 	Game(ResourceData &);
 
@@ -332,9 +334,6 @@ struct Game {
 	// input
 	uint8 _inp_lastKeysHit;
 	uint8 _inp_lastKeysHitLeftRight;
-
-	void inp_handleSpecialKeys();
-	void inp_update();
 };
 
 #endif // GAME_H__

@@ -481,7 +481,6 @@ void Game::pge_addToCurrentRoomList(LivePGE *pge, uint8 room) {
 }
 
 void Game::pge_getInput() {
-	inp_update();
 	_inp_lastKeysHit = _pi.dirMask;
 	if ((_inp_lastKeysHit & 0xC) && (_inp_lastKeysHit & 0x3)) {
 		const uint8 mask = (_inp_lastKeysHit & 0xF0) | (_inp_lastKeysHitLeftRight & 0xF);
@@ -1276,11 +1275,9 @@ int Game::pge_op_decLifeCounter(ObjectOpcodeArgs *args) {
 }
 
 int Game::pge_op_playCutscene(ObjectOpcodeArgs *args) {
-#if 0
 	if (_deathCutsceneCounter == 0) {
-		_cut._id = args->a;
+		_cutId = args->a;
 	}
-#endif
 	return 1;
 }
 
@@ -1294,9 +1291,7 @@ int Game::pge_op_isTempVar2Set(ObjectOpcodeArgs *args) {
 int Game::pge_op_playDeathCutscene(ObjectOpcodeArgs *args) {
 	if (_deathCutsceneCounter == 0) {
 		_deathCutsceneCounter = args->pge->init_PGE->counter_values[3] + 1;
-#if 0
-		_cut._deathCutsceneId = args->a;
-#endif
+		_cutDeathCutsceneId = args->a;
 	}
 	return 1;
 }

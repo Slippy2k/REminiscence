@@ -64,7 +64,7 @@ void Game::resetGameState() {
 	_animBuffers._states[3] = _animBuffer3State;
 	_animBuffers._curPos[3] = 0xFF;
 	_currentRoom = _res._pgeInit[0].init_room;
-//	_cut._deathCutsceneId = 0xFFFF;
+	_cutDeathCutsceneId = 0xFFFF;
 	_pge_opTempVar2 = 0xFFFF;
 	_deathCutsceneCounter = 0;
 	_saveStateCompleted = false;
@@ -87,7 +87,7 @@ void Game::initGame() {
 void Game::doTick() {
 #if 0
 		playCutscene();
-		if (_cut._id == 0x3D) {
+		if (_cutId == 0x3D) {
 			showFinalScore();
 			break;
 		}
@@ -96,7 +96,7 @@ void Game::doTick() {
 			--_deathCutsceneCounter;
 			if (_deathCutsceneCounter == 0) {
 #if 0
-				playCutscene(_cut._deathCutsceneId);
+				playCutscene(_cutDeathCutsceneId);
 				if (!handleContinueAbort()) {
 					playCutscene(0x41);
 					break;
@@ -136,7 +136,7 @@ assert(0);
 		if (_loadMap) {
 			if (_currentRoom == 0xFF) {
 assert(0);
-//				_cut._id = 6;
+				_cutId = 6;
 				_deathCutsceneCounter = 1;
 			} else {
 				_currentRoom = _pgeLive[0].room_location;
@@ -155,7 +155,6 @@ assert(0);
 		}
 #if 0
 		_vid.updateScreen();
-		updateTiming();
 		drawStoryTexts();
 		if (_pi.backspace) {
 			_pi.backspace = false;
@@ -171,51 +170,14 @@ assert(0);
 #endif
 }
 
-#if 0
-void Game::updateTiming() {
-	static uint32 tstamp = 0;
-	int32 delay = _stub->getTimeStamp() - tstamp;
-	int32 pause = (_pi.dbgMask & PlayerInput::DF_FASTMODE) ? 20 : 30;
-	pause -= delay;
-	if (pause > 0) {
-		_stub->sleep(pause);
-	}
-	tstamp = _stub->getTimeStamp();
-}
-#endif
-
 void Game::playCutscene(int id) {
 #if 0
 	if (id != -1) {
-		_cut._id = id;
+		_cutId = id;
 	}
-	if (_cut._id != 0xFFFF) {
+	if (_cutId != 0xFFFF) {
 		_sfxPly.stop();
 		_cut.play();
-	}
-#endif
-}
-
-void Game::inp_handleSpecialKeys() {
-#if 0
-	if (_pi.dbgMask & PlayerInput::DF_SETLIFE) {
-		_pgeLive[0].life = 0x7FFF;
-	}
-	if (_pi.load) {
-		loadGameState(_stateSlot);
-		_pi.load = false;
-	}
-	if (_pi.save) {
-		saveGameState(_stateSlot);
-		_pi.save = false;
-	}
-	if (_pi.stateSlot != 0) {
-		int8 slot = _stateSlot + _pi.stateSlot;
-		if (slot >= 1 && slot < 100) {
-			_stateSlot = slot;
-			debug(DBG_INFO, "Current game state slot is %d", _stateSlot);
-		}
-		_pi.stateSlot = 0;
 	}
 #endif
 }
@@ -561,18 +523,12 @@ void Game::prepareAnims() {
 void Game::prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy) {
 	debug(DBG_GAME, "Game::prepareAnimsHelper() dx=0x%X dy=0x%X pge_num=%d pge->flags=0x%X pge->anim_number=0x%X", dx, dy, pge - &_pgeLive[0], pge->flags, pge->anim_number);
 	int16 xpos, ypos;
-//fprintf(stdout, "Game::prepareAnimsHelper() dx=0x%X dy=0x%X pge_num=%d pge->flags=0x%X pge->anim_number=0x%X\n", dx, dy, pge - &_pgeLive[0], pge->flags, pge->anim_number);
 	if (!(pge->flags & 8)) {
 		if (pge->index != 0 && loadMonsterSprites(pge) == 0) {
 			return;
 		}
 		assert(pge->anim_number < 1287);
-//		const uint8 *dataPtr = _res._spr_off[pge->anim_number];
-// TODO: _perso
 		const uint8 *dataPtr = 0; //_res.getImageData(_res._perso, _res.getSpriteFrame(pge->anim_number));
-//		if (dataPtr == 0) {
-//			return;
-//		}
 		xpos = dx + pge->pos_x;
 		ypos = dy + pge->pos_y + 2;
 		if (xpos <= -32 || xpos >= 256 || ypos < -48 || ypos >= 224) {
@@ -588,8 +544,6 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy) {
 			_animBuffers.addState(0, xpos, ypos, dataPtr, pge);
 		}
 	} else {
-//		assert(pge->anim_number < _res._numSpc);
-//		const uint8 *dataPtr = _res._spc + READ_BE_UINT16(_res._spc + pge->anim_number * 2);
 		const uint8_t *dataPtr = 0;
 		xpos = dx + pge->pos_x + 8;
 		ypos = dy + pge->pos_y + 2;
@@ -714,11 +668,6 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 	if (_curMonsterNum != mList[1]) {
 		_curMonsterNum = mList[1];
 		_res.loadMonsterData(_monsterNames[_curMonsterNum], _palette);
-#if 0
-		_res.load(_monsterNames[_curMonsterNum], Resource::OT_SPRM);
-		_res.load_SPR_OFF(_monsterNames[_curMonsterNum], _res._sprm);
-		_vid.setPaletteSlotLE(5, _monsterPals[_curMonsterNum]);
-#endif
 	}
 	return 0xFFFF;
 }
@@ -735,21 +684,7 @@ void Game::loadLevelMap() {
 
 void Game::loadLevelData() {
 #if 0
-	_res.clearLevelRes();
-
-	const Level *lvl = &_gameLevels[_currentLevel];
-	_res.load(lvl->name, Resource::OT_SPC);
-	_res.load(lvl->name, Resource::OT_MBK);
-	_res.load(lvl->name, Resource::OT_RP);
-	_res.load(lvl->name, Resource::OT_CT);
-	_res.load(lvl->name, Resource::OT_MAP);
-	_res.load(lvl->name, Resource::OT_PAL);
-	_res.load(lvl->name2, Resource::OT_PGE);
-	_res.load(lvl->name2, Resource::OT_OBJ);
-	_res.load(lvl->name2, Resource::OT_ANI);
-	_res.load(lvl->name2, Resource::OT_TBN);
-
-	_cut._id = lvl->cutscene_id;
+	_cutId = lvl->cutscene_id;
 #endif
 
 	_res.loadLevelData(_currentLevel);
@@ -783,18 +718,6 @@ void Game::loadLevelData() {
 }
 
 void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
-#if 0
-	uint16 offset = READ_BE_UINT16(_res._icn + iconNum * 2);
-	uint8 buf[256];
-	uint8 *p = _res._icn + offset + 2;
-	for (int i = 0; i < 128; ++i) {
-		uint8 col = *p++;
-		buf[i * 2 + 0] = (col & 0xF0) >> 4;
-		buf[i * 2 + 1] = (col & 0x0F) >> 0;
-	}
-	_vid.drawSpriteSub1(buf, _vid._frontLayer + x + y * 256, 16, 16, 16, colMask << 4);
-	_vid.markBlockAsDirty(x, y, 16, 16);
-#endif
 	DecodeBuffer buf;
 	initDecodeBuffer(&buf, x, y, false, true, _frontLayer, 0);
 	_res.decodeImageData(_res._icn, iconNum, &buf);
@@ -831,11 +754,6 @@ void Game::changeLevel() {
 //	_vid.fadeOut();
 	loadLevelData();
 	loadLevelMap();
-#if 0
-	_vid.setPalette0xF();
-	_vid.setTextPalette();
-	_vid.fullRefresh();
-#endif
 }
 
 uint16 Game::getLineLength(const uint8 *str) const {
@@ -936,10 +854,6 @@ void Game::doInventory() {
 		}
 //		playSound(66, 0);
 	}
-}
-
-void Game::inp_update() {
-//	_stub->processEvents();
 }
 
 void AnimBuffers::addState(uint8 stateNum, int16 x, int16 y, const uint8 *dataPtr, LivePGE *pge) {
