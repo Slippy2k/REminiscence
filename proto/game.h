@@ -59,6 +59,7 @@ struct Game {
 	uint16 _curMonsterNum;
 	uint8 _blinkingConradCounter;
 	uint16 _textToDisplay;
+	int _textSegment;
 	bool _eraseBackground;
 	AnimBufferState _animBuffer0State[41];
 	AnimBufferState _animBuffer1State[6]; // Conrad
@@ -84,17 +85,16 @@ struct Game {
 	void drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask);
 	void drawCurrentInventoryItem();
 	void printLevelCode();
-	void showFinalScore();
 	bool handleConfigPanel();
 	bool handleContinueAbort();
 	void printSaveStateCompleted();
 	void drawLevelTexts();
-	void drawStoryTexts();
+	void doStoryTexts();
 	void prepareAnims();
 	void prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy);
 	void drawAnims();
 	void drawPiege(LivePGE *pge, int x, int y);
-	void drawString(const unsigned char *str, int x, int y, int color);
+	void drawString(const unsigned char *str, int len, int x, int y, int color);
 	void drawAnimBuffer(uint8 stateNum, AnimBufferState *state);
 	int loadMonsterSprites(LivePGE *pge);
 	void playSound(uint8 sfxId, uint8 softVol);

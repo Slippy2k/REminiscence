@@ -74,6 +74,7 @@ void Game::resetGameState() {
 	_pge_processOBJ = false;
 	_pge_opTempVar1 = 0;
 	_textToDisplay = 0xFFFF;
+	_textSegment = 0;
 }
 
 void Game::initGame() {
@@ -85,6 +86,7 @@ void Game::initGame() {
 }
 
 void Game::doTick() {
+	doStoryTexts();
 #if 0
 		playCutscene();
 		if (_cutId == 0x3D) {
@@ -153,21 +155,6 @@ assert(0);
 		if (_blinkingConradCounter != 0) {
 			--_blinkingConradCounter;
 		}
-#if 0
-		_vid.updateScreen();
-		drawStoryTexts();
-		if (_pi.backspace) {
-			_pi.backspace = false;
-			doInventory();
-		}
-		if (_pi.escape) {
-			_pi.escape = false;
-			if (handleConfigPanel()) {
-				break;
-			}
-		}
-		inp_handleSpecialKeys();
-#endif
 }
 
 void Game::playCutscene(int id) {
@@ -188,27 +175,6 @@ void Game::drawCurrentInventoryItem() {
 		_currentIcon = _res._pgeInit[src].icon_num;
 		drawIcon(_currentIcon, 232, 8, 0xA);
 	}
-}
-
-void Game::showFinalScore() {
-#if 0
-	playCutscene(0x49);
-	char textBuf[50];
-	sprintf(textBuf, "SCORE %08u", _score);
-	_vid.drawString(textBuf, (256 - strlen(textBuf) * 8) / 2, 40, 0xE5);
-	strcpy(textBuf, _menu._passwords[7][_skillLevel]);
-	_vid.drawString(textBuf, (256 - strlen(textBuf) * 8) / 2, 16, 0xE7);
-	while (!_pi.quit) {
-		_stub->copyRect(0, 0, kScreenWidth, kScreenHeight, _vid._frontLayer, 256);
-		_stub->updateScreen(0);
-		_stub->processEvents();
-		if (_pi.enter) {
-			_pi.enter = false;
-			break;
-		}
-		_stub->sleep(100);
-	}
-#endif
 }
 
 #if 0
@@ -407,8 +373,8 @@ void Game::drawLevelTexts() {
 		if (_textToDisplay == 0xFFFF) {
 			uint8 icon_num = obj - 1;
 			drawIcon(icon_num, 80, 8, 0xA);
-			const unsigned char *str = _res.getStringData(pge->init_PGE->text_num);
-			drawString(str, (176 - *str * 8) / 2, 26, 0xE6);
+			const uint8_t *str = _res.getStringData(pge->init_PGE->text_num);
+			drawString(str + 1, *str, (176 - *str * 8) / 2, 26, 0xE6);
 			if (icon_num == 2) {
 				printSaveStateCompleted();
 				return;
@@ -420,52 +386,44 @@ void Game::drawLevelTexts() {
 	_saveStateCompleted = false;
 }
 
-void Game::drawStoryTexts() {
+void Game::doStoryTexts() {
+	// TODO: clear background
 	if (_textToDisplay != 0xFFFF) {
-#if 0
-		uint16 text_col_mask = 0xE8;
-		const uint8 *str = _res.getGameString(_textToDisplay);
-		memcpy(_vid._tempLayer, _vid._frontLayer, kScreenWidth * kScreenHeight);
-		int textSpeechSegment = 0;
-		while (!_pi.quit) {
-			drawIcon(_currentInventoryIconNum, 80, 8, 0xA);
-			if (*str == 0xFF) {
-				text_col_mask = READ_BE_UINT16(str + 1);
-				str += 3;
-			}
-			int16 text_y_pos = 26;
-			while (1) {
-				uint16 len = getLineLength(str);
-				str = (const uint8 *)_vid.drawString((const char *)str, (176 - len * 8) / 2, text_y_pos, text_col_mask);
-				text_y_pos += 8;
-				if (*str == 0 || *str == 0xB) {
-					break;
-				}
-				++str;
-			}
-			MixerChunk chunk;
-			_res.load_VCE(_textToDisplay, textSpeechSegment++, &chunk.data, &chunk.len);
-			if (chunk.data) {
-				_mix.play(&chunk, 32000, Mixer::MAX_VOLUME);
-			}
-			_vid.updateScreen();
-			while (!_pi.backspace && !_pi.quit) {
-				inp_update();
-				_stub->sleep(80);
-			}
-			if (chunk.data) {
-				_mix.stopAll();
-				free(chunk.data);
-			}
-			_pi.backspace = false;
-			if (*str == 0) {
+		const uint8_t *str = _res.getStringData(ResourceData::kGameString + _textToDisplay);
+		const int segmentsCount = *str++;
+printf("segmentsCount %d _textSegment %d\n", segmentsCount, _textSegment);
+		// goto to current segment
+		for (int i = 0; i < _textSegment; ++i) {
+			const int segmentLength = *str++;
+			str += segmentLength;
+		}
+		int len = *str++;
+		int color = 0xE8;
+		if (*str == '@') {
+			switch (*str++) {
+			case '1':
+				color = 0xE9;
+				break;
+			case '2':
+				color = 0xEB;
+				break;
+			default:
+				assert(0);
 				break;
 			}
 			++str;
-			memcpy(_vid._frontLayer, _vid._tempLayer, kScreenWidth * kScreenHeight);
+			len -= 2;
 		}
-#endif
-		_textToDisplay = 0xFFFF;
+		drawIcon(_currentInventoryIconNum, 80, 8, 0xA);
+		drawString(str, len, (176 - len * 8) / 2, 26, color);
+		if (_pi.backspace) {
+			_pi.backspace = false;
+			++_textSegment;
+			if (_textSegment == segmentsCount) {
+				_textSegment = 0;
+				_textToDisplay = 0xFFFF;
+			}
+		}
 	}
 }
 
@@ -614,11 +572,20 @@ if (!dataPtr) return;
 	}
 }
 
-void Game::drawString(const unsigned char *str, int x, int y, int color) {
-	for (int i = 0; i < *str; ++i) {
+void Game::drawString(const unsigned char *str, int len, int x, int y, int color) {
+	int offset = 0;
+	for (int i = 0; i < len; ++i) {
+		const uint8_t code = *str++;
+		if (code == 0x7C) {
+			y += 8;
+			offset = 0;
+			continue;
+		}
 		DecodeBuffer buf;
-		initDecodeBuffer(&buf, x + i * 8, y, false, true, _frontLayer, 0);
-		_res.decodeImageData(_res._fnt, str[i + 1] - 32, &buf);
+		initDecodeBuffer(&buf, x + offset, y, false, true, _frontLayer, 0);
+		buf.textColor = color;
+		_res.decodeImageData(_res._fnt, code - 32, &buf);
+		offset += 8;
 	}
 }
 
@@ -805,12 +772,11 @@ void Game::doInventory() {
 				const LivePGE *selected_pge = _inventoryItems[currentItem].live_pge;
 				const uint8_t *str = _res.getStringData(_inventoryItems[currentItem].init_pge->text_num);
 				assert(str);
-				drawString(str, (256 - *str * 8) / 2, 189, 0xED);
+				drawString(str + 1, *str, (256 - *str * 8) / 2, 189, 0xED);
 				if (_inventoryItems[currentItem].init_pge->init_flags & 4) {
 					uint8_t buf[10];
-					snprintf((char *)buf + 1, sizeof(buf) - 1, "%d", selected_pge->life);
-					buf[0] = strlen((char *)buf + 1);
-					drawString(buf, (256 - * buf * 8) / 2, 197, 0xED);
+					const int len = snprintf((char *)buf, sizeof(buf), "%d", selected_pge->life);
+					drawString(buf, len, (256 - len * 8) / 2, 197, 0xED);
 				}
 			}
 		}

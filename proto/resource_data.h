@@ -12,7 +12,8 @@ struct Color {
 
 struct ResourceData {
 	enum {
-		kClutSize = 1024
+		kClutSize = 1024,
+		kGameString = 1000
 	};
 
 	ResourceMac _res;
@@ -32,6 +33,7 @@ struct ResourceData {
 	uint8_t *_spc;
 	uint8_t *_monster;
 	uint8_t *_tbn;
+	uint8_t *_str;
 
 	ResourceData(const char *filePath)
 		: _res(filePath) {
@@ -46,6 +48,7 @@ struct ResourceData {
 		_spc = 0;
 		_monster = 0;
 		_tbn = 0;
+		_str = 0;
 	}
 	~ResourceData() {
 	}
@@ -88,10 +91,15 @@ struct ResourceData {
 		const uint32_t offset = READ_BE_UINT16(_ani + 2 + i * 2);
 		return _ani + offset;
 	}
-	const uint8_t *getStringData(int i) {
-		const int count = READ_BE_UINT16(_tbn);
+	const uint8_t *getStringData(int i) const {
+		const uint8_t *p = _tbn;
+		if (i >= kGameString) {
+			i -= kGameString;
+			p = _str;
+		}
+		const int count = READ_BE_UINT16(p);
 		assert(i < count);
-		return _tbn + READ_BE_UINT16(_tbn + 2 + i * 2);
+		return p + READ_BE_UINT16(p + 2 + i * 2);
 	}
 
 	void setupLevelClut(int num, Color *clut);

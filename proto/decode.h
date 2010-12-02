@@ -21,6 +21,7 @@ struct DecodeBuffer {
 	int x, y;
 	bool xflip, yflip;
 	bool erase;
+	uint8_t textColor;
 
 	void setPixel(int src_x, int src_y, int src_w, int src_h, uint8_t color) {
 		if (xflip) {
@@ -39,6 +40,9 @@ struct DecodeBuffer {
 		}
 		const int offset = src_y * pitch + src_x;
 		if (erase) {
+			if (textColor != 0 && color == 0xC1) {
+				color = textColor;
+			}
 			ptr[offset] = color;
 		} else if ((ptr[offset] & 0x80) == 0) {
 			ptr[offset] = color;

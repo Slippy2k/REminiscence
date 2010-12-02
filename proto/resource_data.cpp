@@ -22,18 +22,12 @@ void ResourceData::setupLevelClut(int level, Color *clut) {
 	clearClut16(clut, 6);
 	copyClut16(clut, 0xA, levelsColorOffset[0] + 2);
 	copyClut16(clut, 0xC, 0x37);
-	// patch text color
-	setClut(&clut[0xC1], 0xEE, 0xAA, 0);
 	copyClut16(clut, 0xD, 0x38);
-#if 0
 	static const uint16_t textPal[] = {
 		0x000, 0x111, 0x222, 0xEEF, 0xF00, 0xFF0, 0xEA0, 0xFB0,
 		0xEA0, 0xEA0, 0xAAA, 0x0F0, 0xCCC, 0xDDF, 0xEEE, 0xEEE
 	};
 	setAmigaClut16(clut, 0xE, textPal);
-#else
-	clearClut16(clut, 0xE);
-#endif
 	clearClut16(clut, 0xF);
 }
 
@@ -328,7 +322,11 @@ void ResourceData::unloadLevelData() {
 	}
 	_numObjectNodes = 0;
 	free(_ctData);
+	_ctData = 0;
 	free(_tbn);
+	_tbn = 0;
+	free(_str);
+	_str = 0;
 }
 
 void ResourceData::loadLevelData(int i) {
@@ -355,6 +353,7 @@ void ResourceData::loadLevelData(int i) {
 	// .TBN
 	snprintf(name, sizeof(name), "Level %s names", levelsStringIndex[i]);
 	_tbn = decodeResourceData(name, false);
+	_str = decodeResourceData("Flashback strings", false);
 }
 
 void ResourceData::loadLevelRoom(int level, int i, DecodeBuffer *buf) {
