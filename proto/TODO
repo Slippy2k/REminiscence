@@ -1,2 +1,8 @@
 scaler2x pour les cutscenes
-decode sega vce segments to .wav (N-PART.wav)
+decode sega vce segments to .wav (N-PART.wav) ; .mp3 as background music
+mouse UI
+	long press on inventory icon -> trigger inventory
+	click on inventory icon -> use/Return
+	click on gun -> space
+	action -> shift
+virtual pad

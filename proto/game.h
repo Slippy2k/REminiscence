@@ -31,7 +31,8 @@ struct Game {
 		kCtRoomRight = 0x80,
 		kCtRoomLeft = 0xC0,
 		kScreenWidth = 256 * 2,
-		kScreenHeight = 224 * 2
+		kScreenHeight = 224 * 2,
+		kGunObject = 2
 	};
 
 	static const uint16 _scoreTable[];

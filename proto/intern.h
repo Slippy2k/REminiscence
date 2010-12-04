@@ -112,7 +112,6 @@ struct ObjectOpcodeArgs {
 struct AnimBufferState {
 	int16 x;
 	int16 y;
-	const uint8 *dataPtr;
 	LivePGE *pge;
 };
 
@@ -120,7 +119,7 @@ struct AnimBuffers {
 	AnimBufferState *_states[4];
 	uint8 _curPos[4];
 
-	void addState(uint8 stateNum, int16 x, int16 y, const uint8 *dataPtr, LivePGE *pge);
+	void addState(uint8 stateNum, int16 x, int16 y, LivePGE *pge);
 };
 
 struct CollisionSlot {

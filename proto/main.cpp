@@ -9,7 +9,7 @@
 static const char *gWindowWindowTitle = "Flashback: The Quest For Identity";
 static const int gWindowW = 512;
 static const int gWindowH = 448;
-static const int gTickDuration = 10;
+static const int gTickDuration = 16;
 
 struct Test {
 	ResourceData _resData;
@@ -119,7 +119,6 @@ static void updateInput(int keyCode, bool pressed, PlayerInput &pi) {
 		pi.enter = pressed;
 		break;
 	case SDLK_BACKSPACE:
-	case SDLK_TAB:
 		pi.backspace = pressed;
 		break;
 	}

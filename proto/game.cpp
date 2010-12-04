@@ -170,10 +170,17 @@ void Game::playCutscene(int id) {
 }
 
 void Game::drawCurrentInventoryItem() {
-	uint16 src = _pgeLive[0].current_inventory_PGE;
+	int src = _pgeLive[0].current_inventory_PGE;
 	if (src != 0xFF) {
 		_currentIcon = _res._pgeInit[src].icon_num;
 		drawIcon(_currentIcon, 232, 8, 0xA);
+		while (src != 0xFF) {
+			if (_res._pgeInit[src].object_id == kGunObject) {
+				drawIcon(_res._pgeInit[src].icon_num, 208, 8, 0xA);
+				break;
+			}
+			src = _pgeLive[src].next_inventory_PGE;
+		}
 	}
 }
 
@@ -486,32 +493,29 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy) {
 			return;
 		}
 		assert(pge->anim_number < 1287);
-		const uint8 *dataPtr = 0; //_res.getImageData(_res._perso, _res.getSpriteFrame(pge->anim_number));
 		xpos = dx + pge->pos_x;
 		ypos = dy + pge->pos_y + 2;
 		if (xpos <= -32 || xpos >= 256 || ypos < -48 || ypos >= 224) {
 			return;
 		}
 		xpos += 8;
-		dataPtr += 4;
 		if (pge == &_pgeLive[0]) {
-			_animBuffers.addState(1, xpos, ypos, dataPtr, pge);
+			_animBuffers.addState(1, xpos, ypos, pge);
 		} else if (pge->flags & 0x10) {
-			_animBuffers.addState(2, xpos, ypos, dataPtr, pge);
+			_animBuffers.addState(2, xpos, ypos, pge);
 		} else {
-			_animBuffers.addState(0, xpos, ypos, dataPtr, pge);
+			_animBuffers.addState(0, xpos, ypos, pge);
 		}
 	} else {
 		const uint8_t *dataPtr = 0;
 		xpos = dx + pge->pos_x + 8;
 		ypos = dy + pge->pos_y + 2;
-
 		if (pge->init_PGE->object_type == 11) {
-			_animBuffers.addState(3, xpos, ypos, dataPtr, pge);
+			_animBuffers.addState(3, xpos, ypos, pge);
 		} else if (pge->flags & 0x10) {
-			_animBuffers.addState(2, xpos, ypos, dataPtr, pge);
+			_animBuffers.addState(2, xpos, ypos, pge);
 		} else {
-			_animBuffers.addState(0, xpos, ypos, dataPtr, pge);
+			_animBuffers.addState(0, xpos, ypos, pge);
 		}
 	}
 }
@@ -547,11 +551,10 @@ static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, bool xflip, bool e
 }
 
 void Game::drawPiege(LivePGE *pge, int x, int y) {
-	// TODO: factorize
 	DecodeBuffer buf;
 	if (pge->flags & 8) {
 		const uint8_t *dataPtr = _res.getImageData(_res._spc, pge->anim_number);
-if (!dataPtr) return;
+		if (!dataPtr) return;
 		initDecodeBuffer(&buf, x, y, false, _eraseBackground,  _frontLayer, dataPtr);
 		_res.decodeImageData(_res._spc, pge->anim_number, &buf);
 	} else {
@@ -559,13 +562,13 @@ if (!dataPtr) return;
 		if (pge->index == 0) {
 			const int frame = _res.getPersoFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._perso, frame);
-if (!dataPtr) return;
+			if (!dataPtr) return;
 			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
 			_res.decodeImageData(_res._perso, frame, &buf);
 		} else {
 			const int frame = _res.getMonsterFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._monster, frame);
-if (!dataPtr) return;
+			if (!dataPtr) return;
 			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
 			_res.decodeImageData(_res._monster, frame, &buf);
 		}
@@ -751,8 +754,10 @@ void Game::doInventory() {
 			_inventoryItems[itemsCount].icon_num = _res._pgeInit[i].icon_num;
 			_inventoryItems[itemsCount].init_pge = &_res._pgeInit[i];
 			_inventoryItems[itemsCount].live_pge = &_pgeLive[i];
+			if (_res._pgeInit[i].object_id != kGunObject) {
+				++itemsCount;
+			}
 			i = _pgeLive[i].next_inventory_PGE;
-			++itemsCount;
 		}
 		_inventoryItems[itemsCount].icon_num = 0xFF;
 
@@ -822,13 +827,12 @@ void Game::doInventory() {
 	}
 }
 
-void AnimBuffers::addState(uint8 stateNum, int16 x, int16 y, const uint8 *dataPtr, LivePGE *pge) {
-	debug(DBG_GAME, "AnimBuffers::addState() stateNum=%d x=%d y=%d dataPtr=0x%X pge=0x%X", stateNum, x, y, dataPtr, pge);
+void AnimBuffers::addState(uint8 stateNum, int16 x, int16 y, LivePGE *pge) {
+	debug(DBG_GAME, "AnimBuffers::addState() stateNum=%d x=%d y=%d pge=0x%X", stateNum, x, y, pge);
 	assert(stateNum < 4);
 	AnimBufferState *state = _states[stateNum];
 	state->x = x;
 	state->y = y;
-	state->dataPtr = dataPtr;
 	state->pge = pge;
 	++_curPos[stateNum];
 	++_states[stateNum];
