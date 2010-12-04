@@ -78,7 +78,7 @@ static void uploadTexture(GLuint textureId, const uint8_t *imageData, const Colo
 	free(texData);
 }
 
-static void updateInput(int keyCode, bool pressed, PlayerInput &pi) {
+static void updateKeyInput(int keyCode, bool pressed, PlayerInput &pi) {
 	switch (keyCode) {
 	case SDLK_LEFT:
 		if (!pressed) {
@@ -124,6 +124,12 @@ static void updateInput(int keyCode, bool pressed, PlayerInput &pi) {
 	}
 }
 
+static void updateTouchInput(bool released, int x, int y, PlayerInput &pi) {
+	pi.touch.up = released;
+	pi.touch.x = x;
+	pi.touch.y = y;
+}
+
 int main(int argc, char *argv[]) {
 	if (argc < 2) {
 		printf("%s datafile level", argv[0]);
@@ -154,10 +160,21 @@ int main(int argc, char *argv[]) {
 				quitGame = true;
 				break;
 			case SDL_KEYDOWN:
-				updateInput(ev.key.keysym.sym, true, game._pi);
+				updateKeyInput(ev.key.keysym.sym, true, game._pi);
 				break;
 			case SDL_KEYUP:
-				updateInput(ev.key.keysym.sym, false, game._pi);
+				updateKeyInput(ev.key.keysym.sym, false, game._pi);
+				break;
+			case SDL_MOUSEBUTTONUP:
+				updateTouchInput(true, ev.button.x, ev.button.y, game._pi);
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				updateTouchInput(false, ev.button.x, ev.button.y, game._pi);
+				break;
+			case SDL_MOUSEMOTION:
+				if (ev.motion.state & SDL_BUTTON(1)) {
+					updateTouchInput(false, ev.motion.x, ev.motion.y, game._pi);
+				}
 				break;
 			}
 		}

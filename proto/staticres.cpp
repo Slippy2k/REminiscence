@@ -50,6 +50,10 @@ const char *Game::_monsterNames[] = {
 	"glue"
 };
 
+const uint16_t Game::_cutsceneLevels[] = {
+	0x00, 0x2F, 0xFFFF, 0x34, 0x39, 0x35, 0xFFFF
+};
+
 const Game::pge_OpcodeProc Game::_pge_opcodeTable[] = {
 	/* 0x00 */
 	0,

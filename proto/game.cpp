@@ -16,24 +16,11 @@ Game::Game(ResourceData &res)
 
 #if 0
 void Game::run() {
-//	_stub->init("REminiscence", kScreenWidth, kScreenHeight);
-
-	_res.load_TEXT();
-	_res.load("FB_TXT", Resource::OT_FNT);
-
-	_mix.init();
-
 	playCutscene(0x40);
 	playCutscene(0x0D);
 	if (!_cut._interrupted) {
 		playCutscene(0x4A);
 	}
-
-	_res.load("GLOBAL", Resource::OT_ICN);
-	_res.load("PERSO", Resource::OT_SPR);
-	_res.load_SPR_OFF("PERSO", _res._spr1);
-	_res.load_FIB("GLOBAL");
-
 	while (!_pi.quit && _menu.handleTitleScreen(_skillLevel, _currentLevel)) {
 		if (_currentLevel == 7) {
 			_vid.fadeOut();
@@ -46,11 +33,6 @@ void Game::run() {
 			mainLoop();
 		}
 	}
-
-	_res.free_TEXT();
-
-	_mix.free();
-	_stub->destroy();
 }
 #endif
 
@@ -137,14 +119,12 @@ assert(0);
 		}
 		if (_loadMap) {
 			if (_currentRoom == 0xFF) {
-assert(0);
 				_cutId = 6;
 				_deathCutsceneCounter = 1;
 			} else {
 				_currentRoom = _pgeLive[0].room_location;
 				loadLevelMap();
 				_loadMap = false;
-//				_vid.fullRefresh();
 			}
 		}
 		prepareAnims();
@@ -158,24 +138,29 @@ assert(0);
 }
 
 void Game::playCutscene(int id) {
-#if 0
 	if (id != -1) {
 		_cutId = id;
 	}
 	if (_cutId != 0xFFFF) {
+#if 0
 		_sfxPly.stop();
 		_cut.play();
-	}
 #endif
+	}
 }
 
 void Game::drawCurrentInventoryItem() {
 	int src = _pgeLive[0].current_inventory_PGE;
 	if (src != 0xFF) {
-		_currentIcon = _res._pgeInit[src].icon_num;
-		drawIcon(_currentIcon, 232, 8, 0xA);
+		if (testHotspot(_pi, 232, 8, 16, 16)) {
+			drawIcon(32, 232, 8, 0xA);
+		}
+		drawIcon(_res._pgeInit[src].icon_num, 232, 8, 0xA);
 		while (src != 0xFF) {
 			if (_res._pgeInit[src].object_id == kGunObject) {
+				if (testHotspot(_pi, 208, 8, 16, 16)) {
+					drawIcon(32, 208, 8, 0xA);
+				}
 				drawIcon(_res._pgeInit[src].icon_num, 208, 8, 0xA);
 				break;
 			}
@@ -184,189 +169,20 @@ void Game::drawCurrentInventoryItem() {
 	}
 }
 
-#if 0
-bool Game::handleConfigPanel() {
-	int i, j;
-	const int x = 7;
-	const int y = 10;
-	const int w = 17;
-	const int h = 12;
-
-	_vid._charShadowColor = 0xE2;
-	_vid._charFrontColor = 0xEE;
-	_vid._charTransparentColor = 0xFF;
-
-	_vid.drawChar(0x81, y, x);
-	for (i = 1; i < w; ++i) {
-		_vid.drawChar(0x85, y, x + i);
-	}
-	_vid.drawChar(0x82, y, x + w);
-	for (j = 1; j < h; ++j) {
-		_vid.drawChar(0x86, y + j, x);
-		for (i = 1; i < w; ++i) {
-			_vid._charTransparentColor = 0xE2;
-			_vid.drawChar(0x20, y + j, x + i);
-		}
-		_vid._charTransparentColor = 0xFF;
-		_vid.drawChar(0x87, y + j, x + w);
-	}
-	_vid.drawChar(0x83, y + h, x);
-	for (i = 1; i < w; ++i) {
-		_vid.drawChar(0x88, y + h, x + i);
-	}
-	_vid.drawChar(0x84, y + h, x + w);
-
-	_menu._charVar3 = 0xE4;
-	_menu._charVar4 = 0xE5;
-	_menu._charVar1 = 0xE2;
-	_menu._charVar2 = 0xEE;
-
-	_vid.fullRefresh();
-	enum { MENU_ITEM_LOAD = 1, MENU_ITEM_SAVE = 2, MENU_ITEM_ABORT = 3 };
-	uint8 colors[] = { 2, 3, 3, 3 };
-	int current = 0;
-	while (!_pi.quit) {
-		_menu.drawString(_res.getMenuString(LocaleData::LI_18_RESUME_GAME), y + 2, 9, colors[0]);
-		_menu.drawString(_res.getMenuString(LocaleData::LI_20_LOAD_GAME), y + 4, 9, colors[1]);
-		_menu.drawString(_res.getMenuString(LocaleData::LI_21_SAVE_GAME), y + 6, 9, colors[2]);
-		_menu.drawString(_res.getMenuString(LocaleData::LI_19_ABORT_GAME), y + 8, 9, colors[3]);
-		char slotItem[30];
-		sprintf(slotItem, "%s : %d-%02d", _res.getMenuString(LocaleData::LI_22_SAVE_SLOT), _currentLevel + 1, _stateSlot);
-		_menu.drawString(slotItem, y + 10, 9, 1);
-
-		_vid.updateScreen();
-		_stub->sleep(80);
-		inp_update();
-
-		int prev = current;
-		if (_pi.dirMask & PlayerInput::kDirectionUp) {
-			_pi.dirMask &= ~PlayerInput::kDirectionUp;
-			current = (current + 3) % 4;
-		}
-		if (_pi.dirMask & PlayerInput::kDirectionDown) {
-			_pi.dirMask &= ~PlayerInput::kDirectionDown;
-			current = (current + 1) % 4;
-		}
-		if (_pi.dirMask & PlayerInput::kDirectionLeft) {
-			_pi.dirMask &= ~PlayerInput::kDirectionLeft;
-			--_stateSlot;
-			if (_stateSlot < 1) {
-				_stateSlot = 1;
-			}
-		}
-		if (_pi.dirMask & PlayerInput::kDirectionRight) {
-			_pi.dirMask &= ~PlayerInput::kDirectionRight;
-			++_stateSlot;
-			if (_stateSlot > 99) {
-				_stateSlot = 99;
-			}
-		}
-		if (prev != current) {
-			SWAP(colors[prev], colors[current]);
-		}
-		if (_pi.enter) {
-			_pi.enter = false;
-			switch (current) {
-			case MENU_ITEM_LOAD:
-				_pi.load = true;
-				break;
-			case MENU_ITEM_SAVE:
-				_pi.save = true;
-				break;
-			}
-			break;
-		}
-	}
-	_vid.fullRefresh();
-	return (current == MENU_ITEM_ABORT);
-}
-
-bool Game::handleContinueAbort() {
-	playCutscene(0x48);
-	char textBuf[50];
-	int timeout = 100;
-	int current_color = 0;
-	uint8 colors[] = { 0xE4, 0xE5 };
-	uint8 color_inc = 0xFF;
-	Color col;
-	_stub->getPaletteEntry(0xE4, &col);
-	memcpy(_vid._tempLayer, _vid._frontLayer, kScreenWidth * kScreenHeight);
-	while (timeout >= 0 && !_pi.quit) {
-		const char *str;
-		str = _res.getMenuString(LocaleData::LI_01_CONTINUE_OR_ABORT);
-		_vid.drawString(str, (256 - strlen(str) * 8) / 2, 64, 0xE3);
-		str = _res.getMenuString(LocaleData::LI_02_TIME);
-		sprintf(textBuf, "%s : %d", str, timeout / 10);
-		_vid.drawString(textBuf, 96, 88, 0xE3);
-		str = _res.getMenuString(LocaleData::LI_03_CONTINUE);
-		_vid.drawString(str, (256 - strlen(str) * 8) / 2, 104, colors[0]);
-		str = _res.getMenuString(LocaleData::LI_04_ABORT);
-		_vid.drawString(str, (256 - strlen(str) * 8) / 2, 112, colors[1]);
-		sprintf(textBuf, "SCORE  %08u", _score);
-		_vid.drawString(textBuf, 64, 154, 0xE3);
-		if (_pi.dirMask & PlayerInput::kDirectionUp) {
-			_pi.dirMask &= ~PlayerInput::kDirectionUp;
-			if (current_color > 0) {
-				SWAP(colors[current_color], colors[current_color - 1]);
-				--current_color;
-			}
-		}
-		if (_pi.dirMask & PlayerInput::kDirectionDown) {
-			_pi.dirMask &= ~PlayerInput::kDirectionDown;
-			if (current_color < 1) {
-				SWAP(colors[current_color], colors[current_color + 1]);
-				++current_color;
-			}
-		}
-		if (_pi.enter) {
-			_pi.enter = false;
-			return (current_color == 0);
-		}
-		_stub->copyRect(0, 0, kScreenWidth, kScreenHeight, _vid._frontLayer, 256);
-		_stub->updateScreen(0);
-		if (col.b >= 0x3D) {
-			color_inc = 0;
-		}
-		if (col.b < 2) {
-			color_inc = 0xFF;
-		}
-		if (color_inc == 0xFF) {
-			col.b += 2;
-			col.g += 2;
-		} else {
-			col.b -= 2;
-			col.g -= 2;
-		}
-		_stub->setPaletteEntry(0xE4, &col);
-		_stub->processEvents();
-		_stub->sleep(100);
-		--timeout;
-		memcpy(_vid._frontLayer, _vid._tempLayer, kScreenWidth * kScreenHeight);
-	}
-	return false;
-}
-#endif
-
 void Game::printLevelCode() {
 	if (_printLevelCodeCounter != 0) {
 		--_printLevelCodeCounter;
 		if (_printLevelCodeCounter != 0) {
-#if 0
-			char buf[50];
-			snprintf(buf, sizeof(buf), "CODE: %s", _menu._passwords[_currentLevel][_skillLevel]);
-			drawString(buf, (kScreenWidth - strlen(buf) * 8) / 2, 16, 0xE7);
-#endif
 		}
 	}
 }
 
 void Game::printSaveStateCompleted() {
-#if 0
 	if (_saveStateCompleted) {
-		const char *str = _res.getMenuString(LocaleData::LI_05_COMPLETED);
-		_vid.drawString(str, (176 - strlen(str) * 8) / 2, 34, 0xE6);
+		const char *str = "COMPLETED";
+		const int len = strlen(str);
+		drawString((const uint8_t *)str, len, (176 - len * 8) / 2, 34, 0xE6);
 	}
-#endif
 }
 
 void Game::drawLevelTexts() {
@@ -507,7 +323,6 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy) {
 			_animBuffers.addState(0, xpos, ypos, pge);
 		}
 	} else {
-		const uint8_t *dataPtr = 0;
 		xpos = dx + pge->pos_x + 8;
 		ypos = dy + pge->pos_y + 2;
 		if (pge->init_PGE->object_type == 11) {
@@ -644,7 +459,6 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 
 void Game::loadLevelMap() {
 	debug(DBG_GAME, "Game::loadLevelMap() room=%d", _currentRoom);
-	_currentIcon = 0xFF;
 	DecodeBuffer buf;
 	initDecodeBuffer(&buf, 0, 0, false, true, _frontLayer, 0);
 	_res.loadLevelRoom(_currentLevel, _currentRoom, &buf);
@@ -653,9 +467,7 @@ void Game::loadLevelMap() {
 }
 
 void Game::loadLevelData() {
-#if 0
-	_cutId = lvl->cutscene_id;
-#endif
+	_cutId = _cutsceneLevels[_currentLevel];
 
 	_res.loadLevelData(_currentLevel);
 	_res.loadLevelObjects(_currentLevel);

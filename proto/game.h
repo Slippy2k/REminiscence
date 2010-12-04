@@ -17,7 +17,17 @@ struct PlayerInput {
 	bool space;
 	bool shift;
 	bool backspace;
+	struct {
+		int x, y;
+		bool up;
+	} touch;
 };
+
+inline bool testHotspot(const PlayerInput &pi, int x, int y, int w, int h) {
+	const int x2 = (x + w) * 2;
+	const int y2 = (y + h) * 2;
+	return !pi.touch.up && pi.touch.x >= x * 2 && pi.touch.x < x2 && pi.touch.y >= y * 2 && pi.touch.y < y2;
+}
 
 struct Game {
 	typedef int (Game::*pge_OpcodeProc)(ObjectOpcodeArgs *args);
@@ -38,6 +48,7 @@ struct Game {
 	static const uint16 _scoreTable[];
 	static const uint8 *_monsterListLevels[];
 	static const char *_monsterNames[];
+	static const uint16_t _cutsceneLevels[];
 	static const pge_OpcodeProc _pge_opcodeTable[];
 	static const uint8 _pge_modKeysTable[];
 
@@ -51,7 +62,6 @@ struct Game {
 	uint8 _skillLevel;
 	uint32 _score;
 	uint8 _currentRoom;
-	uint8 _currentIcon;
 	bool _loadMap;
 	uint8 _printLevelCodeCounter;
 	uint32 _randSeed;
@@ -86,8 +96,6 @@ struct Game {
 	void drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask);
 	void drawCurrentInventoryItem();
 	void printLevelCode();
-	bool handleConfigPanel();
-	bool handleContinueAbort();
 	void printSaveStateCompleted();
 	void drawLevelTexts();
 	void doStoryTexts();
