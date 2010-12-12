@@ -11,7 +11,15 @@ Game::Game(ResourceData &res)
 	_currentLevel = 0;
 	_frontLayer = (uint8_t *)calloc(1, kScreenWidth * kScreenHeight);
 	_backLayer = (uint8_t *)calloc(1, kScreenWidth * kScreenHeight);
+	_tempLayer = 0;
 	_inventoryOn = false;
+	_hotspotsCount = 0;
+}
+
+Game::~Game() {
+	free(_frontLayer);
+	free(_backLayer);
+	free(_tempLayer);
 }
 
 #if 0
@@ -56,7 +64,7 @@ void Game::resetGameState() {
 	_pge_processOBJ = false;
 	_pge_opTempVar1 = 0;
 	_textToDisplay = 0xFFFF;
-	_textSegment = 0;
+	_nextTextSegment = 0;
 }
 
 void Game::initGame() {
@@ -67,8 +75,46 @@ void Game::initGame() {
 	resetGameState();
 }
 
+void Game::doHotspots() {
+	if (_pi.touch.press != PlayerInput::kTouchNone) {
+		for (int i = 0; i < _hotspotsCount; ++i) {
+			Hotspot *hs = &_hotspotsList[i];
+			if (hs->testPos(_pi.touch.x, _pi.touch.y)) {
+				switch (hs->id) {
+				case Hotspot::kIdUseGun:
+					_pi.space = (_pi.touch.press == PlayerInput::kTouchDown);
+					break;
+				case Hotspot::kIdUseInventory:
+					if (_pi.touch.press == PlayerInput::kTouchUp) {
+						_pi.backspace = true;
+					}
+					break;
+				case Hotspot::kIdSelectInventoryObject:
+					if (_pi.touch.press == PlayerInput::kTouchDown) {
+						_inventoryCurrentItem = (hs->x / kHotspotCoordScale - 72) / 32;
+					}
+					break;
+				case Hotspot::kIdScrollDownInventory:
+					if (_pi.touch.press == PlayerInput::kTouchUp) {
+						_pi.dirMask |= PlayerInput::kDirectionDown;
+					}
+					break;
+				case Hotspot::kIdScrollUpInventory:
+					if (_pi.touch.press == PlayerInput::kTouchUp) {
+						_pi.dirMask |= PlayerInput::kDirectionUp;
+					}
+					break;
+				}
+			}
+		}
+		if (_pi.touch.press == PlayerInput::kTouchUp) {
+			_pi.touch.press = PlayerInput::kTouchNone;
+		}
+	}
+	clearHotspots();
+}
+
 void Game::doTick() {
-	doStoryTexts();
 #if 0
 		playCutscene();
 		if (_cutId == 0x3D) {
@@ -137,6 +183,22 @@ assert(0);
 		}
 }
 
+void Game::drawHotspots() {
+	if (_pi.touch.press == PlayerInput::kTouchDown) {
+		for (int i = 0; i < _hotspotsCount; ++i) {
+			Hotspot *hs = &_hotspotsList[i];
+			if (hs->testPos(_pi.touch.x, _pi.touch.y)) {
+				switch (hs->id) {
+				case Hotspot::kIdUseGun:
+				case Hotspot::kIdUseInventory:
+					drawIcon(32, hs->x / kHotspotCoordScale, hs->y / kHotspotCoordScale, 0xA);
+					break;
+				}
+			}
+		}
+	}
+}
+
 void Game::playCutscene(int id) {
 	if (id != -1) {
 		_cutId = id;
@@ -152,16 +214,12 @@ void Game::playCutscene(int id) {
 void Game::drawCurrentInventoryItem() {
 	int src = _pgeLive[0].current_inventory_PGE;
 	if (src != 0xFF) {
-		if (testHotspot(_pi, 232, 8, 16, 16)) {
-			drawIcon(32, 232, 8, 0xA);
-		}
 		drawIcon(_res._pgeInit[src].icon_num, 232, 8, 0xA);
+		addHotspot(Hotspot::kIdUseInventory, 232, 8, 16, 16);
 		while (src != 0xFF) {
 			if (_res._pgeInit[src].object_id == kGunObject) {
-				if (testHotspot(_pi, 208, 8, 16, 16)) {
-					drawIcon(32, 208, 8, 0xA);
-				}
 				drawIcon(_res._pgeInit[src].icon_num, 208, 8, 0xA);
+				addHotspot(Hotspot::kIdUseGun, 208, 8, 16, 16);
 				break;
 			}
 			src = _pgeLive[src].next_inventory_PGE;
@@ -194,7 +252,7 @@ void Game::drawLevelTexts() {
 	if (obj > 0) {
 		_printLevelCodeCounter = 0;
 		if (_textToDisplay == 0xFFFF) {
-			uint8 icon_num = obj - 1;
+			const uint8_t icon_num = obj - 1;
 			drawIcon(icon_num, 80, 8, 0xA);
 			const uint8_t *str = _res.getStringData(pge->init_PGE->text_num);
 			drawString(str + 1, *str, (176 - *str * 8) / 2, 26, 0xE6);
@@ -210,44 +268,64 @@ void Game::drawLevelTexts() {
 }
 
 void Game::doStoryTexts() {
-	// TODO: clear background
-	if (_textToDisplay != 0xFFFF) {
-		const uint8_t *str = _res.getStringData(ResourceData::kGameString + _textToDisplay);
-		const int segmentsCount = *str++;
-printf("segmentsCount %d _textSegment %d\n", segmentsCount, _textSegment);
+	if (!_tempLayer) {
+		_tempLayer = (uint8_t *)malloc(kScreenWidth * kScreenHeight);
+		if (_tempLayer) {
+			memcpy(_tempLayer, _frontLayer, kScreenWidth * kScreenHeight);
+		}
+	}
+	const uint8_t *str = _res.getStringData(ResourceData::kGameString + _textToDisplay);
+	const int segmentsCount = *str++;
+	if (_pi.backspace) {
+		_pi.backspace = false;
+		if (_nextTextSegment >= segmentsCount) {
+			_nextTextSegment = 0;
+			_textToDisplay = 0xFFFF;
+			free(_tempLayer);
+			_tempLayer = 0;
+			return;
+                }
+		if (_tempLayer) {
+			memcpy(_frontLayer, _tempLayer, kScreenWidth * kScreenHeight);
+		}
+	} else if (_nextTextSegment > 0) {
+		return;
+	}
 		// goto to current segment
-		for (int i = 0; i < _textSegment; ++i) {
+		for (int i = 0; i < _nextTextSegment; ++i) {
 			const int segmentLength = *str++;
 			str += segmentLength;
 		}
 		int len = *str++;
 		int color = 0xE8;
 		if (*str == '@') {
-			switch (*str++) {
+			++str;
+			switch (*str) {
 			case '1':
 				color = 0xE9;
 				break;
 			case '2':
 				color = 0xEB;
 				break;
-			default:
-				assert(0);
-				break;
 			}
 			++str;
 			len -= 2;
 		}
 		drawIcon(_currentInventoryIconNum, 80, 8, 0xA);
-		drawString(str, len, (176 - len * 8) / 2, 26, color);
-		if (_pi.backspace) {
-			_pi.backspace = false;
-			++_textSegment;
-			if (_textSegment == segmentsCount) {
-				_textSegment = 0;
-				_textToDisplay = 0xFFFF;
+		int lineOffset = 26;
+		while (len > 0) {
+			const uint8_t *next = (const uint8_t *)memchr(str, 0x7C, len);
+			if (!next) {
+				drawString(str, len, (176 - len * 8) / 2, lineOffset, color);
+				break;
 			}
+			const int lineLength = next - str;
+			drawString(str, lineLength, (176 - lineLength * 8) / 2, lineOffset, color);
+			str = next + 1;
+			len -= lineLength + 1;
+			lineOffset += 8;
 		}
-	}
+	++_nextTextSegment;
 }
 
 void Game::prepareAnims() {
@@ -394,11 +472,6 @@ void Game::drawString(const unsigned char *str, int len, int x, int y, int color
 	int offset = 0;
 	for (int i = 0; i < len; ++i) {
 		const uint8_t code = *str++;
-		if (code == 0x7C) {
-			y += 8;
-			offset = 0;
-			continue;
-		}
 		DecodeBuffer buf;
 		initDecodeBuffer(&buf, x + offset, y, false, true, _frontLayer, 0);
 		buf.textColor = color;
@@ -538,15 +611,6 @@ void Game::changeLevel() {
 	loadLevelMap();
 }
 
-uint16 Game::getLineLength(const uint8 *str) const {
-	uint16 len = 0;
-	while (*str && *str != 0xB && *str != 0xA) {
-		++str;
-		++len;
-	}
-	return len;
-}
-
 void Game::initInventory() {
 	if (!_inventoryOn) {
 		_inventoryCurrentItem = 0;
@@ -557,6 +621,7 @@ void Game::initInventory() {
 }
 
 void Game::doInventory() {
+	addHotspot(Hotspot::kIdUseInventory, 232, 8, 16, 16);
 	LivePGE *pge = &_pgeLive[0];
 	if (pge->life > 0 && pge->current_inventory_PGE != 0xFF) {
 //		playSound(66, 0);
@@ -584,6 +649,7 @@ void Game::doInventory() {
 			}
 			const int xPos = 72 + i * 32;
 			drawIcon(_inventoryItems[currentItem].icon_num, xPos, 157, 0xA);
+			addHotspot(Hotspot::kIdSelectInventoryObject, xPos, 157, 16, 16);
 			if (_inventoryCurrentItem == currentItem) {
 				drawIcon(32, xPos, 157, 0xA);
 				const LivePGE *selected_pge = _inventoryItems[currentItem].live_pge;
@@ -599,9 +665,11 @@ void Game::doInventory() {
 		}
 		if (y != 0) {
 			drawIcon(34, 120, 176, 0xA); // down arrow
+			addHotspot(Hotspot::kIdScrollUpInventory, 120, 176, 16, 16);
 		}
 		if (y != h - 1) {
 			drawIcon(33, 120, 143, 0xA); // up arrow
+			addHotspot(Hotspot::kIdScrollDownInventory, 120, 143, 16, 16);
 		}
 		if (_pi.dirMask & PlayerInput::kDirectionUp) {
 			_pi.dirMask &= ~PlayerInput::kDirectionUp;
@@ -648,5 +716,21 @@ void AnimBuffers::addState(uint8 stateNum, int16 x, int16 y, LivePGE *pge) {
 	state->pge = pge;
 	++_curPos[stateNum];
 	++_states[stateNum];
+}
+
+void Game::clearHotspots() {
+	_hotspotsCount = 0;
+}
+
+void Game::addHotspot(int id, int x, int y, int w, int h) {
+	if (_hotspotsCount < ARRAYSIZE(_hotspotsList)) {
+		Hotspot *hs = &_hotspotsList[_hotspotsCount];
+		hs->id = id;
+		hs->x = x * kHotspotCoordScale;
+		hs->y = y * kHotspotCoordScale;
+		hs->x2 = (x + w) * kHotspotCoordScale;
+		hs->y2 = (y + h) * kHotspotCoordScale;
+		++_hotspotsCount;
+	}
 }
 

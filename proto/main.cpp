@@ -59,6 +59,7 @@ static void doTick() {
 	glEnd();
 }
 
+// TODO: glCompressedTexImage2D OES_compressed_paletted_texture
 static void uploadTexture(GLuint textureId, const uint8_t *imageData, const Color *clut, int w, int h) {
 	uint8_t *texData = (uint8_t *)malloc(w * h * 3);
 	for (int y = 0; y < h; ++y) {
@@ -125,7 +126,7 @@ static void updateKeyInput(int keyCode, bool pressed, PlayerInput &pi) {
 }
 
 static void updateTouchInput(bool released, int x, int y, PlayerInput &pi) {
-	pi.touch.up = released;
+	pi.touch.press = released ? PlayerInput::kTouchUp : PlayerInput::kTouchDown;
 	pi.touch.x = x;
 	pi.touch.y = y;
 }
@@ -178,14 +179,20 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 		}
-		if (game._pi.backspace) {
-			game._pi.backspace = false;
-			game.initInventory();
-		}
-		if (game._inventoryOn) {
-			game.doInventory();
+		if (game._textToDisplay != 0xFFFF) {
+			game.doStoryTexts();
 		} else {
-			game.doTick();
+			game.doHotspots();
+			if (game._pi.backspace) {
+				game._pi.backspace = false;
+				game.initInventory();
+			}
+			if (game._inventoryOn) {
+				game.doInventory();
+			} else {
+				game.doTick();
+			}
+			game.drawHotspots();
 		}
 		uploadTexture(t._textureId, game._frontLayer, game._palette, Game::kScreenWidth, Game::kScreenHeight);
 		t.doFrame(gWindowW, gWindowH);

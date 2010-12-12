@@ -17,17 +17,33 @@ struct PlayerInput {
 	bool space;
 	bool shift;
 	bool backspace;
+	enum {
+		kTouchNone,
+		kTouchUp,
+		kTouchDown
+	};
 	struct {
 		int x, y;
-		bool up;
+		int press;
 	} touch;
 };
 
-inline bool testHotspot(const PlayerInput &pi, int x, int y, int w, int h) {
-	const int x2 = (x + w) * 2;
-	const int y2 = (y + h) * 2;
-	return !pi.touch.up && pi.touch.x >= x * 2 && pi.touch.x < x2 && pi.touch.y >= y * 2 && pi.touch.y < y2;
-}
+struct Hotspot {
+	enum {
+		kIdUseGun,
+		kIdUseInventory,
+		kIdSelectInventoryObject,
+		kIdScrollUpInventory,
+		kIdScrollDownInventory
+	};
+
+	int id;
+	int x, y, x2, y2;
+
+	bool testPos(int xPos, int yPos) const {
+		return xPos >= x && xPos < x2 && yPos >= y && yPos < y2;
+	}
+};
 
 struct Game {
 	typedef int (Game::*pge_OpcodeProc)(ObjectOpcodeArgs *args);
@@ -42,7 +58,8 @@ struct Game {
 		kCtRoomLeft = 0xC0,
 		kScreenWidth = 256 * 2,
 		kScreenHeight = 224 * 2,
-		kGunObject = 2
+		kGunObject = 2,
+		kHotspotCoordScale = 2
 	};
 
 	static const uint16 _scoreTable[];
@@ -54,9 +71,11 @@ struct Game {
 
 	ResourceData &_res;
 
-	uint8_t *_frontLayer, *_backLayer;
+	uint8_t *_frontLayer, *_backLayer, *_tempLayer;
 	Color _palette[256];
 	PlayerInput _pi;
+	Hotspot _hotspotsList[8];
+	int _hotspotsCount;
 
 	uint8 _currentLevel;
 	uint8 _skillLevel;
@@ -70,7 +89,7 @@ struct Game {
 	uint16 _curMonsterNum;
 	uint8 _blinkingConradCounter;
 	uint16 _textToDisplay;
-	int _textSegment;
+	int _nextTextSegment;
 	bool _eraseBackground;
 	AnimBufferState _animBuffer0State[41];
 	AnimBufferState _animBuffer1State[6]; // Conrad
@@ -86,6 +105,7 @@ struct Game {
 	uint16_t _cutDeathCutsceneId;
 
 	Game(ResourceData &);
+	~Game();
 
 	void resetGameState();
 	void initGame();
@@ -109,9 +129,12 @@ struct Game {
 	void playSound(uint8 sfxId, uint8 softVol);
 	uint16 getRandomNumber();
 	void changeLevel();
-	uint16 getLineLength(const uint8 *str) const;
 	void initInventory();
 	void doInventory();
+	void clearHotspots();
+	void addHotspot(int id, int x, int y, int w, int h);
+	void doHotspots();
+	void drawHotspots();
 
 
 	// pieges
