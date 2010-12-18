@@ -6,3 +6,6 @@ mouse UI
 	click on gun -> space
 	action -> shift
 virtual pad
+
+Andoid:
+	gSubTexImage2D: upload uniquement les zones changees

@@ -16,7 +16,7 @@ struct Test {
 	GLuint _textureId;
 
 	Test(const char *filePath)
-		: _resData(filePath) {
+		: _resData(filePath), _textureId(-1) {
 	}
 
 	void init() {
@@ -46,38 +46,32 @@ struct Test {
 			glEnd();
 		}
 	}
-};
 
-static void doTick() {
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glColor3f(1., 0., 0.);
-	glBegin(GL_TRIANGLE_FAN);
-		glVertex2i(0, 0);
-		glVertex2i(gWindowW / 2, 0);
-		glVertex2i(0, gWindowH / 2);
-	glEnd();
-}
-
-// TODO: glCompressedTexImage2D OES_compressed_paletted_texture
-static void uploadTexture(GLuint textureId, const uint8_t *imageData, const Color *clut, int w, int h) {
-	uint8_t *texData = (uint8_t *)malloc(w * h * 3);
-	for (int y = 0; y < h; ++y) {
-		for (int x = 0; x < w; ++x) {
-			const Color &c = clut[imageData[y * w + x]];
-			texData[(y * w + x) * 3] = c.r;
-			texData[(y * w + x) * 3 + 1] = c.g;
-			texData[(y * w + x) * 3 + 2] = c.b;
+	void uploadTexture(const uint8_t *imageData, const Color *clut, int w, int h) {
+		uint8_t *texData = (uint8_t *)malloc(w * h * 3);
+		for (int y = 0; y < h; ++y) {
+			for (int x = 0; x < w; ++x) {
+				const Color &c = clut[imageData[y * w + x]];
+				texData[(y * w + x) * 3] = c.r;
+				texData[(y * w + x) * 3 + 1] = c.g;
+				texData[(y * w + x) * 3 + 2] = c.b;
+			}
 		}
+		if (_textureId == -1) {
+			glGenTextures(1, &_textureId);
+			glBindTexture(GL_TEXTURE_2D, _textureId);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			glTexImage2D(GL_TEXTURE_2D, 0, 3, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
+		} else {
+			glBindTexture(GL_TEXTURE_2D, _textureId);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, texData);
+		}
+		free(texData);
 	}
-	glBindTexture(GL_TEXTURE_2D, textureId);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexImage2D(GL_TEXTURE_2D, 0, 3, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
-	free(texData);
-}
+};
 
 static void updateKeyInput(int keyCode, bool pressed, PlayerInput &pi) {
 	switch (keyCode) {
@@ -194,7 +188,7 @@ int main(int argc, char *argv[]) {
 			}
 			game.drawHotspots();
 		}
-		uploadTexture(t._textureId, game._frontLayer, game._palette, Game::kScreenWidth, Game::kScreenHeight);
+		t.uploadTexture(game._frontLayer, game._palette, Game::kScreenWidth, Game::kScreenHeight);
 		t.doFrame(gWindowW, gWindowH);
 		SDL_GL_SwapBuffers();
 		SDL_Delay(gTickDuration);

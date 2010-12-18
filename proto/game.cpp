@@ -1,5 +1,5 @@
 
-#include <ctime>
+#include <time.h>
 #include "game.h"
 #include "util.h"
 
@@ -12,6 +12,7 @@ Game::Game(ResourceData &res)
 	_frontLayer = (uint8_t *)calloc(1, kScreenWidth * kScreenHeight);
 	_backLayer = (uint8_t *)calloc(1, kScreenWidth * kScreenHeight);
 	_tempLayer = 0;
+	_maskLayer = (uint8_t *)calloc(1, (kScreenWidth / Game::kMaskSize) * (kScreenHeight / Game::kMaskSize));
 	_inventoryOn = false;
 	_hotspotsCount = 0;
 }
@@ -20,6 +21,7 @@ Game::~Game() {
 	free(_frontLayer);
 	free(_backLayer);
 	free(_tempLayer);
+	free(_maskLayer);
 }
 
 #if 0
@@ -441,6 +443,39 @@ static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, bool xflip, bool e
 		buf->y -= (int16)READ_BE_UINT16(dataPtr + 6);
 	}
 	buf->erase = erase;
+}
+
+static void updateMaskBuffer(DecodeBuffer *buf, const uint8_t *dataPtr, uint8_t *maskLayer) {
+	enum {
+		kMaskW = Game::kScreenWidth / Game::kMaskSize,
+		kMaskH = Game::kScreenHeight / Game::kMaskSize
+	};
+	int uSize = READ_BE_UINT16(dataPtr) / Game::kMaskSize;
+	int u = buf->x / Game::kMaskSize;
+	if (u < 0) {
+		uSize -= u;
+		u = 0;
+	} else if (u + uSize > kMaskW) {
+		uSize = kMaskW - u;
+	}
+	if (u > kMaskW || uSize <= 0) {
+		return;
+	}
+	int vSize = READ_BE_UINT16(dataPtr + 2) / Game::kMaskSize;
+	int v = buf->y / Game::kMaskSize;
+	if (v < 0) {
+		vSize -= v;
+		v = 0;
+	} else if (v + vSize > kMaskH) {
+		vSize = kMaskH - v;
+	}
+	if (v > kMaskH || vSize <= 0) {
+		return;
+	}
+	for (; vSize != 0; --vSize) {
+		memset(maskLayer + v * kMaskW + u, 2, uSize);
+		++v;
+	}
 }
 
 void Game::drawPiege(LivePGE *pge, int x, int y) {

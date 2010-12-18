@@ -2,10 +2,10 @@
 #ifndef INTERN_H__
 #define INTERN_H__
 
-#include <cstdio>
-#include <cstring>
-#include <cstdlib>
-#include <cassert>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <assert.h>
 #include <stdint.h>
 
 #define MAX(x,y) ((x)>(y)?(x):(y))

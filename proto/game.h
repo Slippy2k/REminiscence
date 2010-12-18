@@ -59,7 +59,8 @@ struct Game {
 		kScreenWidth = 256 * 2,
 		kScreenHeight = 224 * 2,
 		kGunObject = 2,
-		kHotspotCoordScale = 2
+		kHotspotCoordScale = 2,
+		kMaskSize = 32
 	};
 
 	static const uint16 _scoreTable[];
@@ -71,7 +72,8 @@ struct Game {
 
 	ResourceData &_res;
 
-	uint8_t *_frontLayer, *_backLayer, *_tempLayer;
+	uint8_t *_frontLayer, *_backLayer, *_tempLayer, *_maskLayer;
+	bool _invalidatedMaskLayer;
 	Color _palette[256];
 	PlayerInput _pi;
 	Hotspot _hotspotsList[8];
