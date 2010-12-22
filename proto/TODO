@@ -7,5 +7,9 @@ mouse UI
 	action -> shift
 virtual pad
 
-Andoid:
-	gSubTexImage2D: upload uniquement les zones changees
+Android
+	rendu par texture
+		une texture pour le background
+		N textures pour les sprites
+	TextureCache
+	load en 565
