@@ -60,7 +60,7 @@ struct Game {
 		kScreenHeight = 224 * 2,
 		kGunObject = 2,
 		kHotspotCoordScale = 2,
-		kMaskSize = 32
+		kDirtyMaskSize = 32
 	};
 
 	static const uint16 _scoreTable[];
@@ -72,8 +72,8 @@ struct Game {
 
 	ResourceData &_res;
 
-	uint8_t *_frontLayer, *_backLayer, *_tempLayer, *_maskLayer;
-	bool _invalidatedMaskLayer;
+	uint8_t *_frontLayer, *_backLayer, *_tempLayer, *_dirtyMaskLayer;
+	bool _invalidatedDirtyMaskLayer;
 	Color _palette[256];
 	PlayerInput _pi;
 	Hotspot _hotspotsList[8];
@@ -108,6 +108,9 @@ struct Game {
 
 	Game(ResourceData &);
 	~Game();
+
+	void invalidateDirtyMaskLayer();
+	void updateDirtyMaskLayer();
 
 	void resetGameState();
 	void initGame();

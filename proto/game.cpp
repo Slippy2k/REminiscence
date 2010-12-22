@@ -12,7 +12,8 @@ Game::Game(ResourceData &res)
 	_frontLayer = (uint8_t *)calloc(1, kScreenWidth * kScreenHeight);
 	_backLayer = (uint8_t *)calloc(1, kScreenWidth * kScreenHeight);
 	_tempLayer = 0;
-	_maskLayer = (uint8_t *)calloc(1, (kScreenWidth / Game::kMaskSize) * (kScreenHeight / Game::kMaskSize));
+	_dirtyMaskLayer = (uint8_t *)calloc(1, (kScreenWidth / Game::kDirtyMaskSize) * (kScreenHeight / Game::kDirtyMaskSize));
+	_invalidatedDirtyMaskLayer = true;
 	_inventoryOn = false;
 	_hotspotsCount = 0;
 }
@@ -21,7 +22,7 @@ Game::~Game() {
 	free(_frontLayer);
 	free(_backLayer);
 	free(_tempLayer);
-	free(_maskLayer);
+	free(_dirtyMaskLayer);
 }
 
 #if 0
@@ -445,37 +446,56 @@ static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, bool xflip, bool e
 	buf->erase = erase;
 }
 
-static void updateMaskBuffer(DecodeBuffer *buf, const uint8_t *dataPtr, uint8_t *maskLayer) {
-	enum {
-		kMaskW = Game::kScreenWidth / Game::kMaskSize,
-		kMaskH = Game::kScreenHeight / Game::kMaskSize
-	};
-	int uSize = READ_BE_UINT16(dataPtr) / Game::kMaskSize;
-	int u = buf->x / Game::kMaskSize;
-	if (u < 0) {
-		uSize -= u;
-		u = 0;
-	} else if (u + uSize > kMaskW) {
-		uSize = kMaskW - u;
-	}
-	if (u > kMaskW || uSize <= 0) {
+enum {
+	kDirtyMaskW = Game::kScreenWidth / Game::kDirtyMaskSize,
+	kDirtyMaskH = Game::kScreenHeight / Game::kDirtyMaskSize
+};
+
+static void updateDirtyMaskBuffer(DecodeBuffer *buf, int bufW, int bufH, uint8_t *maskLayer) {
+	int u2 = (buf->x + bufW + Game::kDirtyMaskSize - 1) / Game::kDirtyMaskSize;
+	int u1 = buf->x / Game::kDirtyMaskSize;
+	if (u1 < 0) {
+		u2 += u1;
+		u1 = 0;
+	} else if (u1 > kDirtyMaskW) {
 		return;
 	}
-	int vSize = READ_BE_UINT16(dataPtr + 2) / Game::kMaskSize;
-	int v = buf->y / Game::kMaskSize;
-	if (v < 0) {
-		vSize -= v;
-		v = 0;
-	} else if (v + vSize > kMaskH) {
-		vSize = kMaskH - v;
-	}
-	if (v > kMaskH || vSize <= 0) {
+	if (u2 > kDirtyMaskW) {
+		u2 = kDirtyMaskW;
+	} else if (u2 <= 0) {
 		return;
 	}
-	for (; vSize != 0; --vSize) {
-		memset(maskLayer + v * kMaskW + u, 2, uSize);
-		++v;
+	int v2 = (buf->y + bufH + Game::kDirtyMaskSize - 1) / Game::kDirtyMaskSize;
+	int v1 = buf->y / Game::kDirtyMaskSize;
+	if (v1 < 0) {
+		v2 += v1;
+		v1 = 0;
+	} else if (v1 > kDirtyMaskH) {
+		return;
 	}
+	if (v2 > kDirtyMaskH) {
+		v2 = kDirtyMaskH;
+	} else if (v2 <= 0) {
+		return;
+	}
+	for (; v1 < v2; ++v1) {
+		memset(maskLayer + v1 * kDirtyMaskW + u1, 2, u2 - u1);
+	}
+}
+
+void Game::invalidateDirtyMaskLayer() {
+	_invalidatedDirtyMaskLayer = true;
+	memset(_dirtyMaskLayer, 2, kDirtyMaskW * kDirtyMaskH);
+}
+
+void Game::updateDirtyMaskLayer() {
+	for (int i = 0; i < kDirtyMaskH * kDirtyMaskW; ++i) {
+		const uint8_t code = _dirtyMaskLayer[i];
+		if (code != 0) {
+			_dirtyMaskLayer[i] = code - 1;
+		}
+	}
+	_invalidatedDirtyMaskLayer = false;
 }
 
 void Game::drawPiege(LivePGE *pge, int x, int y) {
@@ -485,6 +505,7 @@ void Game::drawPiege(LivePGE *pge, int x, int y) {
 		if (!dataPtr) return;
 		initDecodeBuffer(&buf, x, y, false, _eraseBackground,  _frontLayer, dataPtr);
 		_res.decodeImageData(_res._spc, pge->anim_number, &buf);
+		updateDirtyMaskBuffer(&buf, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), _dirtyMaskLayer);
 	} else {
 		const bool xflip = (pge->flags & 2);
 		if (pge->index == 0) {
@@ -493,12 +514,14 @@ void Game::drawPiege(LivePGE *pge, int x, int y) {
 			if (!dataPtr) return;
 			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
 			_res.decodeImageData(_res._perso, frame, &buf);
+			updateDirtyMaskBuffer(&buf, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), _dirtyMaskLayer);
 		} else {
 			const int frame = _res.getMonsterFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._monster, frame);
 			if (!dataPtr) return;
 			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
 			_res.decodeImageData(_res._monster, frame, &buf);
+			updateDirtyMaskBuffer(&buf, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), _dirtyMaskLayer);
 		}
 	}
 }
@@ -511,6 +534,7 @@ void Game::drawString(const unsigned char *str, int len, int x, int y, int color
 		initDecodeBuffer(&buf, x + offset, y, false, true, _frontLayer, 0);
 		buf.textColor = color;
 		_res.decodeImageData(_res._fnt, code - 32, &buf);
+		updateDirtyMaskBuffer(&buf, 16, 16, _dirtyMaskLayer);
 		offset += 8;
 	}
 }
@@ -572,6 +596,7 @@ void Game::loadLevelMap() {
 	_res.loadLevelRoom(_currentLevel, _currentRoom, &buf);
 	memcpy(_backLayer, _frontLayer, kScreenWidth * kScreenHeight);
 	_res.setupLevelClut(_currentLevel, _palette);
+	invalidateDirtyMaskLayer();
 }
 
 void Game::loadLevelData() {
@@ -611,6 +636,7 @@ void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
 	DecodeBuffer buf;
 	initDecodeBuffer(&buf, x, y, false, true, _frontLayer, 0);
 	_res.decodeImageData(_res._icn, iconNum, &buf);
+	updateDirtyMaskBuffer(&buf, 32, 32, _dirtyMaskLayer);
 }
 
 void Game::playSound(uint8 sfxId, uint8 softVol) {
