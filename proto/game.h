@@ -47,6 +47,7 @@ struct Hotspot {
 
 struct Image {
 	int x, y;
+	int w, h;
 	bool xflip, yflip;
 	bool erase;
 	const uint8_t *dataPtr;
@@ -155,7 +156,7 @@ struct Game {
 	void drawHotspots();
 
 	void clearImagesList();
-	void addImageToList(int x, int y, bool xflip, bool erase, uint8_t *dataPtr, int num);
+	void addImageToList(int x, int y, int w, int h, bool xflip, bool erase, uint8_t *dataPtr, int num);
 
 
 	// pieges

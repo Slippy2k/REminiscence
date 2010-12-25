@@ -30,6 +30,14 @@ uint8_t *decodeLzss(File &f, uint32_t &decodedSize) {
 	return dst;
 }
 
+static void setPixel(int x, int y, int w, int h, uint8_t color, DecodeBuffer *buf) {
+	if (buf->setPixel) {
+		buf->setPixel(buf, x, y, w, h, color);
+	} else {
+		buf->setPixelIntern(x, y, w, h, color);
+	}
+}
+
 void decodeC103(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
 	uint8_t d0;
 	int d3 = 0;
@@ -56,7 +64,7 @@ void decodeC103(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
 					a1[d3] = d0;
 					++d3;
 					d3 &= d5;
-					buf->setPixel(x, y, w, h, d0);
+					setPixel(x, y, w, h, d0, buf);
 					continue;
 				}
 				d1 = READ_BE_UINT16(a3); a3 += 2;
@@ -71,7 +79,7 @@ void decodeC103(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
 			d1 &= d5;
 			a1[d3++] = d0;
 			d3 &= d5;
-			buf->setPixel(x, y, w, h, d0);
+			setPixel(x, y, w, h, d0, buf);
 			--d6;
 		}
 	}
@@ -125,11 +133,11 @@ void decodeC211(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
 				}
 				const uint8_t color = *a3++;
 				for (int i = 0; i < d1; ++i) {
-					buf->setPixel(x++, y, w, h, color);
+					setPixel(x++, y, w, h, color, buf);
 				}
 			} else {
 				for (int i = 0; i < d1; ++i) {
-					buf->setPixel(x++, y, w, h, *a3++);
+					setPixel(x++, y, w, h, *a3++, buf);
 				}
 			}
 		}

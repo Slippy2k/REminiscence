@@ -512,7 +512,7 @@ void Game::drawPiege(LivePGE *pge, int x, int y) {
 		initDecodeBuffer(&buf, x, y, false, _eraseBackground,  _frontLayer, dataPtr);
 		_res.decodeImageData(_res._spc, pge->anim_number, &buf);
 		updateDirtyMaskBuffer(&buf, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), _dirtyMaskLayer);
-		addImageToList(buf.x, buf.y, false, _eraseBackground, _res._spc, pge->anim_number);
+		addImageToList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), false, _eraseBackground, _res._spc, pge->anim_number);
 	} else {
 		const bool xflip = (pge->flags & 2);
 		if (pge->index == 0) {
@@ -522,7 +522,7 @@ void Game::drawPiege(LivePGE *pge, int x, int y) {
 			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
 			_res.decodeImageData(_res._perso, frame, &buf);
 			updateDirtyMaskBuffer(&buf, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), _dirtyMaskLayer);
-			addImageToList(buf.x, buf.y, xflip, _eraseBackground, _res._perso, frame);
+			addImageToList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), xflip, _eraseBackground, _res._perso, frame);
 		} else {
 			const int frame = _res.getMonsterFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._monster, frame);
@@ -530,7 +530,7 @@ void Game::drawPiege(LivePGE *pge, int x, int y) {
 			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
 			_res.decodeImageData(_res._monster, frame, &buf);
 			updateDirtyMaskBuffer(&buf, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), _dirtyMaskLayer);
-			addImageToList(buf.x, buf.y, xflip, _eraseBackground, _res._monster, frame);
+			addImageToList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), xflip, _eraseBackground, _res._monster, frame);
 		}
 	}
 }
@@ -649,7 +649,7 @@ void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
 	initDecodeBuffer(&buf, x, y, false, true, _frontLayer, 0);
 	_res.decodeImageData(_res._icn, iconNum, &buf);
 	updateDirtyMaskBuffer(&buf, 32, 32, _dirtyMaskLayer);
-	addImageToList(x, y, false, true, _res._icn, iconNum);
+	addImageToList(buf.x, buf.y, 32, 32, false, true, _res._icn, iconNum);
 }
 
 void Game::playSound(uint8 sfxId, uint8 softVol) {
@@ -811,15 +811,18 @@ void Game::clearImagesList() {
 	_imagesCount = 0;
 }
 
-void Game::addImageToList(int x, int y, bool xflip, bool erase, uint8_t *dataPtr, int num) {
+void Game::addImageToList(int x, int y, int w, int h, bool xflip, bool erase, uint8_t *dataPtr, int num) {
 	assert(_imagesCount < ARRAYSIZE(_imagesList));
 	Image *i = &_imagesList[_imagesCount];
 	i->x = x;
 	i->y = y;
+	i->w = w;
+	i->h = h;
 	i->xflip = xflip;
 	i->yflip = false;
 	i->erase = erase;
 	i->dataPtr = dataPtr;
 	i->num = num;
+	++_imagesCount;
 }
 

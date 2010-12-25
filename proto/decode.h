@@ -23,7 +23,10 @@ struct DecodeBuffer {
 	bool erase;
 	uint8_t textColor;
 
-	void setPixel(int src_x, int src_y, int src_w, int src_h, uint8_t color) {
+	void *lut;
+	void (*setPixel)(DecodeBuffer *buf, int src_x, int src_y, int src_w, int src_h, uint8_t color);
+
+	void setPixelIntern(int src_x, int src_y, int src_w, int src_h, uint8_t color) {
 		if (xflip) {
 			src_x = src_w - 1 - src_x;
 		}
