@@ -6,24 +6,37 @@
 #include "resource_mac.h"
 #include "util.h"
 
-static const char *gWindowWindowTitle = "Flashback: The Quest For Identity";
+static const char *gWindowTitle = "Flashback: The Quest For Identity";
 static const int gWindowW = 512;
 static const int gWindowH = 448;
 static const int gTickDuration = 16;
 
+struct TextureCache {
+};
+
 struct Test {
 	ResourceData _resData;
 	GLuint _textureId;
+	int _w, _h;
+	uint16_t *_texData;
+	uint16_t _tex8to16[256];
 
 	Test(const char *filePath)
-		: _resData(filePath), _textureId(-1) {
+		: _resData(filePath), _textureId(-1), _texData(0) {
+	}
+	~Test() {
+		free(_texData);
+		_texData = 0;
 	}
 
-	void init() {
+	void init(int w, int h) {
 		_resData.loadClutData();
 		_resData.loadIconData();
 		_resData.loadFontData();
 		_resData.loadPersoData();
+		_w = w;
+		_h = h;
+		_texData = (uint16_t *)calloc(w * h, sizeof(uint16_t));
 	}
 
 	void doFrame(int w, int h) {
@@ -47,14 +60,16 @@ struct Test {
 		}
 	}
 
-	void uploadTexture(const uint8_t *dirtyMask, const uint8_t *imageData, const Color *clut, int w, int h) {
-		uint8_t *texData = (uint8_t *)malloc(w * h * 3);
+	void updatePalette(const Color *clut) {
+		for (int i = 0; i < 256; ++i) {
+			_tex8to16[i] = ((clut[i].r >> 3) << 11) | ((clut[i].g >> 2) << 5) | (clut[i].b >> 3);
+		}
+	}
+
+	void uploadTexture(const uint8_t *imageData, int w, int h, const uint8_t *dirtyMask) {
 		for (int y = 0; y < h; ++y) {
 			for (int x = 0; x < w; ++x) {
-				const Color &c = clut[imageData[y * w + x]];
-				texData[(y * w + x) * 3] = c.r;
-				texData[(y * w + x) * 3 + 1] = c.g;
-				texData[(y * w + x) * 3 + 2] = c.b;
+				_texData[y * w + x] = _tex8to16[*imageData++];
 			}
 		}
 		if (_textureId == -1) {
@@ -64,12 +79,12 @@ struct Test {
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			glTexImage2D(GL_TEXTURE_2D, 0, 3, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, _texData);
 		} else {
 			glBindTexture(GL_TEXTURE_2D, _textureId);
 			if (!dirtyMask) {
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, texData);
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, _texData);
 			} else {
 				glPixelStorei(GL_UNPACK_ROW_LENGTH, w);
 				static const int kMaskSize = Game::kDirtyMaskSize;
@@ -84,19 +99,18 @@ struct Test {
 						} else if (imageW != 0) {
 							const int imageX = x - imageW;
 							const int texOffset = 3 * (imageY * w + imageX);
-							glTexSubImage2D(GL_TEXTURE_2D, 0, imageX, imageY, imageW, imageH, GL_RGB, GL_UNSIGNED_BYTE, texData + texOffset);
+							glTexSubImage2D(GL_TEXTURE_2D, 0, imageX, imageY, imageW, imageH, GL_RGB, GL_UNSIGNED_BYTE, _texData + texOffset);
 							imageW = 0;
 						}
 					}
 					if (imageW != 0) {
 						const int imageX = w - imageW;
 						const int texOffset = 3 * (imageY * w + imageX);
-						glTexSubImage2D(GL_TEXTURE_2D, 0, imageX, imageY, imageW, imageH, GL_RGB, GL_UNSIGNED_BYTE, texData + texOffset);
+						glTexSubImage2D(GL_TEXTURE_2D, 0, imageX, imageY, imageW, imageH, GL_RGB, GL_UNSIGNED_BYTE, _texData + texOffset);
 					}
 				}
 			}
 		}
-		free(texData);
 	}
 };
 
@@ -148,6 +162,7 @@ static void updateKeyInput(int keyCode, bool pressed, PlayerInput &pi) {
 
 static void updateTouchInput(bool released, int x, int y, PlayerInput &pi) {
 	pi.touch.press = released ? PlayerInput::kTouchUp : PlayerInput::kTouchDown;
+	// TODO: transform x,y if texture not blitted at 0,0
 	pi.touch.x = x;
 	pi.touch.y = y;
 }
@@ -161,11 +176,11 @@ int main(int argc, char *argv[]) {
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_SetVideoMode(gWindowW, gWindowH, 0, SDL_OPENGL | SDL_RESIZABLE);
-	SDL_WM_SetCaption(gWindowWindowTitle, 0);
+	SDL_WM_SetCaption(gWindowTitle, 0);
 	glEnable(GL_TEXTURE_2D);
 
 	Test t(argv[1]);
-	t.init();
+	t.init(gWindowW, gWindowH);
 	Game game(t._resData);
 	game._currentLevel = 0;
 	if (argc >= 3) {
@@ -204,6 +219,10 @@ int main(int argc, char *argv[]) {
 			game.doStoryTexts();
 		} else {
 			game.doHotspots();
+	                if (game._pi.touch.press == PlayerInput::kTouchUp) {
+				game._pi.touch.press = PlayerInput::kTouchNone;
+			}
+			game.clearHotspots();
 			if (game._pi.backspace) {
 				game._pi.backspace = false;
 				game.initInventory();
@@ -215,8 +234,16 @@ int main(int argc, char *argv[]) {
 			}
 			game.drawHotspots();
 		}
-		const uint8_t *maskLayer = game._invalidatedDirtyMaskLayer ? 0 : game._dirtyMaskLayer;
-		t.uploadTexture(maskLayer, game._frontLayer, game._palette, Game::kScreenWidth, Game::kScreenHeight);
+		if (game._paletteChanged) {
+			t.updatePalette(game._palette);
+		}
+		if (game._backgroundChanged) {
+//			_res.loadLevelRoom(_currentLevel, _currentRoom, &buf);
+//			TODO: stencil if color & 0x80
+		}
+		// TODO: foreach _imagesList
+		// const uint8_t *maskLayer = game._invalidatedDirtyMaskLayer ? 0 : game._dirtyMaskLayer;
+		t.uploadTexture(game._frontLayer, Game::kScreenWidth, Game::kScreenHeight, 0);
 		t.doFrame(gWindowW, gWindowH);
 		game.updateDirtyMaskLayer();
 		SDL_GL_SwapBuffers();

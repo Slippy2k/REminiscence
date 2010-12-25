@@ -45,6 +45,14 @@ struct Hotspot {
 	}
 };
 
+struct Image {
+	int x, y;
+	bool xflip, yflip;
+	bool erase;
+	const uint8_t *dataPtr;
+	int num;
+};
+
 struct Game {
 	typedef int (Game::*pge_OpcodeProc)(ObjectOpcodeArgs *args);
 	typedef int (Game::*pge_ZOrderCallback)(LivePGE *, LivePGE *, uint8, uint8);
@@ -75,9 +83,13 @@ struct Game {
 	uint8_t *_frontLayer, *_backLayer, *_tempLayer, *_dirtyMaskLayer;
 	bool _invalidatedDirtyMaskLayer;
 	Color _palette[256];
+	bool _paletteChanged;
+	bool _backgroundChanged;
 	PlayerInput _pi;
 	Hotspot _hotspotsList[8];
 	int _hotspotsCount;
+	Image _imagesList[64];
+	int _imagesCount;
 
 	uint8 _currentLevel;
 	uint8 _skillLevel;
@@ -102,6 +114,7 @@ struct Game {
 	bool _saveStateCompleted;
 	bool _inventoryOn;
 	int _inventoryCurrentItem;
+	int _inventoryItemsCount;
 	InventoryItem _inventoryItems[24];
 	uint16_t _cutId;
 	uint16_t _cutDeathCutsceneId;
@@ -140,6 +153,9 @@ struct Game {
 	void addHotspot(int id, int x, int y, int w, int h);
 	void doHotspots();
 	void drawHotspots();
+
+	void clearImagesList();
+	void addImageToList(int x, int y, bool xflip, bool erase, uint8_t *dataPtr, int num);
 
 
 	// pieges

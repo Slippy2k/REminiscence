@@ -94,30 +94,36 @@ void Game::doHotspots() {
 					break;
 				case Hotspot::kIdSelectInventoryObject:
 					if (_pi.touch.press == PlayerInput::kTouchDown) {
-						_inventoryCurrentItem = (hs->x / kHotspotCoordScale - 72) / 32;
+						const int num = (hs->x / kHotspotCoordScale - 72) / 32;
+						if (num >= 0 && num <= 3) {
+							_inventoryCurrentItem = (_inventoryCurrentItem & ~3) | num;
+						}
 					}
 					break;
 				case Hotspot::kIdScrollDownInventory:
 					if (_pi.touch.press == PlayerInput::kTouchUp) {
-						_pi.dirMask |= PlayerInput::kDirectionDown;
+						if (_inventoryCurrentItem - 4 >= 0) {
+							_inventoryCurrentItem = (_inventoryCurrentItem - 4) & ~3;
+						}
 					}
 					break;
 				case Hotspot::kIdScrollUpInventory:
 					if (_pi.touch.press == PlayerInput::kTouchUp) {
-						_pi.dirMask |= PlayerInput::kDirectionUp;
+						if (((_inventoryCurrentItem + 4) & ~3) < _inventoryItemsCount) {
+							_inventoryCurrentItem = (_inventoryCurrentItem + 4) & ~3;
+						}
 					}
 					break;
 				}
 			}
 		}
-		if (_pi.touch.press == PlayerInput::kTouchUp) {
-			_pi.touch.press = PlayerInput::kTouchNone;
-		}
 	}
-	clearHotspots();
 }
 
 void Game::doTick() {
+	_paletteChanged = false;
+	_backgroundChanged = false;
+	clearImagesList();
 #if 0
 		playCutscene();
 		if (_cutId == 0x3D) {
@@ -418,11 +424,11 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy) {
 
 void Game::drawAnims() {
 	debug(DBG_GAME, "Game::drawAnims()");
-	_eraseBackground = false;
+	_eraseBackground = false; // enable stencil test
 	drawAnimBuffer(2, _animBuffer2State);
 	drawAnimBuffer(1, _animBuffer1State);
 	drawAnimBuffer(0, _animBuffer0State);
-	_eraseBackground = true;
+	_eraseBackground = true; // disable stencil test
 	drawAnimBuffer(3, _animBuffer3State);
 }
 
@@ -506,6 +512,7 @@ void Game::drawPiege(LivePGE *pge, int x, int y) {
 		initDecodeBuffer(&buf, x, y, false, _eraseBackground,  _frontLayer, dataPtr);
 		_res.decodeImageData(_res._spc, pge->anim_number, &buf);
 		updateDirtyMaskBuffer(&buf, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), _dirtyMaskLayer);
+		addImageToList(buf.x, buf.y, false, _eraseBackground, _res._spc, pge->anim_number);
 	} else {
 		const bool xflip = (pge->flags & 2);
 		if (pge->index == 0) {
@@ -515,6 +522,7 @@ void Game::drawPiege(LivePGE *pge, int x, int y) {
 			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
 			_res.decodeImageData(_res._perso, frame, &buf);
 			updateDirtyMaskBuffer(&buf, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), _dirtyMaskLayer);
+			addImageToList(buf.x, buf.y, xflip, _eraseBackground, _res._perso, frame);
 		} else {
 			const int frame = _res.getMonsterFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._monster, frame);
@@ -522,6 +530,7 @@ void Game::drawPiege(LivePGE *pge, int x, int y) {
 			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
 			_res.decodeImageData(_res._monster, frame, &buf);
 			updateDirtyMaskBuffer(&buf, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), _dirtyMaskLayer);
+			addImageToList(buf.x, buf.y, xflip, _eraseBackground, _res._monster, frame);
 		}
 	}
 }
@@ -585,6 +594,7 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 	if (_curMonsterNum != mList[1]) {
 		_curMonsterNum = mList[1];
 		_res.loadMonsterData(_monsterNames[_curMonsterNum], _palette);
+		_paletteChanged = true;
 	}
 	return 0xFFFF;
 }
@@ -596,7 +606,9 @@ void Game::loadLevelMap() {
 	_res.loadLevelRoom(_currentLevel, _currentRoom, &buf);
 	memcpy(_backLayer, _frontLayer, kScreenWidth * kScreenHeight);
 	_res.setupLevelClut(_currentLevel, _palette);
+	_paletteChanged = true;
 	invalidateDirtyMaskLayer();
+	_backgroundChanged = true;
 }
 
 void Game::loadLevelData() {
@@ -637,6 +649,7 @@ void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
 	initDecodeBuffer(&buf, x, y, false, true, _frontLayer, 0);
 	_res.decodeImageData(_res._icn, iconNum, &buf);
 	updateDirtyMaskBuffer(&buf, 32, 32, _dirtyMaskLayer);
+	addImageToList(x, y, false, true, _res._icn, iconNum);
 }
 
 void Game::playSound(uint8 sfxId, uint8 softVol) {
@@ -675,6 +688,18 @@ void Game::changeLevel() {
 void Game::initInventory() {
 	if (!_inventoryOn) {
 		_inventoryCurrentItem = 0;
+		_inventoryItemsCount = 0;
+		int i = _pgeLive[0].current_inventory_PGE;
+		while (i != 0xFF) {
+			_inventoryItems[_inventoryItemsCount].icon_num = _res._pgeInit[i].icon_num;
+			_inventoryItems[_inventoryItemsCount].init_pge = &_res._pgeInit[i];
+			_inventoryItems[_inventoryItemsCount].live_pge = &_pgeLive[i];
+			if (_res._pgeInit[i].object_id != kGunObject) {
+				++_inventoryItemsCount;
+			}
+			i = _pgeLive[i].next_inventory_PGE;
+		}
+		_inventoryItems[_inventoryItemsCount].icon_num = 0xFF;
 	} else {
 		pge_setCurrentInventoryObject(_inventoryItems[_inventoryCurrentItem].live_pge);
 	}
@@ -686,21 +711,9 @@ void Game::doInventory() {
 	LivePGE *pge = &_pgeLive[0];
 	if (pge->life > 0 && pge->current_inventory_PGE != 0xFF) {
 //		playSound(66, 0);
-		int itemsCount = 0;
-		int i = pge->current_inventory_PGE;
-		while (i != 0xFF) {
-			_inventoryItems[itemsCount].icon_num = _res._pgeInit[i].icon_num;
-			_inventoryItems[itemsCount].init_pge = &_res._pgeInit[i];
-			_inventoryItems[itemsCount].live_pge = &_pgeLive[i];
-			if (_res._pgeInit[i].object_id != kGunObject) {
-				++itemsCount;
-			}
-			i = _pgeLive[i].next_inventory_PGE;
-		}
-		_inventoryItems[itemsCount].icon_num = 0xFF;
 
 		drawIcon(31, 56, 140, 0xF);
-		const int h = (itemsCount - 1) / 4 + 1;
+		const int h = (_inventoryItemsCount - 1) / 4 + 1;
 		int y = _inventoryCurrentItem / 4;
 
 		for (int i = 0; i < 4; ++i) {
@@ -726,11 +739,11 @@ void Game::doInventory() {
 		}
 		if (y != 0) {
 			drawIcon(34, 120, 176, 0xA); // down arrow
-			addHotspot(Hotspot::kIdScrollUpInventory, 120, 176, 16, 16);
+			addHotspot(Hotspot::kIdScrollDownInventory, 120, 176, 16, 16);
 		}
 		if (y != h - 1) {
 			drawIcon(33, 120, 143, 0xA); // up arrow
-			addHotspot(Hotspot::kIdScrollDownInventory, 120, 143, 16, 16);
+			addHotspot(Hotspot::kIdScrollUpInventory, 120, 143, 16, 16);
 		}
 		if (_pi.dirMask & PlayerInput::kDirectionUp) {
 			_pi.dirMask &= ~PlayerInput::kDirectionUp;
@@ -757,7 +770,7 @@ void Game::doInventory() {
 		}
 		if (_pi.dirMask & PlayerInput::kDirectionRight) {
 			_pi.dirMask &= ~PlayerInput::kDirectionRight;
-			if (_inventoryCurrentItem < itemsCount - 1) {
+			if (_inventoryCurrentItem < _inventoryItemsCount - 1) {
 				const int num = _inventoryCurrentItem % 4;
 				if (num < 3) {
 					++_inventoryCurrentItem;
@@ -784,14 +797,29 @@ void Game::clearHotspots() {
 }
 
 void Game::addHotspot(int id, int x, int y, int w, int h) {
-	if (_hotspotsCount < ARRAYSIZE(_hotspotsList)) {
-		Hotspot *hs = &_hotspotsList[_hotspotsCount];
-		hs->id = id;
-		hs->x = x * kHotspotCoordScale;
-		hs->y = y * kHotspotCoordScale;
-		hs->x2 = (x + w) * kHotspotCoordScale;
-		hs->y2 = (y + h) * kHotspotCoordScale;
-		++_hotspotsCount;
-	}
+	assert(_hotspotsCount < ARRAYSIZE(_hotspotsList));
+	Hotspot *hs = &_hotspotsList[_hotspotsCount];
+	hs->id = id;
+	hs->x = x * kHotspotCoordScale;
+	hs->y = y * kHotspotCoordScale;
+	hs->x2 = (x + w) * kHotspotCoordScale;
+	hs->y2 = (y + h) * kHotspotCoordScale;
+	++_hotspotsCount;
+}
+
+void Game::clearImagesList() {
+	_imagesCount = 0;
+}
+
+void Game::addImageToList(int x, int y, bool xflip, bool erase, uint8_t *dataPtr, int num) {
+	assert(_imagesCount < ARRAYSIZE(_imagesList));
+	Image *i = &_imagesList[_imagesCount];
+	i->x = x;
+	i->y = y;
+	i->xflip = xflip;
+	i->yflip = false;
+	i->erase = erase;
+	i->dataPtr = dataPtr;
+	i->num = num;
 }
 
