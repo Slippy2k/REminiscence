@@ -80,9 +80,7 @@ struct Game {
 	static const uint8 _pge_modKeysTable[];
 
 	ResourceData &_res;
-
-	uint8_t *_frontLayer, *_backLayer, *_tempLayer, *_dirtyMaskLayer;
-	bool _invalidatedDirtyMaskLayer;
+	uint8_t *_frontLayer, *_backLayer, *_tempLayer;
 	Color _palette[256];
 	bool _paletteChanged;
 	bool _backgroundChanged;
@@ -91,7 +89,7 @@ struct Game {
 	int _hotspotsCount;
 	Image _imagesList[64];
 	int _imagesCount;
-
+	int _shakeOffset;
 	uint8 _currentLevel;
 	uint8 _skillLevel;
 	uint32 _score;
@@ -122,9 +120,6 @@ struct Game {
 
 	Game(ResourceData &);
 	~Game();
-
-	void invalidateDirtyMaskLayer();
-	void updateDirtyMaskLayer();
 
 	void resetGameState();
 	void initGame();

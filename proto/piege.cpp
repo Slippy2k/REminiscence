@@ -1897,9 +1897,6 @@ int Game::pge_op_changeRoom(ObjectOpcodeArgs *args) {
 			if (_currentRoom != live_pge_2->room_location) {
 				_currentRoom = live_pge_2->room_location;
 				loadLevelMap();
-#if 0
-				_vid.fullRefresh();
-#endif
 			}
 		}
 		pge_setupDefaultAnim(live_pge_2);
@@ -1927,9 +1924,7 @@ int Game::pge_op_changeLevel(ObjectOpcodeArgs *args) {
 }
 
 int Game::pge_op_shakeScreen(ObjectOpcodeArgs *args) {
-#if 0
-	_vid._shakeOffset = getRandomNumber() & 7;
-#endif
+	_shakeOffset = getRandomNumber() & 7;
 	return 0xFFFF;
 }
 

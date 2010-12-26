@@ -301,34 +301,8 @@ struct Test {
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, _texData);
 		} else {
 			glBindTexture(GL_TEXTURE_2D, _textureId);
-			if (!dirtyMask) {
-				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, _texData);
-			} else {
-				glPixelStorei(GL_UNPACK_ROW_LENGTH, w);
-				static const int kMaskSize = Game::kDirtyMaskSize;
-				for (int y = 0; y < h; y += kMaskSize) {
-					const int imageY = y;
-					const int imageH = kMaskSize;
-					int imageW = 0;
-					for (int x = 0; x < w; x += kMaskSize) {
-						const uint8_t code = *dirtyMask++;
-						if (code != 0) {
-							imageW += kMaskSize;
-						} else if (imageW != 0) {
-							const int imageX = x - imageW;
-							const int texOffset = 3 * (imageY * w + imageX);
-							glTexSubImage2D(GL_TEXTURE_2D, 0, imageX, imageY, imageW, imageH, GL_RGB, GL_UNSIGNED_BYTE, _texData + texOffset);
-							imageW = 0;
-						}
-					}
-					if (imageW != 0) {
-						const int imageX = w - imageW;
-						const int texOffset = 3 * (imageY * w + imageX);
-						glTexSubImage2D(GL_TEXTURE_2D, 0, imageX, imageY, imageW, imageH, GL_RGB, GL_UNSIGNED_BYTE, _texData + texOffset);
-					}
-				}
-			}
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, _texData);
 		}
 	}
 };
@@ -464,12 +438,9 @@ int main(int argc, char *argv[]) {
 		for (int i = 0; i < game._imagesCount; ++i) {
 			t._texCache.createTextureImage(t._resData, &game._imagesList[i]);
 		}
-		// const uint8_t *maskLayer = game._invalidatedDirtyMaskLayer ? 0 : game._dirtyMaskLayer;
-//		t.uploadTexture(game._frontLayer, Game::kScreenWidth, Game::kScreenHeight, 0);
 //		t.doFrame(gWindowW, gWindowH);
 		t.doFrameTextureCache(gWindowW, gWindowH);
 		t.updateFps();
-		game.updateDirtyMaskLayer();
 		SDL_GL_SwapBuffers();
 		SDL_Delay(gTickDuration);
 	}
