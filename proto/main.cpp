@@ -204,7 +204,7 @@ done:
 	}
 };
 
-struct Test {
+struct Main {
 	ResourceData _resData;
 	TextureCache _texCache;
 	GLuint _textureId;
@@ -214,10 +214,10 @@ struct Test {
 	struct timeval _t0;
 	int _frameCounter;
 
-	Test(const char *filePath)
+	Main(const char *filePath)
 		: _resData(filePath), _textureId(-1), _texData(0) {
 	}
-	~Test() {
+	~Main() {
 		free(_texData);
 		_texData = 0;
 	}
@@ -372,9 +372,9 @@ int main(int argc, char *argv[]) {
 	SDL_WM_SetCaption(gWindowTitle, 0);
 	glEnable(GL_TEXTURE_2D);
 
-	Test t(argv[1]);
-	t.init(gWindowW, gWindowH);
-	Game game(t._resData);
+	Main m(argv[1]);
+	m.init(gWindowW, gWindowH);
+	Game game(m._resData);
 	game._currentLevel = 0;
 	if (argc >= 3) {
 		game._currentLevel = atoi(argv[2]);
@@ -428,19 +428,19 @@ int main(int argc, char *argv[]) {
 			game.drawHotspots();
 		}
 		if (game._paletteChanged) {
-			t.updatePalette(game._palette);
-			t._texCache.updatePalette(game._palette);
+			m.updatePalette(game._palette);
+			m._texCache.updatePalette(game._palette);
 		}
 		if (game._backgroundChanged) {
 //			TODO: stencil if color & 0x80
-			t._texCache.createTextureBackground(t._resData, game._currentLevel, game._currentRoom);
+			m._texCache.createTextureBackground(m._resData, game._currentLevel, game._currentRoom);
 		}
 		for (int i = 0; i < game._imagesCount; ++i) {
-			t._texCache.createTextureImage(t._resData, &game._imagesList[i]);
+			m._texCache.createTextureImage(m._resData, &game._imagesList[i]);
 		}
-//		t.doFrame(gWindowW, gWindowH);
-		t.doFrameTextureCache(gWindowW, gWindowH);
-		t.updateFps();
+//		m.doFrame(gWindowW, gWindowH);
+		m.doFrameTextureCache(gWindowW, gWindowH);
+		m.updateFps();
 		SDL_GL_SwapBuffers();
 		SDL_Delay(gTickDuration);
 	}

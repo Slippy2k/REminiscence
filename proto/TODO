@@ -1,11 +1,21 @@
-scaler2x pour les cutscenes
-decode sega vce segments to .wav (N-PART.wav) ; .mp3 as background music
-mouse UI
+cutscenes
+	scale2x
+
+sounds
+	decode sega vce segments to .wav (N-PART.wav)
+	.mp3 as background music
+	mac sounds
+
+touch UI
 	long press on inventory icon -> trigger inventory
 	click on inventory icon -> use/Return
 	click on gun -> space
 	action -> shift
-virtual pad
+	virtual pad
 
-Android
-	erase : stencil
+texture rendering
+	erase : stencil ?
+	font
+	scale2x au load ?
+	TextureCache.Image : avoir 2 entrees, une pour la texture (refcount), une pour l'image - gestion de N meme images aux positions differentes
+
