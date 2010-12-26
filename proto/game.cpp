@@ -121,7 +121,6 @@ void Game::doHotspots() {
 void Game::doTick() {
 	_paletteChanged = false;
 	_backgroundChanged = false;
-	clearImagesList();
 #if 0
 		playCutscene();
 		if (_cutId == 0x3D) {
@@ -589,7 +588,8 @@ void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
 	DecodeBuffer buf;
 	initDecodeBuffer(&buf, x, y, false, true, _frontLayer, 0);
 	_res.decodeImageData(_res._icn, iconNum, &buf);
-	addImageToList(buf.x, buf.y, 32, 32, false, true, _res._icn, iconNum);
+	const uint8_t *dataPtr = _res.getImageData(_res._icn, iconNum);
+	addImageToList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), false, true, _res._icn, iconNum);
 }
 
 void Game::playSound(uint8 sfxId, uint8 softVol) {
@@ -654,7 +654,7 @@ void Game::doInventory() {
 
 		drawIcon(31, 56, 140, 0xF);
 		const int h = (_inventoryItemsCount - 1) / 4 + 1;
-		int y = _inventoryCurrentItem / 4;
+		const int y = _inventoryCurrentItem / 4;
 
 		for (int i = 0; i < 4; ++i) {
 			int currentItem = y * 4 + i;
@@ -688,15 +688,13 @@ void Game::doInventory() {
 		if (_pi.dirMask & PlayerInput::kDirectionUp) {
 			_pi.dirMask &= ~PlayerInput::kDirectionUp;
 			if (y < h - 1) {
-				++y;
-				_inventoryCurrentItem = y * 4;
+				_inventoryCurrentItem = (y + 1) * 4;
 			}
 		}
 		if (_pi.dirMask & PlayerInput::kDirectionDown) {
 			_pi.dirMask &= ~PlayerInput::kDirectionDown;
 			if (y > 0) {
-				--y;
-				_inventoryCurrentItem = y * 4;
+				_inventoryCurrentItem = (y - 1) * 4;
 			}
 		}
 		if (_pi.dirMask & PlayerInput::kDirectionLeft) {
