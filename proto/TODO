@@ -8,11 +8,4 @@ mouse UI
 virtual pad
 
 Android
-	rendu par texture
-		une texture pour le background
-		N textures pour les sprites
-	TextureCache
-	load en 565 (background) + 555_1 (sprites)
-	drawList
-		erase : stencil, zbuffer ?
-		xflip : glMatrix
+	erase : stencil
