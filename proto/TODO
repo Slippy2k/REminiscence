@@ -1,6 +1,10 @@
 cutscenes
 	scale2x
 
+versions
+	android : libfb.so fb-jni
+	pc/sdl : libfb.so fb
+
 sounds
 	decode sega vce segments to .wav (N-PART.wav)
 	.mp3 as background music
@@ -17,5 +21,5 @@ texture rendering
 	erase : stencil ?
 	font
 	scale2x au load ?
-	TextureCache.Image : avoir 2 entrees, une pour la texture (refcount), une pour l'image - gestion de N meme images aux positions differentes
+	remove DecodeBuffer calls from Game::
 

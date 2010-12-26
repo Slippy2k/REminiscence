@@ -25,9 +25,20 @@ static int roundPowerOfTwo(int x) {
 }
 
 struct TextureCache {
-	enum {
-		kImageTexturesCount = 128
+
+	// TODO: freeList
+	struct TextureHash {
+		const void *ptr;
+		int num;
 	};
+
+	struct Texture {
+		TextureHash hash;
+		GLuint texId;
+		GLfloat u, v;
+		int refCount;
+		struct timeval t0;
+	} _texturesList[128];
 
 	struct {
 		int level;
@@ -37,14 +48,11 @@ struct TextureCache {
 	} _background;
 
 	struct {
-		const uint8_t *dataPtr;
-		int num;
-		GLuint _texId;
-		GLfloat u, v;
-		int counter;
+		Texture *tex;
 		int x, y, x2, y2;
 		bool xflip;
-	} _images[kImageTexturesCount];
+	} _images[192];
+	int _imagesCount;
 
 	uint16_t _tex8to565[256];
 	uint16_t _tex8to5551[256];
@@ -52,10 +60,12 @@ struct TextureCache {
 	TextureCache() {
 		memset(&_background, 0, sizeof(_background));
 		_background._texId = -1;
-		memset(&_images, 0, sizeof(_images));
-		for (int i = 0; i < kImageTexturesCount; ++i) {
-			_images[i]._texId = -1;
+		memset(&_texturesList, 0, sizeof(_texturesList));
+		for (int i = 0; i < ARRAYSIZE(_texturesList); ++i) {
+			_texturesList[i].texId = -1;
 		}
+		memset(&_images, 0, sizeof(_images));
+		_imagesCount = 0;
 	}
 
 	void updatePalette(Color *clut) {
@@ -107,27 +117,44 @@ struct TextureCache {
 		const int texW = roundPowerOfTwo(image->w);
 		const int texH = roundPowerOfTwo(image->h);
 		int pos = -1;
-		for (int i = 0; i < kImageTexturesCount; ++i) {
-			if (_images[i].dataPtr == image->dataPtr && _images[i].num == image->num) {
+		for (int i = 0; i < ARRAYSIZE(_texturesList); ++i) {
+			if (_texturesList[i].texId == -1) {
+				pos = i;
+			} else if (_texturesList[i].hash.ptr == image->dataPtr && _texturesList[i].hash.num == image->num) {
 				pos = i;
 				goto done;
-			} else if (_images[i].counter == 0) {
-				pos = i;
 			}
 		}
 		if (pos == -1) {
-			printf("No free slot for texture cache\n");
-			return;
+			struct timeval t0;
+			gettimeofday(&t0, 0);
+			int max = 0;
+			for (int i = 0; i < ARRAYSIZE(_texturesList); ++i) {
+				if (_texturesList[i].refCount == 0) {
+					int d = (t0.tv_sec - _texturesList[i].t0.tv_sec) * 1000 + (t0.tv_usec - _texturesList[i].t0.tv_usec) / 1000;
+					if (i == 0 || d > max) {
+						pos = i;
+						max = d;
+					}
+				}
+			}
+			if (pos == -1) {
+				printf("No free slot for texture cache\n");
+				return;
+			}
+			glDeleteTextures(1, &_texturesList[pos].texId);
+			memset(&_texturesList[pos], 0, sizeof(Texture));
+			_texturesList[pos].texId = -1;
 		}
-		if (_images[pos]._texId == -1) {
-			glGenTextures(1, &_images[pos]._texId);
-			glBindTexture(GL_TEXTURE_2D, _images[pos]._texId);
+		if (_texturesList[pos].texId == -1) {
+			glGenTextures(1, &_texturesList[pos].texId);
+			glBindTexture(GL_TEXTURE_2D, _texturesList[pos].texId);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texW, texH, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 0);
                 }
-		_images[pos].u = image->w / (GLfloat)texW;
-		_images[pos].v = image->h / (GLfloat)texH;
+		_texturesList[pos].u = image->w / (GLfloat)texW;
+		_texturesList[pos].v = image->h / (GLfloat)texH;
 		DecodeBuffer buf;
 		memset(&buf, 0, sizeof(buf));
 		buf.w = texW;
@@ -138,19 +165,23 @@ struct TextureCache {
 		buf.ptr = (uint8_t *)calloc(texW * texH, sizeof(uint16_t));
 		if (buf.ptr) {
 			res.decodeImageData(image->dataPtr, image->num, &buf);
-			glBindTexture(GL_TEXTURE_2D, _images[pos]._texId);
+			glBindTexture(GL_TEXTURE_2D, _texturesList[pos].texId);
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texW, texH, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, buf.ptr);
 			free(buf.ptr);
 		}
+		_texturesList[pos].hash.ptr = image->dataPtr;
+		_texturesList[pos].hash.num = image->num;
 done:
-		_images[pos].dataPtr = image->dataPtr;
-		_images[pos].num = image->num;
-		_images[pos].counter = 2;
-		_images[pos].x = image->x;
-		_images[pos].y = gWindowH - image->y;
-		_images[pos].x2 = image->x + image->w;
-		_images[pos].y2 = gWindowH - (image->y + image->h);
-		_images[pos].xflip = image->xflip;
+		++_texturesList[pos].refCount;
+		gettimeofday(&_texturesList[pos].t0, 0);
+		assert(_imagesCount < ARRAYSIZE(_images));
+		_images[_imagesCount].x = image->x;
+		_images[_imagesCount].y = gWindowH - image->y;
+		_images[_imagesCount].x2 = image->x + image->w;
+		_images[_imagesCount].y2 = gWindowH - (image->y + image->h);
+		_images[_imagesCount].xflip = image->xflip;
+		_images[_imagesCount].tex = &_texturesList[pos];
+		++_imagesCount;
 	}
 
 	void draw() {
@@ -167,59 +198,47 @@ done:
 				glVertex2i(0, 0);
 			glEnd();
 		}
-		for (int i = 0; i < kImageTexturesCount; ++i) {
-			if (_images[i].counter == 2) {
-				glBindTexture(GL_TEXTURE_2D, _images[i]._texId);
+		for (int i = 0; i < _imagesCount; ++i) {
+			Texture *tex = _images[i].tex;
+			if (tex) {
+				glBindTexture(GL_TEXTURE_2D, tex->texId);
 				glBegin(GL_QUADS);
 					if (_images[i].xflip) {
 						glTexCoord2f(0., 0.);
 						glVertex2i(_images[i].x2, _images[i].y);
-						glTexCoord2f(_images[i].u, 0.);
+						glTexCoord2f(tex->u, 0.);
 						glVertex2i(_images[i].x, _images[i].y);
-						glTexCoord2f(_images[i].u, _images[i].v);
+						glTexCoord2f(tex->u, tex->v);
 						glVertex2i(_images[i].x, _images[i].y2);
-						glTexCoord2f(0., _images[i].v);
+						glTexCoord2f(0., tex->v);
 						glVertex2i(_images[i].x2, _images[i].y2);
 					} else {
 						glTexCoord2f(0., 0.);
 						glVertex2i(_images[i].x, _images[i].y);
-						glTexCoord2f(_images[i].u, 0.);
+						glTexCoord2f(tex->u, 0.);
 						glVertex2i(_images[i].x2, _images[i].y);
-						glTexCoord2f(_images[i].u, _images[i].v);
+						glTexCoord2f(tex->u, tex->v);
 						glVertex2i(_images[i].x2, _images[i].y2);
-						glTexCoord2f(0., _images[i].v);
+						glTexCoord2f(0., tex->v);
 						glVertex2i(_images[i].x, _images[i].y2);
 					}
 				glEnd();
-			}
-			if (_images[i].counter >= 1) {
-				--_images[i].counter;
-				if (_images[i].counter == 0) {
-					glDeleteTextures(1, &_images[i]._texId);
-					_images[i]._texId = -1;
-					_images[i].dataPtr = 0;
-				}
+				--tex->refCount;
 			}
 		}
+		_imagesCount = 0;
 	}
 };
 
 struct Main {
 	ResourceData _resData;
 	TextureCache _texCache;
-	GLuint _textureId;
 	int _w, _h;
-	uint16_t *_texData;
-	uint16_t _tex8to16[256];
 	struct timeval _t0;
 	int _frameCounter;
 
 	Main(const char *filePath)
-		: _resData(filePath), _textureId(-1), _texData(0) {
-	}
-	~Main() {
-		free(_texData);
-		_texData = 0;
+		: _resData(filePath) {
 	}
 
 	void init(int w, int h) {
@@ -231,31 +250,9 @@ struct Main {
 		_resData.loadPersoData();
 		_w = w;
 		_h = h;
-		_texData = (uint16_t *)calloc(w * h, sizeof(uint16_t));
 	}
 
 	void doFrame(int w, int h) {
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(0, w, 0, h, 0, 1);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		if (_textureId != -1) {
-			glBindTexture(GL_TEXTURE_2D, _textureId);
-			glBegin(GL_QUADS);
-				glTexCoord2f(0., 0.);
-				glVertex2i(0, 448);
-				glTexCoord2f(1., 0.);
-				glVertex2i(512, 448);
-				glTexCoord2f(1., 1.);
-				glVertex2i(512, 0);
-				glTexCoord2f(0., 1.);
-				glVertex2i(0, 0);
-			glEnd();
-		}
-	}
-
-	void doFrameTextureCache(int w, int h) {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glMatrixMode(GL_PROJECTION);
@@ -266,7 +263,7 @@ struct Main {
 		_texCache.draw();
 	}
 
-	void updateFps() {
+	void printFps() {
 		++_frameCounter;
 		if ((_frameCounter & 31) == 0) {
 			struct timeval t1;
@@ -276,33 +273,6 @@ struct Main {
 			if (msecs != 0) {
 				printf("fps %f\n", 1000. * 32 / msecs);
 			}
-		}
-	}
-
-	void updatePalette(const Color *clut) {
-		for (int i = 0; i < 256; ++i) {
-			_tex8to16[i] = ((clut[i].r >> 3) << 11) | ((clut[i].g >> 2) << 5) | (clut[i].b >> 3);
-		}
-	}
-
-	void uploadTexture(const uint8_t *imageData, int w, int h, const uint8_t *dirtyMask) {
-		for (int y = 0; y < h; ++y) {
-			for (int x = 0; x < w; ++x) {
-				_texData[y * w + x] = _tex8to16[*imageData++];
-			}
-		}
-		if (_textureId == -1) {
-			glGenTextures(1, &_textureId);
-			glBindTexture(GL_TEXTURE_2D, _textureId);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, _texData);
-		} else {
-			glBindTexture(GL_TEXTURE_2D, _textureId);
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, _texData);
 		}
 	}
 };
@@ -420,6 +390,7 @@ int main(int argc, char *argv[]) {
 				game._pi.backspace = false;
 				game.initInventory();
 			}
+			game.clearImagesList();
 			if (game._inventoryOn) {
 				game.doInventory();
 			} else {
@@ -428,7 +399,6 @@ int main(int argc, char *argv[]) {
 			game.drawHotspots();
 		}
 		if (game._paletteChanged) {
-			m.updatePalette(game._palette);
 			m._texCache.updatePalette(game._palette);
 		}
 		if (game._backgroundChanged) {
@@ -438,9 +408,8 @@ int main(int argc, char *argv[]) {
 		for (int i = 0; i < game._imagesCount; ++i) {
 			m._texCache.createTextureImage(m._resData, &game._imagesList[i]);
 		}
-//		m.doFrame(gWindowW, gWindowH);
-		m.doFrameTextureCache(gWindowW, gWindowH);
-		m.updateFps();
+		m.doFrame(gWindowW, gWindowH);
+		m.printFps();
 		SDL_GL_SwapBuffers();
 		SDL_Delay(gTickDuration);
 	}
