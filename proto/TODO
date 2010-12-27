@@ -5,6 +5,9 @@ versions
 	android : libfb.so fb-jni
 	pc/sdl : libfb.so fb
 
+menu
+	choix du niveau/difficulte par menu "texte"
+
 sounds
 	decode sega vce segments to .wav (N-PART.wav)
 	.mp3 as background music
@@ -18,7 +21,6 @@ touch UI
 	virtual pad
 
 texture rendering
-	erase : stencil ?
 	font
 	scale2x au load ?
 	remove DecodeBuffer calls from Game::

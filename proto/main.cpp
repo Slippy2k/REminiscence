@@ -51,10 +51,10 @@ struct TextureCache {
 		Texture *tex;
 		int x, y, x2, y2;
 		bool xflip;
+		bool erase;
 	} _images[192];
 	int _imagesCount;
 
-	uint16_t _tex8to565[256];
 	uint16_t _tex8to5551[256];
 
 	TextureCache() {
@@ -70,15 +70,20 @@ struct TextureCache {
 
 	void updatePalette(Color *clut) {
 		for (int i = 0; i < 256; ++i) {
-			_tex8to565[i] = ((clut[i].r >> 3) << 11) | ((clut[i].g >> 2) << 5) | (clut[i].b >> 3);
-			_tex8to5551[i] = ((clut[i].r >> 3) << 11) | ((clut[i].g >> 3) << 6) | ((clut[i].b >> 3) << 1) | 1;
+			_tex8to5551[i] = ((clut[i].r >> 3) << 11) | ((clut[i].g >> 3) << 6) | ((clut[i].b >> 3) << 1);
 		}
 	}
 
 	static void convertTexture(DecodeBuffer *buf, int x, int y, int w, int h, uint8_t color) {
 		const uint16_t *lut = (const uint16_t *)buf->lut;
 		const int offset = (y * buf->pitch + x) * sizeof(uint16_t);
-		*(uint16_t *)(buf->ptr + offset) = lut[color];
+		*(uint16_t *)(buf->ptr + offset) = lut[color] | 1;
+	}
+
+	static void convertTextureMask(DecodeBuffer *buf, int x, int y, int w, int h, uint8_t color) {
+		const uint16_t *lut = (const uint16_t *)buf->lut;
+		const int offset = (y * buf->pitch + x) * sizeof(uint16_t);
+		*(uint16_t *)(buf->ptr + offset) = lut[color] | (color >> 7);
 	}
 
 	void createTextureBackground(ResourceData &res, int level, int room) {
@@ -89,7 +94,7 @@ struct TextureCache {
 			glBindTexture(GL_TEXTURE_2D, _background._texId);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 0);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 0);
 		}
 		_background.u = w / (GLfloat)512;
 		_background.v = h / (GLfloat)512;
@@ -99,13 +104,13 @@ struct TextureCache {
 			buf.w = 512;
 			buf.h = 512;
 			buf.pitch = 512;
-			buf.lut = _tex8to565;
-			buf.setPixel = convertTexture;
+			buf.lut = _tex8to5551;
+			buf.setPixel = convertTextureMask;
 			buf.ptr = (uint8_t *)calloc(512 * 512, sizeof(uint16_t));
 			if (buf.ptr) {
 				res.loadLevelRoom(level, room, &buf);
 				glBindTexture(GL_TEXTURE_2D, _background._texId);
-				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, buf.ptr);
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, buf.ptr);
 				free(buf.ptr);
 			}
 			_background.level = level;
@@ -180,11 +185,30 @@ done:
 		_images[_imagesCount].x2 = image->x + image->w;
 		_images[_imagesCount].y2 = gWindowH - (image->y + image->h);
 		_images[_imagesCount].xflip = image->xflip;
+		_images[_imagesCount].erase = image->erase;
 		_images[_imagesCount].tex = &_texturesList[pos];
 		++_imagesCount;
 	}
 
 	void draw() {
+		glEnable(GL_ALPHA_TEST);
+		glAlphaFunc(GL_ALWAYS, 0);
+		drawBackground();
+		int i = 0;
+		glAlphaFunc(GL_EQUAL, 1);
+		for (; i < _imagesCount && !_images[i].erase; ++i) {
+			drawImage(i);
+		}
+		glAlphaFunc(GL_EQUAL, 1);
+		drawBackground();
+		glAlphaFunc(GL_EQUAL, 1);
+		for (; i < _imagesCount; ++i) {
+			drawImage(i);
+		}
+		_imagesCount = 0;
+	}
+
+	void drawBackground() {
 		if (_background._texId != -1) {
 			glBindTexture(GL_TEXTURE_2D, _background._texId);
 			glBegin(GL_QUADS);
@@ -198,7 +222,9 @@ done:
 				glVertex2i(0, 0);
 			glEnd();
 		}
-		for (int i = 0; i < _imagesCount; ++i) {
+	}
+
+	void drawImage(int i) {
 			Texture *tex = _images[i].tex;
 			if (tex) {
 				glBindTexture(GL_TEXTURE_2D, tex->texId);
@@ -225,8 +251,6 @@ done:
 				glEnd();
 				--tex->refCount;
 			}
-		}
-		_imagesCount = 0;
 	}
 };
 
@@ -253,8 +277,6 @@ struct Main {
 	}
 
 	void doFrame(int w, int h) {
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		glOrtho(0, w, 0, h, 0, 1);
@@ -402,7 +424,6 @@ int main(int argc, char *argv[]) {
 			m._texCache.updatePalette(game._palette);
 		}
 		if (game._backgroundChanged) {
-//			TODO: stencil if color & 0x80
 			m._texCache.createTextureBackground(m._resData, game._currentLevel, game._currentRoom);
 		}
 		for (int i = 0; i < game._imagesCount; ++i) {
