@@ -74,12 +74,6 @@ void ResourceData::setAmigaClut16(Color *clut, uint8_t dest, const uint16_t *dat
 	}
 }
 
-void ResourceData::setClut(Color *clut, int r, int g, int b) {
-	clut->r = r;
-	clut->g = g;
-	clut->b = b;
-}
-
 void ResourceData::decodeDataPGE(const uint8_t *ptr) {
 	const uint8_t *startPtr = ptr;
 	_pgeNum = READ_BE_UINT16(ptr); ptr += 2;

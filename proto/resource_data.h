@@ -51,6 +51,13 @@ struct ResourceData {
 		_str = 0;
 	}
 	~ResourceData() {
+		unloadLevelData();
+		free(_icn);
+		_icn = 0;
+		free(_fnt);
+		_fnt = 0;
+		free(_perso);
+		_perso = 0;
 	}
 
 	int getPersoFrame(int anim) const {
@@ -107,7 +114,6 @@ struct ResourceData {
 	void clearClut16(Color *clut, uint8_t dest);
 	void copyClut16(Color *clut, uint8_t dest, uint8_t src);
 	void setAmigaClut16(Color *clut, uint8_t dest, const uint16_t *data);
-	void setClut(Color *clut, int r, int g, int b);
 	void decodeDataPGE(const uint8_t *ptr);
 	void decodeDataOBJ(const uint8_t *ptr, int unpackedSize);
 	void decodeDataCLUT(const uint8_t *ptr);

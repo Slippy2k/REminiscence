@@ -7,11 +7,6 @@
 #include "resource_mac.h"
 #include "util.h"
 
-static const char *gWindowTitle = "Flashback: The Quest For Identity";
-static const int gWindowW = 512;
-static const int gWindowH = 448;
-static const int gTickDuration = 16;
-
 static int roundPowerOfTwo(int x) {
 	if ((x & (x - 1)) == 0) {
 		return x;
@@ -126,8 +121,8 @@ struct TextureCache {
 			if (_texturesList[i].texId == -1) {
 				pos = i;
 			} else if (_texturesList[i].hash.ptr == image->dataPtr && _texturesList[i].hash.num == image->num) {
-				pos = i;
-				goto done;
+				queueImageDraw(i, image);
+				return;
 			}
 		}
 		if (pos == -1) {
@@ -136,7 +131,7 @@ struct TextureCache {
 			int max = 0;
 			for (int i = 0; i < ARRAYSIZE(_texturesList); ++i) {
 				if (_texturesList[i].refCount == 0) {
-					int d = (t0.tv_sec - _texturesList[i].t0.tv_sec) * 1000 + (t0.tv_usec - _texturesList[i].t0.tv_usec) / 1000;
+					const int d = (t0.tv_sec - _texturesList[i].t0.tv_sec) * 1000 + (t0.tv_usec - _texturesList[i].t0.tv_usec) / 1000;
 					if (i == 0 || d > max) {
 						pos = i;
 						max = d;
@@ -176,14 +171,17 @@ struct TextureCache {
 		}
 		_texturesList[pos].hash.ptr = image->dataPtr;
 		_texturesList[pos].hash.num = image->num;
-done:
+		queueImageDraw(pos, image);
+	}
+
+	void queueImageDraw(int pos, const Image *image) {
 		++_texturesList[pos].refCount;
 		gettimeofday(&_texturesList[pos].t0, 0);
 		assert(_imagesCount < ARRAYSIZE(_images));
 		_images[_imagesCount].x = image->x;
-		_images[_imagesCount].y = gWindowH - image->y;
+		_images[_imagesCount].y = 448 - image->y;
 		_images[_imagesCount].x2 = image->x + image->w;
-		_images[_imagesCount].y2 = gWindowH - (image->y + image->h);
+		_images[_imagesCount].y2 = 448 - (image->y + image->h);
 		_images[_imagesCount].xflip = image->xflip;
 		_images[_imagesCount].erase = image->erase;
 		_images[_imagesCount].tex = &_texturesList[pos];
@@ -191,7 +189,6 @@ done:
 	}
 
 	void draw() {
-		glEnable(GL_ALPHA_TEST);
 		glAlphaFunc(GL_ALWAYS, 0);
 		drawBackground();
 		int i = 0;
@@ -256,24 +253,61 @@ done:
 
 struct Main {
 	ResourceData _resData;
+	Game _game;
 	TextureCache _texCache;
 	int _w, _h;
 	struct timeval _t0;
 	int _frameCounter;
 
 	Main(const char *filePath)
-		: _resData(filePath) {
+		: _resData(filePath), _game(_resData) {
 	}
 
 	void init(int w, int h) {
+		_w = w;
+		_h = h;
 		gettimeofday(&_t0, 0);
 		_frameCounter = 0;
 		_resData.loadClutData();
 		_resData.loadIconData();
 		_resData.loadFontData();
 		_resData.loadPersoData();
-		_w = w;
-		_h = h;
+		_game.initGame();
+	}
+
+	void doMenuTick() {
+	}
+
+	void doGameTick() {
+		if (_game._textToDisplay != 0xFFFF) {
+			_game.doStoryTexts();
+		} else {
+			_game.doHotspots();
+	                if (_game._pi.touch.press == PlayerInput::kTouchUp) {
+				_game._pi.touch.press = PlayerInput::kTouchNone;
+			}
+			_game.clearHotspots();
+			if (_game._pi.backspace) {
+				_game._pi.backspace = false;
+				_game.initInventory();
+			}
+			_game.clearImagesList();
+			if (_game._inventoryOn) {
+				_game.doInventory();
+			} else {
+				_game.doTick();
+			}
+			_game.drawHotspots();
+		}
+		if (_game._paletteChanged) {
+			_texCache.updatePalette(_game._palette);
+		}
+		if (_game._backgroundChanged) {
+			_texCache.createTextureBackground(_resData, _game._currentLevel, _game._currentRoom);
+		}
+		for (int i = 0; i < _game._imagesCount; ++i) {
+			_texCache.createTextureImage(_resData, &_game._imagesList[i]);
+		}
 	}
 
 	void doFrame(int w, int h) {
@@ -352,6 +386,11 @@ static void updateTouchInput(bool released, int x, int y, PlayerInput &pi) {
 	pi.touch.y = y;
 }
 
+static const char *gWindowTitle = "Flashback: The Quest For Identity";
+static const int gWindowW = 512;
+static const int gWindowH = 448;
+static const int gTickDuration = 16;
+
 int main(int argc, char *argv[]) {
 	if (argc < 2) {
 		printf("%s datafile level", argv[0]);
@@ -363,15 +402,14 @@ int main(int argc, char *argv[]) {
 	SDL_SetVideoMode(gWindowW, gWindowH, 0, SDL_OPENGL | SDL_RESIZABLE);
 	SDL_WM_SetCaption(gWindowTitle, 0);
 	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_ALPHA_TEST);
 
 	Main m(argv[1]);
-	m.init(gWindowW, gWindowH);
-	Game game(m._resData);
-	game._currentLevel = 0;
+	m._game._currentLevel = 0;
 	if (argc >= 3) {
-		game._currentLevel = atoi(argv[2]);
+		m._game._currentLevel = atoi(argv[2]);
 	}
-	game.initGame();
+	m.init(gWindowW, gWindowH);
 	glViewport(0, 0, gWindowW, gWindowH);
 	bool quitGame = false;
 	while (!quitGame) {
@@ -382,53 +420,25 @@ int main(int argc, char *argv[]) {
 				quitGame = true;
 				break;
 			case SDL_KEYDOWN:
-				updateKeyInput(ev.key.keysym.sym, true, game._pi);
+				updateKeyInput(ev.key.keysym.sym, true, m._game._pi);
 				break;
 			case SDL_KEYUP:
-				updateKeyInput(ev.key.keysym.sym, false, game._pi);
+				updateKeyInput(ev.key.keysym.sym, false, m._game._pi);
 				break;
 			case SDL_MOUSEBUTTONUP:
-				updateTouchInput(true, ev.button.x, ev.button.y, game._pi);
+				updateTouchInput(true, ev.button.x, ev.button.y, m._game._pi);
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				updateTouchInput(false, ev.button.x, ev.button.y, game._pi);
+				updateTouchInput(false, ev.button.x, ev.button.y, m._game._pi);
 				break;
 			case SDL_MOUSEMOTION:
 				if (ev.motion.state & SDL_BUTTON(1)) {
-					updateTouchInput(false, ev.motion.x, ev.motion.y, game._pi);
+					updateTouchInput(false, ev.motion.x, ev.motion.y, m._game._pi);
 				}
 				break;
 			}
 		}
-		if (game._textToDisplay != 0xFFFF) {
-			game.doStoryTexts();
-		} else {
-			game.doHotspots();
-	                if (game._pi.touch.press == PlayerInput::kTouchUp) {
-				game._pi.touch.press = PlayerInput::kTouchNone;
-			}
-			game.clearHotspots();
-			if (game._pi.backspace) {
-				game._pi.backspace = false;
-				game.initInventory();
-			}
-			game.clearImagesList();
-			if (game._inventoryOn) {
-				game.doInventory();
-			} else {
-				game.doTick();
-			}
-			game.drawHotspots();
-		}
-		if (game._paletteChanged) {
-			m._texCache.updatePalette(game._palette);
-		}
-		if (game._backgroundChanged) {
-			m._texCache.createTextureBackground(m._resData, game._currentLevel, game._currentRoom);
-		}
-		for (int i = 0; i < game._imagesCount; ++i) {
-			m._texCache.createTextureImage(m._resData, &game._imagesList[i]);
-		}
+		m.doGameTick();
 		m.doFrame(gWindowW, gWindowH);
 		m.printFps();
 		SDL_GL_SwapBuffers();
