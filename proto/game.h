@@ -80,7 +80,7 @@ struct Game {
 	static const uint8 _pge_modKeysTable[];
 
 	ResourceData &_res;
-	uint8_t *_frontLayer, *_backLayer, *_tempLayer;
+	uint8_t *_frontLayer, *_tempLayer;
 	Color _palette[256];
 	bool _paletteChanged;
 	bool _backgroundChanged;

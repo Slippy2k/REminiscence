@@ -10,7 +10,6 @@ Game::Game(ResourceData &res)
 	_skillLevel = 1;
 	_currentLevel = 0;
 	_frontLayer = (uint8_t *)calloc(1, kScreenWidth * kScreenHeight);
-	_backLayer = (uint8_t *)calloc(1, kScreenWidth * kScreenHeight);
 	_tempLayer = 0;
 	_inventoryOn = false;
 	_hotspotsCount = 0;
@@ -19,7 +18,6 @@ Game::Game(ResourceData &res)
 
 Game::~Game() {
 	free(_frontLayer);
-	free(_backLayer);
 	free(_tempLayer);
 }
 
@@ -86,9 +84,7 @@ void Game::doHotspots() {
 					_pi.space = (_pi.touch.press == PlayerInput::kTouchDown);
 					break;
 				case Hotspot::kIdUseInventory:
-					if (_pi.touch.press == PlayerInput::kTouchUp) {
-						_pi.backspace = true;
-					}
+					_pi.enter = (_pi.touch.press == PlayerInput::kTouchDown);
 					break;
 				case Hotspot::kIdSelectInventoryObject:
 					if (_pi.touch.press == PlayerInput::kTouchDown) {
@@ -150,7 +146,7 @@ void Game::doTick() {
 #endif
 			}
 		}
-		memcpy(_frontLayer, _backLayer, kScreenWidth * kScreenHeight);
+//		memcpy(_frontLayer, _backLayer, kScreenWidth * kScreenHeight);
 		pge_getInput();
 		pge_prepare();
 		col_prepareRoomState();
@@ -455,7 +451,7 @@ void Game::drawPiege(LivePGE *pge, int x, int y) {
 		const uint8_t *dataPtr = _res.getImageData(_res._spc, pge->anim_number);
 		if (!dataPtr) return;
 		initDecodeBuffer(&buf, x, y, false, _eraseBackground,  _frontLayer, dataPtr);
-		_res.decodeImageData(_res._spc, pge->anim_number, &buf);
+//		_res.decodeImageData(_res._spc, pge->anim_number, &buf);
 		addImageToList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), false, _eraseBackground, _res._spc, pge->anim_number);
 	} else {
 		const bool xflip = (pge->flags & 2);
@@ -464,14 +460,14 @@ void Game::drawPiege(LivePGE *pge, int x, int y) {
 			const uint8_t *dataPtr = _res.getImageData(_res._perso, frame);
 			if (!dataPtr) return;
 			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
-			_res.decodeImageData(_res._perso, frame, &buf);
+//			_res.decodeImageData(_res._perso, frame, &buf);
 			addImageToList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), xflip, _eraseBackground, _res._perso, frame);
 		} else {
 			const int frame = _res.getMonsterFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._monster, frame);
 			if (!dataPtr) return;
 			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
-			_res.decodeImageData(_res._monster, frame, &buf);
+//			_res.decodeImageData(_res._monster, frame, &buf);
 			addImageToList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), xflip, _eraseBackground, _res._monster, frame);
 		}
 	}
@@ -544,8 +540,8 @@ void Game::loadLevelMap() {
 	debug(DBG_GAME, "Game::loadLevelMap() room=%d", _currentRoom);
 	DecodeBuffer buf;
 	initDecodeBuffer(&buf, 0, 0, false, true, _frontLayer, 0);
-	_res.loadLevelRoom(_currentLevel, _currentRoom, &buf);
-	memcpy(_backLayer, _frontLayer, kScreenWidth * kScreenHeight);
+//	_res.loadLevelRoom(_currentLevel, _currentRoom, &buf);
+//	memcpy(_backLayer, _frontLayer, kScreenWidth * kScreenHeight);
 	_res.setupLevelClut(_currentLevel, _palette);
 	_paletteChanged = true;
 	_backgroundChanged = true;
@@ -587,7 +583,7 @@ void Game::loadLevelData() {
 void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
 	DecodeBuffer buf;
 	initDecodeBuffer(&buf, x, y, false, true, _frontLayer, 0);
-	_res.decodeImageData(_res._icn, iconNum, &buf);
+//	_res.decodeImageData(_res._icn, iconNum, &buf);
 	const uint8_t *dataPtr = _res.getImageData(_res._icn, iconNum);
 	addImageToList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), false, true, _res._icn, iconNum);
 }

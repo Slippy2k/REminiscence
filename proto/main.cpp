@@ -255,7 +255,6 @@ struct Main {
 	ResourceData _resData;
 	Game _game;
 	TextureCache _texCache;
-	int _w, _h;
 	struct timeval _t0;
 	int _frameCounter;
 
@@ -264,8 +263,6 @@ struct Main {
 	}
 
 	void init(int w, int h) {
-		_w = w;
-		_h = h;
 		gettimeofday(&_t0, 0);
 		_frameCounter = 0;
 		_resData.loadClutData();
