@@ -3,15 +3,8 @@ cutscenes
 
 versions
 	android : libfb.so fb-jni
-	pc/sdl : libfb.so fb
 	rendre commun le code opengl(es) - #ifdef GLES
-	interface C pour le shared object
-		stubInit
-		stubQuit
-		stubQueueInput
-		stubDoTick
-		stubInitGL - onSurfaceCreated
-		stubDrawGL - printFps
+	LD_LIBRARY_PATH=$(pwd) ./fb ../DATA/Flashback.bin
 
 menu
 	choix du niveau/difficulte par menu "texte"
