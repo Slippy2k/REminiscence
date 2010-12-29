@@ -109,7 +109,9 @@ struct ResourceData {
 		return p + READ_BE_UINT16(p + 2 + i * 2);
 	}
 
+	void setupTitleClut(int num, Color *clut);
 	void setupLevelClut(int num, Color *clut);
+	void setupTextClut(Color *clut);
 	uint8_t *decodeResourceData(const char *name, bool decompressLzss);
 	void clearClut16(Color *clut, uint8_t dest);
 	void copyClut16(Color *clut, uint8_t dest, uint8_t src);
@@ -122,6 +124,7 @@ struct ResourceData {
 	void loadFontData();
 	void loadPersoData();
 	void loadMonsterData(const char *name, Color *clut);
+	void loadTitleImage(int i, DecodeBuffer *dst);
 	void unloadLevelData();
 	void loadLevelData(int level);
 	void loadLevelRoom(int level, int i, DecodeBuffer *dst);

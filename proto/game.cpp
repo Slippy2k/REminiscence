@@ -13,6 +13,7 @@ Game::Game(ResourceData &res)
 	_inventoryOn = false;
 	_hotspotsCount = 0;
 	_shakeOffset = 0;
+	_res.setupTextClut(_palette);
 }
 
 Game::~Game() {
@@ -691,6 +692,23 @@ void AnimBuffers::addState(uint8 stateNum, int16 x, int16 y, LivePGE *pge) {
 	state->pge = pge;
 	++_curPos[stateNum];
 	++_states[stateNum];
+}
+
+void Game::doTitle() {
+	static const uint8_t selectedColor = 0xE8;
+	static const uint8_t defaultColor = 0xE6;
+	for (int i = 0; i < 7; ++i) {
+		const char *str = _levelNames[i];
+		const int len = strlen(str);
+		drawString((const uint8_t *)str, len, 7 + i * 2, 4, (_currentLevel == i) ? selectedColor : defaultColor);
+	}
+	static const char *difficulty[] = { "EASY", "NORMAL", "EXPERT" };
+	for (int i = 0; i < 3; ++i) {
+		const char *str = difficulty[i];
+		const int len = strlen(str);
+		drawString((const uint8_t *)str, len, 23, 4 + 10 * i, (_skillLevel == 0) ? selectedColor : defaultColor);
+	}
+	// TODO: hotspots + keyevents
 }
 
 void Game::clearHotspots() {

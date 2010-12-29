@@ -53,8 +53,8 @@ struct TextureCache {
 		int x, y;
 		int len;
 		uint8_t color;
-	} _textsQueue[16];
-	int _textsCount;
+	} _gfxTextsQueue[16];
+	int _gfxTextsCount;
 
 	struct {
 		Texture *tex;
@@ -75,6 +75,8 @@ struct TextureCache {
 		for (int i = 0; i < ARRAYSIZE(_texturesList); ++i) {
 			_texturesList[i].texId = -1;
 		}
+		memset(&_gfxTextsQueue, 0, sizeof(_gfxTextsQueue));
+		_gfxTextsCount = 0;
 		memset(&_gfxImagesQueue, 0, sizeof(_gfxImagesQueue));
 		_gfxImagesCount = 0;
 	}
@@ -234,14 +236,14 @@ struct TextureCache {
 	}
 
 	void queueTextDraw(const GfxText *gt) {
-		assert(_textsCount < ARRAYSIZE(_textsQueue));
+		assert(_gfxTextsCount < ARRAYSIZE(_gfxTextsQueue));
 		const int len = gt->len > 64 ? 64 : gt->len;
-		_textsQueue[_textsCount].x = gt->x;
-		_textsQueue[_textsCount].y = gt->y;
-		_textsQueue[_textsCount].len = len;
-		_textsQueue[_textsCount].color = gt->color;
-		memcpy(_textsQueue[_textsCount].buf, gt->dataPtr, len);
-		++_textsCount;
+		_gfxTextsQueue[_gfxTextsCount].x = gt->x;
+		_gfxTextsQueue[_gfxTextsCount].y = gt->y;
+		_gfxTextsQueue[_gfxTextsCount].len = len;
+		_gfxTextsQueue[_gfxTextsCount].color = gt->color;
+		memcpy(_gfxTextsQueue[_gfxTextsCount].buf, gt->dataPtr, len);
+		++_gfxTextsCount;
 	}
 
 	void draw() {
@@ -259,10 +261,10 @@ struct TextureCache {
 			drawGfxImage(i);
 		}
 		_gfxImagesCount = 0;
-		for (i = 0; i < _textsCount; ++i) {
+		for (i = 0; i < _gfxTextsCount; ++i) {
 			drawText(i);
 		}
-		_textsCount = 0;
+		_gfxTextsCount = 0;
 	}
 
 	void drawBackground() {
@@ -319,11 +321,11 @@ struct TextureCache {
 
 	void drawText(int num) {
 		glBindTexture(GL_TEXTURE_2D, _font.texId);
-		setColor(_tex8to5551[_textsQueue[num].color]);
-		int x = _textsQueue[num].x;
-		const int y = 448 - _textsQueue[num].y;
-		for (int i = 0; i < _textsQueue[num].len; ++i) {
-			const uint8_t code = _textsQueue[num].buf[i];
+		setColor(_tex8to5551[_gfxTextsQueue[num].color]);
+		int x = _gfxTextsQueue[num].x;
+		const int y = 448 - _gfxTextsQueue[num].y;
+		for (int i = 0; i < _gfxTextsQueue[num].len; ++i) {
+			const uint8_t code = _gfxTextsQueue[num].buf[i];
 			const GLfloat texU1 = (code - 32) / (GLfloat)_font.charsCount;
 			const GLfloat texU2 = (code - 31) / (GLfloat)_font.charsCount;
 			glBegin(GL_QUADS);
@@ -402,16 +404,13 @@ struct Main {
 		}
 	}
 
-	void doFrame(int w, int h) {
+	void drawFrame(int w, int h) {
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		glOrtho(0, w, 0, h, 0, 1);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		_texCache.draw();
-	}
-
-	void printFps() {
 		++_frameCounter;
 		if ((_frameCounter & 31) == 0) {
 			struct timeval t1;
@@ -531,8 +530,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		m.doGameTick();
-		m.doFrame(gWindowW, gWindowH);
-		m.printFps();
+		m.drawFrame(gWindowW, gWindowH);
 		SDL_GL_SwapBuffers();
 		SDL_Delay(gTickDuration);
 	}

@@ -83,6 +83,7 @@ struct Game {
 	static const uint8 *_monsterListLevels[];
 	static const char *_monsterNames[];
 	static const uint16_t _cutsceneLevels[];
+	static const char *_levelNames[];
 	static const pge_OpcodeProc _pge_opcodeTable[];
 	static const uint8 _pge_modKeysTable[];
 
@@ -96,7 +97,7 @@ struct Game {
 	int _hotspotsCount;
 	GfxImage _gfxImagesList[64];
 	int _gfxImagesCount;
-	GfxText _gfxTextsList[8];
+	GfxText _gfxTextsList[16];
 	int _gfxTextsCount;
 	int _shakeOffset;
 	uint8 _currentLevel;
@@ -154,11 +155,11 @@ struct Game {
 	void changeLevel();
 	void initInventory();
 	void doInventory();
+	void doTitle();
 	void clearHotspots();
 	void addHotspot(int id, int x, int y, int w, int h);
 	void doHotspots();
 	void drawHotspots();
-
 	void addImageToGfxList(int x, int y, int w, int h, bool xflip, bool erase, uint8_t *dataPtr, int num);
 	void clearGfxList();
 	void saveGfxList();

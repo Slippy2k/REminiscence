@@ -10,6 +10,19 @@ static const int levelsColorOffset[] = { 24, 28, 36, 40, 44 }; // red palette: 3
 static const int levelsIntegerIndex[] = { 1, 2, 3, 4, 4, 5, 5 };
 static const char *levelsStringIndex[] = { "1", "2", "3", "4-1", "4-2", "5-1", "5-2" };
 
+void ResourceData::setupTitleClut(int num, Color *clut) {
+	switch (num) {
+	case 1:
+		memcpy(clut, &_clut[192], 192 * sizeof(Color));
+		break;
+	case 2:
+	case 3:
+	case 4:
+		memcpy(clut, &_clut[0], 192 * sizeof(Color));
+		break;
+	}
+}
+
 void ResourceData::setupLevelClut(int level, Color *clut) {
 	const int num = levelsIntegerIndex[level] - 1;
 	const int offset = levelsColorOffset[num];
@@ -23,6 +36,9 @@ void ResourceData::setupLevelClut(int level, Color *clut) {
 	copyClut16(clut, 0xA, levelsColorOffset[0] + 2);
 	copyClut16(clut, 0xC, 0x37);
 	copyClut16(clut, 0xD, 0x38);
+}
+
+void ResourceData::setupTextClut(Color *clut) {
 	static const uint16_t textPal[] = {
 		0x000, 0x111, 0x222, 0xEEF, 0xF00, 0xFF0, 0xEA0, 0xFB0,
 		0xEA0, 0xEA0, 0xAAA, 0x0F0, 0xCCC, 0xDDF, 0xEEE, 0xEEE
@@ -210,6 +226,16 @@ void ResourceData::loadMonsterData(const char *name, Color *clut) {
 			copyClut16(clut, 5, data[i].index);
 			break;
 		}
+	}
+}
+
+void ResourceData::loadTitleImage(int i, DecodeBuffer *buf) {
+	char name[64];
+	snprintf(name, sizeof(name), "Title %d", i);
+	uint8_t *ptr = decodeResourceData(name, (i == 6));
+	if (ptr) {
+		decodeImageData(ptr, 0, buf);
+		free(ptr);
 	}
 }
 
