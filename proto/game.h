@@ -45,13 +45,20 @@ struct Hotspot {
 	}
 };
 
-struct Image {
+struct GfxImage {
 	int x, y;
 	int w, h;
 	bool xflip, yflip;
 	bool erase;
 	const uint8_t *dataPtr;
 	int num;
+};
+
+struct GfxText {
+	int x, y;
+	int len;
+	const uint8_t *dataPtr;
+	uint8_t color;
 };
 
 struct Game {
@@ -80,15 +87,17 @@ struct Game {
 	static const uint8 _pge_modKeysTable[];
 
 	ResourceData &_res;
-	uint8_t *_frontLayer, *_tempLayer;
+	uint8_t *_frontLayer;
 	Color _palette[256];
 	bool _paletteChanged;
 	bool _backgroundChanged;
 	PlayerInput _pi;
 	Hotspot _hotspotsList[8];
 	int _hotspotsCount;
-	Image _imagesList[64];
-	int _imagesCount;
+	GfxImage _gfxImagesList[64];
+	int _gfxImagesCount;
+	GfxText _gfxTextsList[8];
+	int _gfxTextsCount;
 	int _shakeOffset;
 	uint8 _currentLevel;
 	uint8 _skillLevel;
@@ -150,8 +159,10 @@ struct Game {
 	void doHotspots();
 	void drawHotspots();
 
-	void clearImagesList();
-	void addImageToList(int x, int y, int w, int h, bool xflip, bool erase, uint8_t *dataPtr, int num);
+	void addImageToGfxList(int x, int y, int w, int h, bool xflip, bool erase, uint8_t *dataPtr, int num);
+	void clearGfxList();
+	void saveGfxList();
+	void addTextToGfxList(int x, int y, int len, const uint8_t *dataPtr, uint8_t color);
 
 
 	// pieges

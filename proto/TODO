@@ -29,7 +29,7 @@ touch UI
 	virtual pad
 
 texture rendering
-	font
+	glColor(1., 0., 0.); niveau 2
+	inventory display background (saveGfxList)
 	scale2x au load ?
-	remove DecodeBuffer calls from Game::
 

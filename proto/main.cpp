@@ -38,29 +38,45 @@ struct TextureCache {
 	struct {
 		int level;
 		int room;
-		GLuint _texId;
+		GLuint texId;
 		GLfloat u, v;
 	} _background;
+
+	struct {
+		int charsCount;
+		GLuint texId;
+		uint16_t color;
+	} _font;
+
+	struct {
+		unsigned char buf[64];
+		int x, y;
+		int len;
+		uint8_t color;
+	} _textsQueue[16];
+	int _textsCount;
 
 	struct {
 		Texture *tex;
 		int x, y, x2, y2;
 		bool xflip;
 		bool erase;
-	} _images[192];
-	int _imagesCount;
+	} _gfxImagesQueue[192];
+	int _gfxImagesCount;
 
 	uint16_t _tex8to5551[256];
 
 	TextureCache() {
 		memset(&_background, 0, sizeof(_background));
-		_background._texId = -1;
+		_background.texId = -1;
+		memset(&_font, 0, sizeof(_font));
+		_font.texId = -1;
 		memset(&_texturesList, 0, sizeof(_texturesList));
 		for (int i = 0; i < ARRAYSIZE(_texturesList); ++i) {
 			_texturesList[i].texId = -1;
 		}
-		memset(&_images, 0, sizeof(_images));
-		_imagesCount = 0;
+		memset(&_gfxImagesQueue, 0, sizeof(_gfxImagesQueue));
+		_gfxImagesCount = 0;
 	}
 
 	void updatePalette(Color *clut) {
@@ -69,10 +85,35 @@ struct TextureCache {
 		}
 	}
 
-	static void convertTexture(DecodeBuffer *buf, int x, int y, int w, int h, uint8_t color) {
-		const uint16_t *lut = (const uint16_t *)buf->lut;
-		const int offset = (y * buf->pitch + x) * sizeof(uint16_t);
-		*(uint16_t *)(buf->ptr + offset) = lut[color] | 1;
+	static void convertTextureFont(DecodeBuffer *buf, int x, int y, int w, int h, uint8_t color) {
+		const int offset = (y * buf->pitch + buf->x + x) * sizeof(uint16_t);
+		*(uint16_t *)(buf->ptr + offset) = (color == 0xC1) ? 0xFFFF : 1;
+	}
+
+	void createTextureFont(ResourceData &res) {
+		_font.charsCount = 105;
+		if (_font.texId == -1) {
+			glGenTextures(1, &_font.texId);
+			glBindTexture(GL_TEXTURE_2D, _font.texId);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _font.charsCount * 16, 16, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 0);
+		}
+		DecodeBuffer buf;
+		memset(&buf, 0, sizeof(buf));
+		buf.w = buf.pitch = _font.charsCount * 16;
+		buf.h = 16;
+		buf.lut = &_tex8to5551[0xE6];
+		buf.setPixel = convertTextureFont;
+		buf.ptr = (uint8_t *)calloc(buf.w * buf.h, sizeof(uint16_t));
+		if (buf.ptr) {
+			for (int i = 0; i < _font.charsCount; ++i) {
+				res.decodeImageData(res._fnt, i, &buf);
+				buf.x += 16;
+			}
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, buf.w, buf.h, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, buf.ptr);
+			free(buf.ptr);
+		}
 	}
 
 	static void convertTextureMask(DecodeBuffer *buf, int x, int y, int w, int h, uint8_t color) {
@@ -84,9 +125,9 @@ struct TextureCache {
 	void createTextureBackground(ResourceData &res, int level, int room) {
 		const int w = 512;
 		const int h = 448;
-		if (_background._texId == -1) {
-			glGenTextures(1, &_background._texId);
-			glBindTexture(GL_TEXTURE_2D, _background._texId);
+		if (_background.texId == -1) {
+			glGenTextures(1, &_background.texId);
+			glBindTexture(GL_TEXTURE_2D, _background.texId);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 0);
@@ -96,15 +137,14 @@ struct TextureCache {
 		if (level != _background.level || room != _background.room) {
 			DecodeBuffer buf;
 			memset(&buf, 0, sizeof(buf));
-			buf.w = 512;
+			buf.w = buf.pitch = 512;
 			buf.h = 512;
-			buf.pitch = 512;
 			buf.lut = _tex8to5551;
 			buf.setPixel = convertTextureMask;
-			buf.ptr = (uint8_t *)calloc(512 * 512, sizeof(uint16_t));
+			buf.ptr = (uint8_t *)calloc(buf.w * buf.h, sizeof(uint16_t));
 			if (buf.ptr) {
 				res.loadLevelRoom(level, room, &buf);
-				glBindTexture(GL_TEXTURE_2D, _background._texId);
+				glBindTexture(GL_TEXTURE_2D, _background.texId);
 				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, buf.ptr);
 				free(buf.ptr);
 			}
@@ -113,7 +153,13 @@ struct TextureCache {
 		}
 	}
 
-	void createTextureImage(ResourceData &res, const Image *image) {
+	static void convertTexture(DecodeBuffer *buf, int x, int y, int w, int h, uint8_t color) {
+		const uint16_t *lut = (const uint16_t *)buf->lut;
+		const int offset = (y * buf->pitch + x) * sizeof(uint16_t);
+		*(uint16_t *)(buf->ptr + offset) = lut[color] | 1;
+	}
+
+	void createTextureGfxImage(ResourceData &res, const GfxImage *image) {
 		const int texW = roundPowerOfTwo(image->w);
 		const int texH = roundPowerOfTwo(image->h);
 		int pos = -1;
@@ -121,7 +167,7 @@ struct TextureCache {
 			if (_texturesList[i].texId == -1) {
 				pos = i;
 			} else if (_texturesList[i].hash.ptr == image->dataPtr && _texturesList[i].hash.num == image->num) {
-				queueImageDraw(i, image);
+				queueGfxImageDraw(i, image);
 				return;
 			}
 		}
@@ -157,9 +203,8 @@ struct TextureCache {
 		_texturesList[pos].v = image->h / (GLfloat)texH;
 		DecodeBuffer buf;
 		memset(&buf, 0, sizeof(buf));
-		buf.w = texW;
+		buf.w = buf.pitch = texW;
 		buf.h = texH;
-		buf.pitch = texW;
 		buf.lut = _tex8to5551;
 		buf.setPixel = convertTexture;
 		buf.ptr = (uint8_t *)calloc(texW * texH, sizeof(uint16_t));
@@ -171,21 +216,32 @@ struct TextureCache {
 		}
 		_texturesList[pos].hash.ptr = image->dataPtr;
 		_texturesList[pos].hash.num = image->num;
-		queueImageDraw(pos, image);
+		queueGfxImageDraw(pos, image);
 	}
 
-	void queueImageDraw(int pos, const Image *image) {
+	void queueGfxImageDraw(int pos, const GfxImage *image) {
 		++_texturesList[pos].refCount;
 		gettimeofday(&_texturesList[pos].t0, 0);
-		assert(_imagesCount < ARRAYSIZE(_images));
-		_images[_imagesCount].x = image->x;
-		_images[_imagesCount].y = 448 - image->y;
-		_images[_imagesCount].x2 = image->x + image->w;
-		_images[_imagesCount].y2 = 448 - (image->y + image->h);
-		_images[_imagesCount].xflip = image->xflip;
-		_images[_imagesCount].erase = image->erase;
-		_images[_imagesCount].tex = &_texturesList[pos];
-		++_imagesCount;
+		assert(_gfxImagesCount < ARRAYSIZE(_gfxImagesQueue));
+		_gfxImagesQueue[_gfxImagesCount].x = image->x;
+		_gfxImagesQueue[_gfxImagesCount].y = 448 - image->y;
+		_gfxImagesQueue[_gfxImagesCount].x2 = image->x + image->w;
+		_gfxImagesQueue[_gfxImagesCount].y2 = 448 - (image->y + image->h);
+		_gfxImagesQueue[_gfxImagesCount].xflip = image->xflip;
+		_gfxImagesQueue[_gfxImagesCount].erase = image->erase;
+		_gfxImagesQueue[_gfxImagesCount].tex = &_texturesList[pos];
+		++_gfxImagesCount;
+	}
+
+	void queueTextDraw(const GfxText *gt) {
+		assert(_textsCount < ARRAYSIZE(_textsQueue));
+		const int len = gt->len > 64 ? 64 : gt->len;
+		_textsQueue[_textsCount].x = gt->x;
+		_textsQueue[_textsCount].y = gt->y;
+		_textsQueue[_textsCount].len = len;
+		_textsQueue[_textsCount].color = gt->color;
+		memcpy(_textsQueue[_textsCount].buf, gt->dataPtr, len);
+		++_textsCount;
 	}
 
 	void draw() {
@@ -193,21 +249,25 @@ struct TextureCache {
 		drawBackground();
 		int i = 0;
 		glAlphaFunc(GL_EQUAL, 1);
-		for (; i < _imagesCount && !_images[i].erase; ++i) {
-			drawImage(i);
+		for (; i < _gfxImagesCount && !_gfxImagesQueue[i].erase; ++i) {
+			drawGfxImage(i);
 		}
 		glAlphaFunc(GL_EQUAL, 1);
 		drawBackground();
 		glAlphaFunc(GL_EQUAL, 1);
-		for (; i < _imagesCount; ++i) {
-			drawImage(i);
+		for (; i < _gfxImagesCount; ++i) {
+			drawGfxImage(i);
 		}
-		_imagesCount = 0;
+		_gfxImagesCount = 0;
+		for (i = 0; i < _textsCount; ++i) {
+			drawText(i);
+		}
+		_textsCount = 0;
 	}
 
 	void drawBackground() {
-		if (_background._texId != -1) {
-			glBindTexture(GL_TEXTURE_2D, _background._texId);
+		if (_background.texId != -1) {
+			glBindTexture(GL_TEXTURE_2D, _background.texId);
 			glBegin(GL_QUADS);
 				glTexCoord2f(0., 0.);
 				glVertex2i(0, 448);
@@ -221,33 +281,64 @@ struct TextureCache {
 		}
 	}
 
-	void drawImage(int i) {
-			Texture *tex = _images[i].tex;
+	void drawGfxImage(int i) {
+			Texture *tex = _gfxImagesQueue[i].tex;
 			if (tex) {
 				glBindTexture(GL_TEXTURE_2D, tex->texId);
 				glBegin(GL_QUADS);
-					if (_images[i].xflip) {
+					if (_gfxImagesQueue[i].xflip) {
 						glTexCoord2f(0., 0.);
-						glVertex2i(_images[i].x2, _images[i].y);
+						glVertex2i(_gfxImagesQueue[i].x2, _gfxImagesQueue[i].y);
 						glTexCoord2f(tex->u, 0.);
-						glVertex2i(_images[i].x, _images[i].y);
+						glVertex2i(_gfxImagesQueue[i].x, _gfxImagesQueue[i].y);
 						glTexCoord2f(tex->u, tex->v);
-						glVertex2i(_images[i].x, _images[i].y2);
+						glVertex2i(_gfxImagesQueue[i].x, _gfxImagesQueue[i].y2);
 						glTexCoord2f(0., tex->v);
-						glVertex2i(_images[i].x2, _images[i].y2);
+						glVertex2i(_gfxImagesQueue[i].x2, _gfxImagesQueue[i].y2);
 					} else {
 						glTexCoord2f(0., 0.);
-						glVertex2i(_images[i].x, _images[i].y);
+						glVertex2i(_gfxImagesQueue[i].x, _gfxImagesQueue[i].y);
 						glTexCoord2f(tex->u, 0.);
-						glVertex2i(_images[i].x2, _images[i].y);
+						glVertex2i(_gfxImagesQueue[i].x2, _gfxImagesQueue[i].y);
 						glTexCoord2f(tex->u, tex->v);
-						glVertex2i(_images[i].x2, _images[i].y2);
+						glVertex2i(_gfxImagesQueue[i].x2, _gfxImagesQueue[i].y2);
 						glTexCoord2f(0., tex->v);
-						glVertex2i(_images[i].x, _images[i].y2);
+						glVertex2i(_gfxImagesQueue[i].x, _gfxImagesQueue[i].y2);
 					}
 				glEnd();
 				--tex->refCount;
 			}
+	}
+
+	static void setColor(uint16_t color) {
+		const GLfloat r = ((color >> 11) & 31) / 31.;
+		const GLfloat g = ((color >>  6) & 31) / 31.;
+		const GLfloat b = ((color >>  1) & 31) / 31.;
+		glColor3f(r, g, b);
+	}
+
+	void drawText(int num) {
+		glBindTexture(GL_TEXTURE_2D, _font.texId);
+		setColor(_tex8to5551[_textsQueue[num].color]);
+		int x = _textsQueue[num].x;
+		const int y = 448 - _textsQueue[num].y;
+		for (int i = 0; i < _textsQueue[num].len; ++i) {
+			const uint8_t code = _textsQueue[num].buf[i];
+			const GLfloat texU1 = (code - 32) / (GLfloat)_font.charsCount;
+			const GLfloat texU2 = (code - 31) / (GLfloat)_font.charsCount;
+			glBegin(GL_QUADS);
+				glTexCoord2f(texU1, 0.);
+				glVertex2i(x, y);
+				glTexCoord2f(texU2, 0.);
+				glVertex2i(x + 16, y);
+				glTexCoord2f(texU2, 1.);
+				glVertex2i(x + 16, y - 16);
+				glTexCoord2f(texU1, 1.);
+				glVertex2i(x, y - 16);
+			glEnd();
+			x += 16;
+		}
+		glColor3f(1., 1., 1.);
 	}
 };
 
@@ -270,6 +361,7 @@ struct Main {
 		_resData.loadFontData();
 		_resData.loadPersoData();
 		_game.initGame();
+		_texCache.createTextureFont(_resData);
 	}
 
 	void doMenuTick() {
@@ -288,7 +380,7 @@ struct Main {
 				_game._pi.backspace = false;
 				_game.initInventory();
 			}
-			_game.clearImagesList();
+			_game.clearGfxList();
 			if (_game._inventoryOn) {
 				_game.doInventory();
 			} else {
@@ -302,8 +394,11 @@ struct Main {
 		if (_game._backgroundChanged) {
 			_texCache.createTextureBackground(_resData, _game._currentLevel, _game._currentRoom);
 		}
-		for (int i = 0; i < _game._imagesCount; ++i) {
-			_texCache.createTextureImage(_resData, &_game._imagesList[i]);
+		for (int i = 0; i < _game._gfxImagesCount; ++i) {
+			_texCache.createTextureGfxImage(_resData, &_game._gfxImagesList[i]);
+		}
+		for (int i = 0; i < _game._gfxTextsCount; ++i) {
+			_texCache.queueTextDraw(&_game._gfxTextsList[i]);
 		}
 	}
 
@@ -443,4 +538,5 @@ int main(int argc, char *argv[]) {
 	}
 	return 0;
 }
+
 

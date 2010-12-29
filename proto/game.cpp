@@ -9,16 +9,13 @@ Game::Game(ResourceData &res)
 	_randSeed = time(0);
 	_skillLevel = 1;
 	_currentLevel = 0;
-	_frontLayer = (uint8_t *)calloc(1, kScreenWidth * kScreenHeight);
-	_tempLayer = 0;
+	_frontLayer = 0;
 	_inventoryOn = false;
 	_hotspotsCount = 0;
 	_shakeOffset = 0;
 }
 
 Game::~Game() {
-	free(_frontLayer);
-	free(_tempLayer);
 }
 
 #if 0
@@ -270,12 +267,6 @@ void Game::drawLevelTexts() {
 }
 
 void Game::doStoryTexts() {
-	if (!_tempLayer) {
-		_tempLayer = (uint8_t *)malloc(kScreenWidth * kScreenHeight);
-		if (_tempLayer) {
-			memcpy(_tempLayer, _frontLayer, kScreenWidth * kScreenHeight);
-		}
-	}
 	const uint8_t *str = _res.getStringData(ResourceData::kGameString + _textToDisplay);
 	const int segmentsCount = *str++;
 	if (_pi.backspace) {
@@ -283,16 +274,12 @@ void Game::doStoryTexts() {
 		if (_nextTextSegment >= segmentsCount) {
 			_nextTextSegment = 0;
 			_textToDisplay = 0xFFFF;
-			free(_tempLayer);
-			_tempLayer = 0;
 			return;
                 }
-		if (_tempLayer) {
-			memcpy(_frontLayer, _tempLayer, kScreenWidth * kScreenHeight);
-		}
 	} else if (_nextTextSegment > 0) {
 		return;
 	}
+	_gfxTextsCount = 0;
 		// goto to current segment
 		for (int i = 0; i < _nextTextSegment; ++i) {
 			const int segmentLength = *str++;
@@ -425,13 +412,8 @@ void Game::drawAnims() {
 	drawAnimBuffer(3, _animBuffer3State);
 }
 
-static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, bool xflip, bool erase, uint8 *dstPtr, const uint8_t *dataPtr) {
+static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, const uint8_t *dataPtr, bool xflip) {
 	memset(buf, 0, sizeof(DecodeBuffer));
-	buf->ptr = dstPtr;
-	buf->w = buf->pitch = Game::kScreenWidth;
-	buf->h = Game::kScreenHeight;
-	buf->xflip = xflip;
-	buf->yflip = false;
 	buf->x = x * 2;
 	buf->y = y * 2;
 	if (dataPtr) {
@@ -442,7 +424,6 @@ static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, bool xflip, bool e
 		}
 		buf->y -= (int16)READ_BE_UINT16(dataPtr + 6);
 	}
-	buf->erase = erase;
 }
 
 void Game::drawPiege(LivePGE *pge, int x, int y) {
@@ -450,39 +431,28 @@ void Game::drawPiege(LivePGE *pge, int x, int y) {
 	if (pge->flags & 8) {
 		const uint8_t *dataPtr = _res.getImageData(_res._spc, pge->anim_number);
 		if (!dataPtr) return;
-		initDecodeBuffer(&buf, x, y, false, _eraseBackground,  _frontLayer, dataPtr);
-//		_res.decodeImageData(_res._spc, pge->anim_number, &buf);
-		addImageToList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), false, _eraseBackground, _res._spc, pge->anim_number);
+		initDecodeBuffer(&buf, x, y, dataPtr, false);
+		addImageToGfxList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), false, _eraseBackground, _res._spc, pge->anim_number);
 	} else {
 		const bool xflip = (pge->flags & 2);
 		if (pge->index == 0) {
 			const int frame = _res.getPersoFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._perso, frame);
 			if (!dataPtr) return;
-			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
-//			_res.decodeImageData(_res._perso, frame, &buf);
-			addImageToList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), xflip, _eraseBackground, _res._perso, frame);
+			initDecodeBuffer(&buf, x, y, dataPtr, xflip);
+			addImageToGfxList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), xflip, _eraseBackground, _res._perso, frame);
 		} else {
 			const int frame = _res.getMonsterFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._monster, frame);
 			if (!dataPtr) return;
-			initDecodeBuffer(&buf, x, y, xflip, _eraseBackground, _frontLayer, dataPtr);
-//			_res.decodeImageData(_res._monster, frame, &buf);
-			addImageToList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), xflip, _eraseBackground, _res._monster, frame);
+			initDecodeBuffer(&buf, x, y, dataPtr, xflip);
+			addImageToGfxList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), xflip, _eraseBackground, _res._monster, frame);
 		}
 	}
 }
 
 void Game::drawString(const unsigned char *str, int len, int x, int y, int color) {
-	int offset = 0;
-	for (int i = 0; i < len; ++i) {
-		const uint8_t code = *str++;
-		DecodeBuffer buf;
-		initDecodeBuffer(&buf, x + offset, y, false, true, _frontLayer, 0);
-		buf.textColor = color;
-		_res.decodeImageData(_res._fnt, code - 32, &buf);
-		offset += 8;
-	}
+	addTextToGfxList(x, y, len, str, color);
 }
 
 void Game::drawAnimBuffer(uint8 stateNum, AnimBufferState *state) {
@@ -538,8 +508,6 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 
 void Game::loadLevelMap() {
 	debug(DBG_GAME, "Game::loadLevelMap() room=%d", _currentRoom);
-	DecodeBuffer buf;
-	initDecodeBuffer(&buf, 0, 0, false, true, _frontLayer, 0);
 //	_res.loadLevelRoom(_currentLevel, _currentRoom, &buf);
 //	memcpy(_backLayer, _frontLayer, kScreenWidth * kScreenHeight);
 	_res.setupLevelClut(_currentLevel, _palette);
@@ -582,10 +550,9 @@ void Game::loadLevelData() {
 
 void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
 	DecodeBuffer buf;
-	initDecodeBuffer(&buf, x, y, false, true, _frontLayer, 0);
-//	_res.decodeImageData(_res._icn, iconNum, &buf);
+	initDecodeBuffer(&buf, x, y, 0, false);
 	const uint8_t *dataPtr = _res.getImageData(_res._icn, iconNum);
-	addImageToList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), false, true, _res._icn, iconNum);
+	addImageToGfxList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), false, true, _res._icn, iconNum);
 }
 
 void Game::playSound(uint8 sfxId, uint8 softVol) {
@@ -741,13 +708,9 @@ void Game::addHotspot(int id, int x, int y, int w, int h) {
 	++_hotspotsCount;
 }
 
-void Game::clearImagesList() {
-	_imagesCount = 0;
-}
-
-void Game::addImageToList(int x, int y, int w, int h, bool xflip, bool erase, uint8_t *dataPtr, int num) {
-	assert(_imagesCount < ARRAYSIZE(_imagesList));
-	Image *i = &_imagesList[_imagesCount];
+void Game::addImageToGfxList(int x, int y, int w, int h, bool xflip, bool erase, uint8_t *dataPtr, int num) {
+	assert(_gfxImagesCount < ARRAYSIZE(_gfxImagesList));
+	GfxImage *i = &_gfxImagesList[_gfxImagesCount];
 	i->x = x;
 	i->y = y;
 	i->w = w;
@@ -757,6 +720,25 @@ void Game::addImageToList(int x, int y, int w, int h, bool xflip, bool erase, ui
 	i->erase = erase;
 	i->dataPtr = dataPtr;
 	i->num = num;
-	++_imagesCount;
+	++_gfxImagesCount;
+}
+
+void Game::clearGfxList() {
+	_gfxImagesCount = 0;
+	_gfxTextsCount = 0;
+}
+
+void Game::saveGfxList() {
+}
+
+void Game::addTextToGfxList(int x, int y, int len, const uint8_t *dataPtr, uint8_t color) {
+	assert(_gfxTextsCount < ARRAYSIZE(_gfxTextsList));
+	GfxText *gt = &_gfxTextsList[_gfxTextsCount];
+	gt->x = x * 2;
+	gt->y = y * 2;
+	gt->len = len;
+	gt->dataPtr = dataPtr;
+	gt->color = color;
+	++_gfxTextsCount;
 }
 
