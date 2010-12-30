@@ -1,6 +1,7 @@
 
 #include <SDL.h>
 #include <SDL_opengl.h>
+#include <math.h>
 #include <sys/time.h>
 #include "game.h"
 #include "resource_data.h"
@@ -105,7 +106,6 @@ struct TextureCache {
 		memset(&buf, 0, sizeof(buf));
 		buf.w = buf.pitch = _font.charsCount * 16;
 		buf.h = 16;
-		buf.lut = &_tex8to5551[0xE6];
 		buf.setPixel = convertTextureFont;
 		buf.ptr = (uint8_t *)calloc(buf.w * buf.h, sizeof(uint16_t));
 		if (buf.ptr) {
@@ -344,10 +344,114 @@ struct TextureCache {
 	}
 };
 
+struct PadInput {
+
+	enum {
+		kIdle,
+		kDirectionPressed,
+		kButtonPressed
+	};
+	int _state;
+	int _refX0, _refY0, _dirX, _dirY;
+	int _dirDeg;
+
+	PadInput()
+		: _state(kIdle) {
+	}
+
+	static int squareDist(int dy, int dx) {
+		return dy * dy + dx * dx;
+	}
+
+	bool feed(int x, int y, int released, PlayerInput &pi) {
+		switch (_state) {
+		case kIdle:
+			if (!released) {
+				if (x > 256 && x < 512 && y > 96 && y < 448) {
+					_state = kButtonPressed;
+					_refX0 = x;
+					_refY0 = y;
+					pi.shift = true;
+					return true;
+				}
+				if (x > 0 && x < 256 && y > 96 && y < 448) {
+					_state = kDirectionPressed;
+					_refX0 = _dirX = x;
+					_refY0 = _dirY = y;
+					return true;
+				}
+			}
+			return false;
+		case kDirectionPressed:
+			pi.dirMask = 0;
+			if (released) {
+				_state = kIdle;
+			} else {
+				_dirX = x;
+				_dirY = y;
+				const int dirDist = squareDist(_dirY - _refY0, _dirX - _refX0);
+				if (dirDist >= 1024) {
+					_dirDeg = (int)(atan2(_dirY - _refY0, _dirX - _refX0) * 180 / M_PI);
+					if (_dirDeg > 0 && _dirDeg <= 180) {
+						_dirDeg = 180 - (_dirDeg - 180);
+					} else {
+						_dirDeg = -_dirDeg;
+					}
+					if (_dirDeg >= 45 && _dirDeg < 135) {
+						pi.dirMask |= PlayerInput::kDirectionUp;
+					} else if (_dirDeg >= 135 && _dirDeg < 225) {
+						pi.dirMask |= PlayerInput::kDirectionLeft;
+					} else if (_dirDeg >= 225 && _dirDeg < 315) {
+						pi.dirMask |= PlayerInput::kDirectionDown;
+					} else {
+						pi.dirMask |= PlayerInput::kDirectionRight;
+					}
+				}
+			}
+			return true;
+		case kButtonPressed:
+			pi.shift = (released == 0);
+			_refX0 = x;
+			_refY0 = y;
+			if (released) {
+				_state = kIdle;
+			}
+			return true;
+		}
+		return false;
+	}
+
+	void draw() {
+		switch (_state) {
+		case kDirectionPressed:
+			glDisable(GL_TEXTURE_2D);
+			glColor3f(1., 1., 1.);
+			glBegin(GL_LINES);
+				glVertex2i(_refX0, 448 - _refY0);
+				glVertex2i(_dirX, 448 - _dirY);
+			glEnd();
+			glColor3f(1., 1., 1.);
+			break;
+		case kButtonPressed:
+			glDisable(GL_TEXTURE_2D);
+			glColor3f(1., 1., 1.);
+			glBegin(GL_QUADS);
+				glVertex2i(_refX0 - 16, 448 - (_refY0 - 16));
+				glVertex2i(_refX0 + 16, 448 - (_refY0 - 16));
+				glVertex2i(_refX0 + 16, 448 - (_refY0 + 16));
+				glVertex2i(_refX0 - 16, 448 - (_refY0 + 16));
+			glEnd();
+			glColor3f(1., 1., 1.);
+			break;
+		}
+	}
+};
+
 struct Main {
 	ResourceData _resData;
 	Game _game;
 	TextureCache _texCache;
+	PadInput _padInput;
 	struct timeval _t0;
 	int _frameCounter;
 
@@ -410,6 +514,7 @@ struct Main {
 		glOrtho(0, w, 0, h, 0, 1);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
+		glEnable(GL_TEXTURE_2D);
 		_texCache.draw();
 		++_frameCounter;
 		if ((_frameCounter & 31) == 0) {
@@ -497,7 +602,9 @@ void stubQueueKeyInput(int keycode, int pressed) {
 }
 
 void stubQueueTouchInput(int x, int y, int released) {
-	updateTouchInput(released != 0, x, y, gMain->_game._pi);
+	if (!gMain->_padInput.feed(x, y, released, gMain->_game._pi)) {
+		updateTouchInput(released != 0, x, y, gMain->_game._pi);
+	}
 }
 
 void stubDoTick() {
@@ -505,12 +612,12 @@ void stubDoTick() {
 }
 
 void stubInitGL(int w, int h) {
-	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_ALPHA_TEST);
 }
 
 void stubDrawGL(int w, int h) {
 	gMain->drawFrame(w, h);
+	gMain->_padInput.draw();
 }
 
 extern "C" {
