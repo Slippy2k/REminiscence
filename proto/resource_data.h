@@ -75,14 +75,13 @@ struct ResourceData {
 			const int count = data[i + 1] + 1 - data[i];
 			offset += count;
 		}
-		printf("getPersoFrame anim %d\n", anim);
 		assert(0);
 		return 0;
 	}
 	int getMonsterFrame(int anim) const {
 		static const int data[] = {
-			0x22F, 0x28D, // junky - 94
-			0x2EA, 0x387, // mercenai - 156
+			0x22F, 0x28C, // junky - 94
+			0x2EA, 0x385, // mercenai - 156
 			0x387, 0x42F, // replican - 169
 			0x430, 0x4E8, // glue - 185
 			-1
