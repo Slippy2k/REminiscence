@@ -289,7 +289,6 @@ void ResourceData::loadLevelRoom(int level, int i, DecodeBuffer *buf) {
 	char name[64];
 	snprintf(name, sizeof(name), "Level %d Room %d", levelsIntegerIndex[level], i);
 	uint8_t *ptr = decodeResourceData(name, true);
-	assert(ptr);
 	if (ptr) {
 		decodeImageData(ptr, 0, buf);
 		free(ptr);

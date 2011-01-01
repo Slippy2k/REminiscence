@@ -139,7 +139,7 @@ struct Game {
 	void playCutscene(int id = -1);
 	void loadLevelMap();
 	void loadLevelData();
-	void drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask);
+	void drawIcon(uint8 iconNum, int x, int y);
 	void drawCurrentInventoryItem();
 	void printLevelCode();
 	void printSaveStateCompleted();

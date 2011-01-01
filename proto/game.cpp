@@ -207,7 +207,7 @@ void Game::drawHotspots() {
 				switch (hs->id) {
 				case Hotspot::kIdUseGun:
 				case Hotspot::kIdUseInventory:
-					drawIcon(32, 4 + hs->x / kHotspotCoordScale, 4 + hs->y / kHotspotCoordScale, 0xA);
+					drawIcon(32, 4 + hs->x / kHotspotCoordScale, 4 + hs->y / kHotspotCoordScale);
 					break;
 				}
 			}
@@ -230,11 +230,11 @@ void Game::playCutscene(int id) {
 void Game::drawCurrentInventoryItem() {
 	int src = _pgeLive[0].current_inventory_PGE;
 	if (src != 0xFF) {
-		drawIcon(_res._pgeInit[src].icon_num, 232, 8, 0xA);
+		drawIcon(_res._pgeInit[src].icon_num, 232, 8);
 		addHotspot(Hotspot::kIdUseInventory, 232 - 4, 8 - 4, 24, 24);
 		while (src != 0xFF) {
 			if (_res._pgeInit[src].object_id == kGunObject) {
-				drawIcon(_res._pgeInit[src].icon_num, 208, 8, 0xA);
+				drawIcon(_res._pgeInit[src].icon_num, 208, 8);
 				addHotspot(Hotspot::kIdUseGun, 208 - 4, 8 - 4, 24, 24);
 				break;
 			}
@@ -269,7 +269,7 @@ void Game::drawLevelTexts() {
 		_printLevelCodeCounter = 0;
 		if (_textToDisplay == 0xFFFF) {
 			const uint8_t icon_num = obj - 1;
-			drawIcon(icon_num, 80, 8, 0xA);
+			drawIcon(icon_num, 80, 8);
 			const uint8_t *str = _res.getStringData(pge->init_PGE->text_num);
 			drawString(str + 1, *str, (176 - *str * 8) / 2, 26, 0xE6);
 			if (icon_num == 2) {
@@ -317,7 +317,7 @@ void Game::doStoryTexts() {
 			++str;
 			len -= 2;
 		}
-		drawIcon(_currentInventoryIconNum, 80, 8, 0xA);
+		drawIcon(_currentInventoryIconNum, 80, 8);
 		int lineOffset = 26;
 		while (len > 0) {
 			const uint8_t *next = (const uint8_t *)memchr(str, 0x7C, len);
@@ -565,7 +565,7 @@ void Game::loadLevelData() {
 //	_validSaveState = false;
 }
 
-void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
+void Game::drawIcon(uint8 iconNum, int x, int y) {
 	DecodeBuffer buf;
 	initDecodeBuffer(&buf, x, y, 0, false);
 	const uint8_t *dataPtr = _res.getImageData(_res._icn, iconNum);
@@ -632,7 +632,7 @@ void Game::doInventory() {
 	if (pge->life > 0 && pge->current_inventory_PGE != 0xFF) {
 //		playSound(66, 0);
 
-		drawIcon(31, 56, 140, 0xF);
+		drawIcon(31, 56, 140);
 		const int h = (_inventoryItemsCount - 1) / 4 + 1;
 		const int y = _inventoryCurrentItem / 4;
 
@@ -643,9 +643,9 @@ void Game::doInventory() {
 				break;
 			}
 			const int xPos = 72 + i * 32;
-			drawIcon(_inventoryItems[currentItem].icon_num, xPos, 157, 0xA);
+			drawIcon(_inventoryItems[currentItem].icon_num, xPos, 157);
 			if (_inventoryCurrentItem == currentItem) {
-				drawIcon(32, xPos, 157, 0xA);
+				drawIcon(32, xPos, 157);
 				const LivePGE *selected_pge = _inventoryItems[currentItem].live_pge;
 				const uint8_t *str = _res.getStringData(_inventoryItems[currentItem].init_pge->text_num);
 				assert(str);
@@ -658,11 +658,11 @@ void Game::doInventory() {
 			}
 		}
 		if (y != 0) {
-			drawIcon(34, 120, 176, 0xA); // down arrow
+			drawIcon(34, 120, 176); // down arrow
 			addHotspot(Hotspot::kIdScrollDownInventory, 120, 176, 16, 16);
 		}
 		if (y != h - 1) {
-			drawIcon(33, 120, 143, 0xA); // up arrow
+			drawIcon(33, 120, 143); // up arrow
 			addHotspot(Hotspot::kIdScrollUpInventory, 120, 143, 16, 16);
 		}
 		if (_pi.dirMask & PlayerInput::kDirectionUp) {

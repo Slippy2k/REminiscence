@@ -22,10 +22,6 @@ enum {
 extern uint16 g_debugMask;
 
 extern void debug(uint16 cm, const char *msg, ...);
-extern void error(const char *msg, ...);
 extern void warning(const char *msg, ...);
-
-extern void string_lower(char *p);
-extern void string_upper(char *p);
 
 #endif // __UTIL_H__
