@@ -34,7 +34,8 @@ struct Hotspot {
 		kIdUseInventory,
 		kIdSelectInventoryObject,
 		kIdScrollUpInventory,
-		kIdScrollDownInventory
+		kIdScrollDownInventory,
+		kIdSelectLevel,
 	};
 
 	int id;
@@ -127,6 +128,7 @@ struct Game {
 	InventoryItem _inventoryItems[24];
 	uint16_t _cutId;
 	uint16_t _cutDeathCutsceneId;
+	bool _gameOver;
 
 	Game(ResourceData &);
 	~Game();

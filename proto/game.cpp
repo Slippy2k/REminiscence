@@ -62,6 +62,7 @@ void Game::resetGameState() {
 	_pge_opTempVar1 = 0;
 	_textToDisplay = 0xFFFF;
 	_nextTextSegment = 0;
+	_gameOver = false;
 }
 
 void Game::initGame() {
@@ -106,6 +107,16 @@ void Game::doHotspots() {
 						}
 					}
 					break;
+				case Hotspot::kIdSelectLevel:
+					if (_pi.touch.press == PlayerInput::kTouchDown) {
+                                                const int num = (_pi.touch.y / kHotspotCoordScale - 24) / 16;
+						if (num >= 0 && num < 7) {
+							_currentLevel = num;
+						}
+					} else if (_pi.touch.press == PlayerInput::kTouchUp) {
+						_pi.enter = true;
+					}
+					break;
 				}
 			}
 		}
@@ -125,6 +136,7 @@ void Game::doTick() {
 		if (_deathCutsceneCounter) {
 			--_deathCutsceneCounter;
 			if (_deathCutsceneCounter == 0) {
+				_gameOver = true;
 #if 0
 				playCutscene(_cutDeathCutsceneId);
 				if (!handleContinueAbort()) {
@@ -158,7 +170,6 @@ void Game::doTick() {
 			}
 		}
 		if (oldLevel != _currentLevel) {
-assert(0);
 			changeLevel();
 			_pge_opTempVar1 = 0;
 			return;
@@ -695,23 +706,32 @@ void AnimBuffers::addState(uint8 stateNum, int16 x, int16 y, LivePGE *pge) {
 }
 
 void Game::doTitle() {
-	static const uint8_t selectedColor = 0xE8;
-	static const uint8_t defaultColor = 0xE6;
+	static const uint8_t selectedColor = 0xE4;
+	static const uint8_t defaultColor = 0xE8;
 	for (int i = 0; i < 7; ++i) {
 		const char *str = _levelNames[i];
 		const int len = strlen(str);
-		drawString((const uint8_t *)str, len, 7 + i * 2, 4, (_currentLevel == i) ? selectedColor : defaultColor);
+		drawString((const uint8_t *)str, len, 24, 24 + i * 16, (_currentLevel == i) ? selectedColor : defaultColor);
 	}
-	static const char *difficulty[] = { "EASY", "NORMAL", "EXPERT" };
-	for (int i = 0; i < 3; ++i) {
-		const char *str = difficulty[i];
-		const int len = strlen(str);
-		drawString((const uint8_t *)str, len, 23, 4 + 10 * i, (_skillLevel == 0) ? selectedColor : defaultColor);
+	addHotspot(Hotspot::kIdSelectLevel, 24, 24, 256 - 24 * 2, 16 * 7);
+	if (_pi.dirMask & PlayerInput::kDirectionUp) {
+		_pi.dirMask &= ~PlayerInput::kDirectionUp;
+		if (_currentLevel > 0) {
+			--_currentLevel;
+		}
 	}
-	// TODO: hotspots + keyevents
+	if (_pi.dirMask & PlayerInput::kDirectionDown) {
+		_pi.dirMask &= ~PlayerInput::kDirectionDown;
+		if (_currentLevel < 6) {
+			++_currentLevel;
+		}
+	}
 }
 
 void Game::clearHotspots() {
+	if (_pi.touch.press == PlayerInput::kTouchUp) {
+		_pi.touch.press = PlayerInput::kTouchNone;
+	}
 	_hotspotsCount = 0;
 }
 

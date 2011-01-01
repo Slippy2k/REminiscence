@@ -52,14 +52,14 @@ int main(int argc, char *argv[]) {
 				stub->queueKeyInput(ev.key.keysym.sym, 0);
 				break;
 			case SDL_MOUSEBUTTONUP:
-				stub->queueTouchInput(ev.button.x, ev.button.y, 1);
+				stub->queueTouchInput(0, ev.button.x, ev.button.y, 1);
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				stub->queueTouchInput(ev.button.x, ev.button.y, 0);
+				stub->queueTouchInput(0, ev.button.x, ev.button.y, 0);
 				break;
 			case SDL_MOUSEMOTION:
 				if (ev.motion.state & SDL_BUTTON(1)) {
-					stub->queueTouchInput(ev.motion.x, ev.motion.y, 0);
+					stub->queueTouchInput(0, ev.motion.x, ev.motion.y, 0);
 				}
 				break;
 			}

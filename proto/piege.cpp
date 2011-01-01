@@ -67,6 +67,9 @@ void Game::pge_loadForCurrentLevel(uint16 idx) {
 	if (_skillLevel >= 2 && init_pge->object_type == 10) {
 		live_pge->life *= 2;
 	}
+	if (idx == 0) {
+		live_pge->life = 0x7FFF;
+	}
 	live_pge->counter_value = 0;
 	live_pge->collision_slot = 0xFF;
 	live_pge->next_inventory_PGE = 0xFF;

@@ -37,6 +37,12 @@ struct TextureCache {
 	} _texturesList[128];
 
 	struct {
+		int num;
+		GLuint texId;
+		GLfloat u, v;
+	} _title;
+
+	struct {
 		int level;
 		int room;
 		GLuint texId;
@@ -65,9 +71,12 @@ struct TextureCache {
 	} _gfxImagesQueue[192];
 	int _gfxImagesCount;
 
+	uint16_t _tex8to565[256];
 	uint16_t _tex8to5551[256];
 
 	TextureCache() {
+		memset(&_title, 0, sizeof(_title));
+		_title.texId = -1;
 		memset(&_background, 0, sizeof(_background));
 		_background.texId = -1;
 		memset(&_font, 0, sizeof(_font));
@@ -84,6 +93,7 @@ struct TextureCache {
 
 	void updatePalette(Color *clut) {
 		for (int i = 0; i < 256; ++i) {
+			_tex8to565[i] = ((clut[i].r >> 3) << 11) | ((clut[i].g >> 2) << 5) | (clut[i].b >> 3);
 			_tex8to5551[i] = ((clut[i].r >> 3) << 11) | ((clut[i].g >> 3) << 6) | ((clut[i].b >> 3) << 1);
 		}
 	}
@@ -118,7 +128,40 @@ struct TextureCache {
 		}
 	}
 
-	static void convertTextureMask(DecodeBuffer *buf, int x, int y, int w, int h, uint8_t color) {
+	static void convertTextureTitle(DecodeBuffer *buf, int x, int y, int w, int h, uint8_t color) {
+		const uint16_t *lut = (const uint16_t *)buf->lut;
+		const int offset = (y * buf->pitch + x) * sizeof(uint16_t);
+		*(uint16_t *)(buf->ptr + offset) = lut[color] | 1;
+	}
+
+	void createTextureTitle(ResourceData &res, int num) {
+		const int w = 512;
+		const int h = 448;
+		if (_title.texId == -1) {
+			glGenTextures(1, &_title.texId);
+			glBindTexture(GL_TEXTURE_2D, _title.texId);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 0);
+		}
+		_title.u = w / (GLfloat)512;
+		_title.v = h / (GLfloat)512;
+		DecodeBuffer buf;
+		memset(&buf, 0, sizeof(buf));
+		buf.w = buf.pitch = 512;
+		buf.h = 512;
+		buf.lut = _tex8to5551;
+		buf.setPixel = convertTextureTitle;
+		buf.ptr = (uint8_t *)calloc(buf.w * buf.h, sizeof(uint16_t));
+		if (buf.ptr) {
+			res.loadTitleImage(num, &buf);
+			glBindTexture(GL_TEXTURE_2D, _title.texId);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, buf.ptr);
+			free(buf.ptr);
+		}
+	}
+
+	static void convertTextureBackground(DecodeBuffer *buf, int x, int y, int w, int h, uint8_t color) {
 		const uint16_t *lut = (const uint16_t *)buf->lut;
 		const int offset = (y * buf->pitch + x) * sizeof(uint16_t);
 		*(uint16_t *)(buf->ptr + offset) = lut[color] | (color >> 7);
@@ -142,7 +185,7 @@ struct TextureCache {
 			buf.w = buf.pitch = 512;
 			buf.h = 512;
 			buf.lut = _tex8to5551;
-			buf.setPixel = convertTextureMask;
+			buf.setPixel = convertTextureBackground;
 			buf.ptr = (uint8_t *)calloc(buf.w * buf.h, sizeof(uint16_t));
 			if (buf.ptr) {
 				res.loadLevelRoom(level, room, &buf);
@@ -155,7 +198,7 @@ struct TextureCache {
 		}
 	}
 
-	static void convertTexture(DecodeBuffer *buf, int x, int y, int w, int h, uint8_t color) {
+	static void convertTextureImage(DecodeBuffer *buf, int x, int y, int w, int h, uint8_t color) {
 		const uint16_t *lut = (const uint16_t *)buf->lut;
 		const int offset = (y * buf->pitch + x) * sizeof(uint16_t);
 		*(uint16_t *)(buf->ptr + offset) = lut[color] | 1;
@@ -208,7 +251,7 @@ struct TextureCache {
 		buf.w = buf.pitch = texW;
 		buf.h = texH;
 		buf.lut = _tex8to5551;
-		buf.setPixel = convertTexture;
+		buf.setPixel = convertTextureImage;
 		buf.ptr = (uint8_t *)calloc(texW * texH, sizeof(uint16_t));
 		if (buf.ptr) {
 			res.decodeImageData(image->dataPtr, image->num, &buf);
@@ -235,7 +278,7 @@ struct TextureCache {
 		++_gfxImagesCount;
 	}
 
-	void queueTextDraw(const GfxText *gt) {
+	void queueGfxTextDraw(const GfxText *gt) {
 		assert(_gfxTextsCount < ARRAYSIZE(_gfxTextsQueue));
 		const int len = gt->len > 64 ? 64 : gt->len;
 		_gfxTextsQueue[_gfxTextsCount].x = gt->x;
@@ -246,38 +289,45 @@ struct TextureCache {
 		++_gfxTextsCount;
 	}
 
-	void draw() {
-		glAlphaFunc(GL_ALWAYS, 0);
-		drawBackground();
-		int i = 0;
-		glAlphaFunc(GL_EQUAL, 1);
-		for (; i < _gfxImagesCount && !_gfxImagesQueue[i].erase; ++i) {
-			drawGfxImage(i);
+	void draw(bool menu) {
+		if (menu) {
+			glColor3f(.7, .7, .7);
+			drawBackground(_title.texId, _title.u, _title.v);
+			glColor3f(1., 1., 1.);
+			glAlphaFunc(GL_EQUAL, 1);
+		} else {
+			glAlphaFunc(GL_ALWAYS, 0);
+			drawBackground(_background.texId, _background.u, _background.v);
+			int i = 0;
+			glAlphaFunc(GL_EQUAL, 1);
+			for (; i < _gfxImagesCount && !_gfxImagesQueue[i].erase; ++i) {
+				drawGfxImage(i);
+			}
+			glAlphaFunc(GL_EQUAL, 1);
+			drawBackground(_background.texId, _background.u, _background.v);
+			glAlphaFunc(GL_EQUAL, 1);
+			for (; i < _gfxImagesCount; ++i) {
+				drawGfxImage(i);
+			}
+			_gfxImagesCount = 0;
 		}
-		glAlphaFunc(GL_EQUAL, 1);
-		drawBackground();
-		glAlphaFunc(GL_EQUAL, 1);
-		for (; i < _gfxImagesCount; ++i) {
-			drawGfxImage(i);
-		}
-		_gfxImagesCount = 0;
-		for (i = 0; i < _gfxTextsCount; ++i) {
+		for (int i = 0; i < _gfxTextsCount; ++i) {
 			drawText(i);
 		}
 		_gfxTextsCount = 0;
 	}
 
-	void drawBackground() {
-		if (_background.texId != -1) {
-			glBindTexture(GL_TEXTURE_2D, _background.texId);
+	void drawBackground(GLuint texId, GLfloat u, GLfloat v) {
+		if (texId != -1) {
+			glBindTexture(GL_TEXTURE_2D, texId);
 			glBegin(GL_QUADS);
 				glTexCoord2f(0., 0.);
 				glVertex2i(0, 448);
-				glTexCoord2f(_background.u, 0.);
+				glTexCoord2f(u, 0.);
 				glVertex2i(512, 448);
-				glTexCoord2f(_background.u, _background.v);
+				glTexCoord2f(u, v);
 				glVertex2i(512, 0);
-				glTexCoord2f(0., _background.v);
+				glTexCoord2f(0., v);
 				glVertex2i(0, 0);
 			glEnd();
 		}
@@ -312,16 +362,13 @@ struct TextureCache {
 		}
 	}
 
-	static void setColor(uint16_t color) {
+	void drawText(int num) {
+		const uint16_t color = _tex8to5551[_gfxTextsQueue[num].color];
 		const GLfloat r = ((color >> 11) & 31) / 31.;
 		const GLfloat g = ((color >>  6) & 31) / 31.;
 		const GLfloat b = ((color >>  1) & 31) / 31.;
-		glColor3f(r, g, b);
-	}
-
-	void drawText(int num) {
 		glBindTexture(GL_TEXTURE_2D, _font.texId);
-		setColor(_tex8to5551[_gfxTextsQueue[num].color]);
+		glColor3f(r, g, b);
 		int x = _gfxTextsQueue[num].x;
 		const int y = 448 - _gfxTextsQueue[num].y;
 		for (int i = 0; i < _gfxTextsQueue[num].len; ++i) {
@@ -351,9 +398,9 @@ struct PadInput {
 		kDirectionPressed,
 		kButtonPressed
 	};
+
 	int _state;
 	int _refX0, _refY0, _dirX, _dirY;
-	int _dirDeg;
 
 	PadInput()
 		: _state(kIdle) {
@@ -389,22 +436,22 @@ struct PadInput {
 			} else {
 				_dirX = x;
 				_dirY = y;
-				const int dirDist = squareDist(_dirY - _refY0, _dirX - _refX0);
-				if (dirDist >= 1024) {
-					_dirDeg = (int)(atan2(_dirY - _refY0, _dirX - _refX0) * 180 / M_PI);
-					if (_dirDeg > 0 && _dirDeg <= 180) {
-						_dirDeg = 180 - (_dirDeg - 180);
+				const int dist = squareDist(_dirY - _refY0, _dirX - _refX0);
+				if (dist >= 1024) {
+					int deg = (int)(atan2(_dirY - _refY0, _dirX - _refX0) * 180 / M_PI);
+					if (deg > 0 && deg <= 180) {
+						deg = 360 - deg;
 					} else {
-						_dirDeg = -_dirDeg;
+						deg = -deg;
 					}
-					if (_dirDeg >= 45 && _dirDeg < 135) {
-						pi.dirMask |= PlayerInput::kDirectionUp;
-					} else if (_dirDeg >= 135 && _dirDeg < 225) {
-						pi.dirMask |= PlayerInput::kDirectionLeft;
-					} else if (_dirDeg >= 225 && _dirDeg < 315) {
-						pi.dirMask |= PlayerInput::kDirectionDown;
+					if (deg >= 45 && deg < 135) {
+						pi.dirMask = PlayerInput::kDirectionUp;
+					} else if (deg >= 135 && deg < 225) {
+						pi.dirMask = PlayerInput::kDirectionLeft;
+					} else if (deg >= 225 && deg < 315) {
+						pi.dirMask = PlayerInput::kDirectionDown;
 					} else {
-						pi.dirMask |= PlayerInput::kDirectionRight;
+						pi.dirMask = PlayerInput::kDirectionRight;
 					}
 				}
 			}
@@ -448,15 +495,26 @@ struct PadInput {
 };
 
 struct Main {
+
+	enum {
+		kStateMenu,
+		kStateGame
+	};
+
 	ResourceData _resData;
 	Game _game;
 	TextureCache _texCache;
-	PadInput _padInput;
+	PadInput _padInput[2];
 	struct timeval _t0;
 	int _frameCounter;
+	int _state, _nextState;
+	bool _gameInit;
+	bool _menuInit;
 
 	Main(const char *filePath)
 		: _resData(filePath), _game(_resData) {
+		_state = _nextState = kStateMenu;
+		_gameInit = _menuInit = false;
 	}
 
 	void init() {
@@ -466,11 +524,51 @@ struct Main {
 		_resData.loadIconData();
 		_resData.loadFontData();
 		_resData.loadPersoData();
-		_game.initGame();
 		_texCache.createTextureFont(_resData);
 	}
 
+	void doTick() {
+		if (_state != _nextState) {
+			_gameInit = _menuInit = false;
+			_state = _nextState;
+		}
+		switch (_state) {
+		case kStateMenu:
+			if (!_menuInit) {
+				doMenuInit();
+				_menuInit = true;
+			}
+			doMenuTick();
+			break;
+		case kStateGame:
+			if (!_gameInit) {
+				_game.initGame();
+				_gameInit = true;
+			}
+			doGameTick();
+			break;
+		}
+	}
+
+	void doMenuInit() {
+		static const int kNum = 3;
+		_resData.setupTitleClut(kNum, _game._palette);
+		_texCache.updatePalette(_game._palette);
+		_texCache.createTextureTitle(_resData, kNum);
+	}
+
 	void doMenuTick() {
+		_game.doHotspots();
+		_game.clearHotspots();
+		_game.clearGfxList();
+		_game.doTitle();
+		for (int i = 0; i < _game._gfxTextsCount; ++i) {
+			_texCache.queueGfxTextDraw(&_game._gfxTextsList[i]);
+		}
+		if (_game._pi.enter) {
+			_game._pi.enter = false;
+			_nextState = kStateGame;
+		}
 	}
 
 	void doGameTick() {
@@ -478,9 +576,6 @@ struct Main {
 			_game.doStoryTexts();
 		} else {
 			_game.doHotspots();
-	                if (_game._pi.touch.press == PlayerInput::kTouchUp) {
-				_game._pi.touch.press = PlayerInput::kTouchNone;
-			}
 			_game.clearHotspots();
 			if (_game._pi.backspace) {
 				_game._pi.backspace = false;
@@ -491,6 +586,9 @@ struct Main {
 				_game.doInventory();
 			} else {
 				_game.doTick();
+				if (_game._gameOver) {
+					_nextState = kStateMenu;
+				}
 			}
 			_game.drawHotspots();
 		}
@@ -504,7 +602,7 @@ struct Main {
 			_texCache.createTextureGfxImage(_resData, &_game._gfxImagesList[i]);
 		}
 		for (int i = 0; i < _game._gfxTextsCount; ++i) {
-			_texCache.queueTextDraw(&_game._gfxTextsList[i]);
+			_texCache.queueGfxTextDraw(&_game._gfxTextsList[i]);
 		}
 	}
 
@@ -515,7 +613,7 @@ struct Main {
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glEnable(GL_TEXTURE_2D);
-		_texCache.draw();
+		_texCache.draw((_state == kStateMenu));
 		++_frameCounter;
 		if ((_frameCounter & 31) == 0) {
 			struct timeval t1;
@@ -601,14 +699,14 @@ void stubQueueKeyInput(int keycode, int pressed) {
 	updateKeyInput(keycode, pressed != 0, gMain->_game._pi);
 }
 
-void stubQueueTouchInput(int x, int y, int released) {
-	if (!gMain->_padInput.feed(x, y, released, gMain->_game._pi)) {
+void stubQueueTouchInput(int num, int x, int y, int released) {
+	if (gMain->_game._inventoryOn || gMain->_state == 0 || !gMain->_padInput[num].feed(x, y, released, gMain->_game._pi)) {
 		updateTouchInput(released != 0, x, y, gMain->_game._pi);
 	}
 }
 
 void stubDoTick() {
-	gMain->doGameTick();
+	gMain->doTick();
 }
 
 void stubInitGL(int w, int h) {
@@ -617,7 +715,9 @@ void stubInitGL(int w, int h) {
 
 void stubDrawGL(int w, int h) {
 	gMain->drawFrame(w, h);
-	gMain->_padInput.draw();
+	for (int i = 0; i < 2; ++i) {
+		gMain->_padInput[i].draw();
+	}
 }
 
 extern "C" {

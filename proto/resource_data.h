@@ -75,6 +75,7 @@ struct ResourceData {
 			const int count = data[i + 1] + 1 - data[i];
 			offset += count;
 		}
+		printf("getPersoFrame anim %d\n", anim);
 		assert(0);
 		return 0;
 	}
