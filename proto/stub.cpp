@@ -8,6 +8,9 @@
 #include "resource_mac.h"
 #include "stub.h"
 
+static const int kW = 512;
+static const int kH = 448;
+
 static int roundPowerOfTwo(int x) {
 	if ((x & (x - 1)) == 0) {
 		return x;
@@ -131,32 +134,32 @@ struct TextureCache {
 	static void convertTextureTitle(DecodeBuffer *buf, int x, int y, int w, int h, uint8_t color) {
 		const uint16_t *lut = (const uint16_t *)buf->lut;
 		const int offset = (y * buf->pitch + x) * sizeof(uint16_t);
-		*(uint16_t *)(buf->ptr + offset) = lut[color] | 1;
+		*(uint16_t *)(buf->ptr + offset) = lut[color];
 	}
 
 	void createTextureTitle(ResourceData &res, int num) {
-		const int w = 512;
-		const int h = 448;
+		const int texW = roundPowerOfTwo(kW);
+		const int texH = roundPowerOfTwo(kH);
 		if (_title.texId == -1) {
 			glGenTextures(1, &_title.texId);
 			glBindTexture(GL_TEXTURE_2D, _title.texId);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 0);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texW, texH, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 0);
 		}
-		_title.u = w / (GLfloat)512;
-		_title.v = h / (GLfloat)512;
+		_title.u = kW / (GLfloat)texW;
+		_title.v = kH / (GLfloat)texH;
 		DecodeBuffer buf;
 		memset(&buf, 0, sizeof(buf));
-		buf.w = buf.pitch = 512;
-		buf.h = 512;
-		buf.lut = _tex8to5551;
+		buf.w = buf.pitch = texW;
+		buf.h = texH;
+		buf.lut = _tex8to565;
 		buf.setPixel = convertTextureTitle;
 		buf.ptr = (uint8_t *)calloc(buf.w * buf.h, sizeof(uint16_t));
 		if (buf.ptr) {
 			res.loadTitleImage(num, &buf);
 			glBindTexture(GL_TEXTURE_2D, _title.texId);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, buf.ptr);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texW, texH, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, buf.ptr);
 			free(buf.ptr);
 		}
 	}
@@ -168,29 +171,29 @@ struct TextureCache {
 	}
 
 	void createTextureBackground(ResourceData &res, int level, int room) {
-		const int w = 512;
-		const int h = 448;
+		const int texW = roundPowerOfTwo(kW);
+		const int texH = roundPowerOfTwo(kH);
 		if (_background.texId == -1) {
 			glGenTextures(1, &_background.texId);
 			glBindTexture(GL_TEXTURE_2D, _background.texId);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 0);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texW, texH, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 0);
 		}
-		_background.u = w / (GLfloat)512;
-		_background.v = h / (GLfloat)512;
+		_background.u = kW / (GLfloat)texW;
+		_background.v = kH / (GLfloat)texH;
 		if (level != _background.level || room != _background.room) {
 			DecodeBuffer buf;
 			memset(&buf, 0, sizeof(buf));
-			buf.w = buf.pitch = 512;
-			buf.h = 512;
+			buf.w = buf.pitch = texW;
+			buf.h = texH;
 			buf.lut = _tex8to5551;
 			buf.setPixel = convertTextureBackground;
 			buf.ptr = (uint8_t *)calloc(buf.w * buf.h, sizeof(uint16_t));
 			if (buf.ptr) {
 				res.loadLevelRoom(level, room, &buf);
 				glBindTexture(GL_TEXTURE_2D, _background.texId);
-				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, buf.ptr);
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texW, texH, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, buf.ptr);
 				free(buf.ptr);
 			}
 			_background.level = level;
@@ -269,9 +272,9 @@ struct TextureCache {
 		gettimeofday(&_texturesList[pos].t0, 0);
 		assert(_gfxImagesCount < ARRAYSIZE(_gfxImagesQueue));
 		_gfxImagesQueue[_gfxImagesCount].x = image->x;
-		_gfxImagesQueue[_gfxImagesCount].y = 448 - image->y;
+		_gfxImagesQueue[_gfxImagesCount].y = kH - image->y;
 		_gfxImagesQueue[_gfxImagesCount].x2 = image->x + image->w;
-		_gfxImagesQueue[_gfxImagesCount].y2 = 448 - (image->y + image->h);
+		_gfxImagesQueue[_gfxImagesCount].y2 = kH - (image->y + image->h);
 		_gfxImagesQueue[_gfxImagesCount].xflip = image->xflip;
 		_gfxImagesQueue[_gfxImagesCount].erase = image->erase;
 		_gfxImagesQueue[_gfxImagesCount].tex = &_texturesList[pos];
@@ -322,11 +325,11 @@ struct TextureCache {
 			glBindTexture(GL_TEXTURE_2D, texId);
 			glBegin(GL_QUADS);
 				glTexCoord2f(0., 0.);
-				glVertex2i(0, 448);
+				glVertex2i(0, kH);
 				glTexCoord2f(u, 0.);
-				glVertex2i(512, 448);
+				glVertex2i(kW, kH);
 				glTexCoord2f(u, v);
-				glVertex2i(512, 0);
+				glVertex2i(kW, 0);
 				glTexCoord2f(0., v);
 				glVertex2i(0, 0);
 			glEnd();
@@ -370,7 +373,7 @@ struct TextureCache {
 		glBindTexture(GL_TEXTURE_2D, _font.texId);
 		glColor3f(r, g, b);
 		int x = _gfxTextsQueue[num].x;
-		const int y = 448 - _gfxTextsQueue[num].y;
+		const int y = kH - _gfxTextsQueue[num].y;
 		for (int i = 0; i < _gfxTextsQueue[num].len; ++i) {
 			const uint8_t code = _gfxTextsQueue[num].buf[i];
 			const GLfloat texU1 = (code - 32) / (GLfloat)_font.charsCount;
@@ -474,8 +477,8 @@ struct PadInput {
 			glDisable(GL_TEXTURE_2D);
 			glColor3f(1., 1., 1.);
 			glBegin(GL_LINES);
-				glVertex2i(_refX0, 448 - _refY0);
-				glVertex2i(_dirX, 448 - _dirY);
+				glVertex2i(_refX0, kH - _refY0);
+				glVertex2i(_dirX, kH - _dirY);
 			glEnd();
 			glColor3f(1., 1., 1.);
 			break;
@@ -483,10 +486,10 @@ struct PadInput {
 			glDisable(GL_TEXTURE_2D);
 			glColor3f(1., 1., 1.);
 			glBegin(GL_QUADS);
-				glVertex2i(_refX0 - 16, 448 - (_refY0 - 16));
-				glVertex2i(_refX0 + 16, 448 - (_refY0 - 16));
-				glVertex2i(_refX0 + 16, 448 - (_refY0 + 16));
-				glVertex2i(_refX0 - 16, 448 - (_refY0 + 16));
+				glVertex2i(_refX0 - 16, kH - (_refY0 - 16));
+				glVertex2i(_refX0 + 16, kH - (_refY0 - 16));
+				glVertex2i(_refX0 + 16, kH - (_refY0 + 16));
+				glVertex2i(_refX0 - 16, kH - (_refY0 + 16));
 			glEnd();
 			glColor3f(1., 1., 1.);
 			break;
@@ -516,8 +519,8 @@ struct Main {
 		: _resData(filePath), _game(_resData) {
 		_state = _nextState = kStateMenu;
 		_gameInit = _menuInit = false;
-		_w = 512;
-		_h = 448;
+		_w = kW;
+		_h = kH;
 	}
 
 	void init() {
@@ -619,7 +622,7 @@ struct Main {
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glPushMatrix();
-		glScalef(w / 512., h / 448., 1.);
+		glScalef(w / (GLfloat)kW, h / (GLfloat)kH, 1.);
 		_texCache.draw((_state == kStateMenu), w, h);
 		glPopMatrix();
 		++_frameCounter;
@@ -689,10 +692,10 @@ static void updateTouchInput(bool released, int x, int y, PlayerInput &pi) {
 
 static void transformXY(int &x, int &y, int w, int h) {
 	if (w != 0) {
-		x = x * 512 / w;
+		x = x * kW / w;
 	}
 	if (h != 0) {
-		y = y * 448 / h;
+		y = y * kH / h;
 	}
 }
 
