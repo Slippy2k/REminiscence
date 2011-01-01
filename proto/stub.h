@@ -6,7 +6,7 @@ struct Stub {
 	void (*init)(const char *, int);
 	void (*quit)();
 	void (*queueKeyInput)(int keycode, int pressed);
-	void (*queueTouchInput)(int num, int x, int y, int released);
+	void (*queueTouchInput)(int num, int x, int y, int pressed);
 	void (*doTick)();
 	void (*initGL)(int, int);
 	void (*drawGL)(int, int);

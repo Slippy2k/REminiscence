@@ -58,7 +58,7 @@ struct GfxImage {
 struct GfxText {
 	int x, y;
 	int len;
-	const uint8_t *dataPtr;
+	uint8_t data[96];
 	uint8_t color;
 };
 

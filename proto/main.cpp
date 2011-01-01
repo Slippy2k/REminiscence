@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "%s datafile level\n", argv[0]);
 		return 0;
 	}
-	void *dlFbSo = dlopen(gFbSoName, RTLD_LAZY);
+	void *dlFbSo = dlopen(gFbSoName, RTLD_NOW);
 	if (!dlFbSo) {
 		fprintf(stderr, "unable to open '%s'\n", gFbSoName);
 		return 0;
@@ -51,14 +51,14 @@ int main(int argc, char *argv[]) {
 				stub->queueKeyInput(ev.key.keysym.sym, 0);
 				break;
 			case SDL_MOUSEBUTTONUP:
-				stub->queueTouchInput(0, ev.button.x, ev.button.y, 1);
+				stub->queueTouchInput(0, ev.button.x, ev.button.y, 0);
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				stub->queueTouchInput(0, ev.button.x, ev.button.y, 0);
+				stub->queueTouchInput(0, ev.button.x, ev.button.y, 1);
 				break;
 			case SDL_MOUSEMOTION:
 				if (ev.motion.state & SDL_BUTTON(1)) {
-					stub->queueTouchInput(0, ev.motion.x, ev.motion.y, 0);
+					stub->queueTouchInput(0, ev.motion.x, ev.motion.y, 1);
 				}
 				break;
 			case SDL_VIDEORESIZE:

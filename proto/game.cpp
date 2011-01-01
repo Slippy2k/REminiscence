@@ -779,8 +779,11 @@ void Game::addTextToGfxList(int x, int y, int len, const uint8_t *dataPtr, uint8
 	GfxText *gt = &_gfxTextsList[_gfxTextsCount];
 	gt->x = x * 2;
 	gt->y = y * 2;
+	if (len > sizeof(gt->data)) {
+		len = sizeof(gt->data);
+	}
 	gt->len = len;
-	gt->dataPtr = dataPtr;
+	memcpy(gt->data, dataPtr, len);
 	gt->color = color;
 	++_gfxTextsCount;
 }

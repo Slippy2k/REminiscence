@@ -3,21 +3,12 @@ cutscenes
 
 versions
 	cross compilation avec mingw - #ifdef ?
-	android : libfb.so fb-jni
-	rendre commun le code opengl(es) - #ifdef GLES - ajouter une fonction emitQuadTex
 	LD_LIBRARY_PATH=$(pwd) ./fb ../DATA/Flashback.bin
 
 sounds
 	decode sega vce segments to .wav (N-PART.wav)
 	.mp3 as background music
 	mac sounds
-
-touch UI
-	'menu' hard button -> trigger inventory - abstract buttons constants (SDL specific)
-	- click on inventory icon -> enter
-	- click on gun -> space
-	action (right area) -> shift
-	virtual pad
 
 texture rendering
 	glColor(1., 0., 0.); niveau 2
