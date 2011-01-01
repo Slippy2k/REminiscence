@@ -5,20 +5,22 @@ SDL_LIBS   = `sdl-config --libs` -lGL
 CXX = g++
 CXXFLAGS += -g -O -Wall -Wuninitialized -Wno-sign-compare $(SDL_CFLAGS)
 
-SRCS = collision.cpp decode.cpp file.cpp game.cpp main.cpp piege.cpp resource_data.cpp resource_mac.cpp staticres.cpp util.cpp
+SRCS_LIB = collision.cpp decode.cpp file.cpp game.cpp piege.cpp resource_data.cpp resource_mac.cpp staticres.cpp stub.cpp util.cpp
+OBJS_LIB = $(SRCS_LIB:.cpp=.o)
+DEPS_LIB = $(SRCS_LIB:.cpp=.d)
 
-OBJS = $(SRCS:.cpp=.o)
-DEPS = $(SRCS:.cpp=.d)
+all: libfb.so fb
 
-OUT = fb
+libfb.so: $(OBJS_LIB)
+	$(CXX) $(LDFLAGS) -shared -o $@ $(OBJS_LIB)
 
-$(OUT): $(OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(SDL_LIBS)
+fb: main.o
+	$(CXX) $(LDFLAGS) -o $@ $^ $(SDL_LIBS)
 
 .cpp.o:
 	$(CXX) $(CXXFLAGS) -MMD -c $< -o $*.o
 
 clean:
-	rm -f $(OBJS) $(DEPS) $(OUT)
+	rm -f *.o *.d libfb.so fb
 
--include $(DEPS)
+-include $(DEPS_LIB) main.d
