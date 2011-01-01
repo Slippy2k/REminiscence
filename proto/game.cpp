@@ -87,23 +87,28 @@ void Game::doHotspots() {
 					break;
 				case Hotspot::kIdSelectInventoryObject:
 					if (_pi.touch.press == PlayerInput::kTouchDown) {
-						const int num = (hs->x / kHotspotCoordScale - 72) / 32;
+						const int num = (_pi.touch.x / kHotspotCoordScale - 64) / 32;
 						if (num >= 0 && num <= 3) {
-							_inventoryCurrentItem = (_inventoryCurrentItem & ~3) | num;
+							const int current = (_inventoryCurrentItem & ~3) | num;
+							if (current < _inventoryItemsCount) {
+								_inventoryCurrentItem = current;
+							}
 						}
 					}
 					break;
 				case Hotspot::kIdScrollDownInventory:
 					if (_pi.touch.press == PlayerInput::kTouchUp) {
-						if (_inventoryCurrentItem - 4 >= 0) {
-							_inventoryCurrentItem = (_inventoryCurrentItem - 4) & ~3;
+						const int current = (_inventoryCurrentItem - 4) & ~3;
+						if (current >= 0) {
+							_inventoryCurrentItem = current;
 						}
 					}
 					break;
 				case Hotspot::kIdScrollUpInventory:
 					if (_pi.touch.press == PlayerInput::kTouchUp) {
-						if (((_inventoryCurrentItem + 4) & ~3) < _inventoryItemsCount) {
-							_inventoryCurrentItem = (_inventoryCurrentItem + 4) & ~3;
+						const int current = (_inventoryCurrentItem + 4) & ~3;
+						if (current < _inventoryItemsCount) {
+							_inventoryCurrentItem = current;
 						}
 					}
 					break;
@@ -202,7 +207,7 @@ void Game::drawHotspots() {
 				switch (hs->id) {
 				case Hotspot::kIdUseGun:
 				case Hotspot::kIdUseInventory:
-					drawIcon(32, hs->x / kHotspotCoordScale, hs->y / kHotspotCoordScale, 0xA);
+					drawIcon(32, 4 + hs->x / kHotspotCoordScale, 4 + hs->y / kHotspotCoordScale, 0xA);
 					break;
 				}
 			}
@@ -226,11 +231,11 @@ void Game::drawCurrentInventoryItem() {
 	int src = _pgeLive[0].current_inventory_PGE;
 	if (src != 0xFF) {
 		drawIcon(_res._pgeInit[src].icon_num, 232, 8, 0xA);
-		addHotspot(Hotspot::kIdUseInventory, 232, 8, 16, 16);
+		addHotspot(Hotspot::kIdUseInventory, 232 - 4, 8 - 4, 24, 24);
 		while (src != 0xFF) {
 			if (_res._pgeInit[src].object_id == kGunObject) {
 				drawIcon(_res._pgeInit[src].icon_num, 208, 8, 0xA);
-				addHotspot(Hotspot::kIdUseGun, 208, 8, 16, 16);
+				addHotspot(Hotspot::kIdUseGun, 208 - 4, 8 - 4, 24, 24);
 				break;
 			}
 			src = _pgeLive[src].next_inventory_PGE;
@@ -631,6 +636,7 @@ void Game::doInventory() {
 		const int h = (_inventoryItemsCount - 1) / 4 + 1;
 		const int y = _inventoryCurrentItem / 4;
 
+		addHotspot(Hotspot::kIdSelectInventoryObject, 72 - 8, 157, 32 * 4, 16);
 		for (int i = 0; i < 4; ++i) {
 			int currentItem = y * 4 + i;
 			if (_inventoryItems[currentItem].icon_num == 0xFF) {
@@ -638,7 +644,6 @@ void Game::doInventory() {
 			}
 			const int xPos = 72 + i * 32;
 			drawIcon(_inventoryItems[currentItem].icon_num, xPos, 157, 0xA);
-			addHotspot(Hotspot::kIdSelectInventoryObject, xPos, 157, 16, 16);
 			if (_inventoryCurrentItem == currentItem) {
 				drawIcon(32, xPos, 157, 0xA);
 				const LivePGE *selected_pge = _inventoryItems[currentItem].live_pge;
