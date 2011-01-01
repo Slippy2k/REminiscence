@@ -5,8 +5,8 @@
 #include "stub.h"
 
 static const char *gWindowTitle = "Flashback: The Quest For Identity";
-static const int gWindowW = 512;
-static const int gWindowH = 448;
+static int gWindowW = 512;
+static int gWindowH = 448;
 static const int gTickDuration = 16;
 
 static const char *gFbSoName = "libfb.so";
@@ -36,7 +36,6 @@ int main(int argc, char *argv[]) {
 	const int level = (argc >= 3) ? atoi(argv[2]) : -1;
 	stub->init(argv[1], level);
 	stub->initGL(gWindowW, gWindowH);
-	glViewport(0, 0, gWindowW, gWindowH);
 	bool quitGame = false;
 	while (!quitGame) {
 		SDL_Event ev;
@@ -61,6 +60,12 @@ int main(int argc, char *argv[]) {
 				if (ev.motion.state & SDL_BUTTON(1)) {
 					stub->queueTouchInput(0, ev.motion.x, ev.motion.y, 0);
 				}
+				break;
+			case SDL_VIDEORESIZE:
+				gWindowW = ev.resize.w;
+				gWindowH = ev.resize.h;
+				SDL_SetVideoMode(gWindowW, gWindowH, 0, SDL_OPENGL | SDL_RESIZABLE);
+				stub->initGL(gWindowW, gWindowH);
 				break;
 			}
 		}

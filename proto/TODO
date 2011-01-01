@@ -13,12 +13,11 @@ sounds
 	mac sounds
 
 touch UI
-	'menu' hard button -> trigger inventory
+	'menu' hard button -> trigger inventory - abstract buttons constants (SDL specific)
 	- click on inventory icon -> enter
 	- click on gun -> space
 	action (right area) -> shift
 	virtual pad
-	multi-touch
 
 texture rendering
 	glColor(1., 0., 0.); niveau 2

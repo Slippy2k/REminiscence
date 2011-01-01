@@ -289,7 +289,7 @@ struct TextureCache {
 		++_gfxTextsCount;
 	}
 
-	void draw(bool menu) {
+	void draw(bool menu, int w, int h) {
 		if (menu) {
 			glColor3f(.7, .7, .7);
 			drawBackground(_title.texId, _title.u, _title.v);
@@ -510,11 +510,14 @@ struct Main {
 	int _state, _nextState;
 	bool _gameInit;
 	bool _menuInit;
+	int _w, _h;
 
 	Main(const char *filePath)
 		: _resData(filePath), _game(_resData) {
 		_state = _nextState = kStateMenu;
 		_gameInit = _menuInit = false;
+		_w = 512;
+		_h = 448;
 	}
 
 	void init() {
@@ -607,13 +610,18 @@ struct Main {
 	}
 
 	void drawFrame(int w, int h) {
+		glEnable(GL_ALPHA_TEST);
+		glEnable(GL_TEXTURE_2D);
+		glViewport(0, 0, w, h);
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		glOrtho(0, w, 0, h, 0, 1);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		glEnable(GL_TEXTURE_2D);
-		_texCache.draw((_state == kStateMenu));
+		glPushMatrix();
+		glScalef(w / 512., h / 448., 1.);
+		_texCache.draw((_state == kStateMenu), w, h);
+		glPopMatrix();
 		++_frameCounter;
 		if ((_frameCounter & 31) == 0) {
 			struct timeval t1;
@@ -675,9 +683,17 @@ static void updateKeyInput(int keyCode, bool pressed, PlayerInput &pi) {
 
 static void updateTouchInput(bool released, int x, int y, PlayerInput &pi) {
 	pi.touch.press = released ? PlayerInput::kTouchUp : PlayerInput::kTouchDown;
-	// TODO: transform x,y if texture not blitted at 0,0
 	pi.touch.x = x;
 	pi.touch.y = y;
+}
+
+static void transformXY(int &x, int &y, int w, int h) {
+	if (w != 0) {
+		x = x * 512 / w;
+	}
+	if (h != 0) {
+		y = y * 448 / h;
+	}
 }
 
 static Main *gMain;
@@ -700,6 +716,7 @@ void stubQueueKeyInput(int keycode, int pressed) {
 }
 
 void stubQueueTouchInput(int num, int x, int y, int released) {
+	transformXY(x, y, gMain->_w, gMain->_h);
 	if (gMain->_game._inventoryOn || gMain->_state == 0 || !gMain->_padInput[num].feed(x, y, released, gMain->_game._pi)) {
 		updateTouchInput(released != 0, x, y, gMain->_game._pi);
 	}
@@ -710,7 +727,8 @@ void stubDoTick() {
 }
 
 void stubInitGL(int w, int h) {
-	glEnable(GL_ALPHA_TEST);
+	gMain->_w = w;
+	gMain->_h = h;
 }
 
 void stubDrawGL(int w, int h) {
