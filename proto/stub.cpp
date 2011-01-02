@@ -300,10 +300,9 @@ struct TextureCache {
 
 	void queueGfxTextDraw(const GfxText *gt) {
 		assert(_gfxTextsCount < ARRAYSIZE(_gfxTextsQueue));
-		const int len = gt->len > 64 ? 64 : gt->len;
 		_gfxTextsQueue[_gfxTextsCount].x = gt->x;
 		_gfxTextsQueue[_gfxTextsCount].y = gt->y;
-		_gfxTextsQueue[_gfxTextsCount].len = len;
+		_gfxTextsQueue[_gfxTextsCount].len = gt->len;
 		_gfxTextsQueue[_gfxTextsCount].dataPtr = gt->data;
 		_gfxTextsQueue[_gfxTextsCount].color = gt->color;
 		++_gfxTextsCount;
@@ -323,9 +322,7 @@ struct TextureCache {
 			for (; i < _gfxImagesCount && !_gfxImagesQueue[i].erase; ++i) {
 				drawGfxImage(i);
 			}
-			glAlphaFunc(GL_EQUAL, 1);
 			drawBackground(_background.texId, _background.u, _background.v);
-			glAlphaFunc(GL_EQUAL, 1);
 			for (; i < _gfxImagesCount; ++i) {
 				drawGfxImage(i);
 			}
