@@ -641,7 +641,7 @@ struct Main {
 static void updateKeyInput(int keyCode, bool pressed, PlayerInput &pi) {
 	switch (keyCode) {
 #ifdef USE_GLES
-	case 82:
+	case 84: // search
 		pi.backspace = true;
 		break;
 #else
