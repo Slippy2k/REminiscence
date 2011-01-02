@@ -195,7 +195,7 @@ static void decodeImageData(const char *name, const uint8_t *ptr) {
 		uint8_t *imageData8 = (uint8_t *)calloc(1, w * h);
 		switch (sig) {
 		case 0xC211:
-			printf("dim %d,%d bounds %d,%d,%d,%d\n", w, h, ptr[0], ptr[1], ptr[2], ptr[3]);
+			printf("dim %d,%d offset %d,%d\n", w, h, (int16_t)READ_BE_UINT16(ptr), (int16_t)READ_BE_UINT16(ptr + 2));
 			decodeC211(ptr + 4, imageData8, w, h);
 			break;
 		case 0xC103:
