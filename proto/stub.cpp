@@ -639,8 +639,12 @@ struct Main {
 };
 
 static void updateKeyInput(int keyCode, bool pressed, PlayerInput &pi) {
-#ifndef USE_GLES
 	switch (keyCode) {
+#ifdef USE_GLES
+	case 82:
+		pi.backspace = true;
+		break;
+#else
 	case SDLK_LEFT:
 		if (!pressed) {
 			pi.dirMask &= ~PlayerInput::kDirectionLeft;
@@ -682,10 +686,8 @@ static void updateKeyInput(int keyCode, bool pressed, PlayerInput &pi) {
 	case SDLK_BACKSPACE:
 		pi.backspace = pressed;
 		break;
-	}
-#else
-	pi.backspace = pressed;
 #endif
+	}
 }
 
 static void updateTouchInput(bool pressed, int x, int y, PlayerInput &pi) {
