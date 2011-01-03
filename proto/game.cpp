@@ -444,14 +444,14 @@ static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, const uint8_t *dat
 }
 
 void Game::drawPiege(LivePGE *pge, int x, int y) {
+	const bool xflip = (pge->flags & 2);
 	DecodeBuffer buf;
 	if (pge->flags & 8) {
 		const uint8_t *dataPtr = _res.getImageData(_res._spc, pge->anim_number);
 		if (!dataPtr) return;
-		initDecodeBuffer(&buf, x, y, dataPtr, false);
-		addImageToGfxList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), false, _eraseBackground, _res._spc, pge->anim_number);
+		initDecodeBuffer(&buf, x, y, dataPtr, xflip);
+		addImageToGfxList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), xflip, _eraseBackground, _res._spc, pge->anim_number);
 	} else {
-		const bool xflip = (pge->flags & 2);
 		if (pge->index == 0) {
 			const int frame = _res.getPersoFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._perso, frame);
