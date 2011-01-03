@@ -82,6 +82,9 @@ amiga version. Copy them to the DATA directory and rename them like this :
 	mod.flashback-teleporta
 	mod.flashback-voyage
 
+To hear voice during in-game dialogues, you'll need to copy the 'VOICE.VCE'
+file from the SegaCD version to the DATA directory.
+
 
 Running:
 --------
@@ -112,9 +115,9 @@ In-game hotkeys :
 Debug hotkeys :
 
     Ctrl F          toggle fast mode
-    Ctrl I          set Conrad life counter to 32767
+    Ctrl I          Conrad 'infinite' life
     Ctrl B          toggle display of updated dirty blocks
-    Ctrl M          mirror mode (just a hack, really)
+    Ctrl M          mirror mode (right - left swapped)
 
 
 Credits:
@@ -122,7 +125,7 @@ Credits:
 
 Delphine Software, obviously, for making another great game.
 Yaz0r, Pixel and gawd for sharing information they gathered on the game.
-Nicolas Bondoux for sound fixes
+Nicolas Bondoux for sound fixes.
 
 
 Contact:
