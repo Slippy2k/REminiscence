@@ -25,6 +25,10 @@ struct MixerChunk {
 	uint8 *data;
 	uint32 len;
 
+	MixerChunk()
+		: data(0), len(0) {
+	}
+
 	int8 getPCM(int offset) const {
 		if (offset < 0) {
 			offset = 0;

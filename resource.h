@@ -129,7 +129,6 @@ struct Resource {
 	uint8 *_pol;
 	uint8 *_cine_off;
 	uint8 *_cine_txt;
-	uint8 *_voiceBuf;
 	char **_extTextsTable;
 	const char **_textsTable;
 	uint8 *_extStringsTable;

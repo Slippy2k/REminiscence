@@ -44,7 +44,6 @@ Resource::~Resource() {
 		free(_sfxList[i].data);
 	}
 	free(_sfxList);
-	free(_voiceBuf);
 }
 
 void Resource::clearLevelRes() {
@@ -815,10 +814,9 @@ void Resource::load_VCE(int num, int segment, uint8 **buf, uint32 *bufSize) {
 			File f;
 			if (f.open("VOICE.VCE", _dataPath, "rb")) {
 				int voiceSize = p[segment] * 2048 / 5;
-				free(_voiceBuf);
-				_voiceBuf = (uint8 *)malloc(voiceSize);
-				if (_voiceBuf) {
-					uint8 *dst = _voiceBuf;
+				uint8 *voiceBuf = (uint8 *)malloc(voiceSize);
+				if (voiceBuf) {
+					uint8 *dst = voiceBuf;
 					offset += 0x2000;
 					for (int s = 0; s < count; ++s) {
 						int len = p[s] * 2048;
@@ -840,7 +838,7 @@ void Resource::load_VCE(int num, int segment, uint8 **buf, uint32 *bufSize) {
 							break;
 						}
 					}
-					*buf = _voiceBuf;
+					*buf = voiceBuf;
 					*bufSize = voiceSize;
 				}
 			}

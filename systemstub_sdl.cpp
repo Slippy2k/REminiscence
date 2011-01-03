@@ -492,11 +492,11 @@ void SystemStub_SDL::startAudio(AudioCallback callback, void *param) {
 	desired.samples = 2048;
 	desired.callback = callback;
 	desired.userdata = param;
-	if (SDL_OpenAudio(&desired, NULL) == 0) {
-		SDL_PauseAudio(0);
-	} else {
-		error("SystemStub_SDL::startAudio() Unable to open sound device");
-	}
+//	if (SDL_OpenAudio(&desired, NULL) == 0) {
+//		SDL_PauseAudio(0);
+//	} else {
+//		error("SystemStub_SDL::startAudio() Unable to open sound device");
+//	}
 }
 
 void SystemStub_SDL::stopAudio() {
