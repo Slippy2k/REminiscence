@@ -1,5 +1,5 @@
 /* REminiscence - Flashback interpreter
- * Copyright (C) 2005-2010 Gregory Montoir
+ * Copyright (C) 2005-2011 Gregory Montoir
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -16,7 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
+#ifdef USE_ZLIB
 #include "zlib.h"
+#endif
 #include "file.h"
 
 
@@ -79,6 +81,7 @@ struct stdFile : File_impl {
 	}
 };
 
+#ifdef USE_ZLIB
 struct zlibFile : File_impl {
 	gzFile _fp;
 	zlibFile() : _fp(0) {}
@@ -125,14 +128,17 @@ struct zlibFile : File_impl {
 		}
 	}
 };
+#endif
 
 
 File::File(bool gzipped) {
+#ifdef USE_ZLIB
 	if (gzipped) {
 		_impl = new zlibFile;
-	} else {
-		_impl = new stdFile;
+		return;
 	}
+#endif
+	_impl = new stdFile;
 }
 
 File::~File() {
