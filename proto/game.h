@@ -17,6 +17,7 @@ struct PlayerInput {
 	bool space;
 	bool shift;
 	bool backspace;
+	bool quit;
 	enum {
 		kTouchNone,
 		kTouchUp,

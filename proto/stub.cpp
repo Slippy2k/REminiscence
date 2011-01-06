@@ -5,6 +5,7 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 #endif
+//#include <windows.h>
 #include <math.h>
 #include <sys/time.h>
 #include "game.h"
@@ -597,6 +598,10 @@ struct Main {
 		for (int i = 0; i < _game._gfxTextsCount; ++i) {
 			_texCache.queueGfxTextDraw(&_game._gfxTextsList[i]);
 		}
+		if (_game._pi.quit) {
+			_game._pi.quit = false;
+			_nextState = kStateMenu;
+		}
 	}
 
 	void drawFrame(int w, int h) {
@@ -638,6 +643,9 @@ struct Main {
 static void updateKeyInput(int keyCode, bool pressed, PlayerInput &pi) {
 	switch (keyCode) {
 #ifdef USE_GLES
+	case 82: // back
+		pi.quit = true;
+		break;
 	case 84: // search
 		pi.backspace = true;
 		break;
@@ -742,6 +750,7 @@ void stubDrawGL(int w, int h) {
 }
 
 extern "C" {
+//DECLSPEC_EXPORT
 	struct Stub g_stub = {
 		stubInit,
 		stubQuit,
