@@ -2,6 +2,9 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 #include <dlfcn.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "stub.h"
 
 static const char *gWindowTitle = "Flashback: The Quest For Identity";
@@ -12,20 +15,63 @@ static const int gTickDuration = 16;
 static const char *gFbSoName = "libfb.so";
 static const char *gFbSoSym = "g_stub";
 
+struct DynLib_posix {
+	void *_dlso;
+
+	DynLib_posix()
+		: _dlso(0) {
+	}
+	~DynLib_posix() {
+		if (_dlso) {
+			dlclose(_dlso);
+			_dlso = 0;
+		}
+	}
+	void *open(const char *name) {
+		_dlso = dlopen(name, RTLD_NOW);
+		return _dlso;
+	}
+	void *getSymbol(const char *name) {
+		return dlsym(_dlso, name);
+	}
+};
+#ifdef _WIN32
+struct DynLib_win32 {
+	HINSTANCE _dlso;
+
+	DynLib_win32()
+		: _dlso(0) {
+	}
+	~DynLib_win32() {
+		if (_dlso) {
+			FreeLibrary(_dlso);
+			_dlso = 0;
+		}
+	}
+	void *open(const char *name) {
+		_dlso = LoadLibrary(name);
+		return _dlso;
+	}
+	void *getSymbol(const char *name) {
+		return (void *)GetProcAddress(_dlso, name);
+	}
+}
+#endif
+
 int main(int argc, char *argv[]) {
 	if (argc < 2) {
 		fprintf(stderr, "%s datafile level\n", argv[0]);
 		return 0;
 	}
-	void *dlFbSo = dlopen(gFbSoName, RTLD_NOW);
-	if (!dlFbSo) {
+	DynLib_posix dl;
+	dl.open(gFbSoName);
+	if (!dl._dlso) {
 		fprintf(stderr, "unable to open '%s'\n", gFbSoName);
 		return 0;
 	}
-	Stub *stub = (struct Stub *)dlsym(dlFbSo, gFbSoSym);
+	Stub *stub = (struct Stub *)dl.getSymbol(gFbSoSym);
 	if (!stub) {
 		fprintf(stderr, "unable to lookup symbol '%s'\n", gFbSoSym);
-		dlclose(dlFbSo);
 		return 0;
 	}
 	SDL_Init(SDL_INIT_VIDEO);
@@ -74,7 +120,6 @@ int main(int argc, char *argv[]) {
 		SDL_GL_SwapBuffers();
 		SDL_Delay(gTickDuration);
 	}
-	dlclose(dlFbSo);
 	return 0;
 }
 

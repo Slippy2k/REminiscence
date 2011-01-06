@@ -21,11 +21,10 @@ struct File {
 	int tell();
 	void read(void *ptr, uint32_t len);
 	uint8_t readByte();
-	uint16_t readUint16LE();
-	uint32_t readUint32LE();
 	uint16_t readUint16BE();
 	uint32_t readUint32BE();
-	void write(void *ptr, uint32_t len);
+	void write(void *ptr, size_t len);
+	void writeUint32BE(uint32_t val);
 };
 
 #endif

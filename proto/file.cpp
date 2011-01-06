@@ -113,18 +113,6 @@ uint8_t File::readByte() {
 	return b;
 }
 
-uint16_t File::readUint16LE() {
-	uint8_t lo = readByte();
-	uint8_t hi = readByte();
-	return (hi << 8) | lo;
-}
-
-uint32_t File::readUint32LE() {
-	uint16_t lo = readUint16LE();
-	uint16_t hi = readUint16LE();
-	return (hi << 16) | lo;
-}
-
 uint16_t File::readUint16BE() {
 	uint8_t hi = readByte();
 	uint8_t lo = readByte();
@@ -139,5 +127,13 @@ uint32_t File::readUint32BE() {
 
 void File::write(void *ptr, uint32_t len) {
 	_impl->write(ptr, len);
+}
+
+void File::writeUint32BE(uint32_t value) {
+	unsigned char buf[4];
+	for (int i = 0; i < 4; ++i) {
+		buf[i] = (value >> (3 - i) * 8) & 255;
+	}
+	write(buf, sizeof(buf));
 }
 
