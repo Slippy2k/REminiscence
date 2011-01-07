@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <zlib.h>
 #include "file.h"
 
 struct File_impl {
@@ -68,9 +69,66 @@ struct stdFile : File_impl {
 	}
 };
 
+struct zlibFile : File_impl {
+	gzFile _fp;
+	zlibFile() : _fp(0) {}
+	bool open(const char *path, const char *mode) {
+		_ioErr = false;
+		_fp = gzopen(path, mode);
+		return (_fp != 0);
+	}
+	void close() {
+		if (_fp) {
+			gzclose(_fp);
+			_fp = 0;
+		}
+	}
+	uint32_t size() {
+		uint32_t sz = 0;
+		if (_fp) {
+			int pos = gztell(_fp);
+			gzseek(_fp, 0, SEEK_END);
+			sz = gztell(_fp);
+			gzseek(_fp, pos, SEEK_SET);
+		}
+		return sz;
+	}
+	void seek(int off, int whence) {
+		if (_fp) {
+			gzseek(_fp, off, whence);
+		}
+	}
+	int tell() {
+		int pos = 0;
+		if (_fp) {
+			pos = gztell(_fp);
+		}
+		return pos;
+	}
+	void read(void *ptr, uint32_t len) {
+		if (_fp) {
+			uint32_t r = gzread(_fp, ptr, len);
+			if (r != len) {
+				_ioErr = true;
+			}
+		}
+	}
+	void write(void *ptr, uint32_t len) {
+		if (_fp) {
+			uint32_t r = gzwrite(_fp, ptr, len);
+			if (r != len) {
+				_ioErr = true;
+			}
+		}
+	}
+};
 
-File::File() {
-	_impl = new stdFile;
+File::File(bool zlib) {
+	if (zlib) {
+		_impl = new zlibFile;
+	} else {
+		_impl = new stdFile;
+	}
 }
 
 File::~File() {
@@ -78,7 +136,7 @@ File::~File() {
 	delete _impl;
 }
 
-bool File::open(const char *filepath, const char *mode) {	
+bool File::open(const char *filepath, const char *mode)	{
 	_impl->close();
 	return _impl->open(filepath, mode);
 }
@@ -129,11 +187,17 @@ void File::write(void *ptr, uint32_t len) {
 	_impl->write(ptr, len);
 }
 
-void File::writeUint32BE(uint32_t value) {
-	unsigned char buf[4];
-	for (int i = 0; i < 4; ++i) {
-		buf[i] = (value >> (3 - i) * 8) & 255;
-	}
+void File::writeByte(uint8_t val) {
+	write(&val, sizeof(val));
+}
+
+void File::writeUint16BE(uint16_t val) {
+	uint8_t buf[2] = { (val >> 8) & 255, val & 255 };
+	write(buf, sizeof(buf));
+}
+
+void File::writeUint32BE(uint32_t val) {
+	uint8_t buf[4] = { (val >> 24) & 255, (val >> 16) & 255, (val >> 8) & 255, val & 255 };
 	write(buf, sizeof(buf));
 }
 

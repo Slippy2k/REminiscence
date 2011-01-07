@@ -8,8 +8,12 @@
 #include <assert.h>
 #include <stdint.h>
 
+#ifndef MAX
 #define MAX(x,y) ((x)>(y)?(x):(y))
+#endif
+#ifndef MIN
 #define MIN(x,y) ((x)<(y)?(x):(y))
+#endif
 #define ARRAYSIZE(a) (sizeof(a)/sizeof(a[0]))
 
 typedef uint8_t uint8;

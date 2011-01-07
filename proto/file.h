@@ -10,7 +10,7 @@ struct File_impl;
 struct File {
 	File_impl *_impl;
 
-	File();
+	File(bool zlib = false);
 	~File();
 
 	bool open(const char *filepath, const char *mode);
@@ -24,6 +24,8 @@ struct File {
 	uint16_t readUint16BE();
 	uint32_t readUint32BE();
 	void write(void *ptr, size_t len);
+	void writeByte(uint8_t val);
+	void writeUint16BE(uint16_t val);
 	void writeUint32BE(uint32_t val);
 };
 

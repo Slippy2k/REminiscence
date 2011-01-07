@@ -398,6 +398,11 @@ struct Game {
 	// input
 	uint8 _inp_lastKeysHit;
 	uint8 _inp_lastKeysHitLeftRight;
+
+
+	// saveload
+	void saveState();
+	void loadState();
 };
 
 #endif // GAME_H__

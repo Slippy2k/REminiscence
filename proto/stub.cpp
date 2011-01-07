@@ -521,6 +521,14 @@ struct Main {
 		_texCache.createTextureFont(_resData);
 	}
 
+	void quit() {
+		if (_state == kStateGame) {
+			if (!_game._inventoryOn && !_game._gameOver) {
+				_game.saveState();
+			}
+		}
+	}
+
 	void doTick() {
 		if (_state != _nextState) {
 			_gameInit = _menuInit = false;
@@ -537,6 +545,8 @@ struct Main {
 		case kStateGame:
 			if (!_gameInit) {
 				_game.initGame();
+				_game.loadState();
+				_game.resetGameState();
 				_gameInit = true;
 			}
 			doGameTick();
@@ -721,6 +731,7 @@ void stubInit(const char *filePath, int level) {
 }
 
 void stubQuit() {
+	gMain->quit();
 	delete gMain;
 	gMain = 0;
 }

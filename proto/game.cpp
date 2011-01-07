@@ -70,7 +70,6 @@ void Game::initGame() {
 //	_vid._unkPalSlot2 = 0;
 	_score = 0;
 	loadLevelData();
-	resetGameState();
 }
 
 void Game::doHotspots() {
@@ -562,7 +561,6 @@ void Game::loadLevelData() {
 		}
 	}
 	pge_resetGroups();
-//	_validSaveState = false;
 }
 
 void Game::drawIcon(uint8 iconNum, int x, int y) {
