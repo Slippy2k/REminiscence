@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <string.h>
 #include <zlib.h>
 #include "file.h"
 
@@ -123,26 +124,30 @@ struct zlibFile : File_impl {
 	}
 };
 
-File::File(bool zlib) {
-	if (zlib) {
+File::File()
+	: _impl(0) {
+}
+
+File::~File() {
+	close();
+	delete _impl;
+}
+
+bool File::open(const char *filepath, const char *mode, const char *extmode) {
+	close();
+	delete _impl;
+	if (extmode && strcmp(extmode, "z") == 0) {
 		_impl = new zlibFile;
 	} else {
 		_impl = new stdFile;
 	}
-}
-
-File::~File() {
-	_impl->close();
-	delete _impl;
-}
-
-bool File::open(const char *filepath, const char *mode)	{
-	_impl->close();
 	return _impl->open(filepath, mode);
 }
 
 void File::close() {
-	_impl->close();
+	if (_impl) {
+		_impl->close();
+	}
 }
 
 bool File::ioErr() const {

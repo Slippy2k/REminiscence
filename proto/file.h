@@ -10,10 +10,10 @@ struct File_impl;
 struct File {
 	File_impl *_impl;
 
-	File(bool zlib = false);
+	File();
 	~File();
 
-	bool open(const char *filepath, const char *mode);
+	bool open(const char *filepath, const char *mode, const char *extmode = 0);
 	void close();
 	bool ioErr() const;
 	uint32_t size();

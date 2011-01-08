@@ -79,8 +79,9 @@ int main(int argc, char *argv[]) {
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_SetVideoMode(gWindowW, gWindowH, 0, SDL_OPENGL | SDL_RESIZABLE);
 	SDL_WM_SetCaption(gWindowTitle, 0);
+	const char *saveDirectory = ".";
 	const int level = (argc >= 3) ? atoi(argv[2]) : -1;
-	stub->init(argv[1], level);
+	stub->init(argv[1], saveDirectory, level);
 	stub->initGL(gWindowW, gWindowH);
 	bool quitGame = false;
 	while (!quitGame) {

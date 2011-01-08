@@ -503,8 +503,8 @@ struct Main {
 	bool _menuInit;
 	int _w, _h;
 
-	Main(const char *filePath)
-		: _resData(filePath), _game(_resData) {
+	Main(const char *filePath, const char *savePath)
+		: _resData(filePath), _game(_resData, savePath) {
 		_state = _nextState = kStateMenu;
 		_gameInit = _menuInit = false;
 		_w = kW;
@@ -722,8 +722,8 @@ static void transformXY(int &x, int &y, int w, int h) {
 
 static Main *gMain;
 
-void stubInit(const char *filePath, int level) {
-	gMain = new Main(filePath);
+void stubInit(const char *filePath, const char *savePath, int level) {
+	gMain = new Main(filePath, savePath);
 	if (level != -1) {
 		gMain->_game._currentLevel = level;
 	}

@@ -4,8 +4,8 @@
 #include "util.h"
 
 
-Game::Game(ResourceData &res)
-	: _res(res) {
+Game::Game(ResourceData &res, const char *savePath)
+	: _res(res), _saveDirectory(savePath) {
 	_randSeed = time(0);
 	_skillLevel = 1;
 	_currentLevel = 0;

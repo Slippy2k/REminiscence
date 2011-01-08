@@ -5,11 +5,19 @@
 
 static const uint32_t kPtr0 = 0xFFFFFFFF;
 
+bool Game::openStateFile(File &f, char rw) {
+	if (_saveDirectory) {
+		char path[MAXPATHLEN];
+		snprintf(path, sizeof(path), "%s/fb%d.state.z", _saveDirectory, _currentLevel);
+		const char mode[3] = { rw, 'b', 0 };
+		return f.open(path, mode, "z");
+	}
+	return false;
+}
+
 void Game::saveState() {
-	char path[MAXPATHLEN];
-	snprintf(path, sizeof(path), "fb%d.state.z", _currentLevel);
-	File f(true);
-	if (!f.open(path, "wb")) {
+	File f;
+	if (!openStateFile(f, 'w')) {
 		return;
 	}
 	f.writeByte(_skillLevel);
@@ -46,10 +54,8 @@ void Game::saveState() {
 }
 
 void Game::loadState() {
-	char path[MAXPATHLEN];
-	snprintf(path, sizeof(path), "fb%d.state.z", _currentLevel);
-	File f(true);
-	if (!f.open(path, "rb")) {
+	File f;
+	if (!openStateFile(f, 'r')) {
 		return;
 	}
 	_skillLevel = f.readByte();

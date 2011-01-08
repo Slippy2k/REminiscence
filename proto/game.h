@@ -131,7 +131,7 @@ struct Game {
 	uint16_t _cutDeathCutsceneId;
 	bool _gameOver;
 
-	Game(ResourceData &);
+	Game(ResourceData &, const char *savePath);
 	~Game();
 
 	void resetGameState();
@@ -401,6 +401,9 @@ struct Game {
 
 
 	// saveload
+	const char *_saveDirectory;
+
+	bool openStateFile(File &, char rw);
 	void saveState();
 	void loadState();
 };
