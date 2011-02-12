@@ -22,8 +22,7 @@ with english, french, german and spanish versions of the game.
 Compiling:
 ----------
 
-Tweak the Makefile if needed and type make (only gcc3 has been tested so far).
-The SDL and zlib libraries are required.
+Update the defines in the Makefile if needed. The SDL and zlib libraries are required.
 
 
 Data Files:
