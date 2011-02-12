@@ -291,11 +291,11 @@ void Game::drawCurrentInventoryItem() {
 
 void Game::showFinalScore() {
 	playCutscene(0x49);
-	char textBuf[50];
-	sprintf(textBuf, "SCORE %08u", _score);
-	_vid.drawString(textBuf, (256 - strlen(textBuf) * 8) / 2, 40, 0xE5);
-	strcpy(textBuf, _menu._passwords[7][_skillLevel]);
-	_vid.drawString(textBuf, (256 - strlen(textBuf) * 8) / 2, 16, 0xE7);
+	char buf[50];
+	snprintf(buf, sizeof(buf), "SCORE %08u", _score);
+	_vid.drawString(buf, (256 - strlen(buf) * 8) / 2, 40, 0xE5);
+	strcpy(buf, _menu._passwords[7][_skillLevel]);
+	_vid.drawString(buf, (256 - strlen(buf) * 8) / 2, 16, 0xE7);
 	while (!_stub->_pi.quit) {
 		_stub->copyRect(0, 0, Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._frontLayer, 256);
 		_stub->updateScreen(0);
@@ -353,9 +353,9 @@ bool Game::handleConfigPanel() {
 		_menu.drawString(_res.getMenuString(LocaleData::LI_20_LOAD_GAME), y + 4, 9, colors[1]);
 		_menu.drawString(_res.getMenuString(LocaleData::LI_21_SAVE_GAME), y + 6, 9, colors[2]);
 		_menu.drawString(_res.getMenuString(LocaleData::LI_19_ABORT_GAME), y + 8, 9, colors[3]);
-		char slotItem[30];
-		sprintf(slotItem, "%s : %d-%02d", _res.getMenuString(LocaleData::LI_22_SAVE_SLOT), _currentLevel + 1, _stateSlot);
-		_menu.drawString(slotItem, y + 10, 9, 1);
+		char buf[30];
+		snprintf(buf, sizeof(buf), "%s : %d-%02d", _res.getMenuString(LocaleData::LI_22_SAVE_SLOT), _currentLevel + 1, _stateSlot);
+		_menu.drawString(buf, y + 10, 9, 1);
 
 		_vid.updateScreen();
 		_stub->sleep(80);
@@ -406,7 +406,6 @@ bool Game::handleConfigPanel() {
 
 bool Game::handleContinueAbort() {
 	playCutscene(0x48);
-	char textBuf[50];
 	int timeout = 100;
 	int current_color = 0;
 	uint8 colors[] = { 0xE4, 0xE5 };
@@ -419,14 +418,15 @@ bool Game::handleContinueAbort() {
 		str = _res.getMenuString(LocaleData::LI_01_CONTINUE_OR_ABORT);
 		_vid.drawString(str, (256 - strlen(str) * 8) / 2, 64, 0xE3);
 		str = _res.getMenuString(LocaleData::LI_02_TIME);
-		sprintf(textBuf, "%s : %d", str, timeout / 10);
-		_vid.drawString(textBuf, 96, 88, 0xE3);
+		char buf[50];
+		snprintf(buf, sizeof(buf), "%s : %d", str, timeout / 10);
+		_vid.drawString(buf, 96, 88, 0xE3);
 		str = _res.getMenuString(LocaleData::LI_03_CONTINUE);
 		_vid.drawString(str, (256 - strlen(str) * 8) / 2, 104, colors[0]);
 		str = _res.getMenuString(LocaleData::LI_04_ABORT);
 		_vid.drawString(str, (256 - strlen(str) * 8) / 2, 112, colors[1]);
-		sprintf(textBuf, "SCORE  %08u", _score);
-		_vid.drawString(textBuf, 64, 154, 0xE3);
+		snprintf(buf, sizeof(buf), "SCORE  %08u", _score);
+		_vid.drawString(buf, 64, 154, 0xE3);
 		if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
 			_stub->_pi.dirMask &= ~PlayerInput::DIR_UP;
 			if (current_color > 0) {
@@ -497,9 +497,9 @@ bool Game::handleProtectionScreen() {
 		codeText[len] = '\0';
 		memcpy(_vid._frontLayer, _vid._tempLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
 		_menu.drawString("PROTECTION", 2, 11, 5);
-		char textBuf[20];
-		sprintf(textBuf, "CODE %d :  %s", codeNum + 1, codeText);
-		_menu.drawString(textBuf, 23, 8, 5);
+		char buf[20];
+		snprintf(buf, sizeof(buf), "CODE %d :  %s", codeNum + 1, codeText);
+		_menu.drawString(buf, 23, 8, 5);
 		_vid.updateScreen();
 		_stub->sleep(50);
 		_stub->processEvents();
@@ -553,7 +553,7 @@ void Game::printLevelCode() {
 		--_printLevelCodeCounter;
 		if (_printLevelCodeCounter != 0) {
 			char levelCode[50];
-			sprintf(levelCode, "CODE: %s", _menu._passwords[_currentLevel][_skillLevel]);
+			snprintf(levelCode, sizeof(levelCode), "CODE: %s", _menu._passwords[_currentLevel][_skillLevel]);
 			_vid.drawString(levelCode, (Video::GAMESCREEN_W - strlen(levelCode) * 8) / 2, 16, 0xE7);
 		}
 	}
@@ -1286,9 +1286,9 @@ void Game::handleInventory() {
 						const char *str = (const char *)_res._tbn + READ_LE_UINT16(_res._tbn + txt_num * 2);
 						_vid.drawString(str, (256 - strlen(str) * 8) / 2, 189, 0xED);
 						if (items[item_it].init_pge->init_flags & 4) {
-							char counterValue[10];
-							sprintf(counterValue, "%d", selected_pge->life);
-							_vid.drawString(counterValue, (256 - strlen(counterValue) * 8) / 2, 197, 0xED);
+							char buf[10];
+							snprintf(buf, sizeof(buf), "%d", selected_pge->life);
+							_vid.drawString(buf, (256 - strlen(buf) * 8) / 2, 197, 0xED);
 						}
 					}
 					icon_x_pos += 32;
@@ -1300,11 +1300,11 @@ void Game::handleInventory() {
 					drawIcon(0x4D, 120, 143, 0xA); // up arrow
 				}
 			} else {
-				char textBuf[50];
-				sprintf(textBuf, "SCORE %08u", _score);
-				_vid.drawString(textBuf, (114 - strlen(textBuf) * 8) / 2 + 72, 158, 0xE5);
-				sprintf(textBuf, "%s:%s", _res.getMenuString(LocaleData::LI_06_LEVEL), _res.getMenuString(LocaleData::LI_13_EASY + _skillLevel));
-				_vid.drawString(textBuf, (114 - strlen(textBuf) * 8) / 2 + 72, 166, 0xE5);
+				char buf[50];
+				snprintf(buf, sizeof(buf), "SCORE %08u", _score);
+				_vid.drawString(buf, (114 - strlen(buf) * 8) / 2 + 72, 158, 0xE5);
+				snprintf(buf, sizeof(buf), "%s:%s", _res.getMenuString(LocaleData::LI_06_LEVEL), _res.getMenuString(LocaleData::LI_13_EASY + _skillLevel));
+				_vid.drawString(buf, (114 - strlen(buf) * 8) / 2 + 72, 166, 0xE5);
 			}
 
 			_vid.updateScreen();
