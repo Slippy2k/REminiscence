@@ -452,6 +452,7 @@ void Game::drawPiege(LivePGE *pge, int x, int y) {
 		addImageToGfxList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), xflip, _eraseBackground, _res._spc, pge->anim_number);
 	} else {
 		if (pge->index == 0) {
+			if (pge->anim_number == 0x386) return;
 			const int frame = _res.getPersoFrame(pge->anim_number);
 			const uint8_t *dataPtr = _res.getImageData(_res._perso, frame);
 			if (!dataPtr) return;
