@@ -38,7 +38,7 @@ void error(const char *msg, ...) {
 	char buf[1024];
 	va_list va;
 	va_start(va, msg);
-	vsprintf(buf, msg, va);
+	vsnprintf(buf, sizeof(buf), msg, va);
 	va_end(va);
 	fprintf(stderr, "ERROR: %s!\n", buf);
 	exit(-1);
@@ -48,7 +48,7 @@ void warning(const char *msg, ...) {
 	char buf[1024];
 	va_list va;
 	va_start(va, msg);
-	vsprintf(buf, msg, va);
+	vsnprintf(buf, sizeof(buf), msg, va);
 	va_end(va);
 	fprintf(stderr, "WARNING: %s!\n", buf);
 }
