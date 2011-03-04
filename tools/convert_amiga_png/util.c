@@ -5,6 +5,17 @@
 #include <assert.h>
 #include <png.h>
 
+void fill_image_data(unsigned char *image_data, int x, int y, int w, int h, unsigned char color) {
+	static const int pitch = 256;
+	int i;
+
+	image_data += y * pitch + x;
+	for (i = 0; i < h; ++i) {
+		memset(image_data, color, w);
+		image_data += pitch;
+	}
+}
+
 void write_png_image_data(const char *file_path, const unsigned char *image_data, const unsigned char *image_clut, int w, int h) {
 	int x, y, x_offset;
 	FILE *fp;

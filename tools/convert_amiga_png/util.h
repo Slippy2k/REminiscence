@@ -2,6 +2,7 @@
 #ifndef UTIL_H__
 #define UTIL_H__
 
+void fill_image_data(unsigned char *image_data, int x, int y, int w, int h, unsigned char color);
 void write_png_image_data(const char *file_path, const unsigned char *image_data, const unsigned char *image_clut, int w, int h);
 
 int _file_size;
