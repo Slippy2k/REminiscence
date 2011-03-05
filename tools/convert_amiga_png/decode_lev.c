@@ -26,10 +26,10 @@ static void print_lev_hdr(int room, const unsigned char *p, int size) {
 }
 
 static void blit_sgd(unsigned char *dst, int x, int y, int w, int h, unsigned char *src, unsigned char *mask, int size) {
-	int i, j, c;
+	int i, j, color;
 	int planar_size;
 
-//	printf("blit_sgd pos %d,%d dim %d,%d size %d\n", x, y, w, h, size);
+	printf("blit_sgd pos %d,%d dim %d,%d size %d\n", x, y, w, h, size);
 
 	++w;
 	++h;
@@ -44,14 +44,14 @@ static void blit_sgd(unsigned char *dst, int x, int y, int w, int h, unsigned ch
 		for (x = 0; x < w * 2; ++x) {
 			for (i = 0; i < 8; ++i) {
 				const int c_mask = 1 << (7 - i);
-				c = 0;
+				color = 0;
 				for (j = 0; j < 4; ++j) {
-					if (*src & mask[j * planar_size] & c_mask) {
-						c |= 1 << j;
+					if (mask[j * planar_size] & c_mask) {
+						color |= 1 << j;
 					}
 				}
-				if (c != 0) {
-					dst[8 * x + i] = c;
+				if (*src & c_mask) {
+					dst[8 * x + i] = color;
 				}
 			}
 			++src;
@@ -409,7 +409,7 @@ static void loadLevelMapHelper() {
 }
 
 static void loadSGD(unsigned char *a1) {
-	int d4, d3, d2, d1, d0, i;
+	int d4, d3, d2, d1, d0, i, len;
 	unsigned char *a2, *a3, *a4, *a5, *a0;
 
 //	word_2A31A = 1;
@@ -435,14 +435,17 @@ printf("loadSGD _sgdLoopCount %d\n", _sgdLoopCount );
 					for (i = 0; i < d3; ++i) {
 						a2[i] = a4[i];
 					}
-					a0 = _sgdDecodeBuf;	
+					a0 = _sgdDecodeBuf;
+					len = d3;
+					printf("SGD %d len %d\n", _sgdDecodeLen, len);
 				}
 			} else {
 				a4 += d3;
 				if (_sgdDecodeLen != d2) {
 					_sgdDecodeLen = d2;
 					a5 = _sgdDecodeBuf;
-					copySGD(a4, a5);
+					len = copySGD(a4, a5);
+					printf("SGD %d len %d\n", _sgdDecodeLen, len);
 				}
 			}
 			a0 = _sgdDecodeBuf;
@@ -456,6 +459,7 @@ printf("loadSGD _sgdLoopCount %d\n", _sgdLoopCount );
 			a5 = a0 + 4; // src
 			d4 = movew(a0 + 2);
 			a2 = a0 + d4 + 4; // mask
+			assert(len == d4 * 5 + 4);
 			blit_sgd(_roomBitmapBuf, (short)d0, (short)d1, d2, d3, a5, a2, d4);
 		}
 		--_sgdLoopCount;
