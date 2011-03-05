@@ -643,6 +643,14 @@ static const char *mbk_names[] = {
 	"level1.mbk", "level2.MBK", "dt.MBK", "level3_1.mbk", "level3_1.mbk", "level4_1.MBK", "level4_2.mbk"
 };
 
+static const char *spc_names[] = {
+	"level1.spc", "level2.spc", "dt.spc", "level3_1.spc", "level3_1.spc", "level4_1.spc", "level4_2.spc"
+};
+
+static const char *rpc_names[] = {
+	"level1.rpc", "level2.rpc", "dt.rpc", "level3_1.rpc", "level3_1.rpc", "level4_1.rpc", "level4_2.rpc"
+};
+
 static const char *sgd_name = "level1.sgd";
 
 int main(int argc, char *argv[]) {
@@ -668,10 +676,13 @@ int main(int argc, char *argv[]) {
 		} else if (strstr(argv[1], ".spm")) {
 			unsigned char *ptr = load_file(argv[1]);
 			decode_spm(argv[1], ptr, _file_size);
+		} else if (strstr(argv[1], ".spc")) {
+			unsigned char *spc_data = load_file(argv[1]);
+			// load .rpc .mbk
+			// lookup from .spc
+			decode_spc(spc_data, _file_size);
 		} else if (strstr(argv[1], "flashback")) {
 			unsigned char *ptr = load_file(argv[1]);
-			int i;
-
 			printf("spmDataOffsets[1278] = {\n\t");
 			for (i = 0; i < 1278; ++i) {
 				printf("0x%05X, ", movel(ptr + 0x2ABD8 + i * 4) );
