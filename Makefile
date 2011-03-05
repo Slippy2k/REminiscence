@@ -7,7 +7,7 @@ DEFINES = -DBYPASS_PROTECTION
 
 CXX = g++
 CXXFLAGS := -g -O -Wall -Wuninitialized -Wshadow -Wimplicit -Wundef -Wreorder -Wnon-virtual-dtor -Wno-multichar
-CXXFLAGS += $(SDL_CFLAGS) -DUSE_ZLIB $(DEFINES)
+CXXFLAGS += -MMD $(SDL_CFLAGS) -DUSE_ZLIB $(DEFINES)
 
 SRCS = collision.cpp cutscene.cpp file.cpp game.cpp graphics.cpp main.cpp menu.cpp \
 	mixer.cpp mod_player.cpp piege.cpp resource.cpp scaler.cpp sfx_player.cpp \
@@ -16,11 +16,10 @@ SRCS = collision.cpp cutscene.cpp file.cpp game.cpp graphics.cpp main.cpp menu.c
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)
 
+-include Makefile.local
+
 rs: $(OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(SDL_LIBS) -lz
-
-.cpp.o:
-	$(CXX) $(CXXFLAGS) -MMD -c $< -o $*.o
 
 clean:
 	rm -f *.o *.d
