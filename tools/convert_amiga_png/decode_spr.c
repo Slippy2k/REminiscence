@@ -44,7 +44,7 @@ void decode_spr(unsigned char *data, int data_size) {
 		count = w * h * 8 + 4;
 		printf("icon %dx%d count %d (%d,%d)\n", w, h, count, data[0], data[1]);
 		decode_icon_spr(w, h, data + 2);
-		snprintf(name, sizeof(name), "spr%02d.png", i);
+		snprintf(name, sizeof(name), "DUMP/spr%02d.png", i);
 		write_png_image_data(name, iconData16, pal, 16, h);
 		data += count;
 		data_size -= count + 2;

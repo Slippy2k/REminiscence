@@ -25,14 +25,16 @@ static void print_lev_hdr(int room, const unsigned char *p, int size) {
 	printf("\n");
 }
 
-static void blitBitmapBlock(unsigned char *dst, int x, int y, int w, int h, unsigned char *src, unsigned char *mask, int size) {
+static void blit_sgd(unsigned char *dst, int x, int y, int w, int h, unsigned char *src, unsigned char *mask, int size) {
 	int i, j, c;
 	int planar_size;
+
+//	printf("blit_sgd pos %d,%d dim %d,%d size %d\n", x, y, w, h, size);
 
 	++w;
 	++h;
 	planar_size = w * 2 * h;
-	if (planar_size != size) printf("planar_size %d size %d\n", planar_size, size);
+	assert(planar_size == size);
 
 	if (x < 0 || y < 0) return; /* TODO */
 
@@ -44,11 +46,13 @@ static void blitBitmapBlock(unsigned char *dst, int x, int y, int w, int h, unsi
 				const int c_mask = 1 << (7 - i);
 				c = 0;
 				for (j = 0; j < 4; ++j) {
-					if (src[j * planar_size] & mask[j * planar_size] & c_mask) {
+					if (*src & mask[j * planar_size] & c_mask) {
 						c |= 1 << j;
 					}
 				}
-				dst[8 * x + i] = c;
+				if (c != 0) {
+					dst[8 * x + i] = c;
+				}
 			}
 			++src;
 			++mask;
@@ -172,8 +176,8 @@ static void blit_mask_not_1v_8x8(unsigned char *dst, int x, int y, unsigned char
 	}
 }
 
-static void copySGD(unsigned char *a4, unsigned char *a5) {
-	const unsigned char *a6;
+int copySGD(unsigned char *a4, unsigned char *a5) {
+	const unsigned char *a6, *a5_start = a5;
 	int d6, i;
 
 	d6 = movew(a4); a4 += 2;
@@ -193,6 +197,8 @@ static void copySGD(unsigned char *a4, unsigned char *a5) {
 			++a4;
 		}
 	} while (a4 < a6);
+	assert(a4 == a6);
+	return a5 - a5_start;
 }
 
 static int _sgdLoopCount, _sgdDecodeLen, _sgdRoomBuf;
@@ -450,7 +456,7 @@ printf("loadSGD _sgdLoopCount %d\n", _sgdLoopCount );
 			a5 = a0 + 4; // src
 			d4 = movew(a0 + 2);
 			a2 = a0 + d4 + 4; // mask
-			blitBitmapBlock(_roomBitmapBuf, (short)d0, (short)d1, d2, d3, a5, a2, d4);
+			blit_sgd(_roomBitmapBuf, (short)d0, (short)d1, d2, d3, a5, a2, d4);
 		}
 		--_sgdLoopCount;
 	} while (_sgdLoopCount >= 0);
@@ -565,6 +571,9 @@ printf("pal %d %d %d\n", d1, movew(a0), movew(a0 + 2));
 		d1 = movew(a0); a0 += 2;
 	}
 	assert(d1 >= 0 && d1 < 6);
+if (_currentLevel == 0) {
+	d1 = 0;
+}
 	a3 = pal + d1 * 32;
 	for (i = 0; i < 16; ++i) {
 		d2 = movew(a3); a3 += 2;
@@ -577,7 +586,9 @@ printf("pal %d %d %d\n", d1, movew(a0), movew(a0 + 2));
 		fill_image_data(_roomBitmapBuf, i * 8, 6, 8, 4, 16 + i);
 	}
 #endif
+if (_currentLevel != 0) {
 	_roomPalBuf[0] = _roomPalBuf[1] = _roomPalBuf[2] = 0;
+}
 	snprintf(name, sizeof(name), "DUMP/level_%d_room_%02d.png", level, room);
 	write_png_image_data(name, _roomBitmapBuf, _roomPalBuf, 256, 224);
 }
@@ -656,7 +667,18 @@ int main(int argc, char *argv[]) {
 			decode_spr(ptr, _file_size);
 		} else if (strstr(argv[1], ".spm")) {
 			unsigned char *ptr = load_file(argv[1]);
-			decode_spm(ptr, _file_size);
+			decode_spm(argv[1], ptr, _file_size);
+		} else if (strstr(argv[1], "flashback")) {
+			unsigned char *ptr = load_file(argv[1]);
+			int i;
+
+			printf("spmDataOffsets[1278] = {\n\t");
+			for (i = 0; i < 1278; ++i) {
+				printf("0x%05X, ", movel(ptr + 0x2ABD8 + i * 4) );
+				if ((i & 7) == 7) {
+					printf("\n\t");
+				}
+			}
 		}
 	} else if (argc == 3) {
 		i = atoi(argv[2]);
