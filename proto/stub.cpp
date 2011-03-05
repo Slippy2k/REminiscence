@@ -5,7 +5,12 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 #endif
-//#include <windows.h>
+#ifdef _WIN32
+#include <windows.h>
+#define DYNLIB_SYMBOL DECLSPEC_EXPORT
+#else
+#define DYNLIB_SYMBOL
+#endif
 #include <math.h>
 #include <sys/time.h>
 #include "game.h"
@@ -761,8 +766,7 @@ void stubDrawGL(int w, int h) {
 }
 
 extern "C" {
-//DECLSPEC_EXPORT
-	struct Stub g_stub = {
+	DYNLIB_SYMBOL struct Stub g_stub = {
 		stubInit,
 		stubQuit,
 		stubQueueKeyInput,

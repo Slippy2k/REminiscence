@@ -1,9 +1,10 @@
 
 #include <SDL.h>
 #include <SDL_opengl.h>
-#include <dlfcn.h>
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <dlfcn.h>
 #endif
 #include "stub.h"
 
@@ -15,13 +16,35 @@ static const int gTickDuration = 16;
 static const char *gFbSoName = "libfb.so";
 static const char *gFbSoSym = "g_stub";
 
-struct DynLib_posix {
-	void *_dlso;
+#ifdef _WIN32
+struct DynLib_impl {
+	HINSTANCE _dlso;
 
-	DynLib_posix()
+	DynLib_impl()
 		: _dlso(0) {
 	}
-	~DynLib_posix() {
+	~DynLib_impl() {
+		if (_dlso) {
+			FreeLibrary(_dlso);
+			_dlso = 0;
+		}
+	}
+	void *open(const char *name) {
+		_dlso = LoadLibrary(name);
+		return _dlso;
+	}
+	void *getSymbol(const char *name) {
+		return (void *)GetProcAddress(_dlso, name);
+	}
+};
+#else
+struct DynLib_impl {
+	void *_dlso;
+
+	DynLib_impl()
+		: _dlso(0) {
+	}
+	~DynLib_impl() {
 		if (_dlso) {
 			dlclose(_dlso);
 			_dlso = 0;
@@ -35,27 +58,6 @@ struct DynLib_posix {
 		return dlsym(_dlso, name);
 	}
 };
-#ifdef _WIN32
-struct DynLib_win32 {
-	HINSTANCE _dlso;
-
-	DynLib_win32()
-		: _dlso(0) {
-	}
-	~DynLib_win32() {
-		if (_dlso) {
-			FreeLibrary(_dlso);
-			_dlso = 0;
-		}
-	}
-	void *open(const char *name) {
-		_dlso = LoadLibrary(name);
-		return _dlso;
-	}
-	void *getSymbol(const char *name) {
-		return (void *)GetProcAddress(_dlso, name);
-	}
-}
 #endif
 
 int main(int argc, char *argv[]) {
@@ -63,7 +65,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "%s datafile level\n", argv[0]);
 		return 0;
 	}
-	DynLib_posix dl;
+	DynLib_impl dl;
 	dl.open(gFbSoName);
 	if (!dl._dlso) {
 		fprintf(stderr, "unable to open '%s'\n", gFbSoName);
