@@ -15,6 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "fs.h"
 #ifdef USE_ZLIB
 #include "zlib.h"
 #endif
@@ -130,37 +131,56 @@ struct zlibFile : File_impl {
 #endif
 
 
-File::File(bool gzipped) {
-#ifdef USE_ZLIB
-	if (gzipped) {
-		_impl = new zlibFile;
-		return;
-	}
-#endif
-	_impl = new stdFile;
+File::File()
+	: _impl(0) {
 }
 
 File::~File() {
-	_impl->close();
-	delete _impl;
+	if (_impl) {
+		_impl->close();
+		delete _impl;
+	}
 }
 
-bool File::open(const char *filename, const char *directory, const char *mode) {
-	_impl->close();
-	char buf[512];
-	sprintf(buf, "%s/%s", directory, filename);
-	char *p = buf + strlen(directory) + 1;
-	string_lower(p);
-	bool opened = _impl->open(buf, mode);
-	if (!opened) { // let's try uppercase
-		string_upper(p);
-		opened = _impl->open(buf, mode);
+bool File::open(const char *filename, const char *mode, FileSystem *fs) {
+	if (_impl) {
+		_impl->close();
+		delete _impl;
+		_impl = 0;
 	}
-	return opened;
+	assert(mode[0] != 'z');
+	_impl = new stdFile;
+	const char *path = fs->findPath(filename);
+	if (path) {
+		return _impl->open(path, mode);
+	}
+	return false;
+}
+
+bool File::open(const char *filename, const char *mode, const char *directory) {
+	if (_impl) {
+		_impl->close();
+		delete _impl;
+		_impl = 0;
+	}
+#ifdef USE_ZLIB
+	if (mode[0] == 'z') {
+		_impl = new zlibFile;
+		++mode;
+	}
+#endif
+	if (!_impl) {
+		_impl = new stdFile;
+	}
+	char path[512];
+	snprintf(path, sizeof(path), "%s/%s", directory, filename);
+	return _impl->open(path, mode);
 }
 
 void File::close() {
-	_impl->close();
+	if (_impl) {
+		_impl->close();
+	}
 }
 
 bool File::ioErr() const {

@@ -20,8 +20,8 @@
 #include "mod_player.h"
 
 
-ModPlayer::ModPlayer(Mixer *mixer, const char *dataPath)
-	: _playing(false), _mix(mixer), _dataPath(dataPath) {
+ModPlayer::ModPlayer(Mixer *mixer, FileSystem *fs)
+	: _playing(false), _mix(mixer), _fs(fs) {
 	memset(&_modInfo, 0, sizeof(_modInfo));
 }
 
@@ -97,7 +97,7 @@ void ModPlayer::play(uint8 num) {
 		File f;
 		bool found = false;
 		for (uint8 i = 0; i < ARRAYSIZE(_modulesFiles[num]); ++i) {
-			if (f.open(_modulesFiles[num][i], _dataPath, "rb")) {
+			if (f.open(_modulesFiles[num][i], "rb", _fs)) {
 				found = true;
 				break;
 			}

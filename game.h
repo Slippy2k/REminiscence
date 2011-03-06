@@ -20,6 +20,7 @@
 
 #include "intern.h"
 #include "cutscene.h"
+#include "fs.h"
 #include "menu.h"
 #include "mixer.h"
 #include "mod_player.h"
@@ -28,6 +29,7 @@
 #include "video.h"
 
 struct File;
+struct FileSystem;
 struct SystemStub;
 
 struct Game {
@@ -68,6 +70,7 @@ struct Game {
 	SfxPlayer _sfxPly;
 	Video _vid;
 	SystemStub *_stub;
+	FileSystem *_fs;
 	const char *_savePath;
 
 	const uint8 *_stringsTable;
@@ -100,7 +103,7 @@ struct Game {
 	uint16 _deathCutsceneCounter;
 	bool _saveStateCompleted;
 
-	Game(SystemStub *, const char *dataPath, const char *savePath, Version ver);
+	Game(SystemStub *, FileSystem *, const char *savePath, Version ver);
 
 	void run();
 	void resetGameState();

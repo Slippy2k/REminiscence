@@ -16,6 +16,7 @@
  */
 
 #include "file.h"
+#include "fs.h"
 #include "game.h"
 #include "systemstub.h"
 
@@ -36,8 +37,8 @@ static bool parseOption(const char *arg, const char *longCmd, const char **opt) 
 	return handled;
 }
 
-static Version detectVersion(const char *dataPath) {
-	static struct {
+static Version detectVersion(FileSystem *fs) {
+	static const struct {
 		const char *filename;
 		Version ver;
 	} checkTable[] = {
@@ -48,7 +49,7 @@ static Version detectVersion(const char *dataPath) {
 	};
 	for (uint8 i = 0; i < ARRAYSIZE(checkTable); ++i) {
 		File f;
-		if (f.open(checkTable[i].filename, dataPath, "rb")) {
+		if (f.open(checkTable[i].filename, "rb", fs)) {
 			return checkTable[i].ver;
 		}
 	}
@@ -71,10 +72,11 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 	}
-	Version ver = detectVersion(dataPath);
+	FileSystem fs(dataPath);
+	Version ver = detectVersion(&fs);
 	g_debugMask = DBG_INFO; // DBG_CUT | DBG_VIDEO | DBG_RES | DBG_MENU | DBG_PGE | DBG_GAME | DBG_UNPACK | DBG_COL | DBG_MOD | DBG_SFX;
 	SystemStub *stub = SystemStub_SDL_create();
-	Game *g = new Game(stub, dataPath, savePath, ver);
+	Game *g = new Game(stub, &fs, savePath, ver);
 	g->run();
 	delete g;
 	delete stub;

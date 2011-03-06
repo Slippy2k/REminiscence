@@ -20,9 +20,9 @@
 #include "resource.h"
 
 
-Resource::Resource(const char *dataPath, Version ver) {
+Resource::Resource(FileSystem *fs, Version ver) {
 	memset(this, 0, sizeof(Resource));
-	_dataPath = dataPath;
+	_fs = fs;
 	_ver = ver;
 	_resType = kResourceTypePC;
 	_memBuf = (uint8 *)malloc(0xE000);
@@ -64,7 +64,7 @@ void Resource::load_FIB(const char *fileName) {
 	};
 	snprintf(_entryName, sizeof(_entryName), "%s.FIB", fileName);
 	File f;
-	if (f.open(_entryName, _dataPath, "rb")) {
+	if (f.open(_entryName, "rb", _fs)) {
 		_numSfx = f.readUint16LE();
 		_sfxList = (SoundFx *)malloc(_numSfx * sizeof(SoundFx));
 		if (!_sfxList) {
@@ -113,7 +113,7 @@ void Resource::load_MAP_menu(const char *fileName, uint8 *dstPtr) {
 	debug(DBG_RES, "Resource::load_MAP_menu('%s')", fileName);
 	snprintf(_entryName, sizeof(_entryName), "%s.MAP", fileName);
 	File f;
-	if (f.open(_entryName, _dataPath, "rb")) {
+	if (f.open(_entryName, "rb", _fs)) {
 		if (f.size() != 0x3800 * 4) {
 			error("Wrong file size for '%s', %d", _entryName, f.size());
 		}
@@ -130,7 +130,7 @@ void Resource::load_PAL_menu(const char *fileName, uint8 *dstPtr) {
 	debug(DBG_RES, "Resource::load_PAL_menu('%s')", fileName);
 	snprintf(_entryName, sizeof(_entryName), "%s.PAL", fileName);
 	File f;
-	if (f.open(_entryName, _dataPath, "rb")) {
+	if (f.open(_entryName, "rb", _fs)) {
 		if (f.size() != 768) {
 			error("Wrong file size for '%s', %d", _entryName, f.size());
 		}
@@ -147,7 +147,7 @@ void Resource::load_SPR_OFF(const char *fileName, uint8 *sprData) {
 	debug(DBG_RES, "Resource::load_SPR_OFF('%s')", fileName);
 	snprintf(_entryName, sizeof(_entryName), "%s.OFF", fileName);
 	File f;
-	if (f.open(_entryName, _dataPath, "rb")) {
+	if (f.open(_entryName, "rb", _fs)) {
 		int len = f.size();
 		uint8 *offData = (uint8 *)malloc(len);
 		if (!offData) {
@@ -194,7 +194,7 @@ void Resource::load_CINE() {
 	if (_cine_off == 0) {
 		snprintf(_entryName, sizeof(_entryName), "%s.BIN", baseName);
 		File f;
-		if (f.open(_entryName, _dataPath, "rb")) {
+		if (f.open(_entryName, "rb", _fs)) {
 			int len = f.size();
 			_cine_off = (uint8 *)malloc(len);
 			if (!_cine_off) {
@@ -211,7 +211,7 @@ void Resource::load_CINE() {
 	if (_cine_txt == 0) {
 		snprintf(_entryName, sizeof(_entryName), "%s.TXT", baseName);
 		File f;
-		if (f.open(_entryName, _dataPath, "rb")) {
+		if (f.open(_entryName, "rb", _fs)) {
 			int len = f.size();
 			_cine_txt = (uint8 *)malloc(len);
 			if (!_cine_txt) {
@@ -231,7 +231,7 @@ void Resource::load_TEXT() {
 	File f;
 	// Load game strings
 	_stringsTable = 0;
-	if (f.open("STRINGS.TXT", _dataPath, "rb")) {
+	if (f.open("STRINGS.TXT", "rb", _fs)) {
 		const int sz = f.size();
 		_extStringsTable = (uint8 *)malloc(sz);
 		if (_extStringsTable) {
@@ -258,7 +258,7 @@ void Resource::load_TEXT() {
 	}
 	// Load menu strings
 	_textsTable = 0;
-	if (f.open("MENUS.TXT", _dataPath, "rb")) {
+	if (f.open("MENUS.TXT", "rb", _fs)) {
 		const int offs = LocaleData::LI_NUM * sizeof(char *);
 		const int sz = f.size() + 1;
 		_extTextsTable = (char **)malloc(offs + sz);
@@ -404,7 +404,7 @@ void Resource::load(const char *objName, int objType) {
 	}
 	if (loadStub) {
 		File f;
-		if (f.open(_entryName, _dataPath, "rb")) {
+		if (f.open(_entryName, "rb", _fs)) {
 			(this->*loadStub)(&f);
 			if (f.ioErr()) {
 				error("I/O error when reading '%s'", _entryName);
@@ -811,7 +811,7 @@ void Resource::load_VCE(int num, int segment, uint8 **buf, uint32 *bufSize) {
 		int count = *p++;
 		if (segment < count) {
 			File f;
-			if (f.open("VOICE.VCE", _dataPath, "rb")) {
+			if (f.open("VOICE.VCE", "rb", _fs)) {
 				int voiceSize = p[segment] * 2048 / 5;
 				uint8 *voiceBuf = (uint8 *)malloc(voiceSize);
 				if (voiceBuf) {
@@ -849,7 +849,7 @@ void Resource::load_SPL(int num) {
 	char fileName[32];
 	snprintf(fileName, sizeof(fileName), "level%d.SPL", num);
 	File f;
-	if (!f.open(fileName, _dataPath, "rb")) {
+	if (!f.open(fileName, "rb", _fs)) {
 		return;
 	}
 	for (int i = 0; i < _numSfx; ++i) {

@@ -22,10 +22,10 @@
 #include "game.h"
 
 
-Game::Game(SystemStub *stub, const char *dataPath, const char *savePath, Version ver)
+Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, Version ver)
 	: _cut(&_modPly, &_res, stub, &_vid, ver), _menu(&_modPly, &_res, stub, &_vid),
-	_mix(stub), _modPly(&_mix, dataPath), _res(dataPath, ver), _sfxPly(&_mix), _vid(&_res, stub),
-	_stub(stub), _savePath(savePath) {
+	_mix(stub), _modPly(&_mix, fs), _res(fs, ver), _sfxPly(&_mix), _vid(&_res, stub),
+	_stub(stub), _fs(fs), _savePath(savePath) {
 	_stateSlot = 1;
 	_inp_demo = 0;
 	_inp_record = false;
@@ -242,12 +242,12 @@ void Game::inp_handleSpecialKeys() {
 			_inp_demo->close();
 			delete _inp_demo;
 		}
-		_inp_demo = new File(true);
+		_inp_demo = new File;
 		if (_stub->_pi.inpRecord) {
 			if (_inp_record) {
 				debug(DBG_INFO, "Stop recording input keys");
 			} else {
-				if (_inp_demo->open(demoFile, _savePath, "wb")) {
+				if (_inp_demo->open(demoFile, "zwb", _savePath)) {
 					debug(DBG_INFO, "Recording input keys");
 					_inp_demo->writeUint32BE('FBDM');
 					_inp_demo->writeUint16BE(0);
@@ -262,7 +262,7 @@ void Game::inp_handleSpecialKeys() {
 			if (_inp_replay) {
 				debug(DBG_INFO, "Stop replaying input keys");
 			} else {
-				if (_inp_demo->open(demoFile, _savePath, "rb")) {
+				if (_inp_demo->open(demoFile, "zrb", _savePath)) {
 					debug(DBG_INFO, "Replaying input keys");
 					_inp_demo->readUint32BE();
 					_inp_demo->readUint16BE();
@@ -1403,8 +1403,8 @@ bool Game::saveGameState(uint8 slot) {
 	bool success = false;
 	char stateFile[20];
 	makeGameStateName(slot, stateFile);
-	File f(true);
-	if (!f.open(stateFile, _savePath, "wb")) {
+	File f;
+	if (!f.open(stateFile, "zwb", _savePath)) {
 		warning("Unable to save state file '%s'", stateFile);
 	} else {
 		// header
@@ -1430,8 +1430,8 @@ bool Game::loadGameState(uint8 slot) {
 	bool success = false;
 	char stateFile[20];
 	makeGameStateName(slot, stateFile);
-	File f(true);
-	if (!f.open(stateFile, _savePath, "rb")) {
+	File f;
+	if (!f.open(stateFile, "zrb", _savePath)) {
 		warning("Unable to open state file '%s'", stateFile);
 	} else {
 		uint32 id = f.readUint32BE();

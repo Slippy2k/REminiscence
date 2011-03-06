@@ -21,6 +21,7 @@
 #include "intern.h"
 
 struct File;
+struct FileSystem;
 struct Mixer;
 
 struct ModPlayer {
@@ -97,9 +98,9 @@ struct ModPlayer {
 	bool _playing;
 	Track _tracks[NUM_TRACKS];
 	Mixer *_mix;
-	const char *_dataPath;
+	FileSystem *_fs;
 
-	ModPlayer(Mixer *mixer, const char *dataPath);
+	ModPlayer(Mixer *mixer, FileSystem *fs);
 
 	uint16 findPeriod(uint16 period, uint8 fineTune) const;
 	void load(File *f);

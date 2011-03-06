@@ -15,36 +15,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __FILE_H__
-#define __FILE_H__
+#ifndef FS_H__
+#define FS_H__
 
 #include "intern.h"
 
-struct File_impl;
-struct FileSystem;
+struct FileSystem_impl;
 
-struct File {
-	File();
-	~File();
+struct FileSystem {
+	FileSystem(const char *dataPath);
+	~FileSystem();
 
-	File_impl *_impl;
+	FileSystem_impl *_impl;
 
-	bool open(const char *filename, const char *mode, FileSystem *fs);
-	bool open(const char *filename, const char *mode, const char *directory);
-	void close();
-	bool ioErr() const;
-	uint32 size();
-	void seek(int32 off);
-	void read(void *ptr, uint32 len);
-	uint8 readByte();
-	uint16 readUint16LE();
-	uint32 readUint32LE();
-	uint16 readUint16BE();
-	uint32 readUint32BE();
-	void write(void *ptr, uint32 size);
-	void writeByte(uint8 b);
-	void writeUint16BE(uint16 n);
-	void writeUint32BE(uint32 n);
+	const char *findPath(const char *filename);
 };
 
-#endif // __FILE_H__
+#endif // FS_H__
+

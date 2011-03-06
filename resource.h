@@ -21,6 +21,7 @@
 #include "intern.h"
 
 struct File;
+struct FileSystem;
 
 struct LocaleData {
 	enum Id {
@@ -97,7 +98,7 @@ struct Resource {
 	static const uint16 _voicesOffsetsTable[];
 	static const char *_amigaLevelNamesTable[];
 
-	const char *_dataPath;
+	FileSystem *_fs;
 	Version _ver;
 	ResourceType _resType;
 	char _entryName[32];
@@ -133,7 +134,7 @@ struct Resource {
 	uint8 *_extStringsTable;
 	const uint8 *_stringsTable;
 
-	Resource(const char *dataPath, Version ver);
+	Resource(FileSystem *fs, Version ver);
 	~Resource();
 
 	void clearLevelRes();
