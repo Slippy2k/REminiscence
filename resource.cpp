@@ -399,6 +399,10 @@ void Resource::load(const char *objName, int objType) {
 		snprintf(_entryName, sizeof(_entryName), "%s.OBC", objName);
 		loadStub = &Resource::load_OBC;
 		break;
+	case OT_SPL:
+		printf(_entryName, sizeof(_entryName), "%s.SPL", objName);
+		loadStub = &Resource::load_SPL;
+		break;
 	case OT_LEV:
 		snprintf(_entryName, sizeof(_entryName), "%s.LEV", objName);
 		loadStub = &Resource::load_LEV;
@@ -734,8 +738,15 @@ void Resource::load_ANI(File *f) {
 	if (!_ani) {
 		error("Unable to allocate ANI buffer");
 	} else {
-		f->seek(2);
+		uint16 count = f->readUint16LE();
 		f->read(_ani, size);
+		if (_resType == Resource::kResourceTypeAmiga) {
+			SWAP_UINT16(&count);
+			// byte-swap uint16 offsets
+			for (uint16 i = 0; i < count; ++i) {
+				SWAP<uint8>(_ani[2 * i], _ani[2 * i + 1]);
+			}
+		}
 	}
 }
 
@@ -863,13 +874,7 @@ void Resource::load_VCE(int num, int segment, uint8 **buf, uint32 *bufSize) {
 	}
 }
 
-void Resource::load_SPL(int num) {
-	char fileName[32];
-	snprintf(fileName, sizeof(fileName), "data/level%d.SPL", num);
-	File f;
-	if (!f.open(fileName, "rb", _fs)) {
-		return;
-	}
+void Resource::load_SPL(File *f) {
 	for (int i = 0; i < _numSfx; ++i) {
 		free(_sfxList[i].data);
 	}
@@ -881,7 +886,7 @@ void Resource::load_SPL(int num) {
 	}
 	int offset = 0;
 	for (int i = 0; i < _numSfx; ++i) {
-		const int size = f.readUint16BE(); offset += 2;
+		const int size = f->readUint16BE(); offset += 2;
 		if ((size & 0x8000) != 0) {
 			continue;
 		}
@@ -891,9 +896,9 @@ void Resource::load_SPL(int num) {
 			_sfxList[i].len = size;
 			_sfxList[i].data = (uint8 *)malloc(size);
 			assert(_sfxList[i].data);
-			f.read(_sfxList[i].data, size);
+			f->read(_sfxList[i].data, size);
 		} else {
-			f.seek(offset + size);
+			f->seek(offset + size);
 		}
 		offset += size;
 	}

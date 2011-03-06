@@ -1096,9 +1096,14 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 	_curMonsterFrame = mList[0];
 	if (_curMonsterNum != mList[1]) {
 		_curMonsterNum = mList[1];
-		_res.load(_monsterNames[_curMonsterNum], Resource::OT_SPRM);
-		_res.load_SPR_OFF(_monsterNames[_curMonsterNum], _res._sprm);
-		_vid.setPaletteSlotLE(5, _monsterPals[_curMonsterNum]);
+		if (_res._resType == Resource::kResourceTypeAmiga) {
+			_res.load(_monsterNames[1][_curMonsterNum], Resource::OT_SPRM);
+		} else {
+			const char *name = _monsterNames[0][_curMonsterNum];
+			_res.load(name, Resource::OT_SPRM);
+			_res.load_SPR_OFF(name, _res._sprm);
+			_vid.setPaletteSlotLE(5, _monsterPals[_curMonsterNum]);
+		}
 	}
 	return 0xFFFF;
 }
@@ -1106,8 +1111,11 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 void Game::loadLevelMap() {
 	debug(DBG_GAME, "Game::loadLevelMap() room=%d", _currentRoom);
 	_currentIcon = 0xFF;
-	_vid.copyLevelMap(_currentLevel, _currentRoom);
-	_vid.setLevelPalettes();
+	if (_res._resType == Resource::kResourceTypeAmiga) {
+	} else {
+		_vid.copyLevelMap(_currentLevel, _currentRoom);
+		_vid.setLevelPalettes();
+	}
 }
 
 void Game::loadLevelData() {
@@ -1122,17 +1130,18 @@ void Game::loadLevelData() {
 	_res.load(lvl->name2, Resource::OT_PGE);
 	if (_res._resType == Resource::kResourceTypeAmiga) {
 		_res.load(lvl->nameAmiga, Resource::OT_LEV);
+		_res.load(lvl->nameAmiga, Resource::OT_PGE);
 		_res.load(lvl->nameAmiga, Resource::OT_OBC);
+		char name[8];
+		snprintf(name, sizeof(name), "level%d", lvl->spl);
+		_res.load(name, Resource::OT_SPL);
 	} else {
 		_res.load(lvl->name, Resource::OT_MAP);
+		_res.load(lvl->name2, Resource::OT_PGE);
 		_res.load(lvl->name2, Resource::OT_OBJ);
 	}
 	_res.load(lvl->name2, Resource::OT_ANI);
 	_res.load(lvl->name2, Resource::OT_TBN);
-	if (_res._resType == Resource::kResourceTypeAmiga) {
-		static const int spl[] = { 1, 1, 3, 3, 3, 4, 4 };
-		_res.load_SPL(spl[_currentLevel]);
-	}
 
 	_cut._id = lvl->cutscene_id;
 

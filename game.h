@@ -56,7 +56,7 @@ struct Game {
 	static const uint8 _monsterListLevel5_2[];
 	static const uint8 *_monsterListLevels[];
 	static const uint8 _monsterPals[4][32];
-	static const char *_monsterNames[];
+	static const char *_monsterNames[2][4];
 	static const pge_OpcodeProc _pge_opcodeTable[];
 	static const uint8 _pge_modKeysTable[];
 	static const uint8 _protectionCodeData[];

@@ -652,13 +652,13 @@ const uint8 Cutscene::_protectionShapeData[] = {
 };
 
 const Level Game::_gameLevels[] = {
-	{ "level1", "level1", "data/level1", 0x00 },
-	{ "level2", "level2", "data/level2", 0x2F },
-	{ "level3", "level3", "data/dt", 0xFFFF },
-	{ "level4", "level4_1", "data/level3_1", 0x34 },
-	{ "level4", "level4_2", "data/level3_2", 0x39 },
-	{ "level5", "level5_1", "data/level4_1", 0x35 },
-	{ "level5", "level5_2", "data/level4_2", 0xFFFF }
+	{ "level1", "level1", "level1", 0x00, 1 },
+	{ "level2", "level2", "level2", 0x2F, 1 },
+	{ "level3", "level3", "dt", 0xFFFF, 3 },
+	{ "level4", "level4_1", "level3_1", 0x34, 3 },
+	{ "level4", "level4_2", "level3_2", 0x39, 3 },
+	{ "level5", "level5_1", "level4_1", 0x35, 4 },
+	{ "level5", "level5_2", "level4_2", 0xFFFF, 4 }
 };
 
 const uint16 Game::_scoreTable[] = {
@@ -722,11 +722,19 @@ const uint8 Game::_monsterPals[4][32] = {
 	}
 };
 
-const char *Game::_monsterNames[] = {
-	"junky",
-	"mercenai",
-	"replican",
-	"glue"
+const char *Game::_monsterNames[2][4] = {
+	{ // PC
+		"junky",
+		"mercenai",
+		"replican",
+		"glue"
+	},
+	{ // Amiga
+		"junky",
+		"garde",
+		"replicant",
+		"glue"
+	}
 };
 
 const uint8 LocaleData::_stringsTableFR[] = {

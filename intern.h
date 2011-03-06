@@ -61,6 +61,7 @@ struct Level {
 	const char *name2;
 	const char *nameAmiga;
 	uint16 cutscene_id;
+	uint8 spl;
 };
 
 struct InitPGE {

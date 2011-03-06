@@ -88,6 +88,7 @@ struct Resource {
 		OT_OFF,
 		OT_CMP,
 		OT_OBC,
+		OT_SPL,
 		OT_LEV
 	};
 
@@ -167,8 +168,12 @@ struct Resource {
 	void load_POL(File *pf);
 	void load_CMP(File *pf);
 	void load_VCE(int num, int segment, uint8 **buf, uint32 *bufSize);
-	void load_SPL(int num);
+	void load_SPL(File *pf);
 	void load_LEV(File *pf);
+	const uint8 *getAniData(int num) const {
+		const uint32 offset = READ_LE_UINT16(_ani + num * 2);
+		return _ani + offset;
+	}
 	const uint8 *getGameString(int num) {
 		return _stringsTable + READ_LE_UINT16(_stringsTable + num * 2);
 	}
