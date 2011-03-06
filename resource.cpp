@@ -33,6 +33,7 @@ Resource::~Resource() {
 	free(_fnt);
 	free(_icn);
 	free(_tab);
+	free(_spc);
 	free(_spr1);
 	free(_memBuf);
 	free(_cmd);
@@ -52,7 +53,6 @@ void Resource::clearLevelRes() {
 	free(_pal); _pal = 0;
 	free(_map); _map = 0;
 	free(_lev); _lev = 0;
-	free(_spc); _spc = 0;
 	free(_ani); _ani = 0;
 	free_OBJ();
 }
@@ -343,16 +343,19 @@ void Resource::load(const char *objName, int objType) {
 		loadStub = &Resource::load_CT;
 		break;
 	case OT_MAP:
-		debug(DBG_RES, "ouverture map (map)");
 		snprintf(_entryName, sizeof(_entryName), "%s.MAP", objName);
 		loadStub = &Resource::load_MAP;
 		break;
 	case OT_SPC:
-		strcpy(_entryName, "GLOBAL.SPC");
+		snprintf(_entryName, sizeof(_entryName), "%s.SPC", objName);
 		loadStub = &Resource::load_SPC;
 		break;
 	case OT_RP:
 		snprintf(_entryName, sizeof(_entryName), "%s.RP", objName);
+		loadStub = &Resource::load_RP;
+		break;
+	case OT_RPC:
+		snprintf(_entryName, sizeof(_entryName), "%s.RPC", objName);
 		loadStub = &Resource::load_RP;
 		break;
 	case OT_SPR:
@@ -400,7 +403,7 @@ void Resource::load(const char *objName, int objType) {
 		loadStub = &Resource::load_OBC;
 		break;
 	case OT_SPL:
-		printf(_entryName, sizeof(_entryName), "%s.SPL", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.SPL", objName);
 		loadStub = &Resource::load_SPL;
 		break;
 	case OT_LEV:
@@ -689,6 +692,9 @@ void Resource::load_PGE(File *f) {
 	debug(DBG_RES, "Resource::load_PGE()");
 	int len = f->size() - 2;
 	_pgeNum = f->readUint16LE();
+	if (_resType == kResourceTypeAmiga) {
+		SWAP_UINT16(&_pgeNum);
+	}
 	memset(_pgeInit, 0, sizeof(_pgeInit));
 	debug(DBG_RES, "len=%d _pgeNum=%d", len, _pgeNum);
 	for (uint16 i = 0; i < _pgeNum; ++i) {
@@ -715,7 +721,7 @@ void Resource::load_PGE(File *f) {
 		f->readByte();
 		pge->text_num = f->readUint16LE();
 	}
-	if (_resType == Resource::kResourceTypeAmiga) {
+	if (_resType == kResourceTypeAmiga) {
 		for (uint16 i = 0; i < _pgeNum; ++i) {
 			InitPGE *pge = &_pgeInit[i];
 			SWAP_UINT16((uint16 *)&pge->type);
@@ -740,11 +746,25 @@ void Resource::load_ANI(File *f) {
 	} else {
 		uint16 count = f->readUint16LE();
 		f->read(_ani, size);
-		if (_resType == Resource::kResourceTypeAmiga) {
+		if (_resType == kResourceTypeAmiga) {
 			SWAP_UINT16(&count);
-			// byte-swap uint16 offsets
+			// byte-swap animation data
 			for (uint16 i = 0; i < count; ++i) {
+				uint8 *p = _ani + READ_BE_UINT16(_ani + 2 * i);
+				// byte-swap offset
 				SWAP<uint8>(_ani[2 * i], _ani[2 * i + 1]);
+				const int frames = READ_BE_UINT16(p);
+				if (p[0] != 0) {
+					// byte-swap only once
+					continue;
+				}
+				// byte-swap anim count
+				SWAP<uint8>(p[0], p[1]);
+				debug(DBG_RES, "ani=%d frames=%d", i, frames);
+				for (int j = 0; j < frames; ++j) {
+					// byte-swap next frame
+					SWAP<uint8>(p[6 + j * 4], p[6 + j * 4 + 1]);
+				}
 			}
 		}
 	}
@@ -890,6 +910,7 @@ void Resource::load_SPL(File *f) {
 		if ((size & 0x8000) != 0) {
 			continue;
 		}
+		debug(DBG_RES, "sfx=%d size=%d", i, size);
 		assert(size != 0 && (size & 1) == 0);
 		if (i != 64) {
 			_sfxList[i].offset = offset;

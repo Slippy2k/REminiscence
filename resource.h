@@ -73,6 +73,7 @@ struct Resource {
 		OT_SGD,
 		OT_SPC,
 		OT_RP,
+		OT_RPC,
 		OT_DEMO,
 		OT_ANI,
 		OT_OBJ,
@@ -90,11 +91,6 @@ struct Resource {
 		OT_OBC,
 		OT_SPL,
 		OT_LEV
-	};
-
-	enum ResourceType {
-		kResourceTypePC,
-		kResourceTypeAmiga
 	};
 
 	static const uint16 _voicesOffsetsTable[];

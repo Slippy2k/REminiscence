@@ -36,8 +36,11 @@ void Game::run() {
 	_stub->init("REminiscence", Video::GAMESCREEN_W, Video::GAMESCREEN_H);
 
 	_randSeed = time(0);
-	_res.load_TEXT();
-	_res.load("FB_TXT", Resource::OT_FNT);
+
+	if (_res._resType == kResourceTypePC) {
+		_res.load_TEXT();
+		_res.load("FB_TXT", Resource::OT_FNT);
+	}
 
 #ifndef BYPASS_PROTECTION
 	while (!handleProtectionScreen());
@@ -50,14 +53,21 @@ void Game::run() {
 
 	playCutscene(0x40);
 	playCutscene(0x0D);
-	if (!_cut._interrupted) {
+	if (!_cut._interrupted && _res._resType == kResourceTypePC) {
 		playCutscene(0x4A);
 	}
 
-	_res.load("GLOBAL", Resource::OT_ICN);
-	_res.load("PERSO", Resource::OT_SPR);
-	_res.load_SPR_OFF("PERSO", _res._spr1);
-	_res.load_FIB("GLOBAL");
+	switch (_res._resType) {
+	case kResourceTypeAmiga:
+		break;
+	case kResourceTypePC:
+		_res.load("GLOBAL", Resource::OT_ICN);
+		_res.load("GLOBAL", Resource::OT_SPC);
+		_res.load("PERSO", Resource::OT_SPR);
+		_res.load_SPR_OFF("PERSO", _res._spr1);
+		_res.load_FIB("GLOBAL");
+		break;
+	}
 
 	_skillLevel = 1;
 	_currentLevel = 0;
@@ -553,7 +563,10 @@ void Game::printLevelCode() {
 		if (_printLevelCodeCounter != 0) {
 			char levelCode[50];
 			snprintf(levelCode, sizeof(levelCode), "CODE: %s", _menu._passwords[_currentLevel][_skillLevel]);
-			_vid.drawString(levelCode, (Video::GAMESCREEN_W - strlen(levelCode) * 8) / 2, 16, 0xE7);
+			if (_res._resType == kResourceTypeAmiga) {
+			} else {
+				_vid.drawString(levelCode, (Video::GAMESCREEN_W - strlen(levelCode) * 8) / 2, 16, 0xE7);
+			}
 		}
 	}
 }
@@ -561,7 +574,10 @@ void Game::printLevelCode() {
 void Game::printSaveStateCompleted() {
 	if (_saveStateCompleted) {
 		const char *str = _res.getMenuString(LocaleData::LI_05_COMPLETED);
-		_vid.drawString(str, (176 - strlen(str) * 8) / 2, 34, 0xE6);
+		if (_res._resType == kResourceTypeAmiga) {
+		} else {
+			_vid.drawString(str, (176 - strlen(str) * 8) / 2, 34, 0xE6);
+		}
 	}
 }
 
@@ -1096,7 +1112,7 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 	_curMonsterFrame = mList[0];
 	if (_curMonsterNum != mList[1]) {
 		_curMonsterNum = mList[1];
-		if (_res._resType == Resource::kResourceTypeAmiga) {
+		if (_res._resType == kResourceTypeAmiga) {
 			_res.load(_monsterNames[1][_curMonsterNum], Resource::OT_SPRM);
 		} else {
 			const char *name = _monsterNames[0][_curMonsterNum];
@@ -1111,7 +1127,7 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 void Game::loadLevelMap() {
 	debug(DBG_GAME, "Game::loadLevelMap() room=%d", _currentRoom);
 	_currentIcon = 0xFF;
-	if (_res._resType == Resource::kResourceTypeAmiga) {
+	if (_res._resType == kResourceTypeAmiga) {
 	} else {
 		_vid.copyLevelMap(_currentLevel, _currentRoom);
 		_vid.setLevelPalettes();
@@ -1122,26 +1138,36 @@ void Game::loadLevelData() {
 	_res.clearLevelRes();
 
 	const Level *lvl = &_gameLevels[_currentLevel];
-	_res.load(lvl->name, Resource::OT_SPC);
-	_res.load(lvl->name, Resource::OT_MBK);
-	_res.load(lvl->name, Resource::OT_RP);
-	_res.load(lvl->name, Resource::OT_CT);
-	_res.load(lvl->name, Resource::OT_PAL);
-	_res.load(lvl->name2, Resource::OT_PGE);
-	if (_res._resType == Resource::kResourceTypeAmiga) {
+	switch (_res._resType) {
+	case kResourceTypeAmiga:
+		_res.load(lvl->nameAmiga, Resource::OT_MBK);
+		_res.load(lvl->nameAmiga, Resource::OT_CT);
+		_res.load(lvl->nameAmiga, Resource::OT_PAL);
+		_res.load(lvl->nameAmiga, Resource::OT_RPC);
+		_res.load(lvl->nameAmiga, Resource::OT_SPC);
 		_res.load(lvl->nameAmiga, Resource::OT_LEV);
 		_res.load(lvl->nameAmiga, Resource::OT_PGE);
 		_res.load(lvl->nameAmiga, Resource::OT_OBC);
-		char name[8];
-		snprintf(name, sizeof(name), "level%d", lvl->spl);
-		_res.load(name, Resource::OT_SPL);
-	} else {
+		_res.load(lvl->nameAmiga, Resource::OT_ANI);
+		_res.load(lvl->nameAmiga, Resource::OT_TBN);
+		{
+			char name[8];
+			snprintf(name, sizeof(name), "level%d", lvl->spl);
+			_res.load(name, Resource::OT_SPL);
+		}
+		break;
+	case kResourceTypePC:
+		_res.load(lvl->name, Resource::OT_MBK);
+		_res.load(lvl->name, Resource::OT_CT);
+		_res.load(lvl->name, Resource::OT_PAL);
+		_res.load(lvl->name, Resource::OT_RP);
 		_res.load(lvl->name, Resource::OT_MAP);
 		_res.load(lvl->name2, Resource::OT_PGE);
 		_res.load(lvl->name2, Resource::OT_OBJ);
+		_res.load(lvl->name2, Resource::OT_ANI);
+		_res.load(lvl->name2, Resource::OT_TBN);
+		break;
 	}
-	_res.load(lvl->name2, Resource::OT_ANI);
-	_res.load(lvl->name2, Resource::OT_TBN);
 
 	_cut._id = lvl->cutscene_id;
 
@@ -1189,6 +1215,9 @@ uint8 *Game::findBankData(uint16 entryNum) {
 }
 
 void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
+	if (_res._resType == kResourceTypeAmiga) {
+		return;
+	}
 	uint16 offset = READ_LE_UINT16(_res._icn + iconNum * 2);
 	uint8 buf[256];
 	uint8 *p = _res._icn + offset + 2;
@@ -1208,7 +1237,7 @@ void Game::playSound(uint8 sfxId, uint8 softVol) {
 			MixerChunk mc;
 			mc.data = sfx->data;
 			mc.len = sfx->len;
-			const int freq = _res._resType == Resource::kResourceTypeAmiga ? 3546897 / 650 : 6000;
+			const int freq = _res._resType == kResourceTypeAmiga ? 3546897 / 650 : 6000;
 			_mix.play(&mc, freq, Mixer::MAX_VOLUME >> softVol);
 		}
 	} else {

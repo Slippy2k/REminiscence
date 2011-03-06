@@ -45,6 +45,11 @@ enum Version {
 	VER_SP
 };
 
+enum ResourceType {
+	kResourceTypeAmiga,
+	kResourceTypePC
+};
+
 struct Color {
 	uint8 r;
 	uint8 g;

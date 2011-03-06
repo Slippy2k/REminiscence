@@ -961,16 +961,19 @@ void Cutscene::mainLoop(uint16 offset) {
 void Cutscene::load(uint16 cutName) {
 	assert(cutName != 0xFFFF);
 	const char *name = _namesTable[cutName & 0xFF];
-	if (_res->_resType == Resource::kResourceTypeAmiga) {
+	switch (_res->_resType) {
+	case kResourceTypeAmiga:
 		if (strncmp(name, "INTRO", 5) == 0) {
 			name = "INTRO";
 		}
 		_res->load(name, Resource::OT_CMP);
-	} else {
+		break;
+	case kResourceTypePC:
 		_res->load(name, Resource::OT_CMD);
 		_res->load(name, Resource::OT_POL);
+		_res->load_CINE();
+		break;
 	}
-	_res->load_CINE();
 }
 
 void Cutscene::prepare() {

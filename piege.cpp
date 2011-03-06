@@ -200,7 +200,7 @@ void Game::pge_setupNextAnimFrame(LivePGE *pge, GroupPGE *le) {
 
 set_anim:
 	const uint8 *anim_data = _res.getAniData(pge->obj_type);
-	uint8 _dh = anim_data[0];
+	uint8 _dh = READ_LE_UINT16(anim_data);
 	uint8 _dl = pge->anim_seq;
 	const uint8 *anim_frame = anim_data + 6 + _dl * 4;
 	while (_dh > _dl) {
@@ -239,7 +239,7 @@ void Game::pge_playAnimSound(LivePGE *pge, uint16 arg2) {
 void Game::pge_setupAnim(LivePGE *pge) {
 	debug(DBG_PGE, "Game::pge_setupAnim() pgeNum=%d", pge - &_pgeLive[0]);
 	const uint8 *anim_data = _res.getAniData(pge->obj_type);
-	if (anim_data[0] < pge->anim_seq) {
+	if (READ_LE_UINT16(anim_data) < pge->anim_seq) {
 		pge->anim_seq = 0;
 	}
 	const uint8 *anim_frame = anim_data + 6 + pge->anim_seq * 4;
@@ -371,7 +371,7 @@ void Game::pge_prepare() {
 
 void Game::pge_setupDefaultAnim(LivePGE *pge) {
 	const uint8 *anim_data = _res.getAniData(pge->obj_type);
-	if (pge->anim_seq < anim_data[0]) {
+	if (pge->anim_seq < READ_LE_UINT16(anim_data)) {
 		pge->anim_seq = 0;
 	}
 	const uint8 *anim_frame = anim_data + 6 + pge->anim_seq * 4;

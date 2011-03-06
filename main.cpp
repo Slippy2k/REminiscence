@@ -37,7 +37,7 @@ static bool parseOption(const char *arg, const char *longCmd, const char **opt) 
 	return handled;
 }
 
-static Version detectVersion(FileSystem *fs) {
+static Version detectVersionPC(FileSystem *fs) {
 	static const struct {
 		const char *filename;
 		Version ver;
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	FileSystem fs(dataPath);
-	Version ver = detectVersion(&fs);
+	Version ver = detectVersionPC(&fs);
 	g_debugMask = DBG_INFO; // DBG_CUT | DBG_VIDEO | DBG_RES | DBG_MENU | DBG_PGE | DBG_GAME | DBG_UNPACK | DBG_COL | DBG_MOD | DBG_SFX;
 	SystemStub *stub = SystemStub_SDL_create();
 	Game *g = new Game(stub, &fs, savePath, ver);

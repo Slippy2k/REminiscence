@@ -711,6 +711,12 @@ int main(int argc, char *argv[]) {
 		_sgdDecodeBuf = malloc(7174 * 16);
 		_roomBitmapBuf = malloc(43014 * 16);
 		decode_lev(i, lev_data, mbk_data, pal_data);
+		if (i == 1) {
+			free(lev_data);
+			snprintf(path, sizeof(path), "%s/level2_2.lev", argv[1]);
+			lev_data = load_file(path);
+			decode_lev(i, lev_data, mbk_data, pal_data);
+		}
 		printf("done\n");
 	}
 	return 0;
