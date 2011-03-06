@@ -1118,12 +1118,13 @@ void Game::loadLevelData() {
 	_res.load(lvl->name, Resource::OT_MBK);
 	_res.load(lvl->name, Resource::OT_RP);
 	_res.load(lvl->name, Resource::OT_CT);
-	_res.load(lvl->name, Resource::OT_MAP);
 	_res.load(lvl->name, Resource::OT_PAL);
 	_res.load(lvl->name2, Resource::OT_PGE);
 	if (_res._resType == Resource::kResourceTypeAmiga) {
-		_res.load(Resource::_amigaLevelNamesTable[_currentLevel], Resource::OT_OBC);
+		_res.load(lvl->nameAmiga, Resource::OT_LEV);
+		_res.load(lvl->nameAmiga, Resource::OT_OBC);
 	} else {
+		_res.load(lvl->name, Resource::OT_MAP);
 		_res.load(lvl->name2, Resource::OT_OBJ);
 	}
 	_res.load(lvl->name2, Resource::OT_ANI);

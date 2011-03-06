@@ -652,13 +652,13 @@ const uint8 Cutscene::_protectionShapeData[] = {
 };
 
 const Level Game::_gameLevels[] = {
-	{ "level1", "level1", 0x00 },
-	{ "level2", "level2", 0x2F },
-	{ "level3", "level3", 0xFFFF },
-	{ "level4", "level4_1", 0x34 },
-	{ "level4", "level4_2", 0x39 },
-	{ "level5", "level5_1", 0x35 },
-	{ "level5", "level5_2", 0xFFFF }
+	{ "level1", "level1", "data/level1", 0x00 },
+	{ "level2", "level2", "data/level2", 0x2F },
+	{ "level3", "level3", "data/dt", 0xFFFF },
+	{ "level4", "level4_1", "data/level3_1", 0x34 },
+	{ "level4", "level4_2", "data/level3_2", 0x39 },
+	{ "level5", "level5_1", "data/level4_1", 0x35 },
+	{ "level5", "level5_2", "data/level4_2", 0xFFFF }
 };
 
 const uint16 Game::_scoreTable[] = {
@@ -1768,16 +1768,6 @@ const uint16 Resource::_voicesOffsetsTable[] = {
 	0x3561, 0x0002, 0x0069, 0x003C, 0x3606, 0x0003, 0x0000, 0x00FA, 0x00F0, 0x37F0,
 	0x0002, 0x006E, 0x00A0, 0x38FE, 0x0002, 0x0064, 0x00E6, 0x3A48, 0x0001, 0x00A5,
 	0x3AED, 0x0002, 0x0078, 0x0087, 0x3BEC, 0x0002, 0x00AA, 0x00F0
-};
-
-const char *Resource::_amigaLevelNamesTable[] = {
-	"level1",
-	"level2",
-	"dt",
-	"level3_1",
-	"level3_2",
-	"level4_1",
-	"level4_2"
 };
 
 const Game::pge_OpcodeProc Game::_pge_opcodeTable[] = {

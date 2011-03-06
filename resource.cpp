@@ -51,6 +51,7 @@ void Resource::clearLevelRes() {
 	free(_mbkData); _mbkData = 0;
 	free(_pal); _pal = 0;
 	free(_map); _map = 0;
+	free(_lev); _lev = 0;
 	free(_spc); _spc = 0;
 	free(_ani); _ani = 0;
 	free_OBJ();
@@ -398,6 +399,10 @@ void Resource::load(const char *objName, int objType) {
 		snprintf(_entryName, sizeof(_entryName), "%s.OBC", objName);
 		loadStub = &Resource::load_OBC;
 		break;
+	case OT_LEV:
+		snprintf(_entryName, sizeof(_entryName), "%s.LEV", objName);
+		loadStub = &Resource::load_LEV;
+		break;
 	default:
 		error("Unimplemented Resource::load() type %d", objType);
 		break;
@@ -704,8 +709,21 @@ void Resource::load_PGE(File *f) {
 		pge->flags = f->readByte();
 		pge->unk1C = f->readByte();
 		f->readByte();
-		pge->text_num = f->readByte();
-		f->readByte();
+		pge->text_num = f->readUint16LE();
+	}
+	if (_resType == Resource::kResourceTypeAmiga) {
+		for (uint16 i = 0; i < _pgeNum; ++i) {
+			InitPGE *pge = &_pgeInit[i];
+			SWAP_UINT16((uint16 *)&pge->type);
+			SWAP_UINT16((uint16 *)&pge->pos_x);
+			SWAP_UINT16((uint16 *)&pge->pos_y);
+			SWAP_UINT16((uint16 *)&pge->obj_node_number);
+			SWAP_UINT16((uint16 *)&pge->life);
+			for (int lc = 0; lc < 4; ++lc) {
+				SWAP_UINT16((uint16 *)&pge->counter_values[lc]);
+			}
+			SWAP_UINT16((uint16 *)&pge->text_num);
+		}
 	}
 }
 
@@ -847,7 +865,7 @@ void Resource::load_VCE(int num, int segment, uint8 **buf, uint32 *bufSize) {
 
 void Resource::load_SPL(int num) {
 	char fileName[32];
-	snprintf(fileName, sizeof(fileName), "level%d.SPL", num);
+	snprintf(fileName, sizeof(fileName), "data/level%d.SPL", num);
 	File f;
 	if (!f.open(fileName, "rb", _fs)) {
 		return;
@@ -878,6 +896,16 @@ void Resource::load_SPL(int num) {
 			f.seek(offset + size);
 		}
 		offset += size;
+	}
+}
+
+void Resource::load_LEV(File *f) {
+	const int len = f->size();
+	_lev = (uint8 *)malloc(len);
+	if (!_lev) {
+		error("Unable to allocate LEV buffer");
+	} else {
+		f->read(_lev, len);
 	}
 }
 

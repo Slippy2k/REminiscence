@@ -25,6 +25,12 @@ typedef int16_t int16;
 typedef uint32_t uint32;
 typedef int32_t int32;
 
+inline void SWAP_UINT16(uint16 *ptr) {
+	const uint8 hi = *ptr >> 8;
+	const uint8 lo = *ptr & 255;
+	*ptr = (lo << 8) | hi;
+}
+
 inline uint16 READ_BE_UINT16(const void *ptr) {
 	const uint8 *b = (const uint8 *)ptr;
 	return (b[0] << 8) | b[1];

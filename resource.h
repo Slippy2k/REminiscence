@@ -87,7 +87,8 @@ struct Resource {
 		OT_SPRM,
 		OT_OFF,
 		OT_CMP,
-		OT_OBC
+		OT_OBC,
+		OT_LEV
 	};
 
 	enum ResourceType {
@@ -96,7 +97,6 @@ struct Resource {
 	};
 
 	static const uint16 _voicesOffsetsTable[];
-	static const char *_amigaLevelNamesTable[];
 
 	FileSystem *_fs;
 	Version _ver;
@@ -120,6 +120,7 @@ struct Resource {
 	uint16 _pgeNum;
 	InitPGE _pgeInit[256];
 	uint8 *_map;
+	uint8 *_lev;
 	uint16 _numObjectNodes;
 	ObjectNode *_objectNodesMap[255];
 	uint8 *_memBuf;
@@ -167,6 +168,7 @@ struct Resource {
 	void load_CMP(File *pf);
 	void load_VCE(int num, int segment, uint8 **buf, uint32 *bufSize);
 	void load_SPL(int num);
+	void load_LEV(File *pf);
 	const uint8 *getGameString(int num) {
 		return _stringsTable + READ_LE_UINT16(_stringsTable + num * 2);
 	}
