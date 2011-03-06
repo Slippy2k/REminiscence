@@ -26,8 +26,9 @@ static void print_lev_hdr(int room, const unsigned char *p, int size) {
 }
 
 static void blit_sgd(unsigned char *dst, int x, int y, int w, int h, unsigned char *src, unsigned char *mask, int size) {
-	int i, j, color;
-	int planar_size;
+	int i, j, color, planar_size;
+	const int x0 = x;
+	const int y0 = y;
 
 	printf("blit_sgd pos %d,%d dim %d,%d size %d\n", x, y, w, h, size);
 
@@ -35,8 +36,6 @@ static void blit_sgd(unsigned char *dst, int x, int y, int w, int h, unsigned ch
 	++h;
 	planar_size = w * 2 * h;
 	assert(planar_size == size);
-
-	if (x < 0 || y < 0) return; /* TODO */
 
 	dst += y * 256 + x;
 
@@ -51,7 +50,11 @@ static void blit_sgd(unsigned char *dst, int x, int y, int w, int h, unsigned ch
 					}
 				}
 				if (*src & c_mask) {
-					dst[8 * x + i] = color;
+					const int px = x0 + 8 * x + i;
+					const int py = y0 + y;
+					if (px >= 0 && px < 256 && py >= 0 && py < 224) {
+						dst[8 * x + i] = color;
+					}
 				}
 			}
 			++src;
