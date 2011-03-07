@@ -70,7 +70,7 @@ void Game::run() {
 	}
 
 	_skillLevel = 1;
-	_currentLevel = 2; /* TEMP */
+	_currentLevel = 0; /* TEMP */
 
 	while (!_stub->_pi.quit && (_res._type == kResourceTypeAmiga || _menu.handleTitleScreen(_skillLevel, _currentLevel))) {
 		if (_currentLevel == 7) {
@@ -1130,6 +1130,9 @@ void Game::loadLevelData() {
 			char name[8];
 			snprintf(name, sizeof(name), "level%d", lvl->spl);
 			_res.load(name, Resource::OT_SPL);
+		}
+		if (_currentLevel == 0) {
+			_res.load(lvl->nameAmiga, Resource::OT_SGD);
 		}
 		break;
 	case kResourceTypePC:

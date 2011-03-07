@@ -55,6 +55,7 @@ void Resource::clearLevelRes() {
 	free(_pal); _pal = 0;
 	free(_map); _map = 0;
 	free(_lev); _lev = 0;
+	free(_sgd); _sgd = 0;
 	free(_ani); _ani = 0;
 	free_OBJ();
 }
@@ -411,6 +412,10 @@ void Resource::load(const char *objName, int objType) {
 	case OT_LEV:
 		snprintf(_entryName, sizeof(_entryName), "%s.LEV", objName);
 		loadStub = &Resource::load_LEV;
+		break;
+	case OT_SGD:
+		snprintf(_entryName, sizeof(_entryName), "%s.SGD", objName);
+		loadStub = &Resource::load_SGD;
 		break;
 	default:
 		error("Unimplemented Resource::load() type %d", objType);
@@ -939,6 +944,26 @@ void Resource::load_LEV(File *f) {
 	} else {
 		f->read(_lev, len);
 	}
+}
+
+void Resource::load_SGD(File *f) {
+	const int len = f->size();
+	f->seek(len - 4);
+	int size = f->readUint32BE();
+	f->seek(0);
+	uint8 *tmp = (uint8 *)malloc(len);
+	if (!tmp) {
+		error("Unable to allocate SGD temporary buffer");
+	}
+	f->read(tmp, len);
+	_sgd = (uint8 *)malloc(size);
+	if (!_sgd) {
+		error("Unable to allocate SGD buffer");
+	}
+	if (!delphine_unpack(_sgd, tmp, len)) {
+		error("Bad CRC for SGD data");
+	}
+	free(tmp);
 }
 
 void Resource::clearBankData() {

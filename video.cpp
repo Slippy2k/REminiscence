@@ -259,6 +259,87 @@ void Video::PC_setLevelPalettes() {
 	setTextPalette();
 }
 
+static void AMIGA_blit4pNxN(uint8 *dst, int x0, int y0, int w, int h, uint8 *src, uint8 *mask, int size) {
+	dst += y0 * 256 + x0;
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w * 2; ++x) {
+			for (int i = 0; i < 8; ++i) {
+				const int c_mask = 1 << (7 - i);
+				int color = 0;
+				for (int j = 0; j < 4; ++j) {
+					if (mask[j * size] & c_mask) {
+						color |= 1 << j;
+					}
+				}
+				if (*src & c_mask) {
+					const int px = x0 + 8 * x + i;
+					const int py = y0 + y;
+					if (px >= 0 && px < 256 && py >= 0 && py < 224) {
+						dst[8 * x + i] = color;
+					}
+				}
+			}
+			++src;
+			++mask;
+		}
+		dst += 256;
+	}
+}
+
+static void AMIGA_decodeSgdHelper(uint8 *dst, const uint8 *src) {
+	int code = READ_BE_UINT16(src) & 0x7FFF; src += 2;
+	const uint8 *end = src + code;
+	do {
+		code = *src++;
+		if ((code & 0x80) == 0) {
+			++code;
+			memcpy(dst, src, code);
+			src += code;
+		} else {
+			code = 1 - ((int8)code);
+			memset(dst, *src, code);
+			++src;
+		}
+		dst += code;
+	} while (src < end);
+	assert(src == end);
+}
+
+static void AMIGA_decodeSgd(uint8 *dst, const uint8 *src, const uint8 *data) {
+	int num = -1;
+	uint8 buf[256 * 32];
+	int count = READ_BE_UINT16(src) - 1; src += 2;
+	do {
+		int d2 = READ_BE_UINT16(src); src += 2;
+		int d0 = READ_BE_UINT16(src); src += 2;
+		int d1 = READ_BE_UINT16(src); src += 2;
+		if (d2 != 0xFFFF) {
+			d2 &= ~(1 << 15);
+			const int offset = READ_BE_UINT32(data + d2 * 4);
+			if (offset < 0) {
+				const uint8 *ptr = data - offset;
+				const int size = READ_BE_UINT16(ptr); ptr += 2;
+				if (num != d2) {
+					num = d2;
+					assert(size < (int)sizeof(buf));
+					memcpy(buf, ptr, size);
+				}
+                        } else {
+				if (num != d2) {
+					num = d2;
+					const int size = READ_BE_UINT16(data + offset) & 0x7FFF;
+					assert(size < (int)sizeof(buf));
+					AMIGA_decodeSgdHelper(buf, data + offset);
+				}
+			}
+		}
+		const int w = (buf[0] + 1) >> 1;
+		const int h = buf[1] + 1;
+		const int planarSize = READ_BE_UINT16(buf + 2);
+		AMIGA_blit4pNxN(dst, (int16)d0, (int16)d1, w, h, buf + 4, buf + 4 + planarSize, planarSize);
+	} while (--count >= 0);
+}
+
 static const uint8 *AMIGA_mirrorY(const uint8 *a2) {
 	static uint8 buf[32];
 
@@ -307,7 +388,7 @@ static void AMIGA_blit4p8x8(uint8 *dst, const uint8 *src, int colorKey) {
 	}
 }
 
-static void AMIGA_decodeLevHelper(uint8 *dst, const uint8 *src, int offset10, int offset12, const uint8 *a5) {
+static void AMIGA_decodeLevHelper(uint8 *dst, const uint8 *src, int offset10, int offset12, const uint8 *a5, bool sgdBuf) {
 	if (offset10 != 0) {
 		const uint8 *a0 = src + offset10;
 		for (int y = 0; y < 224; y += 8) {
@@ -332,7 +413,10 @@ static void AMIGA_decodeLevHelper(uint8 *dst, const uint8 *src, int offset10, in
 		for (int y = 0; y < 224; y += 8) {
 			for (int x = 0; x < 256; x += 8) {
 				const int d3 = READ_BE_UINT16(a0); a0 += 2;
-				const int d0 = d3 & 0x7FF;
+				int d0 = d3 & 0x7FF;
+				if (d0 != 0 && sgdBuf) {
+					d0 -= 896;
+				}
 				if (d0 != 0) {
 					const uint8 *a2 = a5 + d0 * 32;
 					if ((d3 & (1 << 12)) != 0) {
@@ -354,11 +438,8 @@ void Video::AMIGA_decodeLev(int level, int room) {
 	if (!delphine_unpack(tmp, _res->_lev, offset)) {
 		error("Bad CRC for level %d room %d", level, room);
 	}
-	uint16 offset10 = 0;
+	uint16 offset10 = READ_BE_UINT16(tmp + 10);
 	const uint16 offset12 = READ_BE_UINT16(tmp + 12);
-	if (tmp[1] == 0) {
-		offset10 = READ_BE_UINT16(tmp + 10);
-	}
 	const uint16 offset14 = READ_BE_UINT16(tmp + 14);
 	static const int kTempMbkSize = 512;
 	uint8 *buf = (uint8 *)malloc(kTempMbkSize * 32);
@@ -394,11 +475,21 @@ void Video::AMIGA_decodeLev(int level, int room) {
 			}
 		}
 	}
-	AMIGA_decodeLevHelper(_frontLayer, tmp, offset10, offset12, buf);
+	memset(_frontLayer, 0, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+	if (tmp[1] != 0) {
+		assert(_res->_sgd);
+		AMIGA_decodeSgd(_frontLayer, tmp + offset10, _res->_sgd);
+		offset10 = 0;
+	}
+	AMIGA_decodeLevHelper(_frontLayer, tmp, offset10, offset12, buf, tmp[1] != 0);
 	memcpy(_backLayer, _frontLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
 	for (int i = 0; i < 2; ++i) {
 		const int num = READ_BE_UINT16(tmp + i * 2);
-		setPaletteSlotBE(i, num);
+		if (level == 0 && i == 0) {
+			setPaletteSlotBE(i, 0);
+		} else {
+			setPaletteSlotBE(i, num);
+		}
 	}
 }
 

@@ -70,7 +70,6 @@ struct Resource {
 		OT_PAL,
 		OT_CT,
 		OT_MAP,
-		OT_SGD,
 		OT_SPC,
 		OT_RP,
 		OT_RPC,
@@ -90,7 +89,8 @@ struct Resource {
 		OT_CMP,
 		OT_OBC,
 		OT_SPL,
-		OT_LEV
+		OT_LEV,
+		OT_SGD
 	};
 
 	static const uint16 _voicesOffsetsTable[];
@@ -119,6 +119,7 @@ struct Resource {
 	InitPGE _pgeInit[256];
 	uint8 *_map;
 	uint8 *_lev;
+	uint8 *_sgd;
 	uint16 _numObjectNodes;
 	ObjectNode *_objectNodesMap[255];
 	uint8 *_memBuf;
@@ -172,6 +173,7 @@ struct Resource {
 	void load_VCE(int num, int segment, uint8 **buf, uint32 *bufSize);
 	void load_SPL(File *pf);
 	void load_LEV(File *pf);
+	void load_SGD(File *pf);
 	const uint8 *getAniData(int num) const {
 		const uint32 offset = READ_LE_UINT16(_ani + num * 2);
 		return _ani + offset;

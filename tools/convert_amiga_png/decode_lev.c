@@ -616,7 +616,7 @@ static void decode_lev(int level, const unsigned char *a4, unsigned char *mbk, u
 			if (size != 0) {
 				ret = delphine_unpack(a4 + offsets[i] - 4, _decodeLevBuf);
 				assert(ret);
-//				print_lev_hdr(i, _decodeLevBuf, size);
+				print_lev_hdr(i, _decodeLevBuf, size);
 				loadLevelMap(level, i, _decodeLevBuf, mbk, pal);
 			}
 		}
