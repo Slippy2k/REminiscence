@@ -229,8 +229,8 @@ bool Menu::handleLevelScreen(uint8 &new_skill, uint8 &new_level) {
 	_vid->fadeOut();
 	loadPicture("menu2");
 	_vid->fullRefresh();
-	uint8 currentSkill = 0;
-	uint8 currentLevel = 0;
+	uint8 currentSkill = new_skill;
+	uint8 currentLevel = new_level;
 	do {
 		static const char *levelTitles[] = {
 			"Titan / The Jungle",

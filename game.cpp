@@ -70,7 +70,7 @@ void Game::run() {
 	}
 
 	_skillLevel = 1;
-	_currentLevel = 0;
+	_currentLevel = 2; /* TEMP */
 
 	while (!_stub->_pi.quit && (_res._type == kResourceTypeAmiga || _menu.handleTitleScreen(_skillLevel, _currentLevel))) {
 		if (_currentLevel == 7) {
@@ -117,8 +117,6 @@ void Game::mainLoop() {
 	_vid._unkPalSlot1 = 0;
 	_vid._unkPalSlot2 = 0;
 	_score = 0;
-	_firstBankData = _bankData;
-	_lastBankData = _bankData + sizeof(_bankData);
 	loadLevelData();
 	resetGameState();
 	while (!_stub->_pi.quit) {
@@ -564,6 +562,7 @@ void Game::printLevelCode() {
 			char levelCode[50];
 			snprintf(levelCode, sizeof(levelCode), "CODE: %s", _menu._passwords[_currentLevel][_skillLevel]);
 			if (_res._type == kResourceTypeAmiga) {
+				/* TODO */
 			} else {
 				_vid.drawString(levelCode, (Video::GAMESCREEN_W - strlen(levelCode) * 8) / 2, 16, 0xE7);
 			}
@@ -575,6 +574,7 @@ void Game::printSaveStateCompleted() {
 	if (_saveStateCompleted) {
 		const char *str = _res.getMenuString(LocaleData::LI_05_COMPLETED);
 		if (_res._type == kResourceTypeAmiga) {
+			/* TODO */
 		} else {
 			_vid.drawString(str, (176 - strlen(str) * 8) / 2, 34, 0xE6);
 		}
@@ -779,6 +779,10 @@ void Game::drawAnimBuffer(uint8 stateNum, AnimBufferState *state) {
 		state += lastPos;
 		_animBuffers._curPos[stateNum] = 0xFF;
 		do {
+			if (_res._type == kResourceTypeAmiga) {
+				/* TODO */
+				continue;
+			}
 			LivePGE *pge = state->pge;
 			if (!(pge->flags & 8)) {
 				if (stateNum == 1 && (_blinkingConradCounter & 1)) {
@@ -802,11 +806,10 @@ void Game::drawObject(const uint8 *dataPtr, int16 x, int16 y, uint8 flags) {
 	debug(DBG_GAME, "Game::drawObject() dataPtr[]=0x%X dx=%d dy=%d",  dataPtr[0], (int8)dataPtr[1], (int8)dataPtr[2]);
 	assert(dataPtr[0] < 0x4A);
 	uint8 slot = _res._rp[dataPtr[0]];
-	uint8 *data = findBankData(slot);
+	uint8 *data = _res.findBankData(slot);
 	if (data == 0) {
-		data = loadBankData(slot);
+		data = _res.loadBankData(slot);
 	}
-	_bankDataPtrs = data;
 	int16 posy = y - (int8)dataPtr[2];
 	int16 posx = x;
 	if (flags & 2) {
@@ -817,14 +820,14 @@ void Game::drawObject(const uint8 *dataPtr, int16 x, int16 y, uint8 flags) {
 	int i = dataPtr[5];
 	dataPtr += 6;
 	while (i--) {
-		drawObjectFrame(dataPtr, posx, posy, flags);
+		drawObjectFrame(data, dataPtr, posx, posy, flags);
 		dataPtr += 4;
 	}
 }
 
-void Game::drawObjectFrame(const uint8 *dataPtr, int16 x, int16 y, uint8 flags) {
+void Game::drawObjectFrame(const uint8 *bankDataPtr, const uint8 *dataPtr, int16 x, int16 y, uint8 flags) {
 	debug(DBG_GAME, "Game::drawObjectFrame(0x%X, %d, %d, 0x%X)", dataPtr, x, y, flags);
-	const uint8 *src = _bankDataPtrs + dataPtr[0] * 32;
+	const uint8 *src = bankDataPtr + dataPtr[0] * 32;
 
 	int16 sprite_y = y + dataPtr[2];
 	int16 sprite_x;
@@ -1057,37 +1060,6 @@ void Game::drawCharacter(const uint8 *dataPtr, int16 pos_x, int16 pos_y, uint8 a
 	_vid.markBlockAsDirty(pos_x, pos_y, sprite_clipped_w, sprite_clipped_h);
 }
 
-uint8 *Game::loadBankData(uint16 mbkEntryNum) {
-	debug(DBG_GAME, "Game::loadBankData(%d)", mbkEntryNum);
-	MbkEntry *me = &_res._mbk[mbkEntryNum];
-	const uint16 avail = _lastBankData - _firstBankData;
-	const uint16 size = (me->len & 0x7FFF) * 32;
-	if (avail < size) {
-		_curBankSlot = &_bankSlots[0];
-		_curBankSlot->entryNum = 0xFFFF;
-		_curBankSlot->ptr = 0;
-		_firstBankData = _bankData;
-	}
-	_curBankSlot->entryNum = mbkEntryNum;
-	_curBankSlot->ptr = _firstBankData;
-	++_curBankSlot;
-	_curBankSlot->entryNum = 0xFFFF;
-	_curBankSlot->ptr = 0;
-	const uint8 *data = _res._mbkData + me->offset;
-	if (me->len & 0x8000) {
-		warning("Uncompressed bank data %d", mbkEntryNum);
-		memcpy(_firstBankData, data, size);
-	} else {
-		assert(me->offset != 0);
-		if (!delphine_unpack(_firstBankData, data, 0)) {
-			error("Bad CRC for bank data %d", mbkEntryNum);
-		}
-	}
-	uint8 *bankData = _firstBankData;
-	_firstBankData += size;
-	assert(_firstBankData < _lastBankData);
-	return bankData;
-}
 
 int Game::loadMonsterSprites(LivePGE *pge) {
 	debug(DBG_GAME, "Game::loadMonsterSprites()");
@@ -1127,10 +1099,14 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 void Game::loadLevelMap() {
 	debug(DBG_GAME, "Game::loadLevelMap() room=%d", _currentRoom);
 	_currentIcon = 0xFF;
-	if (_res._type == kResourceTypeAmiga) {
-	} else {
-		_vid.copyLevelMap(_currentLevel, _currentRoom);
-		_vid.setLevelPalettes();
+	switch (_res._type) {
+	case kResourceTypeAmiga:
+		_vid.AMIGA_decodeLev(_currentLevel, _currentRoom);
+		break;
+	case kResourceTypePC:
+		_vid.PC_decodeMap(_currentLevel, _currentRoom);
+		_vid.PC_setLevelPalettes();
+		break;
 	}
 }
 
@@ -1174,10 +1150,7 @@ void Game::loadLevelData() {
 	_curMonsterNum = 0xFFFF;
 	_curMonsterFrame = 0;
 
-	_curBankSlot = &_bankSlots[0];
-	_curBankSlot->entryNum = 0xFFFF;
-	_curBankSlot->ptr = 0;
-	_firstBankData = _bankData;
+	_res.clearBankData();
 	_printLevelCodeCounter = 150;
 
 	_col_slots2Cur = _col_slots2;
@@ -1201,17 +1174,6 @@ void Game::loadLevelData() {
 	}
 	pge_resetGroups();
 	_validSaveState = false;
-}
-
-uint8 *Game::findBankData(uint16 entryNum) {
-	BankSlot *slot = &_bankSlots[0];
-	while (slot->entryNum != 0xFFFF) {
-		if (slot->entryNum == entryNum) {
-			return slot->ptr;
-		}
-		++slot;
-	}
-	return 0;
 }
 
 void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {

@@ -100,6 +100,7 @@ struct Resource {
 	Language _lang;
 	char _entryName[32];
 	uint8 *_fnt;
+	uint8 _mbkNum;
 	MbkEntry *_mbk;
 	uint8 *_mbkData;
 	uint8 *_icn;
@@ -131,6 +132,11 @@ struct Resource {
 	const char **_textsTable;
 	uint8 *_extStringsTable;
 	const uint8 *_stringsTable;
+	uint8 _bankData[0x7000];
+	uint8 *_bankDataHead;
+	uint8 *_bankDataTail;
+	BankSlot _bankSlots[49];
+	BankSlot *_curBankSlot;
 
 	Resource(FileSystem *fs, ResourceType type, Language lang);
 	~Resource();
@@ -176,6 +182,9 @@ struct Resource {
 	const char *getMenuString(int num) {
 		return (num >= 0 && num < LocaleData::LI_NUM) ? _textsTable[num] : "";
 	}
+	void clearBankData();
+	uint8 *findBankData(uint16 entryNum);
+	uint8 *loadBankData(uint16 mbkEntryNum);
 };
 
 #endif // __RESOURCE_H__

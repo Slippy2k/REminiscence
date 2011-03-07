@@ -25,7 +25,9 @@ Resource::Resource(FileSystem *fs, ResourceType ver, Language lang) {
 	_type = ver;
 	_lang = lang;
 	_fs = fs;
-	_memBuf = (uint8 *)malloc(0xE000);
+	_memBuf = (uint8 *)malloc(256 * 224);
+	_bankDataHead = _bankData;
+	_bankDataTail = _bankData + sizeof(_bankData);
 }
 
 Resource::~Resource() {
@@ -455,19 +457,23 @@ void Resource::load_FNT(File *f) {
 
 void Resource::load_MBK(File *f) {
 	debug(DBG_RES, "Resource::load_MBK()");
-	uint8 num = f->readByte();
-	int dataSize = f->size() - num * 6;
-	_mbk = (MbkEntry *)malloc(sizeof(MbkEntry) * num);
-	if (!_mbk) {
-		error("Unable to allocate MBK buffer");
-	}
-	f->seek(0);
-	for (int i = 0; i < num; ++i) {
-		f->readUint16BE(); /* unused */
-		_mbk[i].offset = f->readUint16BE() - num * 6;
-		_mbk[i].len = f->readUint16BE();
-		debug(DBG_RES, "dataSize=0x%X entry %d off=0x%X len=0x%X", dataSize, i, _mbk[i].offset + num * 6, _mbk[i].len);
-		assert(_mbk[i].offset <= dataSize);
+	int dataSize = f->size();
+	if (_type == kResourceTypePC) {
+		_mbkNum = f->readByte();
+		const int dataOffset = _mbkNum * 6;
+		dataSize -= dataOffset;
+		_mbk = (MbkEntry *)malloc(sizeof(MbkEntry) * _mbkNum);
+		if (!_mbk) {
+			error("Unable to allocate MBK buffer");
+		}
+		f->seek(0);
+		for (int i = 0; i < _mbkNum; ++i) {
+			f->readUint16BE(); /* unused */
+			_mbk[i].offset = f->readUint16BE() - dataOffset;
+			_mbk[i].len = f->readUint16BE();
+			debug(DBG_RES, "dataSize=0x%X entry %d off=0x%X len=0x%X", dataSize, i, _mbk[i].offset + dataOffset, _mbk[i].len);
+			assert(_mbk[i].offset <= dataSize);
+		}
 	}
 	_mbkData = (uint8 *)malloc(dataSize);
 	if (!_mbkData) {
@@ -933,5 +939,65 @@ void Resource::load_LEV(File *f) {
 	} else {
 		f->read(_lev, len);
 	}
+}
+
+void Resource::clearBankData() {
+	_curBankSlot = &_bankSlots[0];
+	_curBankSlot->entryNum = 0xFFFF;
+	_curBankSlot->ptr = 0;
+	_bankDataHead = _bankData;
+}
+
+uint8 *Resource::findBankData(uint16 entryNum) {
+	BankSlot *slot = &_bankSlots[0];
+	while (slot->entryNum != 0xFFFF) {
+		if (slot->entryNum == entryNum) {
+			return slot->ptr;
+		}
+		++slot;
+	}
+	return 0;
+}
+
+uint8 *Resource::loadBankData(uint16 mbkEntryNum) {
+	int dataOffset = 0, dataLen = 0;
+	switch (_type) {
+	case kResourceTypePC: {
+			MbkEntry *me = &_mbk[mbkEntryNum];
+			dataOffset = me->offset;
+			dataLen = me->len;
+		}
+		break;
+	case kResourceTypeAmiga: {
+			const uint8 *ptr = _mbkData + mbkEntryNum * 6;
+			dataOffset = READ_BE_UINT32(ptr);
+			dataLen = READ_BE_UINT16(ptr + 4);
+		}
+		break;
+	}
+	const int avail = _bankDataTail - _bankDataHead;
+	const int size = (dataLen & 0x7FFF) * 32;
+	if (avail < size) {
+		clearBankData();
+	}
+	_curBankSlot->entryNum = mbkEntryNum;
+	_curBankSlot->ptr = _bankDataHead;
+	++_curBankSlot;
+	_curBankSlot->entryNum = 0xFFFF;
+	_curBankSlot->ptr = 0;
+	const uint8 *data = _mbkData + dataOffset;
+	if (dataLen & 0x8000) {
+		warning("Uncompressed bank data %d", mbkEntryNum);
+		memcpy(_bankDataHead, data, size);
+	} else {
+		assert(dataOffset != 0);
+		if (!delphine_unpack(_bankDataHead, data, 0)) {
+			error("Bad CRC for bank data %d", mbkEntryNum);
+		}
+	}
+	uint8 *bankData = _bankDataHead;
+	_bankDataHead += size;
+	assert(_bankDataHead < _bankDataTail);
+	return bankData;
 }
 

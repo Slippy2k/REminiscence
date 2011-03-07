@@ -94,12 +94,6 @@ struct Game {
 	AnimBufferState _animBuffer2State[42];
 	AnimBufferState _animBuffer3State[12];
 	AnimBuffers _animBuffers;
-	uint8 _bankData[0x7000];
-	uint8 *_firstBankData;
-	uint8 *_lastBankData;
-	BankSlot _bankSlots[49];
-	BankSlot *_curBankSlot;
-	const uint8 *_bankDataPtrs;
 	uint16 _deathCutsceneCounter;
 	bool _saveStateCompleted;
 
@@ -127,17 +121,15 @@ struct Game {
 	void drawAnims();
 	void drawAnimBuffer(uint8 stateNum, AnimBufferState *state);
 	void drawObject(const uint8 *dataPtr, int16 x, int16 y, uint8 flags);
-	void drawObjectFrame(const uint8 *dataPtr, int16 x, int16 y, uint8 flags);
+	void drawObjectFrame(const uint8 *bankDataPtr, const uint8 *dataPtr, int16 x, int16 y, uint8 flags);
 	void decodeCharacterFrame(const uint8 *dataPtr, uint8 *dstPtr);
 	void drawCharacter(const uint8 *dataPtr, int16 x, int16 y, uint8 a, uint8 b, uint8 flags);
-	uint8 *loadBankData(uint16 MbkEntryNum);
 	int loadMonsterSprites(LivePGE *pge);
 	void playSound(uint8 sfxId, uint8 softVol);
 	uint16 getRandomNumber();
 	void changeLevel();
 	uint16 getLineLength(const uint8 *str) const;
 	void handleInventory();
-	uint8 *findBankData(uint16 entryNum);
 
 
 	// pieges

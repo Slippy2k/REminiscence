@@ -66,9 +66,9 @@ struct Video {
 	void setPaletteSlotLE(int palSlot, const uint8 *palData);
 	void setTextPalette();
 	void setPalette0xF();
-	void copyLevelMap(int level, int room);
-	void decodeLevelMap(uint16 sz, const uint8 *src, uint8 *dst);
-	void setLevelPalettes();
+	void PC_decodeMap(int level, int room);
+	void PC_setLevelPalettes();
+	void AMIGA_decodeLev(int level, int room);
 	void drawSpriteSub1(const uint8 *src, uint8 *dst, int pitch, int h, int w, uint8 colMask);
 	void drawSpriteSub2(const uint8 *src, uint8 *dst, int pitch, int h, int w, uint8 colMask);
 	void drawSpriteSub3(const uint8 *src, uint8 *dst, int pitch, int h, int w, uint8 colMask);

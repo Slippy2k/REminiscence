@@ -17,6 +17,7 @@
 
 #include "resource.h"
 #include "systemstub.h"
+#include "unpack.h"
 #include "video.h"
 
 
@@ -174,8 +175,25 @@ void Video::setPalette0xF() {
 	}
 }
 
-void Video::copyLevelMap(int level, int room) {
-	debug(DBG_VIDEO, "Video::copyLevelMap(%d)", room);
+static void PC_decodeMapHelper(int sz, const uint8 *src, uint8 *dst) {
+	const uint8 *end = src + sz;
+	while (src < end) {
+		int16 code = (int8)*src++;
+		if (code < 0) {
+			const int len = 1 - code;
+			memset(dst, *src++, len);
+			dst += len;
+		} else {
+			++code;
+			memcpy(dst, src, code);
+			src += code;
+			dst += code;
+		}
+	}
+}
+
+void Video::PC_decodeMap(int level, int room) {
+	debug(DBG_VIDEO, "Video::PC_decodeMap(%d)", room);
 	assert(room < 0x40);
 	int32 off = READ_LE_UINT32(_res->_map + room * 6);
 	if (off == 0) {
@@ -198,8 +216,8 @@ void Video::copyLevelMap(int level, int room) {
 	if (packed) {
 		uint8 *vid = _frontLayer;
 		for (int i = 0; i < 4; ++i) {
-			uint16 sz = READ_LE_UINT16(p); p += 2;
-			decodeLevelMap(sz, p, _res->_memBuf); p += sz;
+			const int sz = READ_LE_UINT16(p); p += 2;
+			PC_decodeMapHelper(sz, p, _res->_memBuf); p += sz;
 			memcpy(vid, _res->_memBuf, 256 * 56);
 			vid += 256 * 56;
 		}
@@ -215,26 +233,8 @@ void Video::copyLevelMap(int level, int room) {
 	memcpy(_backLayer, _frontLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
 }
 
-void Video::decodeLevelMap(uint16 sz, const uint8 *src, uint8 *dst) {
-	debug(DBG_VIDEO, "Video::decodeLevelMap() sz = 0x%X", sz);
-	const uint8 *end = src + sz;
-	while (src < end) {
-		int16 code = (int8)*src++;
-		if (code < 0) {
-			int len = 1 - code;
-			memset(dst, *src++, len);
-			dst += len;
-		} else {
-			++code;
-			memcpy(dst, src, code);
-			src += code;
-			dst += code;
-		}
-	}
-}
-
-void Video::setLevelPalettes() {
-	debug(DBG_VIDEO, "Video::setLevelPalettes()");
+void Video::PC_setLevelPalettes() {
+	debug(DBG_VIDEO, "Video::PC_setLevelPalettes()");
 	if (_unkPalSlot2 == 0) {
 		_unkPalSlot2 = _mapPalSlot3;
 	}
@@ -257,6 +257,149 @@ void Video::setLevelPalettes() {
 	setPaletteSlotBE(0xB, _mapPalSlot4);
 	// slots 0xC and 0xD are cutscene palettes
 	setTextPalette();
+}
+
+static const uint8 *AMIGA_mirrorY(const uint8 *a2) {
+	static uint8 buf[32];
+
+        a2 += 24;
+	for (int j = 0; j < 4; ++j) {
+		for (int i = 0; i < 8; ++i) {
+			buf[31 - j * 8 - i] = *a2++;
+		}
+		a2 -= 16;
+	}
+	return buf;
+}
+
+static const uint8 *AMIGA_mirrorX(const uint8 *a2) {
+	static uint8 buf[32];
+	uint8 mask = 0;
+
+	for (int i = 0; i < 32; ++i) {
+		mask = 0;
+		for (int bit = 0; bit < 8; ++bit) {
+			if (a2[i] & (1 << bit)) {
+				mask |= 1 << (7 - bit);
+			}
+		}
+		buf[i] = mask;
+	}
+	return buf;
+}
+
+static void AMIGA_blit4p8x8(uint8 *dst, const uint8 *src, int colorKey) {
+	for (int y = 0; y < 8; ++y) {
+		for (int i = 0; i < 8; ++i) {
+			const int mask = 1 << (7 - i);
+			int color = 0;
+			for (int bit = 0; bit < 4; ++bit) {
+				if (src[8 * bit] & mask) {
+					color |= 1 << bit;
+				}
+			}
+			if (color != colorKey) {
+				dst[i] = color;
+			}
+		}
+		++src;
+		dst += 256;
+	}
+}
+
+static void AMIGA_decodeLevHelper(uint8 *dst, const uint8 *src, int offset10, int offset12, const uint8 *a5) {
+	if (offset10 != 0) {
+		const uint8 *a0 = src + offset10;
+		for (int y = 0; y < 224; y += 8) {
+			for (int x = 0; x < 256; x += 8) {
+				const int d3 = READ_BE_UINT16(a0); a0 += 2;
+				const int d0 = d3 & 0x7FF;
+				if (d0 != 0) {
+					const uint8 *a2 = a5 + d0 * 32;
+					if ((d3 & (1 << 12)) != 0) {
+						a2 = AMIGA_mirrorY(a2);
+					}
+					if ((d3 & (1 << 11)) != 0) {
+						a2 = AMIGA_mirrorX(a2);
+					}
+					AMIGA_blit4p8x8(dst + y * 256 + x, a2, 255);
+				}
+			}
+		}
+	}
+	if (offset12 != 0) {
+		const uint8 *a0 = src + offset12;
+		for (int y = 0; y < 224; y += 8) {
+			for (int x = 0; x < 256; x += 8) {
+				const int d3 = READ_BE_UINT16(a0); a0 += 2;
+				const int d0 = d3 & 0x7FF;
+				if (d0 != 0) {
+					const uint8 *a2 = a5 + d0 * 32;
+					if ((d3 & (1 << 12)) != 0) {
+						a2 = AMIGA_mirrorY(a2);
+					}
+					if ((d3 & (1 << 11)) != 0) {
+						a2 = AMIGA_mirrorX(a2);
+					}
+					AMIGA_blit4p8x8(dst + y * 256 + x, a2, 0);
+				}
+			}
+		}
+	}
+}
+
+void Video::AMIGA_decodeLev(int level, int room) {
+	uint8 *tmp = _res->_memBuf;
+	const int offset = READ_BE_UINT32(_res->_lev + room * 4);
+	if (!delphine_unpack(tmp, _res->_lev, offset)) {
+		error("Bad CRC for level %d room %d", level, room);
+	}
+	uint16 offset10 = 0;
+	const uint16 offset12 = READ_BE_UINT16(tmp + 12);
+	if (tmp[1] == 0) {
+		offset10 = READ_BE_UINT16(tmp + 10);
+	}
+	const uint16 offset14 = READ_BE_UINT16(tmp + 14);
+	static const int kTempMbkSize = 512;
+	uint8 *buf = (uint8 *)malloc(kTempMbkSize * 32);
+	if (!buf) {
+		error("Unable to allocate mbk temporary buffer");
+	}
+	int sz = 0;
+	memset(buf, 0, 32);
+	sz += 32;
+	const uint8 *a1 = tmp + offset14;
+	for (bool loop = true; loop;) {
+		int d0 = READ_BE_UINT16(a1); a1 += 2;
+		if (d0 & 0x8000) {
+			d0 &= ~0x8000;
+			loop = false;
+		}
+		const int d1 = READ_BE_UINT16(_res->_mbkData + d0 * 6 + 4) & 0x7FFF;
+		const uint8 *a6 = _res->findBankData(d0);
+		if (!a6) {
+			a6 = _res->loadBankData(d0);
+		}
+		const int d3 = *a1++;
+		if (d3 == 255) {
+			assert(sz / 32 + d1 < kTempMbkSize);
+			memcpy(buf + sz, a6, d1 * 32);
+			sz += d1 * 32;
+		} else {
+			for (int i = 0; i < d3 + 1; ++i) {
+				const int d4 = *a1++;
+				assert(sz / 32 + 1 < kTempMbkSize);
+				memcpy(buf + sz, a6 + d4 * 32, 32);
+				sz += 32;
+			}
+		}
+	}
+	AMIGA_decodeLevHelper(_frontLayer, tmp, offset10, offset12, buf);
+	memcpy(_backLayer, _frontLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+	for (int i = 0; i < 2; ++i) {
+		const int num = READ_BE_UINT16(tmp + i * 2);
+		setPaletteSlotBE(i, num);
+	}
 }
 
 void Video::drawSpriteSub1(const uint8 *src, uint8 *dst, int pitch, int h, int w, uint8 colMask) {
