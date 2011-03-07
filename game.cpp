@@ -59,6 +59,7 @@ void Game::run() {
 
 	switch (_res._type) {
 	case kResourceTypeAmiga:
+		_res.load("PERSO", Resource::OT_SPM);
 		break;
 	case kResourceTypePC:
 		_res.load("GLOBAL", Resource::OT_ICN);
@@ -716,7 +717,7 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy) {
 		if (dataPtr == 0) {
 			return;
 		}
-
+if (_res._type == kResourceTypePC) {
 		if (pge->flags & 2) {
 			xpos = (int8)dataPtr[0] + dx + pge->pos_x;
 			uint8 _cl = dataPtr[2];
@@ -736,6 +737,10 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy) {
 		}
 		xpos += 8;
 		dataPtr += 4;
+} else {
+	xpos = dx + pge->pos_x + 8;
+	ypos = dy + pge->pos_y + 2;
+}
 		if (pge == &_pgeLive[0]) {
 			_animBuffers.addState(1, xpos, ypos, dataPtr, pge);
 		} else if (pge->flags & 0x10) {
@@ -779,20 +784,28 @@ void Game::drawAnimBuffer(uint8 stateNum, AnimBufferState *state) {
 		state += lastPos;
 		_animBuffers._curPos[stateNum] = 0xFF;
 		do {
-			if (_res._type == kResourceTypeAmiga) {
-				/* TODO */
-				continue;
-			}
 			LivePGE *pge = state->pge;
 			if (!(pge->flags & 8)) {
 				if (stateNum == 1 && (_blinkingConradCounter & 1)) {
 					break;
 				}
-				if (!(state->dataPtr[-2] & 0x80)) {
-					decodeCharacterFrame(state->dataPtr, _res._memBuf);
-					drawCharacter(_res._memBuf, state->x, state->y, state->dataPtr[-1], state->dataPtr[-2], pge->flags);
-				} else {
-					drawCharacter(state->dataPtr, state->x, state->y, state->dataPtr[-1], state->dataPtr[-2], pge->flags);
+				switch (_res._type) {
+				case kResourceTypeAmiga:
+					_vid.AMIGA_decodeSpm(state->dataPtr, _res._memBuf);
+					{
+						const int w = ((state->dataPtr[2] >> 7) + 1) * 16;
+						const int h = (state->dataPtr[2] & 0x7F) + 1;
+						drawCharacter(_res._memBuf, state->x, state->y, h, w, pge->flags);
+					}
+					break;
+				case kResourceTypePC:
+					if (!(state->dataPtr[-2] & 0x80)) {
+						decodeCharacterFrame(state->dataPtr, _res._memBuf);
+						drawCharacter(_res._memBuf, state->x, state->y, state->dataPtr[-1], state->dataPtr[-2], pge->flags);
+					} else {
+						drawCharacter(state->dataPtr, state->x, state->y, state->dataPtr[-1], state->dataPtr[-2], pge->flags);
+					}
+					break;
 				}
 			} else {
 				drawObject(state->dataPtr, state->x, state->y, pge->flags);
@@ -817,9 +830,19 @@ void Game::drawObject(const uint8 *dataPtr, int16 x, int16 y, uint8 flags) {
 	} else {
 		posx -= (int8)dataPtr[1];
 	}
-	int i = dataPtr[5];
-	dataPtr += 6;
-	while (i--) {
+	int count = 0;
+	switch (_res._type) {
+	case kResourceTypeAmiga:
+		count = dataPtr[8];
+		dataPtr += 9;
+return; /* TEMP */
+		break;
+	case kResourceTypePC:
+		count = dataPtr[5];
+		dataPtr += 6;
+		break;
+	}
+	for (int i = 0; i < count; ++i) {
 		drawObjectFrame(data, dataPtr, posx, posy, flags);
 		dataPtr += 4;
 	}
@@ -954,7 +977,6 @@ void Game::decodeCharacterFrame(const uint8 *dataPtr, uint8 *dstPtr) {
 	} while (len != 0);
 }
 
-
 void Game::drawCharacter(const uint8 *dataPtr, int16 pos_x, int16 pos_y, uint8 a, uint8 b, uint8 flags) {
 	debug(DBG_GAME, "Game::drawCharacter(0x%X, %d, %d, 0x%X, 0x%X, 0x%X)", dataPtr, pos_x, pos_y, a, b, flags);
 
@@ -1085,7 +1107,7 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 	if (_curMonsterNum != mList[1]) {
 		_curMonsterNum = mList[1];
 		if (_res._type == kResourceTypeAmiga) {
-			_res.load(_monsterNames[1][_curMonsterNum], Resource::OT_SPRM);
+			_res.load(_monsterNames[1][_curMonsterNum], Resource::OT_SPM);
 		} else {
 			const char *name = _monsterNames[0][_curMonsterNum];
 			_res.load(name, Resource::OT_SPRM);

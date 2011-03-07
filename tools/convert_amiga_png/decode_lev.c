@@ -570,8 +570,11 @@ printf("pal %d %d %d\n", d1, movew(a0), movew(a0 + 2));
 	assert(d1 >= 0 && d1 < 6);
 	a3 = pal + d1 * 32;
 	for (i = 0; i < 16; ++i) {
-		d2 = movew(a3); a3 += 2;
+//		d2 = movew(a3); a3 += 2;
+		d2 = movew(pal + 1 * 32 + i * 2);
 		convert_amiga_color(_roomPalBuf, 16 + i, d2);
+		d2 = movew(pal + 2 * 32 + i * 2);
+		convert_amiga_color(_roomPalBuf, 32 + i, d2);
 	}
 	d1 = movew(a0); a0 += 2;
 	if ((byte_31D30 & 0x80) == 0) {
@@ -589,8 +592,9 @@ if (_currentLevel == 0) {
 #if 1
 	// output palette (debug)
 	for (i = 0; i < 16; ++i) {
-		fill_image_data(_roomBitmapBuf, i * 8, 0, 8, 4, i);
-		fill_image_data(_roomBitmapBuf, i * 8, 6, 8, 4, 16 + i);
+		fill_image_data(_roomBitmapBuf, i * 8,  0, 8, 4, i);
+		fill_image_data(_roomBitmapBuf, i * 8,  6, 8, 4, 16 + i);
+		fill_image_data(_roomBitmapBuf, i * 8, 12, 8, 4, 32 + i);
 	}
 #endif
 if (_currentLevel != 0) {

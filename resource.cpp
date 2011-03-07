@@ -416,6 +416,10 @@ void Resource::load(const char *objName, int objType) {
 		snprintf(_entryName, sizeof(_entryName), "%s.SGD", objName);
 		loadStub = &Resource::load_SGD;
 		break;
+	case OT_SPM:
+		snprintf(_entryName, sizeof(_entryName), "%s.SPM", objName);
+		loadStub = &Resource::load_SPM;
+		break;
 	default:
 		error("Unimplemented Resource::load() type %d", objType);
 		break;
@@ -947,6 +951,36 @@ void Resource::load_SGD(File *f) {
 		error("Bad CRC for SGD data");
 	}
 	free(tmp);
+}
+
+void Resource::load_SPM(File *f) {
+	static const int kPersoDatSize = 178647;
+	const int len = f->size();
+	f->seek(len - 4);
+	int size = f->readUint32BE();
+	f->seek(0);
+	uint8 *tmp = (uint8 *)malloc(len);
+	if (!tmp) {
+		error("Unable to allocate SPM temporary buffer");
+	}
+	f->read(tmp, len);
+	int sprOffset = 0;
+	if (size == kPersoDatSize) {
+		_spr1 = (uint8 *)malloc(size);
+	} else {
+		sprOffset = (kPersoDatSize + 1) & ~1;
+		_spr1 = (uint8 *)realloc(_spr1, sprOffset + size);
+	}
+	if (!_spr1) {
+		error("Unable to allocate SPM buffer");
+	}
+	if (!delphine_unpack(_spr1 + sprOffset, tmp, len)) {
+		error("Bad CRC for SPM data");
+	}
+	free(tmp);
+	for (int i = 0; i < 1287; ++i) {
+		_spr_off[i] = _spr1 + _spmOffsetsTable[i];
+	}
 }
 
 void Resource::clearBankData() {

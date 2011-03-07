@@ -259,6 +259,26 @@ void Video::PC_setLevelPalettes() {
 	setTextPalette();
 }
 
+static void AMIGA_blit3pNxN(uint8 *dst, int pitch, int w, int h, const uint8 *src) {
+	const int planarSize = w * 2 * h;
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x) {
+			for (int i = 0; i < 16; ++i) {
+				int color = 0;
+				const int mask = 1 << (15 - i);
+				for (int bit = 0; bit < 3; ++bit) {
+					if (READ_BE_UINT16(src + bit * planarSize) & mask) {
+						color |= 1 << bit;
+					}
+				}
+				dst[x * 16 + i] = color;
+			}
+			src += 2;
+		}
+		dst += pitch;
+	}
+}
+
 static void AMIGA_blit4pNxN(uint8 *dst, int x0, int y0, int w, int h, uint8 *src, uint8 *mask, int size) {
 	dst += y0 * 256 + x0;
 	for (int y = 0; y < h; ++y) {
@@ -286,7 +306,7 @@ static void AMIGA_blit4pNxN(uint8 *dst, int x0, int y0, int w, int h, uint8 *src
 	}
 }
 
-static void AMIGA_decodeSgdHelper(uint8 *dst, const uint8 *src) {
+static void AMIGA_decodeRLE(uint8 *dst, const uint8 *src) {
 	int code = READ_BE_UINT16(src) & 0x7FFF; src += 2;
 	const uint8 *end = src + code;
 	do {
@@ -329,7 +349,7 @@ static void AMIGA_decodeSgd(uint8 *dst, const uint8 *src, const uint8 *data) {
 					num = d2;
 					const int size = READ_BE_UINT16(data + offset) & 0x7FFF;
 					assert(size < (int)sizeof(buf));
-					AMIGA_decodeSgdHelper(buf, data + offset);
+					AMIGA_decodeRLE(buf, data + offset);
 				}
 			}
 		}
@@ -483,14 +503,29 @@ void Video::AMIGA_decodeLev(int level, int room) {
 	}
 	AMIGA_decodeLevHelper(_frontLayer, tmp, offset10, offset12, buf, tmp[1] != 0);
 	memcpy(_backLayer, _frontLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
-	for (int i = 0; i < 2; ++i) {
-		const int num = READ_BE_UINT16(tmp + i * 2);
-		if (level == 0 && i == 0) {
-			setPaletteSlotBE(i, 0);
-		} else {
-			setPaletteSlotBE(i, num);
-		}
+	uint16 num[4];
+	for (int i = 0; i < 4; ++i) {
+		num[i] = READ_BE_UINT16(tmp + 2 + i * 2);
 	}
+	setPaletteSlotBE(0, num[0]);
+//	setPaletteSlotBE(1, num[1]);
+	setPaletteSlotBE(4, num[2]);
+}
+
+void Video::AMIGA_decodeSpm(const uint8 *src, uint8 *dst) {
+	uint8 buf[256 * 32];
+	const int size = READ_BE_UINT16(src + 3) & 0x7FFF;
+	assert(size < (int)sizeof(buf));
+	AMIGA_decodeRLE(buf, src + 3);
+	int w = 1;
+	if ((src[2] & 0x80) == 0) {
+		w = 0;
+	}
+	int h = src[2] & ~0x80;
+	if (h == 0) {
+		--h;
+	}
+	AMIGA_blit3pNxN(_res->_memBuf, (w + 1) * 16, w + 1, h + 1, buf);
 }
 
 void Video::drawSpriteSub1(const uint8 *src, uint8 *dst, int pitch, int h, int w, uint8 colMask) {

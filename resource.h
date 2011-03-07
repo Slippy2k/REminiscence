@@ -90,10 +90,12 @@ struct Resource {
 		OT_OBC,
 		OT_SPL,
 		OT_LEV,
-		OT_SGD
+		OT_SGD,
+		OT_SPM
 	};
 
 	static const uint16 _voicesOffsetsTable[];
+	static const uint32 _spmOffsetsTable[];
 
 	FileSystem *_fs;
 	ResourceType _type;
@@ -172,6 +174,7 @@ struct Resource {
 	void load_SPL(File *pf);
 	void load_LEV(File *pf);
 	void load_SGD(File *pf);
+	void load_SPM(File *f);
 	const uint8 *getAniData(int num) const {
 		const uint32 offset = READ_LE_UINT16(_ani + num * 2);
 		return _ani + offset;

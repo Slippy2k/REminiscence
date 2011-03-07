@@ -69,6 +69,7 @@ struct Video {
 	void PC_decodeMap(int level, int room);
 	void PC_setLevelPalettes();
 	void AMIGA_decodeLev(int level, int room);
+	void AMIGA_decodeSpm(const uint8 *src, uint8 *dst);
 	void drawSpriteSub1(const uint8 *src, uint8 *dst, int pitch, int h, int w, uint8 colMask);
 	void drawSpriteSub2(const uint8 *src, uint8 *dst, int pitch, int h, int w, uint8 colMask);
 	void drawSpriteSub3(const uint8 *src, uint8 *dst, int pitch, int h, int w, uint8 colMask);
