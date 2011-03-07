@@ -38,11 +38,11 @@ inline void SWAP(T &a, T &b) {
 	b = tmp;
 }
 
-enum Version {
-	VER_FR,
-	VER_EN,
-	VER_DE,
-	VER_SP
+enum Language {
+	LANG_FR,
+	LANG_EN,
+	LANG_DE,
+	LANG_SP
 };
 
 enum ResourceType {

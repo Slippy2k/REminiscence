@@ -103,7 +103,7 @@ struct Game {
 	uint16 _deathCutsceneCounter;
 	bool _saveStateCompleted;
 
-	Game(SystemStub *, FileSystem *, const char *savePath, Version ver);
+	Game(SystemStub *, FileSystem *, const char *savePath, ResourceType ver, Language lang);
 
 	void run();
 	void resetGameState();

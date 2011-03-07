@@ -37,24 +37,47 @@ static bool parseOption(const char *arg, const char *longCmd, const char **opt) 
 	return handled;
 }
 
-static Version detectVersionPC(FileSystem *fs) {
+static int detectVersion(FileSystem *fs) {
 	static const struct {
 		const char *filename;
-		Version ver;
-	} checkTable[] = {
-		{ "ENGCINE.BIN", VER_EN },
-		{ "FR_CINE.BIN", VER_FR },
-		{ "GERCINE.BIN", VER_DE },
-		{ "SPACINE.BIN", VER_SP }
+		int type;
+		const char *name;
+	} table[] = {
+		{ "LEVEL1.MAP", kResourceTypePC, "PC" },
+		{ "LEVEL1.LEV", kResourceTypeAmiga, "Amiga" },
+		{ 0, -1 }
 	};
-	for (uint8 i = 0; i < ARRAYSIZE(checkTable); ++i) {
+	for (int i = 0; table[i].filename; ++i) {
 		File f;
-		if (f.open(checkTable[i].filename, "rb", fs)) {
-			return checkTable[i].ver;
+		if (f.open(table[i].filename, "rb", fs)) {
+			debug(DBG_INFO, "Detected %s version", table[i].name);
+			return table[i].type;
 		}
 	}
-	error("Unable to find data files, check that all required files are present");
-	return VER_EN;
+	return -1;
+}
+
+static Language detectLanguage(FileSystem *fs) {
+	static const struct {
+		const char *filename;
+		Language language;
+	} table[] = {
+		// PC
+		{ "ENGCINE.TXT", LANG_EN },
+		{ "FR_CINE.TXT", LANG_FR },
+		{ "GERCINE.TXT", LANG_DE },
+		{ "SPACINE.TXT", LANG_SP },
+		// Amiga
+		{ "FRCINE.TXT", LANG_FR },
+		{ 0, LANG_EN }
+	};
+	for (int i = 0; table[i].filename; ++i) {
+		File f;
+		if (f.open(table[i].filename, "rb", fs)) {
+			return table[i].language;
+		}
+	}
+	return LANG_EN;
 }
 
 #undef main
@@ -72,11 +95,16 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 	}
-	FileSystem fs(dataPath);
-	Version ver = detectVersionPC(&fs);
 	g_debugMask = DBG_INFO; // DBG_CUT | DBG_VIDEO | DBG_RES | DBG_MENU | DBG_PGE | DBG_GAME | DBG_UNPACK | DBG_COL | DBG_MOD | DBG_SFX;
+	FileSystem fs(dataPath);
+	const int version = detectVersion(&fs);
+	if (version == -1) {
+		error("Unable to find data files, check that all required files are present");
+		return -1;
+	}
+	Language language = detectLanguage(&fs);
 	SystemStub *stub = SystemStub_SDL_create();
-	Game *g = new Game(stub, &fs, savePath, ver);
+	Game *g = new Game(stub, &fs, savePath, (ResourceType)version, language);
 	g->run();
 	delete g;
 	delete stub;

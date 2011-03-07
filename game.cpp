@@ -22,9 +22,9 @@
 #include "game.h"
 
 
-Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, Version ver)
-	: _cut(&_modPly, &_res, stub, &_vid, ver), _menu(&_modPly, &_res, stub, &_vid),
-	_mix(stub), _modPly(&_mix, fs), _res(fs, ver), _sfxPly(&_mix), _vid(&_res, stub),
+Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, ResourceType ver, Language lang)
+	: _cut(&_modPly, &_res, stub, &_vid), _menu(&_modPly, &_res, stub, &_vid),
+	_mix(stub), _modPly(&_mix, fs), _res(fs, ver, lang), _sfxPly(&_mix), _vid(&_res, stub),
 	_stub(stub), _fs(fs), _savePath(savePath) {
 	_stateSlot = 1;
 	_inp_demo = 0;
@@ -37,8 +37,8 @@ void Game::run() {
 
 	_randSeed = time(0);
 
-	if (_res._resType == kResourceTypePC) {
-		_res.load_TEXT();
+	_res.load_TEXT();
+	if (_res._type == kResourceTypePC) {
 		_res.load("FB_TXT", Resource::OT_FNT);
 	}
 
@@ -53,11 +53,11 @@ void Game::run() {
 
 	playCutscene(0x40);
 	playCutscene(0x0D);
-	if (!_cut._interrupted && _res._resType == kResourceTypePC) {
+	if (!_cut._interrupted && _res._type == kResourceTypePC) {
 		playCutscene(0x4A);
 	}
 
-	switch (_res._resType) {
+	switch (_res._type) {
 	case kResourceTypeAmiga:
 		break;
 	case kResourceTypePC:
@@ -72,7 +72,7 @@ void Game::run() {
 	_skillLevel = 1;
 	_currentLevel = 0;
 
-	while (!_stub->_pi.quit && _menu.handleTitleScreen(_skillLevel, _currentLevel)) {
+	while (!_stub->_pi.quit && (_res._type == kResourceTypeAmiga || _menu.handleTitleScreen(_skillLevel, _currentLevel))) {
 		if (_currentLevel == 7) {
 			_vid.fadeOut();
 			_vid.setTextPalette();
@@ -563,7 +563,7 @@ void Game::printLevelCode() {
 		if (_printLevelCodeCounter != 0) {
 			char levelCode[50];
 			snprintf(levelCode, sizeof(levelCode), "CODE: %s", _menu._passwords[_currentLevel][_skillLevel]);
-			if (_res._resType == kResourceTypeAmiga) {
+			if (_res._type == kResourceTypeAmiga) {
 			} else {
 				_vid.drawString(levelCode, (Video::GAMESCREEN_W - strlen(levelCode) * 8) / 2, 16, 0xE7);
 			}
@@ -574,7 +574,7 @@ void Game::printLevelCode() {
 void Game::printSaveStateCompleted() {
 	if (_saveStateCompleted) {
 		const char *str = _res.getMenuString(LocaleData::LI_05_COMPLETED);
-		if (_res._resType == kResourceTypeAmiga) {
+		if (_res._type == kResourceTypeAmiga) {
 		} else {
 			_vid.drawString(str, (176 - strlen(str) * 8) / 2, 34, 0xE6);
 		}
@@ -1112,7 +1112,7 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 	_curMonsterFrame = mList[0];
 	if (_curMonsterNum != mList[1]) {
 		_curMonsterNum = mList[1];
-		if (_res._resType == kResourceTypeAmiga) {
+		if (_res._type == kResourceTypeAmiga) {
 			_res.load(_monsterNames[1][_curMonsterNum], Resource::OT_SPRM);
 		} else {
 			const char *name = _monsterNames[0][_curMonsterNum];
@@ -1127,7 +1127,7 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 void Game::loadLevelMap() {
 	debug(DBG_GAME, "Game::loadLevelMap() room=%d", _currentRoom);
 	_currentIcon = 0xFF;
-	if (_res._resType == kResourceTypeAmiga) {
+	if (_res._type == kResourceTypeAmiga) {
 	} else {
 		_vid.copyLevelMap(_currentLevel, _currentRoom);
 		_vid.setLevelPalettes();
@@ -1138,7 +1138,7 @@ void Game::loadLevelData() {
 	_res.clearLevelRes();
 
 	const Level *lvl = &_gameLevels[_currentLevel];
-	switch (_res._resType) {
+	switch (_res._type) {
 	case kResourceTypeAmiga:
 		_res.load(lvl->nameAmiga, Resource::OT_MBK);
 		_res.load(lvl->nameAmiga, Resource::OT_CT);
@@ -1215,7 +1215,7 @@ uint8 *Game::findBankData(uint16 entryNum) {
 }
 
 void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
-	if (_res._resType == kResourceTypeAmiga) {
+	if (_res._type == kResourceTypeAmiga) {
 		return;
 	}
 	uint16 offset = READ_LE_UINT16(_res._icn + iconNum * 2);
@@ -1237,7 +1237,7 @@ void Game::playSound(uint8 sfxId, uint8 softVol) {
 			MixerChunk mc;
 			mc.data = sfx->data;
 			mc.len = sfx->len;
-			const int freq = _res._resType == kResourceTypeAmiga ? 3546897 / 650 : 6000;
+			const int freq = _res._type == kResourceTypeAmiga ? 3546897 / 650 : 6000;
 			_mix.play(&mc, freq, Mixer::MAX_VOLUME >> softVol);
 		}
 	} else {

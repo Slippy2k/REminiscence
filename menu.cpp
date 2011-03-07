@@ -100,13 +100,13 @@ void Menu::loadPicture(const char *prefix) {
 void Menu::handleInfoScreen() {
 	debug(DBG_MENU, "Menu::handleInfoScreen()");
 	_vid->fadeOut();
-	switch (_res->_ver) {
-	case VER_FR:
+	switch (_res->_lang) {
+	case LANG_FR:
 		loadPicture("instru_f");
 		break;
-	case VER_EN:
-	case VER_DE:
-	case VER_SP:
+	case LANG_EN:
+	case LANG_DE:
+	case LANG_SP:
 		loadPicture("instru_e");
 		break;
 	}

@@ -21,19 +21,19 @@
 Locale::Locale(Version ver)
 	: _ver(ver) {
 	switch (_ver) {
-	case VER_FR:
+	case LANG_FR:
 		_stringsTable = _stringsTableFR;
 		_textsTable = _textsTableFR;
 		break;
-	case VER_EN:
+	case LANG_EN:
 		_stringsTable = _stringsTableEN;
 		_textsTable = _textsTableEN;
 		break;
-	case VER_DE:
+	case LANG_DE:
 		_stringsTable = _stringsTableDE;
 		_textsTable = _textsTableDE;
 		break;
-	case VER_SP:
+	case LANG_SP:
 		_stringsTable = _stringsTableSP;
 		_textsTable = _textsTableSP;
 		break;

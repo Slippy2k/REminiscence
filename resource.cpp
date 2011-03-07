@@ -20,11 +20,11 @@
 #include "resource.h"
 
 
-Resource::Resource(FileSystem *fs, Version ver) {
+Resource::Resource(FileSystem *fs, ResourceType ver, Language lang) {
 	memset(this, 0, sizeof(Resource));
+	_type = ver;
+	_lang = lang;
 	_fs = fs;
-	_ver = ver;
-	_resType = kResourceTypePC;
 	_memBuf = (uint8 *)malloc(0xE000);
 }
 
@@ -177,17 +177,17 @@ void Resource::load_SPR_OFF(const char *fileName, uint8 *sprData) {
 
 void Resource::load_CINE() {
 	const char *baseName = 0;
-	switch (_ver) {
-	case VER_FR:
+	switch (_lang) {
+	case LANG_FR:
 		baseName = "FR_CINE";
 		break;
-	case VER_EN:
+	case LANG_EN:
 		baseName = "ENGCINE";
 		break;
-	case VER_DE:
+	case LANG_DE:
 		baseName = "GERCINE";
 		break;
-	case VER_SP:
+	case LANG_SP:
 		baseName = "SPACINE";
 		break;
 	}
@@ -242,17 +242,17 @@ void Resource::load_TEXT() {
 		f.close();
 	}
 	if (!_stringsTable) {
-		switch (_ver) {
-		case VER_FR:
+		switch (_lang) {
+		case LANG_FR:
 			_stringsTable = LocaleData::_stringsTableFR;
 			break;
-		case VER_EN:
+		case LANG_EN:
 			_stringsTable = LocaleData::_stringsTableEN;
 			break;
-		case VER_DE:
+		case LANG_DE:
 			_stringsTable = LocaleData::_stringsTableDE;
 			break;
-		case VER_SP:
+		case LANG_SP:
 			_stringsTable = LocaleData::_stringsTableSP;
 			break;
 		}
@@ -292,17 +292,17 @@ void Resource::load_TEXT() {
 		}
 	}
 	if (!_textsTable) {
-		switch (_ver) {
-		case VER_FR:
+		switch (_lang) {
+		case LANG_FR:
 			_textsTable = LocaleData::_textsTableFR;
 			break;
-		case VER_EN:
+		case LANG_EN:
 			_textsTable = LocaleData::_textsTableEN;
 			break;
-		case VER_DE:
+		case LANG_DE:
 			_textsTable = LocaleData::_textsTableDE;
 			break;
-		case VER_SP:
+		case LANG_SP:
 			_textsTable = LocaleData::_textsTableSP;
 			break;
 		}
@@ -692,7 +692,7 @@ void Resource::load_PGE(File *f) {
 	debug(DBG_RES, "Resource::load_PGE()");
 	int len = f->size() - 2;
 	_pgeNum = f->readUint16LE();
-	if (_resType == kResourceTypeAmiga) {
+	if (_type == kResourceTypeAmiga) {
 		SWAP_UINT16(&_pgeNum);
 	}
 	memset(_pgeInit, 0, sizeof(_pgeInit));
@@ -721,7 +721,7 @@ void Resource::load_PGE(File *f) {
 		f->readByte();
 		pge->text_num = f->readUint16LE();
 	}
-	if (_resType == kResourceTypeAmiga) {
+	if (_type == kResourceTypeAmiga) {
 		for (uint16 i = 0; i < _pgeNum; ++i) {
 			InitPGE *pge = &_pgeInit[i];
 			SWAP_UINT16((uint16 *)&pge->type);
@@ -746,7 +746,7 @@ void Resource::load_ANI(File *f) {
 	} else {
 		uint16 count = f->readUint16LE();
 		f->read(_ani, size);
-		if (_resType == kResourceTypeAmiga) {
+		if (_type == kResourceTypeAmiga) {
 			SWAP_UINT16(&count);
 			// byte-swap animation data
 			for (uint16 i = 0; i < count; ++i) {

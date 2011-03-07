@@ -49,7 +49,6 @@ struct Cutscene {
 	Resource *_res;
 	SystemStub *_stub;
 	Video *_vid;
-	Version _ver;
 
 	uint16 _id;
 	uint16 _deathCutsceneId;
@@ -94,7 +93,7 @@ struct Cutscene {
 	int16 _creditsTextCounter;
 	uint8 *_page0, *_page1, *_pageC;
 
-	Cutscene(ModPlayer *player, Resource *res, SystemStub *stub, Video *vid, Version ver);
+	Cutscene(ModPlayer *player, Resource *res, SystemStub *stub, Video *vid);
 
 	void sync();
 	void copyPalette(const uint8 *pal, uint16 num);

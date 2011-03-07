@@ -22,8 +22,8 @@
 #include "cutscene.h"
 
 
-Cutscene::Cutscene(ModPlayer *ply, Resource *res, SystemStub *stub, Video *vid, Version ver)
-	: _ply(ply), _res(res), _stub(stub), _vid(vid), _ver(ver) {
+Cutscene::Cutscene(ModPlayer *ply, Resource *res, SystemStub *stub, Video *vid)
+	: _ply(ply), _res(res), _stub(stub), _vid(vid) {
 	memset(_palBuf, 0, sizeof(_palBuf));
 }
 
@@ -961,7 +961,7 @@ void Cutscene::mainLoop(uint16 offset) {
 void Cutscene::load(uint16 cutName) {
 	assert(cutName != 0xFFFF);
 	const char *name = _namesTable[cutName & 0xFF];
-	switch (_res->_resType) {
+	switch (_res->_type) {
 	case kResourceTypeAmiga:
 		if (strncmp(name, "INTRO", 5) == 0) {
 			name = "INTRO";

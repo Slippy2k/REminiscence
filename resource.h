@@ -96,8 +96,8 @@ struct Resource {
 	static const uint16 _voicesOffsetsTable[];
 
 	FileSystem *_fs;
-	Version _ver;
-	ResourceType _resType;
+	ResourceType _type;
+	Language _lang;
 	char _entryName[32];
 	uint8 *_fnt;
 	MbkEntry *_mbk;
@@ -132,7 +132,7 @@ struct Resource {
 	uint8 *_extStringsTable;
 	const uint8 *_stringsTable;
 
-	Resource(FileSystem *fs, Version ver);
+	Resource(FileSystem *fs, ResourceType type, Language lang);
 	~Resource();
 
 	void clearLevelRes();
