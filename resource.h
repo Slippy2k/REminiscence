@@ -100,9 +100,7 @@ struct Resource {
 	Language _lang;
 	char _entryName[32];
 	uint8 *_fnt;
-	uint8 _mbkNum;
-	MbkEntry *_mbk;
-	uint8 *_mbkData;
+	uint8 *_mbk;
 	uint8 *_icn;
 	uint8 *_tab;
 	uint8 *_spc; // BE

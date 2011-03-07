@@ -456,7 +456,7 @@ void Video::AMIGA_decodeLev(int level, int room) {
 			d0 &= ~0x8000;
 			loop = false;
 		}
-		const int d1 = READ_BE_UINT16(_res->_mbkData + d0 * 6 + 4) & 0x7FFF;
+		const int d1 = READ_BE_UINT16(_res->_mbk + d0 * 6 + 4) & 0x7FFF;
 		const uint8 *a6 = _res->findBankData(d0);
 		if (!a6) {
 			a6 = _res->loadBankData(d0);

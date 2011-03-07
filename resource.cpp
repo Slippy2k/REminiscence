@@ -51,7 +51,6 @@ Resource::~Resource() {
 void Resource::clearLevelRes() {
 	free(_tbn); _tbn = 0;
 	free(_mbk); _mbk = 0;
-	free(_mbkData); _mbkData = 0;
 	free(_pal); _pal = 0;
 	free(_map); _map = 0;
 	free(_lev); _lev = 0;
@@ -462,29 +461,13 @@ void Resource::load_FNT(File *f) {
 
 void Resource::load_MBK(File *f) {
 	debug(DBG_RES, "Resource::load_MBK()");
-	int dataSize = f->size();
-	if (_type == kResourceTypePC) {
-		_mbkNum = f->readByte();
-		const int dataOffset = _mbkNum * 6;
-		dataSize -= dataOffset;
-		_mbk = (MbkEntry *)malloc(sizeof(MbkEntry) * _mbkNum);
-		if (!_mbk) {
-			error("Unable to allocate MBK buffer");
-		}
-		f->seek(0);
-		for (int i = 0; i < _mbkNum; ++i) {
-			f->readUint16BE(); /* unused */
-			_mbk[i].offset = f->readUint16BE() - dataOffset;
-			_mbk[i].len = f->readUint16BE();
-			debug(DBG_RES, "dataSize=0x%X entry %d off=0x%X len=0x%X", dataSize, i, _mbk[i].offset + dataOffset, _mbk[i].len);
-			assert(_mbk[i].offset <= dataSize);
-		}
+	int len = f->size();
+	_mbk = (uint8 *)malloc(len);
+	if (!_mbk) {
+		error("Unable to allocate MBK buffer");
+	} else {
+		f->read(_mbk, len);
 	}
-	_mbkData = (uint8 *)malloc(dataSize);
-	if (!_mbkData) {
-		error("Unable to allocate MBK data buffer");
-	}
-	f->read(_mbkData, dataSize);
 }
 
 void Resource::load_ICN(File *f) {
@@ -985,20 +968,13 @@ uint8 *Resource::findBankData(uint16 entryNum) {
 }
 
 uint8 *Resource::loadBankData(uint16 mbkEntryNum) {
-	int dataOffset = 0, dataLen = 0;
-	switch (_type) {
-	case kResourceTypePC: {
-			MbkEntry *me = &_mbk[mbkEntryNum];
-			dataOffset = me->offset;
-			dataLen = me->len;
-		}
-		break;
-	case kResourceTypeAmiga: {
-			const uint8 *ptr = _mbkData + mbkEntryNum * 6;
-			dataOffset = READ_BE_UINT32(ptr);
-			dataLen = READ_BE_UINT16(ptr + 4);
-		}
-		break;
+	const uint8 *ptr = _mbk + mbkEntryNum * 6;
+	int dataOffset = READ_BE_UINT32(ptr);
+	int dataLen = READ_BE_UINT16(ptr + 4);
+	if (_type == kResourceTypePC) {
+		// first byte of the data buffer corresponds
+		// to the total count of entries
+		dataOffset &= 0xFFFF;
 	}
 	const int avail = _bankDataTail - _bankDataHead;
 	const int size = (dataLen & 0x7FFF) * 32;
@@ -1010,7 +986,7 @@ uint8 *Resource::loadBankData(uint16 mbkEntryNum) {
 	++_curBankSlot;
 	_curBankSlot->entryNum = 0xFFFF;
 	_curBankSlot->ptr = 0;
-	const uint8 *data = _mbkData + dataOffset;
+	const uint8 *data = _mbk + dataOffset;
 	if (dataLen & 0x8000) {
 		warning("Uncompressed bank data %d", mbkEntryNum);
 		memcpy(_bankDataHead, data, size);

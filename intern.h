@@ -164,11 +164,6 @@ struct CollisionSlot {
 	uint16 index;
 };
 
-struct MbkEntry {
-	uint16 offset;
-	uint16 len;
-};
-
 struct BankSlot {
 	uint16 entryNum;
 	uint8 *ptr;
