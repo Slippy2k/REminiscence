@@ -390,9 +390,11 @@ void Cutscene::op_drawStringAtBottom() {
 		memset(_page1 + 179 * 256, 0xC0, 45 * 256);
 		memset(_page0 + 179 * 256, 0xC0, 45 * 256);
 		if (strId != 0xFFFF) {
-			uint16 offset = READ_BE_UINT16(_res->_cine_off + strId * 2);
-			drawText(0, 129, _res->_cine_txt + offset, 0xEF, _page1, 1);
-			drawText(0, 129, _res->_cine_txt + offset, 0xEF, _pageC, 1);
+			const uint8 *str = _res->getCineString(strId);
+			if (str) {
+				drawText(0, 129, str, 0xEF, _page1, 1);
+				drawText(0, 129, str, 0xEF, _pageC, 1);
+			}
 		}
 	}
 }
@@ -833,9 +835,11 @@ void Cutscene::op_drawStringAtPos() {
 		int16 x = (int8)fetchNextCmdByte() * 8;
 		int16 y = (int8)fetchNextCmdByte() * 8;
 		if (!_creditsSequence) {
-			uint8 color = 0xD0 + (strId >> 0xC);
-			uint16 offset = READ_BE_UINT16(_res->_cine_off + (strId & 0xFFF) * 2);
-			drawText(x, y, _res->_cine_txt + offset, color, _page1, 2);
+			const uint8 *str = _res->getCineString(strId & 0xFFF);
+			if (str) {
+				uint8 color = 0xD0 + (strId >> 0xC);
+				drawText(x, y, str, color, _page1, 2);
+			}
 			// workaround for buggy cutscene script
 			if (_id == 0x34 && (strId & 0xFFF) == 0x45) {
 				if ((_cmdPtr - _cmdPtrBak) == 0xA) {

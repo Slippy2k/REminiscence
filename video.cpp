@@ -504,20 +504,20 @@ void Video::AMIGA_decodeLev(int level, int room) {
 			d0 &= ~0x8000;
 			loop = false;
 		}
-		const int d1 = READ_BE_UINT16(_res->_mbk + d0 * 6 + 4) & 0x7FFF;
+		const int d1 = _res->getBankDataSize(d0);
 		const uint8 *a6 = _res->findBankData(d0);
 		if (!a6) {
 			a6 = _res->loadBankData(d0);
 		}
 		const int d3 = *a1++;
 		if (d3 == 255) {
-			assert(sz / 32 + d1 < kTempMbkSize);
-			memcpy(buf + sz, a6, d1 * 32);
-			sz += d1 * 32;
+			assert(sz + d1 < kTempMbkSize * 32);
+			memcpy(buf + sz, a6, d1);
+			sz += d1;
 		} else {
 			for (int i = 0; i < d3 + 1; ++i) {
 				const int d4 = *a1++;
-				assert(sz / 32 + 1 < kTempMbkSize);
+				assert(sz + 32 < kTempMbkSize * 32);
 				memcpy(buf + sz, a6 + d4 * 32, 32);
 				sz += 32;
 			}
@@ -536,8 +536,8 @@ void Video::AMIGA_decodeLev(int level, int room) {
 		num[i] = READ_BE_UINT16(tmp + 2 + i * 2);
 	}
 	setPaletteSlotBE(0x0, num[0]);
-//	setPaletteSlotBE(0x1, num[1]);
 	setPaletteSlotBE(0x4, num[2]);
+	setPaletteSlotBE(0x5, num[2]);
 	setPaletteSlotBE(0xA, num[2]);
 }
 
@@ -546,15 +546,9 @@ void Video::AMIGA_decodeSpm(const uint8 *src, uint8 *dst) {
 	const int size = READ_BE_UINT16(src + 3) & 0x7FFF;
 	assert(size < (int)sizeof(buf));
 	AMIGA_decodeRLE(buf, src + 3);
-	int w = 1;
-	if ((src[2] & 0x80) == 0) {
-		w = 0;
-	}
-	int h = src[2] & ~0x80;
-	if (h == 0) {
-		--h;
-	}
-	AMIGA_blit3pNxN(dst, (w + 1) * 16, w + 1, h + 1, buf);
+	const int w = (src[2] >> 7) + 1;
+	const int h = src[2] & 0x7F;
+	AMIGA_blit3pNxN(dst, w * 16, w, h, buf);
 }
 
 void Video::AMIGA_decodeIcn(const uint8 *src, int num, uint8 *dst) {
@@ -566,7 +560,7 @@ void Video::AMIGA_decodeIcn(const uint8 *src, int num, uint8 *dst) {
 	}
 	const int h = 1 + *src++;
 	const int w = 1 + *src++;
-	AMIGA_blit4p16xN(dst, w, h, src);
+	AMIGA_blit4p16xN(dst, w, h, src + 4);
 }
 
 void Video::drawSpriteSub1(const uint8 *src, uint8 *dst, int pitch, int h, int w, uint8 colMask) {

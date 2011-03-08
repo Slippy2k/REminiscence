@@ -257,7 +257,7 @@ void Game::pge_setupAnim(LivePGE *pge) {
 			pge->flags |= 2;
 		}
 		pge->flags &= ~8;
-		if (READ_LE_UINT16(anim_data + 4) & 0xFF) {
+		if (READ_LE_UINT16(anim_data + 4) & 0xFFFF) {
 			pge->flags |= 8;
 		}
 		pge->anim_number = READ_LE_UINT16(anim_frame) & 0x7FFF;

@@ -176,18 +176,26 @@ struct Resource {
 	void load_SGD(File *pf);
 	void load_SPM(File *f);
 	const uint8 *getAniData(int num) const {
-		const uint32 offset = READ_LE_UINT16(_ani + num * 2);
+		const int offset = READ_LE_UINT16(_ani + num * 2);
 		return _ani + offset;
 	}
 	const uint8 *getGameString(int num) {
 		return _stringsTable + READ_LE_UINT16(_stringsTable + num * 2);
 	}
+	const uint8 *getCineString(int num) {
+		if (_cine_off) {
+			const int offset = READ_BE_UINT16(_cine_off + num * 2);
+			return _cine_txt + offset;
+		}
+		return 0;
+	}
 	const char *getMenuString(int num) {
 		return (num >= 0 && num < LocaleData::LI_NUM) ? _textsTable[num] : "";
 	}
 	void clearBankData();
-	uint8 *findBankData(uint16 entryNum);
-	uint8 *loadBankData(uint16 mbkEntryNum);
+	int getBankDataSize(uint16 num);
+	uint8 *findBankData(uint16 num);
+	uint8 *loadBankData(uint16 num);
 };
 
 #endif // __RESOURCE_H__

@@ -747,12 +747,16 @@ void Resource::load_ANI(File *f) {
 		uint16 count = f->readUint16LE();
 		f->read(_ani, size);
 		if (_type == kResourceTypeAmiga) {
+			const uint8 *end = _ani + size;
 			SWAP_UINT16(&count);
 			// byte-swap animation data
 			for (uint16 i = 0; i < count; ++i) {
 				uint8 *p = _ani + READ_BE_UINT16(_ani + 2 * i);
 				// byte-swap offset
 				SWAP<uint8>(_ani[2 * i], _ani[2 * i + 1]);
+				if (p >= end) {
+					continue;
+				}
 				const int frames = READ_BE_UINT16(p);
 				if (p[0] != 0) {
 					// byte-swap only once
@@ -970,7 +974,7 @@ void Resource::load_SPM(File *f) {
 	if (size == kPersoDatSize) {
 		_spr1 = (uint8 *)malloc(size);
 	} else {
-		sprOffset = (kPersoDatSize + 1) & ~1;
+		sprOffset = kPersoDatSize;
 		_spr1 = (uint8 *)realloc(_spr1, sprOffset + size);
 	}
 	if (!_spr1) {
@@ -992,10 +996,27 @@ void Resource::clearBankData() {
 	_bankDataHead = _bankData;
 }
 
-uint8 *Resource::findBankData(uint16 entryNum) {
+int Resource::getBankDataSize(uint16 num) {
+	int len = READ_BE_UINT16(_mbk + num * 6 + 4);
+	int size = 0;
+	switch (_type) {
+	case kResourceTypeAmiga:
+		if (len & 0x8000) {
+			len = -(int16)len;
+		}
+		size = len * 32;
+		break;
+	case kResourceTypePC:
+		size = (len & 0x7FFF) * 32;
+		break;
+	}
+	return size;
+}
+
+uint8 *Resource::findBankData(uint16 num) {
 	BankSlot *slot = &_bankSlots[0];
 	while (slot->entryNum != 0xFFFF) {
-		if (slot->entryNum == entryNum) {
+		if (slot->entryNum == num) {
 			return slot->ptr;
 		}
 		++slot;
@@ -1003,33 +1024,32 @@ uint8 *Resource::findBankData(uint16 entryNum) {
 	return 0;
 }
 
-uint8 *Resource::loadBankData(uint16 mbkEntryNum) {
-	const uint8 *ptr = _mbk + mbkEntryNum * 6;
+uint8 *Resource::loadBankData(uint16 num) {
+	const uint8 *ptr = _mbk + num * 6;
 	int dataOffset = READ_BE_UINT32(ptr);
-	int dataLen = READ_BE_UINT16(ptr + 4);
 	if (_type == kResourceTypePC) {
 		// first byte of the data buffer corresponds
 		// to the total count of entries
 		dataOffset &= 0xFFFF;
 	}
+	int size = getBankDataSize(num);
 	const int avail = _bankDataTail - _bankDataHead;
-	const int size = (dataLen & 0x7FFF) * 32;
 	if (avail < size) {
 		clearBankData();
 	}
-	_curBankSlot->entryNum = mbkEntryNum;
+	_curBankSlot->entryNum = num;
 	_curBankSlot->ptr = _bankDataHead;
 	++_curBankSlot;
 	_curBankSlot->entryNum = 0xFFFF;
 	_curBankSlot->ptr = 0;
 	const uint8 *data = _mbk + dataOffset;
-	if (dataLen & 0x8000) {
-		warning("Uncompressed bank data %d", mbkEntryNum);
+	if (READ_BE_UINT16(ptr + 4) & 0x8000) {
+		warning("Uncompressed bank data %d size %d", num, size);
 		memcpy(_bankDataHead, data, size);
 	} else {
 		assert(dataOffset != 0);
 		if (!delphine_unpack(_bankDataHead, data, 0)) {
-			error("Bad CRC for bank data %d", mbkEntryNum);
+			error("Bad CRC for bank data %d", num);
 		}
 	}
 	uint8 *bankData = _bankDataHead;
