@@ -119,6 +119,7 @@ struct Resource {
 	InitPGE _pgeInit[256];
 	uint8 *_map;
 	uint8 *_lev;
+	int _levNum;
 	uint8 *_sgd;
 	uint16 _numObjectNodes;
 	ObjectNode *_objectNodesMap[255];

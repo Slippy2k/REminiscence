@@ -489,7 +489,7 @@ void Video::AMIGA_decodeLev(int level, int room) {
 	uint16 offset10 = READ_BE_UINT16(tmp + 10);
 	const uint16 offset12 = READ_BE_UINT16(tmp + 12);
 	const uint16 offset14 = READ_BE_UINT16(tmp + 14);
-	static const int kTempMbkSize = 512;
+	static const int kTempMbkSize = 1024;
 	uint8 *buf = (uint8 *)malloc(kTempMbkSize * 32);
 	if (!buf) {
 		error("Unable to allocate mbk temporary buffer");

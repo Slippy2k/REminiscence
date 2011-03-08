@@ -54,6 +54,7 @@ void Resource::clearLevelRes() {
 	free(_pal); _pal = 0;
 	free(_map); _map = 0;
 	free(_lev); _lev = 0;
+	_levNum = -1;
 	free(_sgd); _sgd = 0;
 	free(_ani); _ani = 0;
 	free_OBJ();
@@ -1044,7 +1045,6 @@ uint8 *Resource::loadBankData(uint16 num) {
 	_curBankSlot->ptr = 0;
 	const uint8 *data = _mbk + dataOffset;
 	if (READ_BE_UINT16(ptr + 4) & 0x8000) {
-		warning("Uncompressed bank data %d size %d", num, size);
 		memcpy(_bankDataHead, data, size);
 	} else {
 		assert(dataOffset != 0);

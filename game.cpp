@@ -598,7 +598,9 @@ void Game::drawLevelTexts() {
 			drawIcon(icon_num, 80, 8, 0xA);
 			uint8 txt_num = pge->init_PGE->text_num;
 			const char *str = (const char *)_res._tbn + READ_LE_UINT16(_res._tbn + txt_num * 2);
-			_vid.drawString(str, (176 - strlen(str) * 8) / 2, 26, 0xE6);
+			if (_res._type == kResourceTypePC) {
+				_vid.drawString(str, (176 - strlen(str) * 8) / 2, 26, 0xE6);
+			}
 			if (icon_num == 2) {
 				printSaveStateCompleted();
 				return;
@@ -1126,6 +1128,21 @@ void Game::loadLevelMap() {
 	_currentIcon = 0xFF;
 	switch (_res._type) {
 	case kResourceTypeAmiga:
+		if (_currentLevel == 1) {
+			static const uint8 tab[64] = {
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 1, 0,
+				0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 1, 1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0
+			};
+			const int num = tab[_currentRoom];
+			if (num != 0 && _res._levNum != num) {
+				char name[8];
+				snprintf(name, sizeof(name), "level2_%d", num);
+				_res.load(name, Resource::OT_LEV);
+				_res._levNum = num;
+			}
+		}
 		_vid.AMIGA_decodeLev(_currentLevel, _currentRoom);
 		break;
 	case kResourceTypePC:
@@ -1137,16 +1154,30 @@ void Game::loadLevelMap() {
 
 void Game::loadLevelData() {
 	_res.clearLevelRes();
-
 	const Level *lvl = &_gameLevels[_currentLevel];
 	switch (_res._type) {
 	case kResourceTypeAmiga:
-		_res.load(lvl->nameAmiga, Resource::OT_MBK);
-		_res.load(lvl->nameAmiga, Resource::OT_CT);
-		_res.load(lvl->nameAmiga, Resource::OT_PAL);
-		_res.load(lvl->nameAmiga, Resource::OT_RPC);
-		_res.load(lvl->nameAmiga, Resource::OT_SPC);
-		_res.load(lvl->nameAmiga, Resource::OT_LEV);
+		{
+			const char *name = lvl->nameAmiga;
+			if (_currentLevel == 4) {
+				name = _gameLevels[3].nameAmiga;
+			}
+			_res.load(name, Resource::OT_MBK);
+			if (_currentLevel == 6) {
+				_res.load(_gameLevels[5].nameAmiga, Resource::OT_CT);
+			} else {
+				_res.load(name, Resource::OT_CT);
+			}
+			_res.load(name, Resource::OT_PAL);
+			_res.load(name, Resource::OT_RPC);
+			_res.load(name, Resource::OT_SPC);
+			if (_currentLevel == 1) {
+				_res.load("level2_1", Resource::OT_LEV);
+				_res._levNum = 1;
+			} else {
+				_res.load(name, Resource::OT_LEV);
+			}
+		}
 		_res.load(lvl->nameAmiga, Resource::OT_PGE);
 		_res.load(lvl->nameAmiga, Resource::OT_OBC);
 		_res.load(lvl->nameAmiga, Resource::OT_ANI);
