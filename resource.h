@@ -150,7 +150,7 @@ struct Resource {
 	void load_CINE();
 	void load_TEXT();
 	void free_TEXT();
-	void load(const char *objName, int objType);
+	void load(const char *objName, int objType, const char *ext = 0);
 	void load_CT(File *pf);
 	void load_FNT(File *pf);
 	void load_MBK(File *pf);

@@ -9,7 +9,6 @@ static void decode_icon_spr(int w, int h, unsigned char *data) {
 	int y, x, i, bit, color, mask;
 
 	assert(w == 1);
-	printf("\n");
 	for (y = 0; y < 16; ++y) {
 		for (x = 0; x < w; ++x) {
 			for (i = 0; i < 16; ++i) {
@@ -43,7 +42,7 @@ void decode_spr(unsigned char *data, int data_size) {
 		++w;
 		count = w * h * 8 + 4;
 		printf("icon %dx%d count %d (%d,%d)\n", w, h, count, data[0], data[1]);
-		decode_icon_spr(w, h, data + 2);
+		decode_icon_spr(w, h, data);
 		snprintf(name, sizeof(name), "DUMP/spr%02d.png", i);
 		write_png_image_data(name, iconData16, pal, 16, h);
 		data += count;

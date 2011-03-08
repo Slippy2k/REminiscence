@@ -59,6 +59,7 @@ void Game::run() {
 
 	switch (_res._type) {
 	case kResourceTypeAmiga:
+		_res.load("ICONE", Resource::OT_ICN, "SPR");
 		_res.load("PERSO", Resource::OT_SPM);
 		break;
 	case kResourceTypePC:
@@ -1202,16 +1203,14 @@ void Game::loadLevelData() {
 }
 
 void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
-	if (_res._type == kResourceTypeAmiga) {
-		return;
-	}
-	uint16 offset = READ_LE_UINT16(_res._icn + iconNum * 2);
 	uint8 buf[256];
-	uint8 *p = _res._icn + offset + 2;
-	for (int i = 0; i < 128; ++i) {
-		uint8 col = *p++;
-		buf[i * 2 + 0] = (col & 0xF0) >> 4;
-		buf[i * 2 + 1] = (col & 0x0F) >> 0;
+	switch (_res._type) {
+	case kResourceTypeAmiga:
+		_vid.AMIGA_decodeIcn(_res._icn, iconNum, buf);
+		break;
+	case kResourceTypePC:
+		_vid.PC_decodeIcn(_res._icn, iconNum, buf);
+		break;
 	}
 	_vid.drawSpriteSub1(buf, _vid._frontLayer + x + y * 256, 16, 16, 16, colMask << 4);
 	_vid.markBlockAsDirty(x, y, 16, 16);

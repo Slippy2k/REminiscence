@@ -324,7 +324,7 @@ void Resource::free_TEXT() {
 	_textsTable = 0;
 }
 
-void Resource::load(const char *objName, int objType) {
+void Resource::load(const char *objName, int objType, const char *ext) {
 	debug(DBG_RES, "Resource::load('%s', %d)", objName, objType);
 	LoadStub loadStub = 0;
 	switch (objType) {
@@ -424,16 +424,18 @@ void Resource::load(const char *objName, int objType) {
 		error("Unimplemented Resource::load() type %d", objType);
 		break;
 	}
-	if (loadStub) {
-		File f;
-		if (f.open(_entryName, "rb", _fs)) {
-			(this->*loadStub)(&f);
-			if (f.ioErr()) {
-				error("I/O error when reading '%s'", _entryName);
-			}
-		} else {
-			error("Can't open '%s'", _entryName);
+	if (ext) {
+		snprintf(_entryName, sizeof(_entryName), "%s.%s", objName, ext);
+	}
+	File f;
+	if (f.open(_entryName, "rb", _fs)) {
+		assert(loadStub);
+		(this->*loadStub)(&f);
+		if (f.ioErr()) {
+			error("I/O error when reading '%s'", _entryName);
 		}
+	} else {
+		error("Can't open '%s'", _entryName);
 	}
 }
 

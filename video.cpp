@@ -259,6 +259,16 @@ void Video::PC_setLevelPalettes() {
 	setTextPalette();
 }
 
+void Video::PC_decodeIcn(const uint8 *src, int num, uint8 *dst) {
+	const int offset = READ_LE_UINT16(src + num * 2);
+	const uint8 *p = src + offset + 2;
+	for (int i = 0; i < 128; ++i) {
+		uint8 col = *p++;
+		dst[i * 2 + 0] = (col & 0xF0) >> 4;
+		dst[i * 2 + 1] = (col & 0x0F) >> 0;
+	}
+}
+
 static void AMIGA_blit3pNxN(uint8 *dst, int pitch, int w, int h, const uint8 *src) {
 	const int planarSize = w * 2 * h;
 	for (int y = 0; y < h; ++y) {
@@ -276,6 +286,24 @@ static void AMIGA_blit3pNxN(uint8 *dst, int pitch, int w, int h, const uint8 *sr
 			src += 2;
 		}
 		dst += pitch;
+	}
+}
+
+static void AMIGA_blit4p16xN(uint8 *dst, int w, int h, const uint8 *src) {
+	assert(w == 1);
+	for (int y = 0; y < h; ++y) {
+		for (int i = 0; i < 16; ++i) {
+			int color = 0;
+			const int mask = 1 << (15 - i);
+			for (int bit = 0; bit < 4; ++bit) {
+				if (READ_BE_UINT16(src + bit * 2) & mask) {
+					color |= 1 << bit;
+				}
+			}
+			dst[i] = color;
+		}
+		src += 2;
+		dst += 16;
 	}
 }
 
@@ -507,9 +535,10 @@ void Video::AMIGA_decodeLev(int level, int room) {
 	for (int i = 0; i < 4; ++i) {
 		num[i] = READ_BE_UINT16(tmp + 2 + i * 2);
 	}
-	setPaletteSlotBE(0, num[0]);
-//	setPaletteSlotBE(1, num[1]);
-	setPaletteSlotBE(4, num[2]);
+	setPaletteSlotBE(0x0, num[0]);
+//	setPaletteSlotBE(0x1, num[1]);
+	setPaletteSlotBE(0x4, num[2]);
+	setPaletteSlotBE(0xA, num[2]);
 }
 
 void Video::AMIGA_decodeSpm(const uint8 *src, uint8 *dst) {
@@ -525,7 +554,19 @@ void Video::AMIGA_decodeSpm(const uint8 *src, uint8 *dst) {
 	if (h == 0) {
 		--h;
 	}
-	AMIGA_blit3pNxN(_res->_memBuf, (w + 1) * 16, w + 1, h + 1, buf);
+	AMIGA_blit3pNxN(dst, (w + 1) * 16, w + 1, h + 1, buf);
+}
+
+void Video::AMIGA_decodeIcn(const uint8 *src, int num, uint8 *dst) {
+	for (int i = 0; i < num; ++i) {
+		const int h = 1 + *src++;
+		const int w = 1 + *src++;
+		const int count = w * h * 8 + 4;
+		src += count;
+	}
+	const int h = 1 + *src++;
+	const int w = 1 + *src++;
+	AMIGA_blit4p16xN(dst, w, h, src);
 }
 
 void Video::drawSpriteSub1(const uint8 *src, uint8 *dst, int pitch, int h, int w, uint8 colMask) {
