@@ -7,23 +7,22 @@ static unsigned char iconData16[64 * 16];
 
 static void decode_icon_spr(int w, int h, unsigned char *data) {
 	int y, x, i, bit, color, mask;
+	const int planarSize = w * 2 * h;
 
 	assert(w == 1);
-	for (y = 0; y < 16; ++y) {
-		for (x = 0; x < w; ++x) {
+	for (y = 0; y < h; ++y) {
 			for (i = 0; i < 16; ++i) {
 				color = 0;
 				mask = 1 << (15 - i);
 				for (bit = 0; bit < 4; ++bit) {
-					if (movew(data + bit * 2) & mask) {
+					if (movew(data + bit * planarSize) & mask) {
 						color |= 1 << bit;
 					}
 				}
 				assert(color < 16);
 				iconData16[y * 16 + i] = color;
 			}
-		}
-		data += 2;
+			data += 2;
 	}
 }
 
@@ -42,7 +41,7 @@ void decode_spr(unsigned char *data, int data_size) {
 		++w;
 		count = w * h * 8 + 4;
 		printf("icon %dx%d count %d (%d,%d)\n", w, h, count, data[0], data[1]);
-		decode_icon_spr(w, h, data);
+		decode_icon_spr(w, h, data + 4);
 		snprintf(name, sizeof(name), "DUMP/spr%02d.png", i);
 		write_png_image_data(name, iconData16, pal, 16, h);
 		data += count;

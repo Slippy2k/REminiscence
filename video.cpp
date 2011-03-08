@@ -262,7 +262,7 @@ void Video::PC_setLevelPalettes() {
 void Video::PC_decodeIcn(const uint8 *src, int num, uint8 *dst) {
 	const int offset = READ_LE_UINT16(src + num * 2);
 	const uint8 *p = src + offset + 2;
-	for (int i = 0; i < 128; ++i) {
+	for (int i = 0; i < 16 * 16 / 2; ++i) {
 		uint8 col = *p++;
 		dst[i * 2 + 0] = (col & 0xF0) >> 4;
 		dst[i * 2 + 1] = (col & 0x0F) >> 0;
@@ -290,13 +290,14 @@ static void AMIGA_blit3pNxN(uint8 *dst, int pitch, int w, int h, const uint8 *sr
 }
 
 static void AMIGA_blit4p16xN(uint8 *dst, int w, int h, const uint8 *src) {
+	const int planarSize = w * 2 * h;
 	assert(w == 1);
 	for (int y = 0; y < h; ++y) {
 		for (int i = 0; i < 16; ++i) {
 			int color = 0;
 			const int mask = 1 << (15 - i);
 			for (int bit = 0; bit < 4; ++bit) {
-				if (READ_BE_UINT16(src + bit * 2) & mask) {
+				if (READ_BE_UINT16(src + bit * planarSize) & mask) {
 					color |= 1 << bit;
 				}
 			}
@@ -369,14 +370,14 @@ static void AMIGA_decodeSgd(uint8 *dst, const uint8 *src, const uint8 *data) {
 				const int size = READ_BE_UINT16(ptr); ptr += 2;
 				if (num != d2) {
 					num = d2;
-					assert(size < (int)sizeof(buf));
+					assert(size <= (int)sizeof(buf));
 					memcpy(buf, ptr, size);
 				}
                         } else {
 				if (num != d2) {
 					num = d2;
 					const int size = READ_BE_UINT16(data + offset) & 0x7FFF;
-					assert(size < (int)sizeof(buf));
+					assert(size <= (int)sizeof(buf));
 					AMIGA_decodeRLE(buf, data + offset);
 				}
 			}
@@ -403,10 +404,9 @@ static const uint8 *AMIGA_mirrorY(const uint8 *a2) {
 
 static const uint8 *AMIGA_mirrorX(const uint8 *a2) {
 	static uint8 buf[32];
-	uint8 mask = 0;
 
 	for (int i = 0; i < 32; ++i) {
-		mask = 0;
+		uint8 mask = 0;
 		for (int bit = 0; bit < 8; ++bit) {
 			if (a2[i] & (1 << bit)) {
 				mask |= 1 << (7 - bit);
@@ -544,7 +544,7 @@ void Video::AMIGA_decodeLev(int level, int room) {
 void Video::AMIGA_decodeSpm(const uint8 *src, uint8 *dst) {
 	uint8 buf[256 * 32];
 	const int size = READ_BE_UINT16(src + 3) & 0x7FFF;
-	assert(size < (int)sizeof(buf));
+	assert(size <= (int)sizeof(buf));
 	AMIGA_decodeRLE(buf, src + 3);
 	const int w = (src[2] >> 7) + 1;
 	const int h = src[2] & 0x7F;
@@ -555,11 +555,23 @@ void Video::AMIGA_decodeIcn(const uint8 *src, int num, uint8 *dst) {
 	for (int i = 0; i < num; ++i) {
 		const int h = 1 + *src++;
 		const int w = 1 + *src++;
-		const int count = w * h * 8 + 4;
-		src += count;
+		const int size = w * h * 8;
+		src += 4 + size;
 	}
 	const int h = 1 + *src++;
 	const int w = 1 + *src++;
+	const int size = w * h * 8;
+	uint8 buf[8 * 16];
+	assert(size <= (int)sizeof(buf));
+	for (int i = 0; i < size; ++i) {
+		uint8 mask = 0;
+		for (int bit = 0; bit < 8; ++bit) {
+			if (src[4 + i] & (1 << bit)) {
+				mask |= 1 << (7 - bit);
+			}
+		}
+		buf[i] = mask;
+	}
 	AMIGA_blit4p16xN(dst, w, h, src + 4);
 }
 
