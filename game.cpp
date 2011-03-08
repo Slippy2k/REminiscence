@@ -840,7 +840,6 @@ void Game::drawObject(const uint8 *dataPtr, int16 x, int16 y, uint8 flags) {
 	case kResourceTypeAmiga:
 		count = dataPtr[8];
 		dataPtr += 9;
-return; /* TEMP */
 		break;
 	case kResourceTypePC:
 		count = dataPtr[5];
@@ -873,11 +872,13 @@ void Game::drawObjectFrame(const uint8 *bankDataPtr, const uint8 *dataPtr, int16
 	uint8 sprite_h = (((sprite_flags >> 0) & 3) + 1) * 8;
 	uint8 sprite_w = (((sprite_flags >> 2) & 3) + 1) * 8;
 
-	int size = sprite_w * sprite_h / 2;
-	for (int i = 0; i < size; ++i) {
-		uint8 col = *src++;
-		_res._memBuf[i * 2 + 0] = (col & 0xF0) >> 4;
-		_res._memBuf[i * 2 + 1] = (col & 0x0F) >> 0;
+	switch (_res._type) {
+	case kResourceTypeAmiga:
+		_vid.AMIGA_decodeSpc(src, sprite_w, sprite_h, _res._memBuf);
+		break;
+	case kResourceTypePC:
+		_vid.PC_decodeSpc(src, sprite_w, sprite_h, _res._memBuf);
+		break;
 	}
 
 	src = _res._memBuf;
