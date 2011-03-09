@@ -132,16 +132,34 @@ void Video::fadeOutPalette() {
 	}
 }
 
+void Video::setPaletteColorBE(int num, int offset) {
+	const int color = READ_BE_UINT16(_res->_pal + offset * 2);
+	Color c;
+	c.r = (color & 0x00F) << 2;
+	c.g = (color & 0x0F0) >> 2;
+	c.b = (color & 0xF00) >> 6;
+	if (color != 0) {
+		c.r |= 3;
+		c.g |= 3;
+		c.b |= 3;
+	}
+	_stub->setPaletteEntry(num, &c);
+}
+
 void Video::setPaletteSlotBE(int palSlot, int palNum) {
 	debug(DBG_VIDEO, "Video::setPaletteSlotBE()");
 	const uint8 *p = _res->_pal + palNum * 0x20;
 	for (int i = 0; i < 16; ++i) {
-		uint16 color = READ_BE_UINT16(p); p += 2;
-		uint8 t = (color == 0) ? 0 : 3;
+		const int color = READ_BE_UINT16(p); p += 2;
 		Color c;
-		c.r = ((color & 0x00F) << 2) | t;
-		c.g = ((color & 0x0F0) >> 2) | t;
-		c.b = ((color & 0xF00) >> 6) | t;
+		c.r = (color & 0x00F) << 2;
+		c.g = (color & 0x0F0) >> 2;
+		c.b = (color & 0xF00) >> 6;
+		if (color != 0) {
+			c.r |= 3;
+			c.g |= 3;
+			c.b |= 3;
+		}
 		_stub->setPaletteEntry(palSlot * 0x10 + i, &c);
 	}
 }
@@ -580,13 +598,14 @@ void Video::AMIGA_decodeLev(int level, int room) {
 	for (int i = 0; i < 4; ++i) {
 		num[i] = READ_BE_UINT16(tmp + 2 + i * 2);
 	}
+	_mapPalSlot1 = num[1];
+	_mapPalSlot2 = num[2];
 	setPaletteSlotBE(0x0, num[0]);
-	setPaletteSlotBE(0x1, num[2]);
-	setPaletteSlotBE(0x2, num[2]);
-	setPaletteSlotBE(0x4, num[2]);
-	setPaletteSlotBE(0x5, num[2]);
-	setPaletteSlotBE(0xA, num[2]);
-	setPaletteSlotBE(0xE, num[2]);
+	for (int i = 1; i < 5; ++i) {
+		setPaletteSlotBE(i, _mapPalSlot2);
+	}
+	setPaletteSlotBE(0x6, _mapPalSlot2);
+	setPaletteSlotBE(0xA, _mapPalSlot2);
 }
 
 void Video::AMIGA_decodeSpm(const uint8 *src, uint8 *dst) {
@@ -745,7 +764,7 @@ void Video::AMIGA_drawStringChar(uint8 *dst, int pitch, const uint8 *src, uint8 
 	for (int y = 0; y < 8; ++y) {
 		for (int x = 0; x < 8; ++x) {
 			if (src[x] != 0) {
-				dst[x] = 0xED;
+				dst[x] = 0x1D;
 			}
 		}
 		src += 16;
