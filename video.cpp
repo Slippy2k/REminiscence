@@ -586,6 +586,7 @@ void Video::AMIGA_decodeLev(int level, int room) {
 	setPaletteSlotBE(0x4, num[2]);
 	setPaletteSlotBE(0x5, num[2]);
 	setPaletteSlotBE(0xA, num[2]);
+	setPaletteSlotBE(0xE, num[2]);
 }
 
 void Video::AMIGA_decodeSpm(const uint8 *src, uint8 *dst) {
@@ -699,8 +700,8 @@ void Video::drawSpriteSub6(const uint8 *src, uint8 *dst, int pitch, int h, int w
 	}
 }
 
-void Video::drawChar(uint8 c, int16 y, int16 x) {
-	debug(DBG_VIDEO, "Video::drawChar(0x%X, %d, %d)", c, y, x);
+void Video::PC_drawChar(uint8 c, int16 y, int16 x) {
+	debug(DBG_VIDEO, "Video::PC_drawChar(0x%X, %d, %d)", c, y, x);
 	y *= 8;
 	x *= 8;
 	const uint8 *src = _res->_fnt + (c - 32) * 32;
@@ -737,35 +738,62 @@ void Video::drawChar(uint8 c, int16 y, int16 x) {
 	}
 }
 
+void Video::AMIGA_drawStringChar(uint8 *dst, int pitch, const uint8 *src, uint8 color, uint8 chr) {
+	assert(chr >= 32);
+	AMIGA_decodeIcn(src, chr - 32, _res->_memBuf);
+	src = _res->_memBuf;
+	for (int y = 0; y < 8; ++y) {
+		for (int x = 0; x < 8; ++x) {
+			if (src[x] != 0) {
+				dst[x] = 0xED;
+			}
+		}
+		src += 16;
+		dst += pitch;
+	}
+}
+
+void Video::PC_drawStringChar(uint8 *dst, int pitch, const uint8 *src, uint8 color, uint8 chr) {
+	assert(chr >= 32);
+	src += (chr - 32) * 8 * 4;
+	for (int y = 0; y < 8; ++y) {
+		for (int x = 0; x < 4; ++x) {
+			const uint8 c1 = src[x] >> 4;
+			if (c1 != 0) {
+				*dst = (c1 == 15) ? color : (0xE0 + c1);
+			}
+			++dst;
+			const uint8 c2 = src[x] & 15;
+			if (c2 != 0) {
+				*dst = (c2 == 15) ? color : (0xE0 + c2);
+			}
+			++dst;
+		}
+		src += 4;
+		dst += pitch - CHAR_W;
+	}
+}
+
 const char *Video::drawString(const char *str, int16 x, int16 y, uint8 col) {
 	debug(DBG_VIDEO, "Video::drawString('%s', %d, %d, 0x%X)", str, x, y, col);
+	void (Video::*drawCharFunc)(uint8 *, int, const uint8 *, uint8, uint8) = 0;
+	switch (_res->_type) {
+	case kResourceTypeAmiga:
+		drawCharFunc = &Video::AMIGA_drawStringChar;
+		break;
+	case kResourceTypePC:
+		drawCharFunc = &Video::PC_drawStringChar;
+		break;
+	}
 	int len = 0;
-	int offset = y * 256 + x;
-	uint8 *dst = _frontLayer + offset;
+	uint8 *dst = _frontLayer + y * 256 + x;
 	while (1) {
-		uint8 c = *str++;
+		const uint8 c = *str++;
 		if (c == 0 || c == 0xB || c == 0xA) {
 			break;
 		}
-		uint8 *dst_char = dst;
-		const uint8 *src = _res->_fnt + (c - 32) * 32;
-		for (int h = 0; h < 8; ++h) {
-			for (int w = 0; w < 4; ++w) {
-				uint8 c1 = (*src & 0xF0) >> 4;
-				uint8 c2 = (*src & 0x0F) >> 0;
-				++src;
-				if (c1 != 0) {
-					*dst_char = (c1 == 0xF) ? col : (0xE0 + c1);
-				}
-				++dst_char;
-				if (c2 != 0) {
-					*dst_char = (c2 == 0xF) ? col : (0xE0 + c2);
-				}
-				++dst_char;
-			}
-			dst_char += 256 - 8;
-		}
-		dst += 8; // character width
+		(this->*drawCharFunc)(dst, 256, _res->_fnt, col, c);
+		dst += CHAR_W;
 		++len;
 	}
 	markBlockAsDirty(x, y, len * 8, 8);

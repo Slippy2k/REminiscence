@@ -80,7 +80,9 @@ struct Video {
 	void drawSpriteSub4(const uint8 *src, uint8 *dst, int pitch, int h, int w, uint8 colMask);
 	void drawSpriteSub5(const uint8 *src, uint8 *dst, int pitch, int h, int w, uint8 colMask);
 	void drawSpriteSub6(const uint8 *src, uint8 *dst, int pitch, int h, int w, uint8 colMask);
-	void drawChar(uint8 c, int16 y, int16 x);
+	void PC_drawChar(uint8 c, int16 y, int16 x);
+	void PC_drawStringChar(uint8 *dst, int pitch, const uint8 *src, uint8 color, uint8 chr);
+	void AMIGA_drawStringChar(uint8 *dst, int pitch, const uint8 *src, uint8 color, uint8 chr);
 	const char *drawString(const char *str, int16 x, int16 y, uint8 col);
 };
 

@@ -38,8 +38,14 @@ void Game::run() {
 	_randSeed = time(0);
 
 	_res.load_TEXT();
-	if (_res._type == kResourceTypePC) {
+
+	switch (_res._type) {
+	case kResourceTypeAmiga:
+		_res.load("FONT8", Resource::OT_FNT, "SPR");
+		break;
+	case kResourceTypePC:
 		_res.load("FB_TXT", Resource::OT_FNT);
+		break;
 	}
 
 #ifndef BYPASS_PROTECTION
@@ -330,25 +336,25 @@ bool Game::handleConfigPanel() {
 	_vid._charFrontColor = 0xEE;
 	_vid._charTransparentColor = 0xFF;
 
-	_vid.drawChar(0x81, y, x);
+	_vid.PC_drawChar(0x81, y, x);
 	for (int i = 1; i < w; ++i) {
-		_vid.drawChar(0x85, y, x + i);
+		_vid.PC_drawChar(0x85, y, x + i);
 	}
-	_vid.drawChar(0x82, y, x + w);
+	_vid.PC_drawChar(0x82, y, x + w);
 	for (int j = 1; j < h; ++j) {
-		_vid.drawChar(0x86, y + j, x);
+		_vid.PC_drawChar(0x86, y + j, x);
 		for (int i = 1; i < w; ++i) {
 			_vid._charTransparentColor = 0xE2;
-			_vid.drawChar(0x20, y + j, x + i);
+			_vid.PC_drawChar(0x20, y + j, x + i);
 		}
 		_vid._charTransparentColor = 0xFF;
-		_vid.drawChar(0x87, y + j, x + w);
+		_vid.PC_drawChar(0x87, y + j, x + w);
 	}
-	_vid.drawChar(0x83, y + h, x);
+	_vid.PC_drawChar(0x83, y + h, x);
 	for (int i = 1; i < w; ++i) {
-		_vid.drawChar(0x88, y + h, x + i);
+		_vid.PC_drawChar(0x88, y + h, x + i);
 	}
-	_vid.drawChar(0x84, y + h, x + w);
+	_vid.PC_drawChar(0x84, y + h, x + w);
 
 	_menu._charVar3 = 0xE4;
 	_menu._charVar4 = 0xE5;
@@ -565,11 +571,7 @@ void Game::printLevelCode() {
 		if (_printLevelCodeCounter != 0) {
 			char levelCode[50];
 			snprintf(levelCode, sizeof(levelCode), "CODE: %s", _menu._passwords[_currentLevel][_skillLevel]);
-			if (_res._type == kResourceTypeAmiga) {
-				/* TODO */
-			} else {
-				_vid.drawString(levelCode, (Video::GAMESCREEN_W - strlen(levelCode) * 8) / 2, 16, 0xE7);
-			}
+			_vid.drawString(levelCode, (Video::GAMESCREEN_W - strlen(levelCode) * 8) / 2, 16, 0xE7);
 		}
 	}
 }
@@ -577,11 +579,7 @@ void Game::printLevelCode() {
 void Game::printSaveStateCompleted() {
 	if (_saveStateCompleted) {
 		const char *str = _res.getMenuString(LocaleData::LI_05_COMPLETED);
-		if (_res._type == kResourceTypeAmiga) {
-			/* TODO */
-		} else {
-			_vid.drawString(str, (176 - strlen(str) * 8) / 2, 34, 0xE6);
-		}
+		_vid.drawString(str, (176 - strlen(str) * 8) / 2, 34, 0xE6);
 	}
 }
 
@@ -598,9 +596,7 @@ void Game::drawLevelTexts() {
 			drawIcon(icon_num, 80, 8, 0xA);
 			uint8 txt_num = pge->init_PGE->text_num;
 			const char *str = (const char *)_res._tbn + READ_LE_UINT16(_res._tbn + txt_num * 2);
-			if (_res._type == kResourceTypePC) {
-				_vid.drawString(str, (176 - strlen(str) * 8) / 2, 26, 0xE6);
-			}
+			_vid.drawString(str, (176 - strlen(str) * 8) / 2, 26, 0xE6);
 			if (icon_num == 2) {
 				printSaveStateCompleted();
 				return;

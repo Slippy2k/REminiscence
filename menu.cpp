@@ -76,7 +76,7 @@ void Menu::drawString2(const char *str, int16 y, int16 x) {
 	debug(DBG_MENU, "Menu::drawString2()");
 	int len = 0;
 	while (*str) {
-		_vid->drawChar((uint8)*str, y, x + len);
+		_vid->PC_drawChar((uint8)*str, y, x + len);
 		++str;
 		++len;
 	}
@@ -179,9 +179,9 @@ bool Menu::handlePasswordScreen(uint8 &new_skill, uint8 &new_level) {
 		drawString2(_res->getMenuString(LocaleData::LI_17_ENTER_PASSWORD2), 17, 3);
 
 		for (int i = 0; i < len; ++i) {
-			_vid->drawChar((uint8)password[i], 21, i + 15);
+			_vid->PC_drawChar((uint8)password[i], 21, i + 15);
 		}
-		_vid->drawChar(0x20, 21, len + 15);
+		_vid->PC_drawChar(0x20, 21, len + 15);
 
 		_vid->markBlockAsDirty(15 * 8, 21 * 8, (len + 1) * 8, 8);
 		_vid->updateScreen();

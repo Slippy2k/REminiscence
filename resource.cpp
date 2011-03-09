@@ -784,6 +784,13 @@ void Resource::load_TBN(File *f) {
 	} else {
 		f->read(_tbn, len);
 	}
+	if (_type == kResourceTypeAmiga) {
+		const int firstOffset = READ_BE_UINT16(_tbn);
+		for (int i = 0; i < firstOffset; i += 2) {
+			// byte-swap offset
+			SWAP<uint8>(_tbn[i], _tbn[i + 1]);
+		}
+	}
 }
 
 void Resource::load_CMD(File *pf) {
