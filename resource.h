@@ -104,6 +104,7 @@ struct Resource {
 	uint8 *_fnt;
 	uint8 *_mbk;
 	uint8 *_icn;
+	int _icnLen;
 	uint8 *_tab;
 	uint8 *_spc; // BE
 	uint16 _numSpc;

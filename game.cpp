@@ -66,6 +66,7 @@ void Game::run() {
 	switch (_res._type) {
 	case kResourceTypeAmiga:
 		_res.load("ICONE", Resource::OT_ICN, "SPR");
+		_res.load("ICON", Resource::OT_ICN, "SPR");
 		_res.load("PERSO", Resource::OT_SPM);
 		break;
 	case kResourceTypePC:
@@ -1238,10 +1239,34 @@ void Game::loadLevelData() {
 }
 
 void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
-	uint8 buf[256];
+	uint8 buf[16 * 16];
 	switch (_res._type) {
 	case kResourceTypeAmiga:
-		_vid.AMIGA_decodeIcn(_res._icn, iconNum, buf);
+		if (iconNum > 30) {
+			// inventory icons
+			switch (iconNum) {
+			case 76: // cursor
+				memset(buf, 0, 16 * 16);
+				for (int i = 0; i < 3; ++i) {
+					buf[i] = buf[15 * 16 + (15 - i)] = 1;
+					buf[i * 16] = buf[(15 - i) * 16 + 15] = 1;
+				}
+				break;
+			case 77: // up - icon.spr 4
+				memset(buf, 0, 16 * 16);
+				_vid.AMIGA_decodeIcn(_res._icn, 35, buf);
+				break;
+			case 78: // down - icon.spr 5
+				memset(buf, 0, 16 * 16);
+				_vid.AMIGA_decodeIcn(_res._icn, 36, buf);
+				break;
+			default:
+				memset(buf, 5, 16 * 16);
+				break;
+			}
+		} else {
+			_vid.AMIGA_decodeIcn(_res._icn, iconNum, buf);
+		}
 		break;
 	case kResourceTypePC:
 		_vid.PC_decodeIcn(_res._icn, iconNum, buf);
@@ -1295,9 +1320,6 @@ uint16 Game::getLineLength(const uint8 *str) const {
 }
 
 void Game::handleInventory() {
-	if (_res._type == kResourceTypeAmiga) {
-		return;
-	}
 	LivePGE *selected_pge = 0;
 	LivePGE *pge = &_pgeLive[0];
 	if (pge->life > 0 && pge->current_inventory_PGE != 0xFF) {
@@ -1356,10 +1378,10 @@ void Game::handleInventory() {
 					icon_x_pos += 32;
 				}
 				if (current_line != 0) {
-					drawIcon(0x4E, 120, 176, 0xA); // down arrow
+					drawIcon(78, 120, 176, 0xA); // down arrow
 				}
 				if (current_line != num_lines - 1) {
-					drawIcon(0x4D, 120, 143, 0xA); // up arrow
+					drawIcon(77, 120, 143, 0xA); // up arrow
 				}
 			} else {
 				char buf[50];

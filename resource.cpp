@@ -33,7 +33,8 @@ Resource::Resource(FileSystem *fs, ResourceType ver, Language lang) {
 Resource::~Resource() {
 	clearLevelRes();
 	free(_fnt);
-	free(_icn);
+	free(_icn); _icn = 0;
+	_icnLen = 0;
 	free(_tab);
 	free(_spc);
 	free(_spr1);
@@ -480,12 +481,17 @@ void Resource::load_MBK(File *f) {
 void Resource::load_ICN(File *f) {
 	debug(DBG_RES, "Resource::load_ICN()");
 	int len = f->size();
-	_icn = (uint8 *)malloc(len);
+	if (_icnLen == 0) {
+		_icn = (uint8 *)malloc(len);
+	} else {
+		_icn = (uint8 *)realloc(_icn, _icnLen + len);
+	}
 	if (!_icn) {
 		error("Unable to allocate ICN buffer");
 	} else {
-		f->read(_icn, len);
+		f->read(_icn + _icnLen, len);
 	}
+	_icnLen += len;
 }
 
 void Resource::load_SPR(File *f) {
@@ -1040,11 +1046,12 @@ uint8 *Resource::loadBankData(uint16 num) {
 		// to the total count of entries
 		dataOffset &= 0xFFFF;
 	}
-	int size = getBankDataSize(num);
+	const int size = getBankDataSize(num);
 	const int avail = _bankDataTail - _bankDataHead;
 	if (avail < size) {
 		clearBankData();
 	}
+	assert(_bankDataHead + size <= _bankDataTail);
 	_curBankSlot->entryNum = num;
 	_curBankSlot->ptr = _bankDataHead;
 	++_curBankSlot;
