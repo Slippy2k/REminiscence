@@ -43,9 +43,12 @@ struct FileSystem_impl {
 	}
 
 	const char *findFilePath(const char *file) {
+		const int len = strlen(file);
 		for (int i = 0; i < _fileCount; ++i) {
-			if (strcasecmp(_fileList[i] + _filePathLen, file) == 0) {
-				return _fileList[i];
+			const char *filePath = _fileList[i];
+			const int filePathLen = strlen(filePath);
+			if (filePathLen > len && strcasecmp(filePath + filePathLen - len, file) == 0) {
+				return filePath;
 			}
 		}
 		return 0;
