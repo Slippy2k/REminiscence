@@ -275,11 +275,19 @@ void SystemStub_SDL::updateScreen(int shakeOffset) {
 }
 
 void SystemStub_SDL::processEvents() {
+	bool paused = false;
+while (true) {
 	SDL_Event ev;
 	while (SDL_PollEvent(&ev)) {
 		switch (ev.type) {
 		case SDL_QUIT:
 			_pi.quit = true;
+			break;
+		case SDL_ACTIVEEVENT:
+			if (ev.active.state & SDL_APPINPUTFOCUS) {
+				paused = ev.active.gain == 0;
+				SDL_PauseAudio(paused ? 1 : 0);
+			}
 			break;
 		case SDL_JOYHATMOTION:
 			_pi.dirMask = 0;
@@ -472,6 +480,11 @@ void SystemStub_SDL::processEvents() {
 			break;
 		}
 	}
+	if (!paused) {
+		break;
+	}
+	SDL_Delay(100);
+}
 }
 
 void SystemStub_SDL::sleep(int duration) {
