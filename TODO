@@ -1,0 +1,17 @@
+reminiscence
+	0.2.0
+		amiga support
+			background mask
+			monster palettes
+			background (title, menu in-game)
+		web tools (based on bermuda)
+		pause on window focus lost
+	0.2.1
+		pc cd cutscenes (seq_player)
+
+fb
+	resume/suspend fix
+	sound
+	market
+	controls fix
+
