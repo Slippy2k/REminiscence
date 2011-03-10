@@ -22,7 +22,7 @@
 #include "game.h"
 
 
-Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, ResourceType ver, Language lang)
+Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang)
 	: _cut(&_modPly, &_res, stub, &_vid), _menu(&_modPly, &_res, stub, &_vid),
 	_mix(stub), _modPly(&_mix, fs), _res(fs, ver, lang), _sfxPly(&_mix), _vid(&_res, stub),
 	_stub(stub), _fs(fs), _savePath(savePath) {
@@ -30,6 +30,8 @@ Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, ResourceType 
 	_inp_demo = 0;
 	_inp_record = false;
 	_inp_replay = false;
+	_skillLevel = 1;
+	_currentLevel = level;
 }
 
 void Game::run() {
@@ -77,9 +79,6 @@ void Game::run() {
 		_res.load_FIB("GLOBAL");
 		break;
 	}
-
-	_skillLevel = 1;
-	_currentLevel = 0; /* TEMP */
 
 	while (!_stub->_pi.quit && (_res._type == kResourceTypeAmiga || _menu.handleTitleScreen(_skillLevel, _currentLevel))) {
 		if (_currentLevel == 7) {
