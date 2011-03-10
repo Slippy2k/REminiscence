@@ -20,6 +20,7 @@
 #include "systemstub.h"
 #include "unpack.h"
 #include "game.h"
+#include "seq_player.h"
 
 
 Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang)
@@ -58,6 +59,14 @@ void Game::run() {
 #endif
 
 	_mix.init();
+
+#if 1
+File f;
+if (f.open("INTRO.SEQ", "rb", _fs)) {
+	SeqPlayer seqPly(_stub, _res._memBuf);
+	seqPly.play(&f);
+}
+#endif
 
 	playCutscene(0x40);
 	playCutscene(0x0D);

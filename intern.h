@@ -27,6 +27,7 @@
 #include "sys.h"
 #include "util.h"
 
+#define ABS(x) ((x)<0?-(x):(x))
 #define MAX(x,y) ((x)>(y)?(x):(y))
 #define MIN(x,y) ((x)<(y)?(x):(y))
 #define ARRAYSIZE(a) (sizeof(a)/sizeof(a[0]))
