@@ -26,8 +26,16 @@ Resource::Resource(FileSystem *fs, ResourceType ver, Language lang) {
 	_lang = lang;
 	_fs = fs;
 	_memBuf = (uint8 *)malloc(256 * 224);
-	_bankDataHead = _bankData;
-	_bankDataTail = _bankData + sizeof(_bankData);
+	if (!_memBuf) {
+		error("Unable to allocate temporary memory buffer");
+	}
+	static const int kBankDataSize = 0x7000;
+	_bankData = (uint8 *)malloc(kBankDataSize);
+	if (!_bankData) {
+		error("Unable to allocate bank data buffer");
+	}
+	_bankDataTail = _bankData + kBankDataSize;
+	clearBankData();
 }
 
 Resource::~Resource() {
@@ -1004,9 +1012,7 @@ void Resource::load_SPM(File *f) {
 }
 
 void Resource::clearBankData() {
-	_curBankSlot = &_bankSlots[0];
-	_curBankSlot->entryNum = 0xFFFF;
-	_curBankSlot->ptr = 0;
+	_bankBuffersCount = 0;
 	_bankDataHead = _bankData;
 }
 
@@ -1028,12 +1034,10 @@ int Resource::getBankDataSize(uint16 num) {
 }
 
 uint8 *Resource::findBankData(uint16 num) {
-	BankSlot *slot = &_bankSlots[0];
-	while (slot->entryNum != 0xFFFF) {
-		if (slot->entryNum == num) {
-			return slot->ptr;
+	for (int i = 0; i < _bankBuffersCount; ++i) {
+		if (_bankBuffers[i].entryNum == num) {
+			return _bankBuffers[i].ptr;
 		}
-		++slot;
 	}
 	return 0;
 }
@@ -1052,23 +1056,21 @@ uint8 *Resource::loadBankData(uint16 num) {
 		clearBankData();
 	}
 	assert(_bankDataHead + size <= _bankDataTail);
-	_curBankSlot->entryNum = num;
-	_curBankSlot->ptr = _bankDataHead;
-	++_curBankSlot;
-	_curBankSlot->entryNum = 0xFFFF;
-	_curBankSlot->ptr = 0;
+	assert(_bankBuffersCount < (int)ARRAYSIZE(_bankBuffers));
+	_bankBuffers[_bankBuffersCount].entryNum = num;
+	_bankBuffers[_bankBuffersCount].ptr = _bankDataHead;
 	const uint8 *data = _mbk + dataOffset;
 	if (READ_BE_UINT16(ptr + 4) & 0x8000) {
 		memcpy(_bankDataHead, data, size);
 	} else {
-		assert(dataOffset != 0);
+		assert(dataOffset > 4);
+		assert(size == (int)READ_BE_UINT32(data - 4));
 		if (!delphine_unpack(_bankDataHead, data, 0)) {
 			error("Bad CRC for bank data %d", num);
 		}
 	}
 	uint8 *bankData = _bankDataHead;
 	_bankDataHead += size;
-	assert(_bankDataHead < _bankDataTail);
 	return bankData;
 }
 

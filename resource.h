@@ -135,11 +135,11 @@ struct Resource {
 	const char **_textsTable;
 	uint8 *_extStringsTable;
 	const uint8 *_stringsTable;
-	uint8 _bankData[0x7000];
+	uint8 *_bankData;
 	uint8 *_bankDataHead;
 	uint8 *_bankDataTail;
-	BankSlot _bankSlots[49];
-	BankSlot *_curBankSlot;
+	BankSlot _bankBuffers[50];
+	int _bankBuffersCount;
 
 	Resource(FileSystem *fs, ResourceType type, Language lang);
 	~Resource();
