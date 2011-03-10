@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SYSTEMSTUB_H__
-#define __SYSTEMSTUB_H__
+#ifndef SYSTEMSTUB_H__
+#define SYSTEMSTUB_H__
 
 #include "intern.h"
 
@@ -102,4 +102,4 @@ struct MutexStack {
 
 extern SystemStub *SystemStub_SDL_create();
 
-#endif // __SYSTEMSTUB_H__
+#endif // SYSTEMSTUB_H__

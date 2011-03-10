@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __CUTSCENE_H__
-#define __CUTSCENE_H__
+#ifndef CUTSCENE_H__
+#define CUTSCENE_H__
 
 #include "intern.h"
 #include "graphics.h"
@@ -133,4 +133,4 @@ struct Cutscene {
 	void play();
 };
 
-#endif // __CUTSCENE_H__
+#endif // CUTSCENE_H__

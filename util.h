@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __UTIL_H__
-#define __UTIL_H__
+#ifndef UTIL_H__
+#define UTIL_H__
 
 #include "intern.h"
 
@@ -42,4 +42,4 @@ extern void debug(uint16 cm, const char *msg, ...);
 extern void error(const char *msg, ...);
 extern void warning(const char *msg, ...);
 
-#endif // __UTIL_H__
+#endif // UTIL_H__

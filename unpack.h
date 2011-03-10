@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __UNPACK_H__
-#define __UNPACK_H__
+#ifndef UNPACK_H__
+#define UNPACK_H__
 
 #include "intern.h"
 
@@ -32,4 +32,4 @@ struct UnpackCtx {
 extern bool delphine_unpack(uint8 *dst, const uint8 *src, int len);
 
 
-#endif // __UNPACK_H__
+#endif // UNPACK_H__

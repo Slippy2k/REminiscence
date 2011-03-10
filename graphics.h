@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GRAPHICS_H__
-#define __GRAPHICS_H__
+#ifndef GRAPHICS_H__
+#define GRAPHICS_H__
 
 #include "intern.h"
 
@@ -36,4 +36,4 @@ struct Graphics {
 	void drawPolygon(uint8 color, bool hasAlpha, const Point *pts, uint8 numPts);
 };
 
-#endif // __GRAPHICS_H__
+#endif // GRAPHICS_H__

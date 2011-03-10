@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __MOD_PLAYER_H__
-#define __MOD_PLAYER_H__
+#ifndef MOD_PLAYER_H__
+#define MOD_PLAYER_H__
 
 #include "intern.h"
 
@@ -119,4 +119,4 @@ struct ModPlayer {
 	static bool mixCallback(void *param, int8 *buf, int len);
 };
 
-#endif // __MOD_PLAYER_H__
+#endif // MOD_PLAYER_H__

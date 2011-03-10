@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __MENU_H__
-#define __MENU_H__
+#ifndef MENU_H__
+#define MENU_H__
 
 #include "intern.h"
 
@@ -65,4 +65,4 @@ struct Menu {
 	bool handleTitleScreen(uint8 &new_skill, uint8 &new_level);
 };
 
-#endif // __MENU_H__
+#endif // MENU_H__

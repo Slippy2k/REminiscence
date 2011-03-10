@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __INTERN_H__
-#define __INTERN_H__
+#ifndef INTERN_H__
+#define INTERN_H__
 
 #include <cstdio>
 #include <cstring>
@@ -188,4 +188,4 @@ struct SoundFx {
 	uint8 *data;
 };
 
-#endif // __INTERN_H__
+#endif // INTERN_H__

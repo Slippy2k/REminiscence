@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SCALER_H__
-#define __SCALER_H__
+#ifndef SCALER_H__
+#define SCALER_H__
 
 #include "intern.h"
 
@@ -40,4 +40,4 @@ void point3x(uint16 *dst, uint16 dstPitch, const uint16 *src, uint16 srcPitch, u
 void scale2x(uint16 *dst, uint16 dstPitch, const uint16 *src, uint16 srcPitch, uint16 w, uint16 h);
 void scale3x(uint16 *dst, uint16 dstPitch, const uint16 *src, uint16 srcPitch, uint16 w, uint16 h);
 
-#endif // __SCALER_H__
+#endif // SCALER_H__

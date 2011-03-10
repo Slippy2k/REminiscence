@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LOCALE_H__
-#define __LOCALE_H__
+#ifndef LOCALE_H__
+#define LOCALE_H__
 
 #include "intern.h"
 
@@ -65,4 +65,4 @@ struct Locale {
 	const char *get(int id) const;
 };
 
-#endif // __LOCALE_H__
+#endif // LOCALE_H__

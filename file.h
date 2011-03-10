@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __FILE_H__
-#define __FILE_H__
+#ifndef FILE_H__
+#define FILE_H__
 
 #include "intern.h"
 
@@ -47,4 +47,4 @@ struct File {
 	void writeUint32BE(uint32 n);
 };
 
-#endif // __FILE_H__
+#endif // FILE_H__

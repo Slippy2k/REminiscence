@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SYS_H__
-#define __SYS_H__
+#ifndef SYS_H__
+#define SYS_H__
 
 typedef uint8_t uint8;
 typedef int8_t int8;
@@ -51,4 +51,4 @@ inline uint32 READ_LE_UINT32(const void *ptr) {
 	return (b[3] << 24) | (b[2] << 16) | (b[1] << 8) | b[0];
 }
 
-#endif // __SYS_H__
+#endif // SYS_H__

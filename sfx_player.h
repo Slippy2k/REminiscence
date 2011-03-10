@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SFX_PLAYER_H__
-#define __SFX_PLAYER_H__
+#ifndef SFX_PLAYER_H__
+#define SFX_PLAYER_H__
 
 #include "intern.h"
 
@@ -98,4 +98,4 @@ struct SfxPlayer {
 	static bool mixCallback(void *param, int8 *buf, int len);
 };
 
-#endif // __SFX_PLAYER_H__
+#endif // SFX_PLAYER_H__

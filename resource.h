@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RESOURCE_H__
-#define __RESOURCE_H__
+#ifndef RESOURCE_H__
+#define RESOURCE_H__
 
 #include "intern.h"
 
@@ -200,4 +200,4 @@ struct Resource {
 	uint8 *loadBankData(uint16 num);
 };
 
-#endif // __RESOURCE_H__
+#endif // RESOURCE_H__

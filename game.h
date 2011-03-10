@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GAME_H__
-#define __GAME_H__
+#ifndef GAME_H__
+#define GAME_H__
 
 #include "intern.h"
 #include "cutscene.h"
@@ -381,4 +381,4 @@ struct Game {
 	void loadState(File *f);
 };
 
-#endif // __GAME_H__
+#endif // GAME_H__

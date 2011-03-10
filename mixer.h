@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __MIXER_H__
-#define __MIXER_H__
+#ifndef MIXER_H__
+#define MIXER_H__
 
 #include "intern.h"
 
@@ -85,4 +85,4 @@ int resampleLinear(T *sample, int pos, int step, int fracBits) {
 	return out;
 }
 
-#endif // __MIXER_H__
+#endif // MIXER_H__

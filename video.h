@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __VIDEO_H__
-#define __VIDEO_H__
+#ifndef VIDEO_H__
+#define VIDEO_H__
 
 #include "intern.h"
 
@@ -87,4 +87,4 @@ struct Video {
 	const char *drawString(const char *str, int16 x, int16 y, uint8 col);
 };
 
-#endif // __VIDEO_H__
+#endif // VIDEO_H__
