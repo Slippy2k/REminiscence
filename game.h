@@ -25,6 +25,7 @@
 #include "mixer.h"
 #include "mod_player.h"
 #include "resource.h"
+#include "seq_player.h"
 #include "sfx_player.h"
 #include "video.h"
 
@@ -67,6 +68,7 @@ struct Game {
 	Mixer _mix;
 	ModPlayer _modPly;
 	Resource _res;
+	SeqPlayer _seqPly;
 	SfxPlayer _sfxPly;
 	Video _vid;
 	SystemStub *_stub;

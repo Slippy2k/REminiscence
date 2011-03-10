@@ -60,8 +60,9 @@ struct SeqPlayer {
 		kVideoHeight = 128
 	};
 
-	SeqPlayer(SystemStub *stub, uint8 *buf);
+	SeqPlayer(SystemStub *stub);
 
+	void setBackBuffer(uint8 *buf) { _buf = buf; }
 	void play(File *f);
 
 	SystemStub *_stub;

@@ -25,7 +25,7 @@
 
 Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang)
 	: _cut(&_modPly, &_res, stub, &_vid), _menu(&_modPly, &_res, stub, &_vid),
-	_mix(stub), _modPly(&_mix, fs), _res(fs, ver, lang), _sfxPly(&_mix), _vid(&_res, stub),
+	_mix(stub), _modPly(&_mix, fs), _res(fs, ver, lang), _seqPly(stub), _sfxPly(&_mix), _vid(&_res, stub),
 	_stub(stub), _fs(fs), _savePath(savePath) {
 	_stateSlot = 1;
 	_inp_demo = 0;
@@ -63,8 +63,8 @@ void Game::run() {
 #if 1
 File f;
 if (f.open("INTRO.SEQ", "rb", _fs)) {
-	SeqPlayer seqPly(_stub, _res._memBuf);
-	seqPly.play(&f);
+	_seqPly.setBackBuffer(_res._memBuf);
+	_seqPly.play(&f);
 }
 #endif
 

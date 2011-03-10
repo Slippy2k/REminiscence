@@ -125,7 +125,7 @@ struct BitStream {
 		const int x = getBits(count);
 		const int sbit = 1 << (count - 1);
 		if (x & sbit) {
-			return (x & ((1 << count) - 1)) - sbit;
+			return (x & (sbit - 1)) - sbit;
 		} else {
 			return x;
 		}
@@ -137,44 +137,29 @@ struct BitStream {
 };
 
 static const uint8 *decodeSeqOp1Helper(const uint8 *src, uint8 *dst, int dst_size) {
-    int code_table[64];
-BitStream bs(src);
-int count = 0;
-int sz = 0;
-    for (int i = 0; i < 64 && sz < dst_size; i++) {
-int x = bs.getBits(4);
-if (x & 8) {
-	x = (x & 7) - 8; // sign extend
+	int codes[64];
+	BitStream bs(src);
+	int count = 0;
+	for (int i = 0, sz = 0; i < 64 && sz < 64; ++i) {
+		codes[i] = bs.getSignedBits(4);
+		sz += ABS(codes[i]);
+		count += 4;
+	}
+	src += (count + 7) / 8;
+	for (int i = 0; i < 64 && dst_size > 0; ++i) {
+		int len = codes[i];
+		if (len < 0) {
+			len = -len;
+			memset(dst, *src++, MIN(len, dst_size));
+		} else {
+			memcpy(dst, src, MIN(len, dst_size));
+			src += len;
+		}
+		dst += len;
+		dst_size -= len;
+	}
+	return src;
 }
-        code_table[i] = x;
-        sz += ABS(code_table[i]);
-count += 4;
-    }
-src += (count + 7) / 8;
-
-    /* do the rle unpacking */
-    for (int i = 0; i < 64 && dst_size > 0; i++) {
-        int len = code_table[i];
-        if (len < 0) {
-            len = -len;
-            memset(dst, *src++, MIN(len, dst_size));
-        } else {
-            memcpy(dst, src, MIN(len, dst_size));
-            src += len;
-        }
-        dst += len;
-        dst_size -= len;
-    }
-    return src;
-}
-
-
-static const uint8_t ff_log2_tab[128] = {
-        0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
-        5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
-        6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
-        6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6
-};
 
 static const uint8 *decodeSeqOp1(uint8 *dst, int pitch, const uint8 *src) {
 	const int len = *src++;
@@ -199,8 +184,10 @@ static const uint8 *decodeSeqOp1(uint8 *dst, int pitch, const uint8 *src) {
 			break;
 		}
 	} else {
+		static const uint8 log2_16[] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3 };
 		BitStream bs(src + len);
-		const int bits = ff_log2_tab[len - 1] + 1;
+		assert(len <= 16);
+		const int bits = log2_16[len - 1] + 1;
 		for (int y = 0; y < 8; ++y) {
 			for (int x = 0; x < 8; ++x) {
 				dst[y * pitch + x] = src[bs.getBits(bits)];
@@ -229,8 +216,8 @@ static const uint8 *decodeSeqOp3(uint8 *dst, int pitch, const uint8 *src) {
 	return src;
 }
 
-SeqPlayer::SeqPlayer(SystemStub *stub, uint8 *buf)
-	: _stub(stub), _buf(buf) {
+SeqPlayer::SeqPlayer(SystemStub *stub)
+	: _stub(stub), _buf(0) {
 }
 
 void SeqPlayer::play(File *f) {
@@ -244,7 +231,7 @@ void SeqPlayer::play(File *f) {
 			}
 			_demux.readFrameData();
 			if (_demux._audioDataSize != 0) {
-				// CODEC_ID_PCM_S16BE
+				// TODO:
 			}
 			if (_demux._paletteDataSize != 0) {
 				uint8 buf[256 * 3];

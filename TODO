@@ -1,9 +1,14 @@
 reminiscence
 	0.2.0
+		seq_player
+			lookup table
+
+	0.2.1
 		amiga support
-			title screen
 			fix remaining objects (palette + draw)
-		pc cd cutscenes (seq_player)
+			title screen
+		seq_player
+			audio
 
 fb
 	resume/suspend fix
