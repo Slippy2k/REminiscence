@@ -16,10 +16,12 @@ SRCS = collision.cpp cutscene.cpp file.cpp fs.cpp game.cpp graphics.cpp main.cpp
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)
 
+LIBS = $(SDL_LIBS) -lz
+
 -include Makefile.local
 
 rs: $(OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(SDL_LIBS) -lz
+	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 clean:
 	rm -f *.o *.d
