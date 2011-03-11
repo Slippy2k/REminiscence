@@ -48,6 +48,7 @@ void Game::run() {
 		break;
 	case kResourceTypePC:
 		_res.load("FB_TXT", Resource::OT_FNT);
+		_res._hasSeqData = File().open("INTRO.SEQ", "rb", _fs);
 		break;
 	}
 
@@ -59,14 +60,6 @@ void Game::run() {
 #endif
 
 	_mix.init();
-
-#if 1
-File f;
-if (f.open("INTRO.SEQ", "rb", _fs)) {
-	_seqPly.setBackBuffer(_res._memBuf);
-	_seqPly.play(&f);
-}
-#endif
 
 	playCutscene(0x40);
 	playCutscene(0x0D);
@@ -234,8 +227,71 @@ void Game::playCutscene(int id) {
 	}
 	if (_cut._id != 0xFFFF) {
 		_sfxPly.stop();
+		if (_res._hasSeqData) {
+			int num = 0;
+			switch (_cut._id) {
+			case 0x03: {
+					static const uint8 tab[] = { 1, 2, 1, 3, 3, 4, 4 };
+					num = tab[_currentLevel];
+				}
+				break;
+			case 0x05: {
+					static const uint8 tab[] = { 1, 2, 3, 5, 5, 4, 4 };
+					num = tab[_currentLevel];
+				}
+				break;
+			case 0x0A: {
+					static const uint8 tab[] = { 1, 2, 2, 2, 2, 2, 2 };
+					num = tab[_currentLevel];
+				}
+				break;
+			case 0x10: {
+					static const uint8 tab[] = { 1, 1, 1, 2, 2, 3, 3 };
+					num = tab[_currentLevel];
+				}
+				break;
+			case 0x3B:
+				return;
+			case 0x3C: {
+					static const uint8 tab[] = { 1, 1, 1, 1, 1, 2, 2 };
+					num = tab[_currentLevel];
+				}
+				break;
+			case 0x40:
+				return;
+			case 0x4A:
+				return;
+			}
+			if (SeqPlayer::_namesTable[_cut._id]) {
+			        char name[16];
+			        snprintf(name, sizeof(name), "%s.SEQ", SeqPlayer::_namesTable[_cut._id]);
+				char *p = strchr(name, '0');
+				if (p) {
+					*p += num;
+				}
+			        if (playCutsceneSeq(name)) {
+					if (_cut._id == 0x3D) {
+						playCutsceneSeq("CREDITS.SEQ");
+					} else {
+						_cut._id = 0xFFFF;
+					}
+					return;
+				}
+			}
+		}
 		_cut.play();
 	}
+}
+
+bool Game::playCutsceneSeq(const char *name) {
+	File f;
+	if (f.open(name, "rb", _fs)) {
+		_seqPly.setBackBuffer(_res._memBuf);
+		_seqPly.play(&f);
+		_vid.fullRefresh();
+		return true;
+	}
+	return false;
 }
 
 void Game::inp_handleSpecialKeys() {

@@ -222,6 +222,12 @@ SeqPlayer::SeqPlayer(SystemStub *stub)
 
 void SeqPlayer::play(File *f) {
 	if (_demux.open(f)) {
+		Color pal[256];
+		for (int i = 0; i < 256; ++i) {
+			_stub->getPaletteEntry(i, &pal[i]);
+		}
+		memset(_buf, 0, 256 * 224);
+		bool clearScreen = true;
 		while (true) {
 			const uint32 nextFrameTimeStamp = _stub->getTimeStamp() + 1000 / 25;
 			_stub->processEvents();
@@ -232,6 +238,8 @@ void SeqPlayer::play(File *f) {
 			_demux.readFrameData();
 			if (_demux._audioDataSize != 0) {
 				// TODO:
+			} else {
+				break;
 			}
 			if (_demux._paletteDataSize != 0) {
 				uint8 buf[256 * 3];
@@ -262,13 +270,21 @@ void SeqPlayer::play(File *f) {
 						}
 					}
 				}
-				_stub->copyRect(0, y0, kVideoWidth, kVideoHeight, _buf, 256);
+				if (clearScreen) {
+					clearScreen = false;
+					_stub->copyRect(0, 0, kVideoWidth, 224, _buf, 256);
+				} else {
+					_stub->copyRect(0, y0, kVideoWidth, kVideoHeight, _buf, 256);
+				}
 				_stub->updateScreen(0);
 			}
 			const int diff = nextFrameTimeStamp - _stub->getTimeStamp();
 			if (diff > 0) {
 				_stub->sleep(diff);
 			}
+		}
+		for (int i = 0; i < 256; ++i) {
+			_stub->setPaletteEntry(i, &pal[i]);
 		}
 		_demux.close();
 	}

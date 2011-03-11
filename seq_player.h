@@ -60,6 +60,8 @@ struct SeqPlayer {
 		kVideoHeight = 128
 	};
 
+	static const char *_namesTable[];
+
 	SeqPlayer(SystemStub *stub);
 
 	void setBackBuffer(uint8 *buf) { _buf = buf; }

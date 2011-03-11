@@ -100,6 +100,7 @@ struct Resource {
 	FileSystem *_fs;
 	ResourceType _type;
 	Language _lang;
+	bool _hasSeqData;
 	char _entryName[32];
 	uint8 *_fnt;
 	uint8 *_mbk;
