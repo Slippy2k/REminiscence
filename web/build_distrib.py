@@ -42,6 +42,8 @@ SRC_TARBALL = [ 'REminiscence-%s.tar.bz2',
 		'../resource.h',
 		'../scaler.cpp',
 		'../scaler.h',
+		'../seq_player.cpp',
+		'../seq_player.h',
 		'../sfx_player.cpp',
 		'../sfx_player.h',
 		'../staticres.cpp',
@@ -61,12 +63,12 @@ DST_DIR = '.'
 
 import os, tarfile, zipfile, hashlib
 
-def print_sha1(sha_file, filename):
-	m = hashlib.new('sha1')
+def print_md5(md5_file, filename):
+	m = hashlib.new('md5')
 	fp = file(filename, 'rb')
 	m.update(fp.read())
 	line = m.hexdigest() + ' ' + os.path.split(filename)[1] + '\n'
-	sha_file.write(line)
+	md5_file.write(line)
 
 def build_zip_tarball(file_name, file_list):
 	file_path = os.path.join(DST_DIR, file_name)
@@ -84,7 +86,7 @@ def build_bz2_tarball(file_name, file_list):
 		tf.add(entry_path, entry_name)
 	tf.close()
 
-sha_file = file('CHECKSUMS-%s.SHA1' % VERSION, 'w')
+md5_file = file('CHECKSUMS-%s.MD5' % VERSION, 'w')
 for tarball in (SDL_TARBALL, SRC_TARBALL):
 	file_name = tarball[0] % VERSION
 	file_list = tarball[1]
@@ -96,5 +98,5 @@ for tarball in (SDL_TARBALL, SRC_TARBALL):
 	else:
 		raise "Unhandled extension for tarball"
 	print "Ok"
-	print_sha1(sha_file, file_name)
+	print_md5(md5_file, file_name)
 
