@@ -1,6 +1,4 @@
 reminiscence
-	0.2.0
-
 	0.2.1
 		amiga support
 			fix remaining objects (palette + draw)
@@ -9,8 +7,8 @@ reminiscence
 			audio
 
 fb
+	test datafile present on start, message box to warn
 	resume/suspend fix
 	sound
-	market
 	controls fix
 

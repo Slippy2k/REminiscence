@@ -526,7 +526,7 @@ struct Main {
 		_texCache.createTextureFont(_resData);
 	}
 
-	void quit() {
+	void save() {
 		if (_state == kStateGame) {
 			if (!_game._inventoryOn && !_game._gameOver) {
 				_game.saveState();
@@ -736,9 +736,12 @@ void stubInit(const char *filePath, const char *savePath, int level) {
 }
 
 void stubQuit() {
-	gMain->quit();
 	delete gMain;
 	gMain = 0;
+}
+
+void stubSave() {
+	gMain->save();
 }
 
 void stubQueueKeyInput(int keycode, int pressed) {
@@ -769,6 +772,7 @@ extern "C" {
 	DYNLIB_SYMBOL struct Stub g_stub = {
 		stubInit,
 		stubQuit,
+		stubSave,
 		stubQueueKeyInput,
 		stubQueueTouchInput,
 		stubDoTick,

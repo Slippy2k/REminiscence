@@ -123,6 +123,7 @@ int main(int argc, char *argv[]) {
 		SDL_GL_SwapBuffers();
 		SDL_Delay(gTickDuration);
 	}
+	stub->save();
 	stub->quit();
 	return 0;
 }

@@ -63,6 +63,12 @@ JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_quitGame(JNIEnv *env, jclass c)
 	}
 }
 
+JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_saveGame(JNIEnv *env, jclass c) {
+	if (g_stub) {
+		g_stub->save();
+	}
+}
+
 JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_queueKeyEvent(JNIEnv *env, jclass c, jint keycode, jint pressed) {
 	if (g_stub) {
 		__android_log_print(ANDROID_LOG_INFO, LOG_TAG, "keyEvent %d pressed %d", keycode, pressed);
