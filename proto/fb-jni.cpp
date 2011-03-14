@@ -16,11 +16,13 @@ static void *g_dlFbSo;
 static Stub *g_stub;
 static char *g_libDir;
 static char *g_saveDir;
-static const char *g_dataPath = "/sdcard/Flashback.bin";
 
 extern "C" {
 
 static int loadFbLib() {
+	if (g_dlFbSo) {
+		dlclose(g_dlFbSo);
+	}
 	char path[MAXPATHLEN];
 	if (g_libDir) {
 		snprintf(path, sizeof(path), "%s/%s", g_libDir, gFbSoName);
@@ -36,6 +38,7 @@ static int loadFbLib() {
 	if (!g_stub) {
 		__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "Unable to lookup symbol '%s'", gFbSoSym);
 		dlclose(g_dlFbSo);
+		g_dlFbSo = 0;
 		return 1;
 	}
 	return 0;
@@ -48,10 +51,12 @@ JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_drawFrame(JNIEnv *env, jclass c
 	}
 }
 
-JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_initGame(JNIEnv *env, jclass c, jint w, jint h) {
+JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_initGame(JNIEnv *env, jclass c, jstring jpath, jint w, jint h) {
 	loadFbLib();
 	if (g_stub) {
-		g_stub->init(g_dataPath, g_saveDir, 0);
+		const char *dataPath = env->GetStringUTFChars(jpath, 0);
+		g_stub->init(dataPath, g_saveDir, 0);
+		env->ReleaseStringUTFChars(jpath, dataPath);
 		g_stub->initGL(w, h);
 	}
 }
