@@ -328,6 +328,15 @@ void SeqPlayer::play(File *f) {
 		}
 		_mix->setPremixHook(0, 0);
 		_demux.close();
+		// flush sound queue
+		LockAudioStack las(_stub);
+		while (_soundQueue) {
+			SoundBufferQueue *next = _soundQueue->next;
+			free(_soundQueue->data);
+			free(_soundQueue);
+			_soundQueue = next;
+		}
+		_soundQueuePreloadSize = 0;
 	}
 }
 
