@@ -1,9 +1,7 @@
+LD_LIBRARY_PATH=$(pwd) ./fb ../DATA/Flashback.bin
+
 cutscenes
 	scale2x
-
-versions
-	cross compilation avec mingw - #ifdef ?
-	LD_LIBRARY_PATH=$(pwd) ./fb ../DATA/Flashback.bin
 
 sounds
 	decode sega vce segments to .wav (N-PART.wav)
@@ -11,7 +9,6 @@ sounds
 	mac sounds
 
 texture rendering
-	glColor(1., 0., 0.); niveau 2
 	inventory display background (saveGfxList)
 	scale2x au load ?
 

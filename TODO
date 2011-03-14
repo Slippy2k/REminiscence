@@ -3,8 +3,7 @@ reminiscence
 		amiga support
 			fix remaining objects (palette + draw)
 			title screen
-		seq_player
-			audio
+		libmikmod
 
 fb
 	test datafile present on start, message box to warn

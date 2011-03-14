@@ -23,9 +23,24 @@ void ResourceData::setupTitleClut(int num, Color *clut) {
 	}
 }
 
-void ResourceData::setupLevelClut(int level, Color *clut) {
+void ResourceData::setupRoomClut(int level, int room, Color *clut) {
 	const int num = levelsIntegerIndex[level] - 1;
-	const int offset = levelsColorOffset[num];
+	int offset = levelsColorOffset[num];
+	if (level == 1) {
+		switch (room) {
+		case 27:
+		case 28:
+		case 29:
+		case 30:
+		case 35:
+		case 36:
+		case 37:
+		case 45:
+		case 46:
+			offset = 32;
+			break;
+		}
+	}
 	for (int i = 0; i < 4; ++i) {
 		copyClut16(clut, i, offset + i);
 		copyClut16(clut, 8 + i, offset + i);

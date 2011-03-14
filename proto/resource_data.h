@@ -110,7 +110,7 @@ struct ResourceData {
 	}
 
 	void setupTitleClut(int num, Color *clut);
-	void setupLevelClut(int num, Color *clut);
+	void setupRoomClut(int level, int room, Color *clut);
 	void setupTextClut(Color *clut);
 	uint8_t *decodeResourceData(const char *name, bool decompressLzss);
 	void clearClut16(Color *clut, uint8_t dest);

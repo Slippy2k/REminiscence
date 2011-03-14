@@ -935,6 +935,10 @@ void Game::drawObjectFrame(const uint8 *bankDataPtr, const uint8 *dataPtr, int16
 
 	switch (_res._type) {
 	case kResourceTypeAmiga:
+		if (sprite_w == 24) {
+			// TODO: fix p24xN
+			return;
+		}
 		_vid.AMIGA_decodeSpc(src, sprite_w, sprite_h, _res._memBuf);
 		break;
 	case kResourceTypePC:
@@ -1148,7 +1152,6 @@ void Game::drawCharacter(const uint8 *dataPtr, int16 pos_x, int16 pos_y, uint8 a
 	}
 	_vid.markBlockAsDirty(pos_x, pos_y, sprite_clipped_w, sprite_clipped_h);
 }
-
 
 int Game::loadMonsterSprites(LivePGE *pge) {
 	debug(DBG_GAME, "Game::loadMonsterSprites()");
