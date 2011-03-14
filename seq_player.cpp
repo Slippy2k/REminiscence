@@ -17,6 +17,7 @@
 
 #include "file.h"
 #include "fs.h"
+#include "mixer.h"
 #include "seq_player.h"
 #include "systemstub.h"
 
@@ -103,6 +104,12 @@ void SeqDemuxer::readPalette(uint8 *dst) {
 	_f->read(dst, 256 * 3);
 }
 
+void SeqDemuxer::readAudioS8(uint8 *dst) {
+	_f->seek(_frameOffset + _audioDataOffset);
+	for (int i = 0; i < kAudioBufferSize; ++i) {
+		dst[i] = _f->readUint16BE() >> 8;
+	}
+}
 
 struct BitStream {
 	BitStream(const uint8 *src)
@@ -216,8 +223,13 @@ static const uint8 *decodeSeqOp3(uint8 *dst, int pitch, const uint8 *src) {
 	return src;
 }
 
-SeqPlayer::SeqPlayer(SystemStub *stub)
-	: _stub(stub), _buf(0) {
+SeqPlayer::SeqPlayer(SystemStub *stub, Mixer *mixer)
+	: _stub(stub), _buf(0), _mix(mixer) {
+	_soundQueuePreloadSize = 0;
+	_soundQueue = 0;
+}
+
+SeqPlayer::~SeqPlayer() {
 }
 
 void SeqPlayer::play(File *f) {
@@ -226,6 +238,7 @@ void SeqPlayer::play(File *f) {
 		for (int i = 0; i < 256; ++i) {
 			_stub->getPaletteEntry(i, &pal[i]);
 		}
+		_mix->setPremixHook(mixCallback, this);
 		memset(_buf, 0, 256 * 224);
 		bool clearScreen = true;
 		while (true) {
@@ -237,7 +250,34 @@ void SeqPlayer::play(File *f) {
 			}
 			_demux.readFrameData();
 			if (_demux._audioDataSize != 0) {
-				// TODO:
+				SoundBufferQueue *sbq = (SoundBufferQueue *)malloc(sizeof(SoundBufferQueue));
+				if (sbq) {
+					sbq->data = (uint8 *)malloc(SeqDemuxer::kAudioBufferSize);
+					if (sbq->data) {
+						_demux.readAudioS8(sbq->data);
+						sbq->size = SeqDemuxer::kAudioBufferSize;
+						sbq->read = 0;
+						sbq->next = 0;
+					} else {
+						free(sbq);
+						sbq = 0;
+					}
+				}
+				if (sbq) {
+					LockAudioStack las(_stub);
+					if (!_soundQueue) {
+						_soundQueue = sbq;
+					} else {
+						SoundBufferQueue *p = _soundQueue;
+						while (p->next) {
+							p = p->next;
+						}
+						p->next = sbq;
+					}
+					if (_soundQueuePreloadSize < kSoundPreloadSize) {
+						++_soundQueuePreloadSize;
+					}
+				}
 			} else {
 				break;
 			}
@@ -286,7 +326,31 @@ void SeqPlayer::play(File *f) {
 		for (int i = 0; i < 256; ++i) {
 			_stub->setPaletteEntry(i, &pal[i]);
 		}
+		_mix->setPremixHook(0, 0);
 		_demux.close();
 	}
+}
+
+bool SeqPlayer::mix(int8 *buf, int samples) {
+	if (_soundQueuePreloadSize < kSoundPreloadSize) {
+		return true;
+	}
+	while (_soundQueue && samples > 0) {
+		*buf++ = _soundQueue->data[_soundQueue->read];
+		++_soundQueue->read;
+		if (_soundQueue->read == _soundQueue->size) {
+			SoundBufferQueue *next = _soundQueue->next;
+			free(_soundQueue->data);
+			free(_soundQueue);
+			_soundQueue = next;
+		}
+		--samples;
+	}
+	return true;
+}
+
+bool SeqPlayer::mixCallback(void *param, int8 *buf, int len) {
+	memset(buf, 0, len);
+	return ((SeqPlayer *)param)->mix(buf, len);
 }
 

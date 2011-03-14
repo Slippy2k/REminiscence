@@ -22,7 +22,7 @@
 
 struct File;
 struct SystemStub;
-struct Video;
+struct Mixer;
 
 struct SeqDemuxer {
 	enum {
@@ -39,6 +39,7 @@ struct SeqDemuxer {
 	void fillBuffer(int num, int offset, int size);
 	void clearBuffer(int num);
 	void readPalette(uint8 *dst);
+	void readAudioS8(uint8 *dst);
 
 	int _frameOffset;
 	int _audioDataOffset;
@@ -57,19 +58,33 @@ struct SeqDemuxer {
 struct SeqPlayer {
 	enum {
 		kVideoWidth = 256,
-		kVideoHeight = 128
+		kVideoHeight = 128,
+		kSoundPreloadSize = 4
 	};
 
 	static const char *_namesTable[];
 
-	SeqPlayer(SystemStub *stub);
+	struct SoundBufferQueue {
+		uint8 *data;
+		int size;
+		int read;
+		SoundBufferQueue *next;
+	};
+
+	SeqPlayer(SystemStub *stub, Mixer *mixer);
+	~SeqPlayer();
 
 	void setBackBuffer(uint8 *buf) { _buf = buf; }
 	void play(File *f);
+	bool mix(int8 *buf, int len);
+	static bool mixCallback(void *param, int8 *buf, int len);
 
 	SystemStub *_stub;
 	uint8 *_buf;
+	Mixer *_mix;
 	SeqDemuxer _demux;
+	int _soundQueuePreloadSize;
+	SoundBufferQueue *_soundQueue;
 };
 
 #endif // SEQ_PLAYER_H__
