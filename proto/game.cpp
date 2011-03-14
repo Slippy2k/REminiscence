@@ -527,7 +527,7 @@ void Game::loadLevelMap() {
 	debug(DBG_GAME, "Game::loadLevelMap() room=%d", _currentRoom);
 //	_res.loadLevelRoom(_currentLevel, _currentRoom, &buf);
 //	memcpy(_backLayer, _frontLayer, kScreenWidth * kScreenHeight);
-	_res.setupLevelClut(_currentLevel, _palette);
+	_res.setupRoomClut(_currentLevel, _currentRoom, _palette);
 	_paletteChanged = true;
 	_backgroundChanged = true;
 }
