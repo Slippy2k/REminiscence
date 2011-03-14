@@ -272,6 +272,7 @@ void Game::playCutscene(int id) {
 			        if (playCutsceneSeq(name)) {
 					if (_cut._id == 0x3D) {
 						playCutsceneSeq("CREDITS.SEQ");
+						_cut._interrupted = false;
 					} else {
 						_cut._id = 0xFFFF;
 					}
