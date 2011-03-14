@@ -1,7 +1,7 @@
 reminiscence
 	0.2.1
 		amiga support
-			fix remaining objects (palette + draw)
+			fix spc drawing w=24
 			title screen
 		libmikmod
 
