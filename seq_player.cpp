@@ -24,6 +24,7 @@
 
 bool SeqDemuxer::open(File *f) {
 	_f = f;
+	_fileSize = _f->size();
 	_frameOffset = 0;
 	return readHeader();
 }
@@ -55,8 +56,11 @@ bool SeqDemuxer::readHeader() {
 	return true;
 }
 
-void SeqDemuxer::readFrameData() {
+bool SeqDemuxer::readFrameData() {
 	_frameOffset += kFrameSize;
+	if (_frameOffset >= _fileSize) {
+		return false;
+	}
 	_f->seek(_frameOffset);
 	_audioDataOffset = _f->readUint16LE();
 	_audioDataSize = (_audioDataOffset != 0) ? kAudioBufferSize * 2 : 0;
@@ -85,6 +89,7 @@ void SeqDemuxer::readFrameData() {
 	} else {
 		_videoData = -1;
 	}
+	return !_f->ioErr();
 }
 
 void SeqDemuxer::fillBuffer(int num, int offset, int size) {
@@ -248,7 +253,9 @@ void SeqPlayer::play(File *f) {
 				_stub->_pi.backspace = false;
 				break;
 			}
-			_demux.readFrameData();
+			if (!_demux.readFrameData()) {
+				break;
+			}
 			if (_demux._audioDataSize != 0) {
 				SoundBufferQueue *sbq = (SoundBufferQueue *)malloc(sizeof(SoundBufferQueue));
 				if (sbq) {
@@ -278,8 +285,6 @@ void SeqPlayer::play(File *f) {
 						++_soundQueuePreloadSize;
 					}
 				}
-			} else {
-				break;
 			}
 			if (_demux._paletteDataSize != 0) {
 				uint8 buf[256 * 3];

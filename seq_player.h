@@ -35,7 +35,7 @@ struct SeqDemuxer {
 	void close();
 
 	bool readHeader();
-	void readFrameData();
+	bool readFrameData();
 	void fillBuffer(int num, int offset, int size);
 	void clearBuffer(int num);
 	void readPalette(uint8 *dst);
@@ -52,6 +52,7 @@ struct SeqDemuxer {
 		int avail;
 		uint8 *data;
 	} _buffers[kBuffersCount];
+	int _fileSize;
 	File *_f;
 };
 
