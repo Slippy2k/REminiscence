@@ -515,9 +515,7 @@ static void AMIGA_decodeLevHelper(uint8 *dst, const uint8 *src, int offset10, in
 						a2 = AMIGA_mirrorX(a2);
 					}
 					int mask = 0;
-					if ((d3 & 0x6000) != 0) {
-						mask = 0x10;
-					} else if ((d3 < (1 << 15)) == 0) {
+					if ((d3 < (1 << 15)) == 0) {
 						mask = 0x80;
 					}
 					AMIGA_blit4p8x8(dst + y * 256 + x, 256, a2, mask);
@@ -542,11 +540,8 @@ static void AMIGA_decodeLevHelper(uint8 *dst, const uint8 *src, int offset10, in
 					if ((d3 & (1 << 11)) != 0) {
 						a2 = AMIGA_mirrorX(a2);
 					}
-					if (!sgdBuf) {
-						d3 &= ~0x2000;
-					}
 					int mask = 0;
-					if ((d3 & 0x6000) != 0) {
+					if ((d3 & 0x6000) != 0 && sgdBuf) {
 						mask = 0x10;
 					} else if ((d3 < (1 << 15)) == 0) {
 						mask = 0x80;
