@@ -368,7 +368,6 @@ bool Menu::handleTitleScreen(uint8 &new_skill, uint8 &new_level) {
 		if (selected_menu_entry != -1) {
 			switch (menu_items[selected_menu_entry].opt) {
 			case MENU_OPTION_ITEM_START:
-				new_level = 0;
 				quit_loop = true;
 				break;
 			case MENU_OPTION_ITEM_SKILL:
