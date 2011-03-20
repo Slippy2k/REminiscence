@@ -60,6 +60,23 @@ struct DynLib_impl {
 };
 #endif
 
+static void setupAudio(Stub *stub) {
+	if (stub->getMixProc) {
+		SDL_AudioSpec desired;
+		memset(&desired, 0, sizeof(desired));
+		desired.freq = 11025;
+		desired.format = AUDIO_S8;
+		desired.channels = 1;
+		desired.samples = 2048;
+		StubMixProc mix = stub->getMixProc(desired.freq, desired.format);
+		desired.callback = mix.proc;
+		desired.userdata = mix.data;
+		if (SDL_OpenAudio(&desired, 0) == 0) {
+			SDL_PauseAudio(0);
+		}
+	}
+}
+
 int main(int argc, char *argv[]) {
 	if (argc < 2) {
 		fprintf(stderr, "%s datafile level\n", argv[0]);
@@ -76,7 +93,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "unable to lookup symbol '%s'\n", gFbSoSym);
 		return 0;
 	}
-	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_SetVideoMode(gWindowW, gWindowH, 0, SDL_OPENGL | SDL_RESIZABLE);
@@ -84,6 +101,7 @@ int main(int argc, char *argv[]) {
 	const char *saveDirectory = ".";
 	const int level = (argc >= 3) ? atoi(argv[2]) : -1;
 	stub->init(argv[1], saveDirectory, level);
+	setupAudio(stub);
 	stub->initGL(gWindowW, gWindowH);
 	bool quitGame = false;
 	while (!quitGame) {
@@ -118,7 +136,9 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 		}
+		SDL_LockAudio();
 		stub->doTick();
+		SDL_UnlockAudio();
 		stub->drawGL(gWindowW, gWindowH);
 		SDL_GL_SwapBuffers();
 		SDL_Delay(gTickDuration);

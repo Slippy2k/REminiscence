@@ -1,9 +1,12 @@
 reminiscence
-	0.2.1
+	0.2.2
 		amiga support
 			fix spc drawing w=24
 			title screen
 		libmikmod
+		systemstub_sdl
+			opengl
+			scale4x
 
 fb
 	test datafile present on start, message box to warn

@@ -73,7 +73,9 @@ uint8_t *ResourceData::decodeResourceData(const char *name, bool decompressLzss)
 			data = decodeLzss(_res._f, _resourceDataSize);
 		} else {
 			data = (uint8_t *)malloc(_resourceDataSize);
-			_res._f.read(data, _resourceDataSize);
+			if (data) {
+				_res._f.read(data, _resourceDataSize);
+			}
 		}
 	}
 	return data;
@@ -349,5 +351,26 @@ void ResourceData::decodeImageData(const uint8_t *ptr, int i, DecodeBuffer *dst)
 			break;
 		}
 	}
+}
+
+uint8_t *ResourceData::getSoundData(int i, int *size) {
+	static const int kSoundType = 4;
+	assert(i >= 0 && i < _res._types[kSoundType].count);
+	const ResourceEntry *entry = &_res._entries[kSoundType][i];
+	_res._f.seek(_res._dataOffset + entry->dataOffset);
+	_resourceDataSize = _res._f.readUint32BE();
+	static const int kHeaderSize = 0x24;
+	assert(_resourceDataSize > kHeaderSize);
+	_resourceDataSize -= kHeaderSize;
+	uint8_t *data = (uint8_t *)malloc(_resourceDataSize);
+	if (data) {
+		_res._f.read(data, kHeaderSize);
+		assert(READ_BE_UINT32(data + 0x12) == _resourceDataSize - 2);
+		_res._f.read(data, _resourceDataSize);
+	}
+	if (size) {
+		*size = _resourceDataSize;
+	}
+	return data;
 }
 

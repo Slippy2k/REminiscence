@@ -507,6 +507,7 @@ struct Main {
 	bool _gameInit;
 	bool _menuInit;
 	int _w, _h;
+	int _mixRate;
 
 	Main(const char *filePath, const char *savePath)
 		: _resData(filePath), _game(_resData, savePath) {
@@ -653,6 +654,35 @@ struct Main {
 		}
 #endif
 	}
+
+	void doSoundMix(int8 *buf, int size) {
+		static const int kFrac = 16;
+		for (; size != 0; --size) {
+			for (int i = 0; i < 16; ++i) {
+				Sfx *sfx = &_game._sfxList[i];
+				if (!sfx->dataPtr) {
+					continue;
+				}
+				const int pos = sfx->playOffset >> kFrac;
+				if (pos >= sfx->dataSize) {
+					free(sfx->dataPtr);
+					memset(sfx, 0, sizeof(Sfx));
+					continue;
+				}
+				const int pcm = *buf + (((int8)(sfx->dataPtr[pos] ^ 0x80)) >> sfx->volume);
+				if (pcm > 127) {
+					*buf = 127;
+				} else if (pcm < -128) {
+					*buf = -128;
+				} else {
+					*buf = pcm;
+				}
+				const int inc = (sfx->freq << kFrac) / _mixRate;
+				sfx->playOffset += inc;
+			}
+			++buf;
+		}
+	}
 };
 
 static void updateKeyInput(int keyCode, bool pressed, PlayerInput &pi) {
@@ -768,6 +798,19 @@ void stubDrawGL(int w, int h) {
 	gMain->drawFrame(w, h);
 }
 
+static void mixProc(void *data, uint8 *buf, int size) {
+	memset(buf, 0, size);
+	gMain->doSoundMix((int8 *)buf, size);
+}
+
+StubMixProc stubGetMixProc(int rate, int fmt) {
+	gMain->_mixRate = rate;
+	StubMixProc mix;
+	mix.proc = &mixProc;
+	mix.data = gMain;
+	return mix;
+}
+
 extern "C" {
 	DYNLIB_SYMBOL struct Stub g_stub = {
 		stubInit,
@@ -777,7 +820,8 @@ extern "C" {
 		stubQueueTouchInput,
 		stubDoTick,
 		stubInitGL,
-		stubDrawGL
+		stubDrawGL,
+		stubGetMixProc
 	};
 }
 

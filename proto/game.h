@@ -63,6 +63,15 @@ struct GfxText {
 	uint8_t color;
 };
 
+struct Sfx {
+	int num;
+	uint8_t *dataPtr;
+	int dataSize;
+	int freq;
+	int volume;
+	int playOffset;
+};
+
 struct Game {
 	typedef int (Game::*pge_OpcodeProc)(ObjectOpcodeArgs *args);
 	typedef int (Game::*pge_ZOrderCallback)(LivePGE *, LivePGE *, uint8, uint8);
@@ -101,6 +110,7 @@ struct Game {
 	int _gfxImagesCount;
 	GfxText _gfxTextsList[16];
 	int _gfxTextsCount;
+	Sfx _sfxList[16];
 	int _shakeOffset;
 	uint8 _currentLevel;
 	uint8 _skillLevel;

@@ -264,7 +264,7 @@ static void decodeSoundData(ResourceMac &res) {
 		printf("Sound %d size %d\n", i, dataSize);
 		File f;
 		char tmpPath[128];
-		snprintf(tmpPath, sizeof(tmpPath), "/tmp/%d.raw", getpid());
+		snprintf(tmpPath, sizeof(tmpPath), "DUMP/%03d.raw", i);
 		f.open(tmpPath, "wb");
 		f.write(data, dataSize);
 		free(data);
@@ -274,7 +274,6 @@ static void decodeSoundData(ResourceMac &res) {
 		const int rate = 3546897 / 650;
 		snprintf(cmd, sizeof(cmd), "sox -r %d -e unsigned -b 8 -c 1 %s %s", rate, tmpPath, path);
 		system(cmd);
-		unlink(tmpPath);
 	}
 }
 
