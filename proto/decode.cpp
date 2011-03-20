@@ -7,7 +7,7 @@
 
 uint8_t *decodeLzss(File &f, uint32_t &decodedSize) {
 	decodedSize = f.readUint32BE();
-	printf("decodeLzss decodedSize %d\n", decodedSize);
+//	fprintf(stdout, "decodeLzss decodedSize %d\n", decodedSize);
 	uint8_t *dst = (uint8_t *)malloc(decodedSize);
 	int count = 0;
 	while (count < decodedSize) {
@@ -57,7 +57,7 @@ void decodeC103(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
 					d7 = *a3++;
 					const int extended_bit = carry ? 0x80 : 0;
 					carry = d7 & 1;
-					d7 = extended_bit | (d7 >> 1); // should be roxr (extended bit in 0x80)
+					d7 = extended_bit | (d7 >> 1);
 				}
 				if (!carry) {
 					d0 = *a3++;

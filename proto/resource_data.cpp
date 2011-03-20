@@ -68,7 +68,7 @@ uint8_t *ResourceData::decodeResourceData(const char *name, bool decompressLzss)
 	if (entry) {
 		_res._f.seek(_res._dataOffset + entry->dataOffset);
 		_resourceDataSize = _res._f.readUint32BE();
-		printf("decodeResourceData name '%s' dataSize %d\n", name, _resourceDataSize);
+//		fprintf(stdout, "decodeResourceData name '%s' dataSize %d\n", name, _resourceDataSize);
 		if (decompressLzss) {
 			data = decodeLzss(_res._f, _resourceDataSize);
 		} else {
@@ -108,7 +108,6 @@ void ResourceData::setAmigaClut16(Color *clut, uint8_t dest, const uint16_t *dat
 }
 
 void ResourceData::decodeDataPGE(const uint8_t *ptr) {
-	const uint8_t *startPtr = ptr;
 	_pgeNum = READ_BE_UINT16(ptr); ptr += 2;
 	memset(_pgeInit, 0, sizeof(_pgeInit));
 	for (int i = 0; i < _pgeNum; ++i) {
@@ -135,7 +134,6 @@ void ResourceData::decodeDataPGE(const uint8_t *ptr) {
 		++ptr;
 		pge->text_num = READ_BE_UINT16(ptr); ptr += 2;
 	}
-	fprintf(stdout, "decodeDataPGE %d\n", ptr - startPtr);
 }
 
 void ResourceData::decodeDataOBJ(const uint8_t *ptr, int unpackedSize) {
