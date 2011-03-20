@@ -20,10 +20,10 @@
 
 #include "intern.h"
 
-typedef void (*ScaleProc)(uint16 *dst, uint16 dstPitch, const uint16 *src, uint16 srcPitch, uint16 w, uint16 h);
+typedef void (*ScaleProc)(uint16 *dst, int dstPitch, const uint16 *src, int srcPitch, int w, int h);
 
 enum {
-	NUM_SCALERS = 5
+	NUM_SCALERS = 6
 };
 
 struct Scaler {
@@ -33,11 +33,5 @@ struct Scaler {
 };
 
 extern const Scaler _scalers[];
-
-void point1x(uint16 *dst, uint16 dstPitch, const uint16 *src, uint16 srcPitch, uint16 w, uint16 h);
-void point2x(uint16 *dst, uint16 dstPitch, const uint16 *src, uint16 srcPitch, uint16 w, uint16 h);
-void point3x(uint16 *dst, uint16 dstPitch, const uint16 *src, uint16 srcPitch, uint16 w, uint16 h);
-void scale2x(uint16 *dst, uint16 dstPitch, const uint16 *src, uint16 srcPitch, uint16 w, uint16 h);
-void scale3x(uint16 *dst, uint16 dstPitch, const uint16 *src, uint16 srcPitch, uint16 w, uint16 h);
 
 #endif // SCALER_H__
