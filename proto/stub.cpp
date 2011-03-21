@@ -69,14 +69,6 @@ struct TextureCache {
 	} _font;
 
 	struct {
-		int x, y;
-		int len;
-		const unsigned char *dataPtr;
-		uint8_t color;
-	} _gfxTextsQueue[16];
-	int _gfxTextsCount;
-
-	struct {
 		Texture *tex;
 		int x, y, x2, y2;
 		bool xflip;
@@ -98,8 +90,6 @@ struct TextureCache {
 		for (int i = 0; i < ARRAYSIZE(_texturesList); ++i) {
 			_texturesList[i].texId = -1;
 		}
-		memset(&_gfxTextsQueue, 0, sizeof(_gfxTextsQueue));
-		_gfxTextsCount = 0;
 		memset(&_gfxImagesQueue, 0, sizeof(_gfxImagesQueue));
 		_gfxImagesCount = 0;
 	}
@@ -304,16 +294,6 @@ struct TextureCache {
 		++_gfxImagesCount;
 	}
 
-	void queueGfxTextDraw(const GfxText *gt) {
-		assert(_gfxTextsCount < ARRAYSIZE(_gfxTextsQueue));
-		_gfxTextsQueue[_gfxTextsCount].x = gt->x;
-		_gfxTextsQueue[_gfxTextsCount].y = gt->y;
-		_gfxTextsQueue[_gfxTextsCount].len = gt->len;
-		_gfxTextsQueue[_gfxTextsCount].dataPtr = gt->data;
-		_gfxTextsQueue[_gfxTextsCount].color = gt->color;
-		++_gfxTextsCount;
-	}
-
 	void draw(bool menu, int w, int h) {
 		if (menu) {
 			glColor4f(.7, .7, .7, 1.);
@@ -334,10 +314,6 @@ struct TextureCache {
 			}
 			_gfxImagesCount = 0;
 		}
-		for (int i = 0; i < _gfxTextsCount; ++i) {
-			drawText(_gfxTextsQueue[i].x, _gfxTextsQueue[i].y, _gfxTextsQueue[i].color, _gfxTextsQueue[i].dataPtr, _gfxTextsQueue[i].len);
-		}
-		_gfxTextsCount = 0;
 	}
 
 	void emitQuadTex(int x1, int y1, int x2, int y2, GLfloat u1, GLfloat v1, GLfloat u2, GLfloat v2) {
@@ -573,9 +549,6 @@ struct Main {
 		_game.clearHotspots();
 		_game.clearGfxList();
 		_game.doTitle();
-		for (int i = 0; i < _game._gfxTextsCount; ++i) {
-			_texCache.queueGfxTextDraw(&_game._gfxTextsList[i]);
-		}
 		if (_game._pi.enter) {
 			_game._pi.enter = false;
 			_nextState = kStateGame;
@@ -612,9 +585,6 @@ struct Main {
 		for (int i = 0; i < _game._gfxImagesCount; ++i) {
 			_texCache.createTextureGfxImage(_resData, &_game._gfxImagesList[i]);
 		}
-		for (int i = 0; i < _game._gfxTextsCount; ++i) {
-			_texCache.queueGfxTextDraw(&_game._gfxTextsList[i]);
-		}
 		if (_game._pi.quit) {
 			_game._pi.quit = false;
 			_nextState = kStateMenu;
@@ -641,6 +611,10 @@ struct Main {
 		glPushMatrix();
 		glScalef(w / (GLfloat)kW, h / (GLfloat)kH, 1.);
 		_texCache.draw((_state == kStateMenu), w, h);
+		for (int i = 0; i < _game._gfxTextsCount; ++i) {
+			const GfxText *gt = &_game._gfxTextsList[i];
+			_texCache.drawText(gt->x, gt->y, gt->color, gt->data, gt->len);
+		}
 		++_frameCounter;
 		if ((_frameCounter & 31) == 0) {
 			struct timeval t1;
