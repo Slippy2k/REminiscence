@@ -335,7 +335,7 @@ struct TextureCache {
 			_gfxImagesCount = 0;
 		}
 		for (int i = 0; i < _gfxTextsCount; ++i) {
-			drawText(i);
+			drawText(_gfxTextsQueue[i].x, _gfxTextsQueue[i].y, _gfxTextsQueue[i].color, _gfxTextsQueue[i].dataPtr, _gfxTextsQueue[i].len);
 		}
 		_gfxTextsCount = 0;
 	}
@@ -391,17 +391,16 @@ struct TextureCache {
 		}
 	}
 
-	void drawText(int num) {
-		const uint16_t color = _tex8to5551[_gfxTextsQueue[num].color];
-		const GLfloat r = ((color >> 11) & 31) / 31.;
-		const GLfloat g = ((color >>  6) & 31) / 31.;
-		const GLfloat b = ((color >>  1) & 31) / 31.;
+	void drawText(int x, int y, int color, const uint8_t *dataPtr, int len) {
+		const uint16_t color5551 = _tex8to5551[color];
+		const GLfloat r = ((color5551 >> 11) & 31) / 31.;
+		const GLfloat g = ((color5551 >>  6) & 31) / 31.;
+		const GLfloat b = ((color5551 >>  1) & 31) / 31.;
 		glColor4f(r, g, b, 1.);
 		glBindTexture(GL_TEXTURE_2D, _font.texId);
-		int x = _gfxTextsQueue[num].x;
-		const int y = kH - _gfxTextsQueue[num].y;
-		for (int i = 0; i < _gfxTextsQueue[num].len; ++i) {
-			const uint8_t code = _gfxTextsQueue[num].dataPtr[i];
+		y = kH - y;
+		for (int i = 0; i < len; ++i) {
+			const uint8_t code = dataPtr[i];
 			const GLfloat texU1 = _font.u * (code - 32) / (GLfloat)_font.charsCount;
 			const GLfloat texU2 = _font.u * (code - 31) / (GLfloat)_font.charsCount;
 			emitQuadTex(x, y - 16, x + 16, y, texU1, 0., texU2, _font.v);
@@ -503,6 +502,7 @@ struct Main {
 	PadInput _padInput[2];
 	struct timeval _t0;
 	int _frameCounter;
+	int _framesPerSec;
 	int _state, _nextState;
 	bool _gameInit;
 	bool _menuInit;
@@ -520,6 +520,7 @@ struct Main {
 	void init() {
 		gettimeofday(&_t0, 0);
 		_frameCounter = 0;
+		_framesPerSec = 0;
 		_resData.loadClutData();
 		_resData.loadIconData();
 		_resData.loadFontData();
@@ -640,19 +641,23 @@ struct Main {
 		glPushMatrix();
 		glScalef(w / (GLfloat)kW, h / (GLfloat)kH, 1.);
 		_texCache.draw((_state == kStateMenu), w, h);
-		glPopMatrix();
 		++_frameCounter;
-#if 0
 		if ((_frameCounter & 31) == 0) {
 			struct timeval t1;
 			gettimeofday(&t1, 0);
 			const int msecs = (t1.tv_sec - _t0.tv_sec) * 1000 + (t1.tv_usec - _t0.tv_usec) / 1000;
 			_t0 = t1;
 			if (msecs != 0) {
-				printf("fps %f\n", 1000. * 32 / msecs);
+//				printf("fps %f\n", 1000. * 32 / msecs);
+				_framesPerSec = (int)(1000. * 32 / msecs);
 			}
 		}
-#endif
+		if (_framesPerSec != 0) {
+			char buf[16];
+			const int len = snprintf(buf, sizeof(buf), "%d fps", _framesPerSec);
+			_texCache.drawText(512 - len * 16, 448 - 16, 0xED, (const uint8_t *)buf, len);
+		}
+		glPopMatrix();
 	}
 
 	void doSoundMix(int8 *buf, int size) {
