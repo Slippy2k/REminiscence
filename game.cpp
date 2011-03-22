@@ -61,8 +61,6 @@ void Game::run() {
 
 	_mix.init();
 
-	_vid.setTextPalette();
-
 	playCutscene(0x40);
 	playCutscene(0x0D);
 	if (!_cut._interrupted && _res._type == kResourceTypePC) {
@@ -95,8 +93,10 @@ void Game::run() {
 		}
 		if (_currentLevel == 7) {
 			_vid.fadeOut();
+			_vid.setTextPalette();
 			playCutscene(0x3D);
 		} else {
+			_vid.setTextPalette();
 			_vid.setPalette0xF();
 			_stub->setOverscanColor(0xE0);
 			mainLoop();

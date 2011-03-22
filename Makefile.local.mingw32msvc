@@ -10,7 +10,7 @@ CXX = i586-mingw32msvc-g++
 CXXFLAGS += -I$(MINGW_DIR)/include
 LDFLAGS += -L$(MINGW_DIR)/lib
 
-LIBS = $(SDL_LIBS) -lzdll
+LIBS = $(SDL_LIBS) $(VORBIS_LIBS) -lzdll
 
 rs.exe: rs
 	i586-mingw32msvc-strip -o $@ $^
