@@ -25,7 +25,7 @@
 
 Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang)
 	: _cut(&_res, stub, &_vid), _menu(&_res, stub, &_vid),
-	_mix(stub), _modPly(&_mix, fs), _oggPly(&_mix, fs), _res(fs, ver, lang), _seqPly(stub, &_mix), _sfxPly(&_mix), _vid(&_res, stub),
+	_mix(stub), _mod(&_mix, fs), _ogg(&_mix, fs), _res(fs, ver, lang), _seq(stub, &_mix), _sfx(&_mix), _vid(&_res, stub),
 	_stub(stub), _fs(fs), _savePath(savePath) {
 	_stateSlot = 1;
 	_inp_demo = 0;
@@ -86,11 +86,11 @@ void Game::run() {
 
 	while (!_stub->_pi.quit) {
 		if (_res._type == kResourceTypePC) {
-			_modPly.play(1);
+			_mod.play(1);
 			if (!_menu.handleTitleScreen(_skillLevel, _currentLevel)) {
 				break;
 			}
-			_modPly.stop();
+			_mod.stop();
 		}
 		if (_currentLevel == 7) {
 			_vid.fadeOut();
@@ -233,8 +233,8 @@ void Game::playCutscene(int id) {
 		_cut._id = id;
 	}
 	if (_cut._id != 0xFFFF) {
-		_oggPly.pauseTrack();
-		_sfxPly.stop();
+		_ogg.pauseTrack();
+		_sfx.stop();
 		if (_res._hasSeqData) {
 			int num = 0;
 			switch (_cut._id) {
@@ -289,15 +289,15 @@ void Game::playCutscene(int id) {
 			}
 		}
 		if (_cut._id != 0x4A) {
-			_modPly.play(Cutscene::_musicTable[_cut._id]);
+			_mod.play(Cutscene::_musicTable[_cut._id]);
 		}
 		_cut.play();
 		if (_cut._id == 0x3D) {
 			_cut.startCredits();
 		}
 		if (_cut._interrupted || _cut._id != 0x0D) {
-			_modPly.stop();
-			_oggPly.resumeTrack();
+			_mod.stop();
+			_ogg.resumeTrack();
 		}
 	}
 }
@@ -305,8 +305,8 @@ void Game::playCutscene(int id) {
 bool Game::playCutsceneSeq(const char *name) {
 	File f;
 	if (f.open(name, "rb", _fs)) {
-		_seqPly.setBackBuffer(_res._memBuf);
-		_seqPly.play(&f);
+		_seq.setBackBuffer(_res._memBuf);
+		_seq.play(&f);
 		_vid.fullRefresh();
 		return true;
 	}
@@ -1323,7 +1323,7 @@ void Game::loadLevelData() {
 	pge_resetGroups();
 	_validSaveState = false;
 
-	_oggPly.playTrack(_gameLevels[_currentLevel].track);
+	_ogg.playTrack(_gameLevels[_currentLevel].track);
 }
 
 void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
@@ -1376,8 +1376,8 @@ void Game::playSound(uint8 sfxId, uint8 softVol) {
 		}
 	} else {
 		// in-game music
-		if (!_oggPly.isPlaying()) {
-			_sfxPly.play(sfxId);
+		if (!_ogg.isPlaying()) {
+			_sfx.play(sfxId);
 		}
 	}
 }

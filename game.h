@@ -66,11 +66,11 @@ struct Game {
 	Cutscene _cut;
 	Menu _menu;
 	Mixer _mix;
-	ModPlayer _modPly;
-	OggPlayer _oggPly;
+	ModPlayer _mod;
+	OggPlayer _ogg;
 	Resource _res;
-	SeqPlayer _seqPly;
-	SfxPlayer _sfxPly;
+	SeqPlayer _seq;
+	SfxPlayer _sfx;
 	Video _vid;
 	SystemStub *_stub;
 	FileSystem *_fs;
