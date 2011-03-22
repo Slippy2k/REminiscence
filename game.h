@@ -20,7 +20,6 @@
 
 #include "intern.h"
 #include "cutscene.h"
-#include "fs.h"
 #include "menu.h"
 #include "mixer.h"
 #include "mod_player.h"
