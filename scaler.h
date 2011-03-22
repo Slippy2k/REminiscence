@@ -23,7 +23,7 @@
 typedef void (*ScaleProc)(uint16 *dst, int dstPitch, const uint16 *src, int srcPitch, int w, int h);
 
 enum {
-	NUM_SCALERS = 6
+	NUM_SCALERS = 7
 };
 
 struct Scaler {

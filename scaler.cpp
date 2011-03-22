@@ -157,6 +157,28 @@ static void scale3x(uint16 *dst, int dstPitch, const uint16 *src, int srcPitch, 
 	}
 }
 
+void scale4x(uint16 *dst, int dstPitch, const uint16 *src, int srcPitch, int w, int h) {
+	static struct {
+		uint16 *ptr;
+		int w, h, pitch;
+		int size;
+	} buf;
+	const int size = (w * 2 + 2) * (h * 2 + 2) * sizeof(uint16);
+	if (buf.size < size) {
+		free(buf.ptr);
+		buf.size = size;
+		buf.w = w * 2;
+		buf.h = h * 2;
+		buf.pitch = buf.w + 2;
+		buf.ptr = (uint16 *)malloc(buf.size);
+		if (!buf.ptr) {
+			error("Unable to allocate scale4x intermediate buffer");
+		}
+	}
+	scale2x(buf.ptr + buf.pitch + 1, buf.pitch * sizeof(uint16), src, srcPitch, w, h);
+	scale2x(dst, dstPitch, buf.ptr + buf.pitch + 1, buf.pitch, w * 2, h * 2);
+}
+
 const Scaler _scalers[] = {
 	{ "point1x", &point1x, 1 },
 	{ "point2x", &point2x, 2 },
@@ -164,6 +186,7 @@ const Scaler _scalers[] = {
 	{ "point3x", &point3x, 3 },
 	{ "scale3x", &scale3x, 3 },
 	{ "point4x", &point4x, 4 },
+	{ "scale4x", &scale4x, 4 },
 	{ 0, 0, 0 }
 };
 

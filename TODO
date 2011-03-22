@@ -7,7 +7,6 @@ reminiscence
 		systemstub_sdl
 			scalers
 				opengl
-				scale4x
 
 fb
 	test datafile present on start, message box to warn
