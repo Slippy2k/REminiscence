@@ -30,8 +30,8 @@ struct File_impl {
 	virtual void close() = 0;
 	virtual uint32 size() = 0;
 	virtual void seek(int32 off) = 0;
-	virtual void read(void *ptr, uint32 len) = 0;
-	virtual void write(void *ptr, uint32 len) = 0;
+	virtual uint32 read(void *ptr, uint32 len) = 0;
+	virtual uint32 write(void *ptr, uint32 len) = 0;
 };
 
 struct stdFile : File_impl {
@@ -63,21 +63,25 @@ struct stdFile : File_impl {
 			fseek(_fp, off, SEEK_SET);
 		}
 	}
-	void read(void *ptr, uint32 len) {
+	uint32 read(void *ptr, uint32 len) {
 		if (_fp) {
 			uint32 r = fread(ptr, 1, len, _fp);
 			if (r != len) {
 				_ioErr = true;
 			}
+			return r;
 		}
+		return 0;
 	}
-	void write(void *ptr, uint32 len) {
+	uint32 write(void *ptr, uint32 len) {
 		if (_fp) {
 			uint32 r = fwrite(ptr, 1, len, _fp);
 			if (r != len) {
 				_ioErr = true;
 			}
+			return r;
 		}
+		return 0;
 	}
 };
 
@@ -111,21 +115,25 @@ struct zlibFile : File_impl {
 			gzseek(_fp, off, SEEK_SET);
 		}
 	}
-	void read(void *ptr, uint32 len) {
+	uint32 read(void *ptr, uint32 len) {
 		if (_fp) {
 			uint32 r = gzread(_fp, ptr, len);
 			if (r != len) {
 				_ioErr = true;
 			}
+			return r;
 		}
+		return 0;
 	}
-	void write(void *ptr, uint32 len) {
+	uint32 write(void *ptr, uint32 len) {
 		if (_fp) {
 			uint32 r = gzwrite(_fp, ptr, len);
 			if (r != len) {
 				_ioErr = true;
 			}
+			return r;
 		}
+		return 0;
 	}
 };
 #endif
@@ -197,8 +205,8 @@ void File::seek(int32 off) {
 	_impl->seek(off);
 }
 
-void File::read(void *ptr, uint32 len) {
-	_impl->read(ptr, len);
+uint32 File::read(void *ptr, uint32 len) {
+	return _impl->read(ptr, len);
 }
 
 uint8 File::readByte() {
@@ -231,8 +239,8 @@ uint32 File::readUint32BE() {
 	return (hi << 16) | lo;
 }
 
-void File::write(void *ptr, uint32 len) {
-	_impl->write(ptr, len);
+uint32 File::write(void *ptr, uint32 len) {
+	return _impl->write(ptr, len);
 }
 
 void File::writeByte(uint8 b) {

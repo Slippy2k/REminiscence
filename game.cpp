@@ -25,7 +25,7 @@
 
 Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang)
 	: _cut(&_res, stub, &_vid), _menu(&_res, stub, &_vid),
-	_mix(stub), _modPly(&_mix, fs), _res(fs, ver, lang), _seqPly(stub, &_mix), _sfxPly(&_mix), _vid(&_res, stub),
+	_mix(stub), _modPly(&_mix, fs), _oggPly(&_mix, fs), _res(fs, ver, lang), _seqPly(stub, &_mix), _sfxPly(&_mix), _vid(&_res, stub),
 	_stub(stub), _fs(fs), _savePath(savePath) {
 	_stateSlot = 1;
 	_inp_demo = 0;
@@ -233,6 +233,7 @@ void Game::playCutscene(int id) {
 		_cut._id = id;
 	}
 	if (_cut._id != 0xFFFF) {
+		_oggPly.pauseTrack();
 		_sfxPly.stop();
 		if (_res._hasSeqData) {
 			int num = 0;
@@ -296,6 +297,7 @@ void Game::playCutscene(int id) {
 		}
 		if (_cut._interrupted || _cut._id != 0x0D) {
 			_modPly.stop();
+			_oggPly.resumeTrack();
 		}
 	}
 }
@@ -1271,7 +1273,7 @@ void Game::loadLevelData() {
 		_res.load(lvl->nameAmiga, Resource::OT_TBN);
 		{
 			char name[8];
-			snprintf(name, sizeof(name), "level%d", lvl->spl);
+			snprintf(name, sizeof(name), "level%d", lvl->sound);
 			_res.load(name, Resource::OT_SPL);
 		}
 		if (_currentLevel == 0) {
@@ -1320,6 +1322,8 @@ void Game::loadLevelData() {
 	}
 	pge_resetGroups();
 	_validSaveState = false;
+
+	_oggPly.playTrack(_gameLevels[_currentLevel].track);
 }
 
 void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {
@@ -1372,7 +1376,9 @@ void Game::playSound(uint8 sfxId, uint8 softVol) {
 		}
 	} else {
 		// in-game music
-		_sfxPly.play(sfxId);
+		if (!_oggPly.isPlaying()) {
+			_sfxPly.play(sfxId);
+		}
 	}
 }
 

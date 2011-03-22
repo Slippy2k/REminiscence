@@ -23,6 +23,7 @@
 #include "menu.h"
 #include "mixer.h"
 #include "mod_player.h"
+#include "ogg_player.h"
 #include "resource.h"
 #include "seq_player.h"
 #include "sfx_player.h"
@@ -66,6 +67,7 @@ struct Game {
 	Menu _menu;
 	Mixer _mix;
 	ModPlayer _modPly;
+	OggPlayer _oggPly;
 	Resource _res;
 	SeqPlayer _seqPly;
 	SfxPlayer _sfxPly;

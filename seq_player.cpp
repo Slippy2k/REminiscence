@@ -364,7 +364,6 @@ bool SeqPlayer::mix(int8 *buf, int samples) {
 }
 
 bool SeqPlayer::mixCallback(void *param, int8 *buf, int len) {
-	memset(buf, 0, len);
 	return ((SeqPlayer *)param)->mix(buf, len);
 }
 

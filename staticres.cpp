@@ -652,13 +652,13 @@ const uint8 Cutscene::_protectionShapeData[] = {
 };
 
 const Level Game::_gameLevels[] = {
-	{ "level1", "level1", "level1", 0x00, 1 },
-	{ "level2", "level2", "level2", 0x2F, 1 },
-	{ "level3", "level3", "dt", 0xFFFF, 3 },
-	{ "level4", "level4_1", "level3_1", 0x34, 3 },
-	{ "level4", "level4_2", "level3_2", 0x39, 3 },
-	{ "level5", "level5_1", "level4_1", 0x35, 4 },
-	{ "level5", "level5_2", "level4_2", 0xFFFF, 4 }
+	{ "level1", "level1", "level1", 0x00, 1, 3 },
+	{ "level2", "level2", "level2", 0x2F, 1, 4 },
+	{ "level3", "level3", "dt", 0xFFFF, 3, 5 },
+	{ "level4", "level4_1", "level3_1", 0x34, 3, 6 },
+	{ "level4", "level4_2", "level3_2", 0x39, 3, 6 },
+	{ "level5", "level5_1", "level4_1", 0x35, 4, 7 },
+	{ "level5", "level5_2", "level4_2", 0xFFFF, 4, 7 }
 };
 
 const uint16 Game::_scoreTable[] = {

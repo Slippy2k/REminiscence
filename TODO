@@ -1,16 +1,5 @@
 reminiscence
 	0.2.2
-		ogg_player
-			premixHook
-			lookup table for Sega
-				2 : main title
-				3 : level 1
-				4 :
-				5 : death tower (level 3)
-				6 :
-				7 :
-				8 : cutscene ?
-				9 : cutscene ?
 		libmikmod
 		amiga support
 			fix spc drawing w=24
