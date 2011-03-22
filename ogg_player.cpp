@@ -15,14 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef ENABLE_VORBIS
+#ifdef USE_VORBIS
 #include <vorbis/vorbisfile.h>
 #endif
 #include "file.h"
 #include "mixer.h"
 #include "ogg_player.h"
 
-#ifdef ENABLE_VORBIS
+#ifdef USE_VORBIS
 struct VorbisFile: File {
 	uint32 offset;
 
@@ -152,7 +152,7 @@ OggPlayer::~OggPlayer() {
 }
 
 bool OggPlayer::playTrack(int num) {
-#ifdef ENABLE_VORBIS
+#ifdef USE_VORBIS
 	stopTrack();
 	char buf[16];
 	snprintf(buf, sizeof(buf), "track%02d.ogg", num);
@@ -172,7 +172,7 @@ bool OggPlayer::playTrack(int num) {
 }
 
 void OggPlayer::stopTrack() {
-#ifdef ENABLE_VORBIS
+#ifdef USE_VORBIS
 	_mix->setPremixHook(0, 0);
 	delete _impl;
 	_impl = 0;
@@ -180,7 +180,7 @@ void OggPlayer::stopTrack() {
 }
 
 void OggPlayer::pauseTrack() {
-#ifdef ENABLE_VORBIS
+#ifdef USE_VORBIS
 	if (_impl) {
 		_mix->setPremixHook(0, 0);
 	}
@@ -188,7 +188,7 @@ void OggPlayer::pauseTrack() {
 }
 
 void OggPlayer::resumeTrack() {
-#ifdef ENABLE_VORBIS
+#ifdef USE_VORBIS
 	if (_impl) {
 		_mix->setPremixHook(mixCallback, this);
 	}
@@ -196,11 +196,12 @@ void OggPlayer::resumeTrack() {
 }
 
 bool OggPlayer::mix(int8 *buf, int len) {
-#ifdef ENABLE_VORBIS
-	return _impl && _impl->read(buf, len) != 0;
-#else
-	return false;
+#ifdef USE_VORBIS
+	if (_impl) {
+		return _impl->read(buf, len) != 0;
+	}
 #endif
+	return false;
 }
 
 bool OggPlayer::mixCallback(void *param, int8 *buf, int len) {

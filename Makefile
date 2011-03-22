@@ -3,11 +3,11 @@ SDL_CFLAGS = `sdl-config --cflags`
 SDL_LIBS = `sdl-config --libs`
 VORBIS_LIBS = -lvorbisfile -lvorbis -logg
 
-DEFINES = -DBYPASS_PROTECTION -DENABLE_VORBIS
+DEFINES = -DBYPASS_PROTECTION
 #DEFINES = -DBYPASS_PROTECTION -DENABLE_PASSWORD_MENU -DNDEBUG
 
 CXXFLAGS += -Wall -Wuninitialized -Wshadow -Wimplicit -Wundef -Wreorder -Wnon-virtual-dtor -Wno-multichar
-CXXFLAGS += -MMD $(SDL_CFLAGS) -DUSE_ZLIB $(DEFINES)
+CXXFLAGS += -MMD $(SDL_CFLAGS) -DUSE_ZLIB -DUSE_VORBIS $(DEFINES)
 
 SRCS = collision.cpp cutscene.cpp file.cpp fs.cpp game.cpp graphics.cpp main.cpp menu.cpp \
 	mixer.cpp mod_player.cpp ogg_player.cpp piege.cpp resource.cpp scaler.cpp seq_player.cpp \

@@ -86,6 +86,7 @@ void Game::run() {
 
 	while (!_stub->_pi.quit) {
 		if (_res._type == kResourceTypePC) {
+			_ogg.playTrack(2);
 			_mod.play(1);
 			if (!_menu.handleTitleScreen(_skillLevel, _currentLevel)) {
 				break;
