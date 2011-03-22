@@ -24,7 +24,7 @@
 
 
 Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang)
-	: _cut(&_modPly, &_res, stub, &_vid), _menu(&_modPly, &_res, stub, &_vid),
+	: _cut(&_res, stub, &_vid), _menu(&_res, stub, &_vid),
 	_mix(stub), _modPly(&_mix, fs), _res(fs, ver, lang), _seqPly(stub, &_mix), _sfxPly(&_mix), _vid(&_res, stub),
 	_stub(stub), _fs(fs), _savePath(savePath) {
 	_stateSlot = 1;
@@ -61,6 +61,8 @@ void Game::run() {
 
 	_mix.init();
 
+	_vid.setTextPalette();
+
 	playCutscene(0x40);
 	playCutscene(0x0D);
 	if (!_cut._interrupted && _res._type == kResourceTypePC) {
@@ -82,13 +84,18 @@ void Game::run() {
 		break;
 	}
 
-	while (!_stub->_pi.quit && (_res._type == kResourceTypeAmiga || _menu.handleTitleScreen(_skillLevel, _currentLevel))) {
+	while (!_stub->_pi.quit) {
+		if (_res._type == kResourceTypePC) {
+			_modPly.play(1);
+			if (!_menu.handleTitleScreen(_skillLevel, _currentLevel)) {
+				break;
+			}
+			_modPly.stop();
+		}
 		if (_currentLevel == 7) {
 			_vid.fadeOut();
-			_vid.setTextPalette();
 			playCutscene(0x3D);
 		} else {
-			_vid.setTextPalette();
 			_vid.setPalette0xF();
 			_stub->setOverscanColor(0xE0);
 			mainLoop();
@@ -280,7 +287,16 @@ void Game::playCutscene(int id) {
 				}
 			}
 		}
+		if (_cut._id != 0x4A) {
+			_modPly.play(Cutscene::_musicTable[_cut._id]);
+		}
 		_cut.play();
+		if (_cut._id == 0x3D) {
+			_cut.startCredits();
+		}
+		if (_cut._interrupted || _cut._id != 0x0D) {
+			_modPly.stop();
+		}
 	}
 }
 

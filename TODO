@@ -1,12 +1,24 @@
 reminiscence
 	0.2.2
+		ogg_player
+			premixHook
+			lookup table for Sega
+				2 : main title
+				3 : level 1
+				4 :
+				5 : death tower (level 3)
+				6 :
+				7 :
+				8 : cutscene ?
+				9 : cutscene ?
+		libmikmod
 		amiga support
 			fix spc drawing w=24
 			title screen
-		libmikmod
 		systemstub_sdl
-			opengl
-			scale4x
+			scalers
+				opengl
+				scale4x
 
 fb
 	test datafile present on start, message box to warn

@@ -21,7 +21,6 @@
 #include "intern.h"
 #include "graphics.h"
 
-struct ModPlayer;
 struct Resource;
 struct SystemStub;
 struct Video;
@@ -45,7 +44,6 @@ struct Cutscene {
 	static const uint8 _protectionShapeData[];
 
 	Graphics _gfx;
-	ModPlayer *_ply;
 	Resource *_res;
 	SystemStub *_stub;
 	Video *_vid;
@@ -93,7 +91,7 @@ struct Cutscene {
 	int16 _creditsTextCounter;
 	uint8 *_page0, *_page1, *_pageC;
 
-	Cutscene(ModPlayer *player, Resource *res, SystemStub *stub, Video *vid);
+	Cutscene(Resource *res, SystemStub *stub, Video *vid);
 
 	void sync();
 	void copyPalette(const uint8 *pal, uint16 num);

@@ -15,15 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mod_player.h"
 #include "resource.h"
 #include "systemstub.h"
 #include "video.h"
 #include "cutscene.h"
 
 
-Cutscene::Cutscene(ModPlayer *ply, Resource *res, SystemStub *stub, Video *vid)
-	: _ply(ply), _res(res), _stub(stub), _vid(vid) {
+Cutscene::Cutscene(Resource *res, SystemStub *stub, Video *vid)
+	: _res(res), _stub(stub), _vid(vid) {
 	memset(_palBuf, 0, sizeof(_palBuf));
 }
 
@@ -925,9 +924,6 @@ void Cutscene::mainLoop(uint16 offset) {
 	for (int i = 0; i < 0x20; ++i) {
 		_stub->setPaletteEntry(0xC0 + i, &c);
 	}
-	if (_id != 0x4A && !_creditsSequence) {
-		_ply->play(_musicTable[_id]);
-	}
 	_newPal = false;
 	_hasAlphaColor = false;
 	uint8 *p = _res->_cmd;
@@ -956,9 +952,6 @@ void Cutscene::mainLoop(uint16 offset) {
 			_stub->_pi.backspace = false;
 			_interrupted = true;
 		}
-	}
-	if (_interrupted || _id != 0x0D) {
-		_ply->stop();
 	}
 }
 
@@ -1029,9 +1022,6 @@ void Cutscene::play() {
 		if (cutName != 0xFFFF) {
 			load(cutName);
 			mainLoop(cutOff);
-			if (_id == 0x3D) {
-				startCredits();
-			}
 		}
 		_vid->fullRefresh();
 		if (_id != 0x3D) {

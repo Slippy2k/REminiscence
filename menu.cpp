@@ -16,15 +16,14 @@
  */
 
 #include "game.h"
-#include "mod_player.h"
 #include "resource.h"
 #include "systemstub.h"
 #include "video.h"
 #include "menu.h"
 
 
-Menu::Menu(ModPlayer *ply, Resource *res, SystemStub *stub, Video *vid)
-	: _ply(ply), _res(res), _stub(stub), _vid(vid) {
+Menu::Menu(Resource *res, SystemStub *stub, Video *vid)
+	: _res(res), _stub(stub), _vid(vid) {
 }
 
 void Menu::drawString(const char *str, int16 y, int16 x, uint8 color) {
@@ -308,7 +307,6 @@ bool Menu::handleTitleScreen(uint8 &new_skill, uint8 &new_level) {
 	_charVar3 = 0;
 	_charVar4 = 0;
 	_charVar5 = 0;
-	_ply->play(1);
 	static const struct {
 		int str;
 		int opt;
@@ -404,6 +402,5 @@ bool Menu::handleTitleScreen(uint8 &new_skill, uint8 &new_level) {
 			break;
 		}
 	}
-	_ply->stop();
 	return continue_game;
 }
