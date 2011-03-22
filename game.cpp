@@ -1324,7 +1324,7 @@ void Game::loadLevelData() {
 	pge_resetGroups();
 	_validSaveState = false;
 
-	_ogg.playTrack(_gameLevels[_currentLevel].track);
+	_ogg.playTrack(lvl->track);
 }
 
 void Game::drawIcon(uint8 iconNum, int16 x, int16 y, uint8 colMask) {

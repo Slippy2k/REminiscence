@@ -67,11 +67,14 @@ struct VorbisFile: File {
 
 struct OggDecoder_impl {
 	OggDecoder_impl()
-		: _loop(true), _readBuf(0), _readBufSize(0) {
+		: _loop(true), _open(false), _readBuf(0), _readBufSize(0) {
 	}
 	~OggDecoder_impl() {
 		free(_readBuf);
 		_readBuf = 0;
+		if (_open) {
+			ov_clear(&_ovf);
+		}
 	}
 
 	bool load(VorbisFile *f, int mixerSampleRate) {
@@ -84,6 +87,7 @@ struct OggDecoder_impl {
 			warning("Invalid .ogg file");
 			return false;
 		}
+		_open = true;
 		_vi = ov_info(&_ovf, -1);
 		if ((_vi->channels != 1 && _vi->channels != 2) || _vi->rate != mixerSampleRate) {
 			warning("Unhandled ogg/pcm format ch %d rate %d", _vi->channels, _vi->rate);
@@ -135,10 +139,11 @@ struct OggDecoder_impl {
 	}
 
 	OggVorbis_File _ovf;
+	vorbis_info *_vi;
 	bool _loop;
+	bool _open;
 	int8 *_readBuf;
 	int _readBufSize;
-	vorbis_info *_vi;
 };
 #endif
 
