@@ -654,9 +654,9 @@ void Game::printLevelCode() {
 	if (_printLevelCodeCounter != 0) {
 		--_printLevelCodeCounter;
 		if (_printLevelCodeCounter != 0) {
-			char levelCode[50];
-			snprintf(levelCode, sizeof(levelCode), "CODE: %s", _menu._passwords[_currentLevel][_skillLevel]);
-			_vid.drawString(levelCode, (Video::GAMESCREEN_W - strlen(levelCode) * 8) / 2, 16, 0xE7);
+			char buf[32];
+			snprintf(buf, sizeof(buf), "CODE: %s", _menu._passwords[_currentLevel][_skillLevel]);
+			_vid.drawString(buf, (Video::GAMESCREEN_W - strlen(buf) * 8) / 2, 16, 0xE7);
 		}
 	}
 }
@@ -1586,10 +1586,10 @@ bool Game::saveGameState(uint8 slot) {
 		// header
 		f.writeUint32BE('FBSV');
 		f.writeUint16BE(2);
-		char hdrdesc[32];
-		memset(hdrdesc, 0, sizeof(hdrdesc));
-		sprintf(hdrdesc, "level=%d room=%d", _currentLevel + 1, _currentRoom);
-		f.write(hdrdesc, sizeof(hdrdesc));
+		char buf[32];
+		memset(buf, 0, sizeof(buf));
+		snprintf(buf, sizeof(buf), "level=%d room=%d", _currentLevel + 1, _currentRoom);
+		f.write(buf, sizeof(buf));
 		// contents
 		saveState(&f);
 		if (f.ioErr()) {
@@ -1618,8 +1618,9 @@ bool Game::loadGameState(uint8 slot) {
 			if (ver != 2) {
 				warning("Invalid save state version");
 			} else {
-				char hdrdesc[32];
-				f.read(hdrdesc, sizeof(hdrdesc));
+				// header
+				char buf[32];
+				f.read(buf, sizeof(buf));
 				// contents
 				loadState(&f);
 				if (f.ioErr()) {

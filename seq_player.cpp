@@ -25,12 +25,16 @@
 bool SeqDemuxer::open(File *f) {
 	_f = f;
 	_fileSize = _f->size();
+	memset(_buffers, 0, sizeof(_buffers));
 	_frameOffset = 0;
 	return readHeader();
 }
 
 void SeqDemuxer::close() {
 	_f = 0;
+	for (int i = 0; i < kBuffersCount; ++i) {
+		free(_buffers[i].data);
+	}
 }
 
 bool SeqDemuxer::readHeader() {
@@ -148,27 +152,26 @@ struct BitStream {
 	uint32 _bits;
 };
 
-static const uint8 *decodeSeqOp1Helper(const uint8 *src, uint8 *dst, int dst_size) {
-	int codes[64];
+static const uint8 *decodeSeqOp1Helper(const uint8 *src, uint8 *dst, int dstSize) {
+	int codes[64], count = 0;
 	BitStream bs(src);
-	int count = 0;
 	for (int i = 0, sz = 0; i < 64 && sz < 64; ++i) {
 		codes[i] = bs.getSignedBits(4);
 		sz += ABS(codes[i]);
 		count += 4;
 	}
 	src += (count + 7) / 8;
-	for (int i = 0; i < 64 && dst_size > 0; ++i) {
+	for (int i = 0; i < 64 && dstSize > 0; ++i) {
 		int len = codes[i];
 		if (len < 0) {
 			len = -len;
-			memset(dst, *src++, MIN(len, dst_size));
+			memset(dst, *src++, MIN(len, dstSize));
 		} else {
-			memcpy(dst, src, MIN(len, dst_size));
+			memcpy(dst, src, MIN(len, dstSize));
 			src += len;
 		}
 		dst += len;
-		dst_size -= len;
+		dstSize -= len;
 	}
 	return src;
 }

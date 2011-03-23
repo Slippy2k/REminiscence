@@ -67,7 +67,7 @@ struct VorbisFile: File {
 
 struct OggDecoder_impl {
 	OggDecoder_impl()
-		: _loop(true), _open(false), _readBuf(0), _readBufSize(0) {
+		: _open(false), _readBuf(0), _readBufSize(0) {
 	}
 	~OggDecoder_impl() {
 		free(_readBuf);
@@ -88,15 +88,16 @@ struct OggDecoder_impl {
 			return false;
 		}
 		_open = true;
-		_vi = ov_info(&_ovf, -1);
-		if ((_vi->channels != 1 && _vi->channels != 2) || _vi->rate != mixerSampleRate) {
-			warning("Unhandled ogg/pcm format ch %d rate %d", _vi->channels, _vi->rate);
+		vorbis_info *vi = ov_info(&_ovf, -1);
+		if ((vi->channels != 1 && vi->channels != 2) || vi->rate != mixerSampleRate) {
+			warning("Unhandled ogg/pcm format ch %d rate %d", vi->channels, vi->rate);
 			return false;
 		}
+		_channels = vi->channels;
 		return true;
 	}
 	int read(int8 *dst, int samples) {
-		int size = samples * _vi->channels;
+		int size = samples * _channels;
 		if (size > _readBufSize) {
 			_readBufSize = size;
 			free(_readBuf);
@@ -112,13 +113,11 @@ struct OggDecoder_impl {
 				// error in decoder
 				return 0;
 			} else if (len == 0) {
-				if (_loop) {
-					ov_raw_seek(&_ovf, 0);
-					continue;
-				}
-				break;
+				// loop
+				ov_raw_seek(&_ovf, 0);
+				continue;
 			}
-			switch (_vi->channels) {
+			switch (_channels) {
 			case 2:
 				assert((len & 1) == 0);
 				for (int i = 0; i < len; i += 2) {
@@ -139,8 +138,7 @@ struct OggDecoder_impl {
 	}
 
 	OggVorbis_File _ovf;
-	vorbis_info *_vi;
-	bool _loop;
+	int _channels;
 	bool _open;
 	int8 *_readBuf;
 	int _readBufSize;

@@ -143,7 +143,7 @@ void SfxPlayer::mixSamples(int8 *buf, int samplesLen) {
 				}
 			}
 			si->pos = pos;
-     	}
+		}
 	}
 }
 
