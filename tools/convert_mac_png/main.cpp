@@ -17,6 +17,9 @@ enum {
 static Color _clut[kClutSize];
 static int _clutSize;
 
+static bool _upscaleImageData2x = true;
+static uint8_t *_upscaleImageDataBuf;
+
 static void readClut(const uint8_t *ptr) {
 	ptr += 6; // seed+flags
 	_clutSize = READ_BE_UINT16(ptr); ptr += 2;
@@ -49,7 +52,58 @@ static uint8_t *decodeResourceData(ResourceMac &res, const char *name, bool deco
 	return data;
 }
 
+static void scale2x(uint8_t *dst, int dstPitch, const uint8_t *src, int srcPitch, int w, int h) {
+	const int dstPitch2 = dstPitch * 2;
+	while (h--) {
+		uint8_t *p = dst;
+		uint8_t D = *(src - 1);
+		uint8_t E = *(src);
+		for (int i = 0; i < w; ++i, p += 2) {
+			uint8_t B = *(src + i - srcPitch);
+			uint8_t F = *(src + i + 1);
+			uint8_t H = *(src + i + srcPitch);
+			if (B != H && D != F) {
+				*(p) = D == B ? D : E;
+				*(p + 1) = B == F ? F : E;
+				*(p + dstPitch) = D == H ? D : E;
+				*(p + dstPitch + 1) = H == F ? F : E;
+			} else {
+				*(p) = E;
+				*(p + 1) = E;
+				*(p + dstPitch) = E;
+				*(p + dstPitch + 1) = E;
+			}
+			D = E;
+			E = F;
+		}
+		dst += dstPitch2;
+		src += srcPitch;
+	}
+}
+
 static void writePngImageData(const char *filePath, const uint8_t *imageData, Color *imageClut, int w, int h) {
+	if (_upscaleImageData2x) {
+		_upscaleImageDataBuf = (uint8_t *)malloc((w * 2) * (h * 2));
+		if (_upscaleImageDataBuf) {
+			uint8_t *imageDataDup = (uint8_t *)malloc((w + 2) * (h + 2));
+			if (imageDataDup) {
+				const int srcPitch = w + 2;
+				memcpy(imageDataDup, imageData, w);
+				for (int y = 0; y < h; ++y) {
+					const int yOffset = (y + 1) * srcPitch;
+					imageDataDup[yOffset] = imageData[y * w];
+					memcpy(imageDataDup + yOffset + 1, imageData + y * w, w);
+					imageDataDup[yOffset + w + 1] = imageData[y * w + w - 1];
+				}
+				memcpy(imageDataDup + (h + 1) * srcPitch, imageData + (h - 1) * w, w);
+				scale2x(_upscaleImageDataBuf, w * 2, imageDataDup + srcPitch + 1, srcPitch, w, h);
+				free(imageDataDup);
+			}
+			imageData = _upscaleImageDataBuf;
+			w *= 2;
+			h *= 2;
+		}
+	}
 	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	assert(png_ptr);
 	png_infop info_ptr = png_create_info_struct(png_ptr);
@@ -82,6 +136,10 @@ static void writePngImageData(const char *filePath, const uint8_t *imageData, Co
 	free(row_pointers);
 	png_destroy_write_struct(&png_ptr, &info_ptr);
 	fclose(fp);
+	if (_upscaleImageDataBuf) {
+		free(_upscaleImageDataBuf);
+		_upscaleImageDataBuf = 0;
+	}
 }
 
 static void dumpHistogram(const uint8_t *imageData, int imageLen) {

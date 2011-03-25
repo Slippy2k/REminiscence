@@ -20,37 +20,9 @@ struct DecodeBuffer {
 	int w, h, pitch;
 	int x, y;
 	bool xflip, yflip;
-	bool erase;
-	uint8_t textColor;
 
 	void *lut;
 	void (*setPixel)(DecodeBuffer *buf, int src_x, int src_y, int src_w, int src_h, uint8_t color);
-
-	void setPixelIntern(int src_x, int src_y, int src_w, int src_h, uint8_t color) {
-		if (xflip) {
-			src_x = src_w - 1 - src_x;
-		}
-		src_x += x;
-		if (src_x < 0 || src_x >= w) {
-			return;
-		}
-		if (yflip) {
-			src_y = src_h - 1 - src_y;
-		}
-		src_y += y;
-		if (src_y < 0 || src_y >= h) {
-			return;
-		}
-		const int offset = src_y * pitch + src_x;
-		if (erase) {
-			if (textColor != 0 && color == 0xC1) {
-				color = textColor;
-			}
-			ptr[offset] = color;
-		} else if ((ptr[offset] & 0x80) == 0) {
-			ptr[offset] = color;
-		}
-	}
 };
 
 void decodeC103(const uint8_t *a3, int w, int h, DecodeBuffer *buf);
