@@ -13,10 +13,9 @@ static int gWindowW = 512;
 static int gWindowH = 448;
 static const int gTickDuration = 16;
 
-static const char *gFbSoName = "libfb.so";
 static const char *gFbSoSym = "g_stub";
-
 #ifdef _WIN32
+static const char *gFbSoName = "fb.dll";
 struct DynLib_impl {
 	HINSTANCE _dlso;
 
@@ -38,6 +37,7 @@ struct DynLib_impl {
 	}
 };
 #else
+static const char *gFbSoName = "libfb.so";
 struct DynLib_impl {
 	void *_dlso;
 

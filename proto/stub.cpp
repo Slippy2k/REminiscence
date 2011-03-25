@@ -629,7 +629,7 @@ struct Main {
 		if (_framesPerSec != 0) {
 			char buf[16];
 			const int len = snprintf(buf, sizeof(buf), "%d fps", _framesPerSec);
-			_texCache.drawText(512 - len * 16, 448 - 16, 0xED, (const uint8_t *)buf, len);
+			_texCache.drawText(kW - len * 16, kH - 16, 0xED, (const uint8_t *)buf, len);
 		}
 		glPopMatrix();
 	}
