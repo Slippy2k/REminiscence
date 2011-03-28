@@ -8,10 +8,12 @@
 #endif
 #include "stub.h"
 
+static const int kDefaultW = 512;
+static const int kDefaultH = 448;
 static const char *gWindowTitle = "Flashback: The Quest For Identity";
-static const int gScale = 1;
-static int gWindowW = 512 * gScale;
-static int gWindowH = 448 * gScale;
+static const float gScale = 1.5;
+static int gWindowW = (int)(kDefaultW * gScale);
+static int gWindowH = (int)(kDefaultH * gScale);
 static const int gTickDuration = 16;
 
 static const char *gFbSoSym = "g_stub";
@@ -61,6 +63,34 @@ struct DynLib_impl {
 };
 #endif
 
+enum {
+	kScaleUp = 1,
+	kScaleDown = -1
+};
+
+static void rescaleWindowDim(int &w, int &h, int type) {
+	static const float f[] = { 1., 1.5, 2., 2.5, 3., 3.5, 4. };
+	int index = -1;
+	int min = 0;
+	for (int i = 0; i < 7; ++i) {
+		const int x = (int)(kDefaultW * f[i]) - w;
+		const int y = (int)(kDefaultH * f[i]) - h;
+		int m = x * x + y * y;
+		if (i == 0 || m < min) {
+			min = m;
+			index = i;
+		}
+	}
+	if (index != -1) {
+		index += type;
+		if (index >= 0 && index <= 6) {
+			w = (int)(kDefaultW * f[index]);
+			h = (int)(kDefaultH * f[index]);
+//			fprintf(stdout, "Set window dim to %d,%d (f=%f)\n", w, h, f[index]);
+		}
+	}
+}
+
 static void setupAudio(Stub *stub) {
 	if (stub->getMixProc) {
 		SDL_AudioSpec desired;
@@ -106,6 +136,8 @@ int main(int argc, char *argv[]) {
 	stub->initGL(gWindowW, gWindowH);
 	bool quitGame = false;
 	while (!quitGame) {
+		int w = gWindowW;
+		int h = gWindowH;
 		SDL_Event ev;
 		while (SDL_PollEvent(&ev)) {
 			switch (ev.type) {
@@ -113,10 +145,27 @@ int main(int argc, char *argv[]) {
 				quitGame = true;
 				break;
 			case SDL_KEYDOWN:
-				stub->queueKeyInput(ev.key.keysym.sym, 1);
+				switch (ev.key.keysym.sym) {
+				case SDLK_PAGEUP:
+					rescaleWindowDim(gWindowW, gWindowH, kScaleUp);
+					break;
+				case SDLK_PAGEDOWN:
+					rescaleWindowDim(gWindowW, gWindowH, kScaleDown);
+					break;
+				default:
+					stub->queueKeyInput(ev.key.keysym.sym, 1);
+					break;
+				}
 				break;
 			case SDL_KEYUP:
-				stub->queueKeyInput(ev.key.keysym.sym, 0);
+				switch (ev.key.keysym.sym) {
+				case SDLK_PAGEUP:
+				case SDLK_PAGEDOWN:
+					break;
+				default:
+					stub->queueKeyInput(ev.key.keysym.sym, 0);
+					break;
+				}
 				break;
 			case SDL_MOUSEBUTTONUP:
 				stub->queueTouchInput(0, ev.button.x, ev.button.y, 0);
@@ -132,10 +181,12 @@ int main(int argc, char *argv[]) {
 			case SDL_VIDEORESIZE:
 				gWindowW = ev.resize.w;
 				gWindowH = ev.resize.h;
-				SDL_SetVideoMode(gWindowW, gWindowH, 0, SDL_OPENGL | SDL_RESIZABLE);
-				stub->initGL(gWindowW, gWindowH);
 				break;
 			}
+		}
+		if (w != gWindowW || h != gWindowH) {
+			SDL_SetVideoMode(gWindowW, gWindowH, 0, SDL_OPENGL | SDL_RESIZABLE);
+			stub->initGL(gWindowW, gWindowH);
 		}
 		SDL_LockAudio();
 		stub->doTick();

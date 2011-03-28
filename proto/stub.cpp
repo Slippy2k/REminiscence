@@ -21,7 +21,7 @@
 static const int kW = 512;
 static const int kH = 448;
 
-static const int _scalerFactor = 1;
+static const int _scalerFactor = 2;
 static void (*_scalerProc)(uint16_t *, int, const uint16_t *, int, int, int) = scale2x;
 
 static int roundPowerOfTwo(int x) {
@@ -98,7 +98,9 @@ struct TextureCache {
 		memset(&_gfxImagesQueue, 0, sizeof(_gfxImagesQueue));
 		_gfxImagesCount = 0;
 		if (_scalerFactor != 1) {
-			_texScaleBuf = (uint16_t *)malloc(kW * _scalerFactor * kH * _scalerFactor * sizeof(uint16_t));
+			const int w = roundPowerOfTwo(kW * _scalerFactor);
+			const int h = roundPowerOfTwo(kH * _scalerFactor);
+			_texScaleBuf = (uint16_t *)malloc(w * h * sizeof(uint16_t));
 		}
 	}
 
