@@ -9,8 +9,9 @@
 #include "stub.h"
 
 static const char *gWindowTitle = "Flashback: The Quest For Identity";
-static int gWindowW = 512;
-static int gWindowH = 448;
+static const int gScale = 1;
+static int gWindowW = 512 * gScale;
+static int gWindowH = 448 * gScale;
 static const int gTickDuration = 16;
 
 static const char *gFbSoSym = "g_stub";

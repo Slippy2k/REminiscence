@@ -15,10 +15,14 @@
 #include <sys/time.h>
 #include "game.h"
 #include "resource_data.h"
+#include "scaler.h"
 #include "stub.h"
 
 static const int kW = 512;
 static const int kH = 448;
+
+static const int _scalerFactor = 1;
+static void (*_scalerProc)(uint16_t *, int, const uint16_t *, int, int, int) = scale2x;
 
 static int roundPowerOfTwo(int x) {
 	if ((x & (x - 1)) == 0) {
@@ -78,6 +82,7 @@ struct TextureCache {
 
 	uint16_t _tex8to565[256];
 	uint16_t _tex8to5551[256];
+	uint16_t *_texScaleBuf;
 
 	TextureCache() {
 		memset(&_title, 0, sizeof(_title));
@@ -92,12 +97,24 @@ struct TextureCache {
 		}
 		memset(&_gfxImagesQueue, 0, sizeof(_gfxImagesQueue));
 		_gfxImagesCount = 0;
+		if (_scalerFactor != 1) {
+			_texScaleBuf = (uint16_t *)malloc(kW * _scalerFactor * kH * _scalerFactor * sizeof(uint16_t));
+		}
 	}
 
 	void updatePalette(Color *clut) {
 		for (int i = 0; i < 256; ++i) {
 			_tex8to565[i] = ((clut[i].r >> 3) << 11) | ((clut[i].g >> 2) << 5) | (clut[i].b >> 3);
 			_tex8to5551[i] = ((clut[i].r >> 3) << 11) | ((clut[i].g >> 3) << 6) | ((clut[i].b >> 3) << 1);
+		}
+	}
+
+	uint16_t *rescaleTexture(DecodeBuffer *buf, int w, int h) {
+		if (_scalerFactor == 1) {
+			return (uint16_t *)buf->ptr;
+		} else {
+			_scalerProc(_texScaleBuf, w, (const uint16_t *)buf->ptr, buf->pitch, buf->w, buf->h);
+			return _texScaleBuf;
 		}
 	}
 
@@ -115,10 +132,10 @@ struct TextureCache {
 
 	void createTextureFont(ResourceData &res) {
 		_font.charsCount = 105;
-		const int w = _font.charsCount * 16;
-		const int h = 16;
+		const int w = _font.charsCount * 16 * _scalerFactor;
+		const int h = 16 * _scalerFactor;
 		const int texW = roundPowerOfTwo(w);
-		const int texH = 16;
+		const int texH = roundPowerOfTwo(h);
 		if (_font.texId == -1) {
 			glGenTextures(1, &_font.texId);
 			glBindTexture(GL_TEXTURE_2D, _font.texId);
@@ -130,8 +147,13 @@ struct TextureCache {
 		}
 		DecodeBuffer buf;
 		memset(&buf, 0, sizeof(buf));
-		buf.w = buf.pitch = texW;
-		buf.h = texH;
+		if (_scalerFactor == 1) {
+			buf.w = buf.pitch = texW;
+			buf.h = texH;
+		} else {
+			buf.w = buf.pitch = _font.charsCount * 16;
+			buf.h = 16;
+		}
 		buf.setPixel = convertTextureFont;
 		buf.ptr = (uint8_t *)calloc(buf.w * buf.h, sizeof(uint16_t));
 		if (buf.ptr) {
@@ -139,7 +161,8 @@ struct TextureCache {
 				res.decodeImageData(res._fnt, i, &buf);
 				buf.x += 16;
 			}
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, buf.w, buf.h, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, buf.ptr);
+			const uint16_t *texData = rescaleTexture(&buf, texW, texH);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texW, texH, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, texData);
 			free(buf.ptr);
 		}
 	}
@@ -151,28 +174,36 @@ struct TextureCache {
 	}
 
 	void createTextureTitle(ResourceData &res, int num) {
-		const int texW = roundPowerOfTwo(kW);
-		const int texH = roundPowerOfTwo(kH);
+		const int w = kW * _scalerFactor;
+		const int h = kH * _scalerFactor;
+		const int texW = roundPowerOfTwo(w);
+		const int texH = roundPowerOfTwo(h);
 		if (_title.texId == -1) {
 			glGenTextures(1, &_title.texId);
 			glBindTexture(GL_TEXTURE_2D, _title.texId);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texW, texH, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 0);
-			_title.u = kW / (GLfloat)texW;
-			_title.v = kH / (GLfloat)texH;
+			_title.u = w / (GLfloat)texW;
+			_title.v = h / (GLfloat)texH;
 		}
 		DecodeBuffer buf;
 		memset(&buf, 0, sizeof(buf));
-		buf.w = buf.pitch = texW;
-		buf.h = texH;
+		if (_scalerFactor == 1) {
+			buf.w = buf.pitch = texW;
+			buf.h = texH;
+		} else {
+			buf.w = buf.pitch = kW;
+			buf.h = kH;
+		}
 		buf.lut = _tex8to565;
 		buf.setPixel = convertTextureTitle;
 		buf.ptr = (uint8_t *)calloc(buf.w * buf.h, sizeof(uint16_t));
 		if (buf.ptr) {
 			res.loadTitleImage(num, &buf);
 			glBindTexture(GL_TEXTURE_2D, _title.texId);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texW, texH, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, buf.ptr);
+			const uint16_t *texData = rescaleTexture(&buf, texW, texH);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texW, texH, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, texData);
 			free(buf.ptr);
 		}
 	}
@@ -184,29 +215,37 @@ struct TextureCache {
 	}
 
 	void createTextureBackground(ResourceData &res, int level, int room) {
-		const int texW = roundPowerOfTwo(kW);
-		const int texH = roundPowerOfTwo(kH);
+		const int w = kW * _scalerFactor;
+		const int h = kH * _scalerFactor;
+		const int texW = roundPowerOfTwo(w);
+		const int texH = roundPowerOfTwo(h);
 		if (_background.texId == -1) {
 			glGenTextures(1, &_background.texId);
 			glBindTexture(GL_TEXTURE_2D, _background.texId);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texW, texH, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 0);
-			_background.u = kW / (GLfloat)texW;
-			_background.v = kH / (GLfloat)texH;
+			_background.u = w / (GLfloat)texW;
+			_background.v = h / (GLfloat)texH;
 		}
 		if (level != _background.level || room != _background.room) {
 			DecodeBuffer buf;
 			memset(&buf, 0, sizeof(buf));
-			buf.w = buf.pitch = texW;
-			buf.h = texH;
+			if (_scalerFactor == 1) {
+				buf.w = buf.pitch = texW;
+				buf.h = texH;
+			} else {
+				buf.w = buf.pitch = kW;
+				buf.h = kH;
+			}
 			buf.lut = _tex8to5551;
 			buf.setPixel = convertTextureBackground;
 			buf.ptr = (uint8_t *)calloc(buf.w * buf.h, sizeof(uint16_t));
 			if (buf.ptr) {
 				res.loadLevelRoom(level, room, &buf);
 				glBindTexture(GL_TEXTURE_2D, _background.texId);
-				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texW, texH, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, buf.ptr);
+				const uint16_t *texData = rescaleTexture(&buf, texW, texH);
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texW, texH, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, texData);
 				free(buf.ptr);
 			}
 			_background.level = level;
@@ -221,8 +260,10 @@ struct TextureCache {
 	}
 
 	void createTextureGfxImage(ResourceData &res, const GfxImage *image) {
-		const int texW = roundPowerOfTwo(image->w);
-		const int texH = roundPowerOfTwo(image->h);
+		const int w = image->w * _scalerFactor;
+		const int h = image->h * _scalerFactor;
+		const int texW = roundPowerOfTwo(w);
+		const int texH = roundPowerOfTwo(h);
 		int pos = -1;
 		for (int i = 0; i < ARRAYSIZE(_texturesList); ++i) {
 			if (_texturesList[i].texId == -1) {
@@ -260,19 +301,25 @@ struct TextureCache {
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texW, texH, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 0);
                 }
-		_texturesList[pos].u = image->w / (GLfloat)texW;
-		_texturesList[pos].v = image->h / (GLfloat)texH;
+		_texturesList[pos].u = w / (GLfloat)texW;
+		_texturesList[pos].v = h / (GLfloat)texH;
 		DecodeBuffer buf;
 		memset(&buf, 0, sizeof(buf));
-		buf.w = buf.pitch = texW;
-		buf.h = texH;
+		if (_scalerFactor == 1) {
+			buf.w = buf.pitch = texW;
+			buf.h = texH;
+		} else {
+			buf.w = buf.pitch = image->w;
+			buf.h = image->h;
+		}
 		buf.lut = _tex8to5551;
 		buf.setPixel = convertTextureImage;
-		buf.ptr = (uint8_t *)calloc(texW * texH, sizeof(uint16_t));
+		buf.ptr = (uint8_t *)calloc(buf.w * buf.h, sizeof(uint16_t));
 		if (buf.ptr) {
 			res.decodeImageData(image->dataPtr, image->num, &buf);
 			glBindTexture(GL_TEXTURE_2D, _texturesList[pos].texId);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texW, texH, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, buf.ptr);
+			const uint16_t *texData = rescaleTexture(&buf, texW, texH);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texW, texH, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, texData);
 			free(buf.ptr);
 		}
 		_texturesList[pos].hash.ptr = image->dataPtr;

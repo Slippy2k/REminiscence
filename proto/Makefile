@@ -7,7 +7,7 @@ GL_LIBS = -lGL
 CXX = g++
 CXXFLAGS += -g -O -Wall -Wuninitialized -Wno-sign-compare -MMD $(SDL_CFLAGS)
 
-SRCS_LIB = collision.cpp decode.cpp file.cpp game.cpp piege.cpp resource_data.cpp resource_mac.cpp saveload.cpp staticres.cpp stub.cpp util.cpp
+SRCS_LIB = collision.cpp decode.cpp file.cpp game.cpp piege.cpp resource_data.cpp resource_mac.cpp saveload.cpp scaler.cpp staticres.cpp stub.cpp util.cpp
 OBJS_LIB = $(SRCS_LIB:.cpp=.o)
 DEPS_LIB = $(SRCS_LIB:.cpp=.d)
 

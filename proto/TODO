@@ -9,6 +9,5 @@ sounds
 
 texture rendering
 	inventory display background (saveGfxList)
-	scale2x on load ?
 	visual feedback on user inputs
 
