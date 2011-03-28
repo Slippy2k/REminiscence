@@ -11,8 +11,6 @@ SRCS_LIB = collision.cpp decode.cpp file.cpp game.cpp piege.cpp resource_data.cp
 OBJS_LIB = $(SRCS_LIB:.cpp=.o)
 DEPS_LIB = $(SRCS_LIB:.cpp=.d)
 
--include Makefile.local
-
 all: libfb.so fb
 
 libfb.so: $(OBJS_LIB)
