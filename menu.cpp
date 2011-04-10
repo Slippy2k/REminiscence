@@ -106,6 +106,7 @@ void Menu::handleInfoScreen() {
 	case LANG_EN:
 	case LANG_DE:
 	case LANG_SP:
+	case LANG_IT:
 		loadPicture("instru_e");
 		break;
 	}

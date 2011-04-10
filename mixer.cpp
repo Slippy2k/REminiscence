@@ -31,9 +31,7 @@ void Mixer::init() {
 
 void Mixer::free() {
 	setPremixHook(0, 0);
-printf("stopAll()\n");
 	stopAll();
-printf("_stub->stopAudio()\n");
 	_stub->stopAudio();
 }
 

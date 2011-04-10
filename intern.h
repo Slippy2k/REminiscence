@@ -43,7 +43,8 @@ enum Language {
 	LANG_FR,
 	LANG_EN,
 	LANG_DE,
-	LANG_SP
+	LANG_SP,
+	LANG_IT
 };
 
 enum ResourceType {

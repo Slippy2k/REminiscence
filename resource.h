@@ -55,10 +55,12 @@ struct LocaleData {
 	static const char *_textsTableEN[];
 	static const char *_textsTableDE[];
 	static const char *_textsTableSP[];
+	static const char *_textsTableIT[];
 	static const uint8 _stringsTableFR[];
 	static const uint8 _stringsTableEN[];
 	static const uint8 _stringsTableDE[];
 	static const uint8 _stringsTableSP[];
+	static const uint8 _stringsTableIT[];
 };
 
 struct Resource {

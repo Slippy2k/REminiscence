@@ -202,6 +202,9 @@ void Resource::load_CINE() {
 	case LANG_SP:
 		baseName = "SPACINE";
 		break;
+	case LANG_IT:
+		baseName = "ITACINE";
+		break;
 	}
 	debug(DBG_RES, "Resource::load_CINE('%s')", baseName);
 	if (_cine_off == 0) {
@@ -267,6 +270,9 @@ void Resource::load_TEXT() {
 		case LANG_SP:
 			_stringsTable = LocaleData::_stringsTableSP;
 			break;
+		case LANG_IT:
+			_stringsTable = LocaleData::_stringsTableIT;
+			break;
 		}
 	}
 	// Load menu strings
@@ -316,6 +322,9 @@ void Resource::load_TEXT() {
 			break;
 		case LANG_SP:
 			_textsTable = LocaleData::_textsTableSP;
+			break;
+		case LANG_IT:
+			_textsTable = LocaleData::_textsTableIT;
 			break;
 		}
 	}
