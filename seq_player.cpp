@@ -138,13 +138,8 @@ struct BitStream {
 		return x;
 	}
 	int getSignedBits(int count) {
-		const int x = getBits(count);
-		const int sbit = 1 << (count - 1);
-		if (x & sbit) {
-			return (x & (sbit - 1)) - sbit;
-		} else {
-			return x;
-		}
+		const int32 x = getBits(count);
+		return (x << (32 - count)) >> (32 - count);
 	}
 
 	const uint8 *_src;
