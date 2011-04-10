@@ -478,7 +478,7 @@ while (true) {
 			break;
 		}
 	}
-	if (!paused) {
+	if (!paused || _pi.quit) {
 		break;
 	}
 	SDL_Delay(100);
