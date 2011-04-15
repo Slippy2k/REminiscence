@@ -158,10 +158,12 @@ bool File::open(const char *filename, const char *mode, FileSystem *fs) {
 	}
 	assert(mode[0] != 'z');
 	_impl = new stdFile;
-	const char *path = fs->findPath(filename);
+	char *path = fs->findPath(filename);
 	if (path) {
 		debug(DBG_FILE, "Open file name '%s' mode '%s' path '%s'", filename, mode, path);
-		return _impl->open(path, mode);
+		bool ret = _impl->open(path, mode);
+		free(path);
+		return ret;
 	}
 	return false;
 }
