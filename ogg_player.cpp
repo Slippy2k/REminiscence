@@ -15,14 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef USE_VORBIS
-#include <vorbis/vorbisfile.h>
+#ifdef USE_TREMOR
+#include <tremor/ivorbisfile.h>
 #endif
 #include "file.h"
 #include "mixer.h"
 #include "ogg_player.h"
 
-#ifdef USE_VORBIS
+#ifdef USE_TREMOR
 struct VorbisFile: File {
 	uint32 offset;
 
@@ -108,7 +108,7 @@ struct OggDecoder_impl {
 		}
 		int count = 0;
 		while (size > 0) {
-			const int len = ov_read(&_ovf, (char *)_readBuf, size, 0, 1, 1, 0);
+			const int len = ov_read(&_ovf, (char *)_readBuf, size, 0);
 			if (len < 0) {
 				// error in decoder
 				return 0;
@@ -155,7 +155,7 @@ OggPlayer::~OggPlayer() {
 }
 
 bool OggPlayer::playTrack(int num) {
-#ifdef USE_VORBIS
+#ifdef USE_TREMOR
 	stopTrack();
 	char buf[16];
 	snprintf(buf, sizeof(buf), "track%02d.ogg", num);
@@ -175,7 +175,7 @@ bool OggPlayer::playTrack(int num) {
 }
 
 void OggPlayer::stopTrack() {
-#ifdef USE_VORBIS
+#ifdef USE_TREMOR
 	_mix->setPremixHook(0, 0);
 	delete _impl;
 	_impl = 0;
@@ -183,7 +183,7 @@ void OggPlayer::stopTrack() {
 }
 
 void OggPlayer::pauseTrack() {
-#ifdef USE_VORBIS
+#ifdef USE_TREMOR
 	if (_impl) {
 		_mix->setPremixHook(0, 0);
 	}
@@ -191,7 +191,7 @@ void OggPlayer::pauseTrack() {
 }
 
 void OggPlayer::resumeTrack() {
-#ifdef USE_VORBIS
+#ifdef USE_TREMOR
 	if (_impl) {
 		_mix->setPremixHook(mixCallback, this);
 	}
@@ -199,7 +199,7 @@ void OggPlayer::resumeTrack() {
 }
 
 bool OggPlayer::mix(int8 *buf, int len) {
-#ifdef USE_VORBIS
+#ifdef USE_TREMOR
 	if (_impl) {
 		return _impl->read(buf, len) != 0;
 	}
