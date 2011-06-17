@@ -42,7 +42,7 @@ void Mixer::setPremixHook(PremixHook premixHook, void *userData) {
 	_premixHookData = userData;
 }
 
-void Mixer::play(const MixerChunk *mc, uint16 freq, uint8 volume) {
+void Mixer::play(const MixerChunk *mc, uint16_t freq, uint8_t volume) {
 	debug(DBG_SND, "Mixer::play(%d, %d)", freq, volume);
 	LockAudioStack las(_stub);
 	MixerChannel *ch = 0;
@@ -67,19 +67,19 @@ void Mixer::play(const MixerChunk *mc, uint16 freq, uint8 volume) {
 	}
 }
 
-uint32 Mixer::getSampleRate() const {
+uint32_t Mixer::getSampleRate() const {
 	return _stub->getOutputSampleRate();
 }
 
 void Mixer::stopAll() {
 	debug(DBG_SND, "Mixer::stopAll()");
 	LockAudioStack las(_stub);
-	for (uint8 i = 0; i < NUM_CHANNELS; ++i) {
+	for (uint8_t i = 0; i < NUM_CHANNELS; ++i) {
 		_channels[i].active = false;
 	}
 }
 
-void Mixer::mix(int8 *buf, int len) {
+void Mixer::mix(int8_t *buf, int len) {
 	memset(buf, 0, len);
 	if (_premixHook) {
 		if (!_premixHook(_premixHookData, buf, len)) {
@@ -87,7 +87,7 @@ void Mixer::mix(int8 *buf, int len) {
 			_premixHookData = 0;
 		}
 	}
-	for (uint8 i = 0; i < NUM_CHANNELS; ++i) {
+	for (uint8_t i = 0; i < NUM_CHANNELS; ++i) {
 		MixerChannel *ch = &_channels[i];
 		if (ch->active) {
 			for (int pos = 0; pos < len; ++pos) {
@@ -103,7 +103,7 @@ void Mixer::mix(int8 *buf, int len) {
 	}
 }
 
-void Mixer::addclamp(int8& a, int b) {
+void Mixer::addclamp(int8_t& a, int b) {
 	int add = a + b;
 	if (add < -128) {
 		add = -128;
@@ -113,6 +113,6 @@ void Mixer::addclamp(int8& a, int b) {
 	a = add;
 }
 
-void Mixer::mixCallback(void *param, uint8 *buf, int len) {
-	((Mixer *)param)->mix((int8 *)buf, len);
+void Mixer::mixCallback(void *param, uint8_t *buf, int len) {
+	((Mixer *)param)->mix((int8_t *)buf, len);
 }

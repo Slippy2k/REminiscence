@@ -24,7 +24,7 @@
 
 #ifdef USE_TREMOR
 struct VorbisFile: File {
-	uint32 offset;
+	uint32_t offset;
 
 	static size_t readHelper(void *ptr, size_t size, size_t nmemb, void *datasource) {
 		VorbisFile *vf = (VorbisFile *)datasource;
@@ -96,12 +96,12 @@ struct OggDecoder_impl {
 		_channels = vi->channels;
 		return true;
 	}
-	int read(int8 *dst, int samples) {
+	int read(int8_t *dst, int samples) {
 		int size = samples * _channels;
 		if (size > _readBufSize) {
 			_readBufSize = size;
 			free(_readBuf);
-			_readBuf = (int8 *)malloc(_readBufSize);
+			_readBuf = (int8_t *)malloc(_readBufSize);
 			if (!_readBuf) {
 				return 0;
 			}
@@ -140,7 +140,7 @@ struct OggDecoder_impl {
 	OggVorbis_File _ovf;
 	int _channels;
 	bool _open;
-	int8 *_readBuf;
+	int8_t *_readBuf;
 	int _readBufSize;
 };
 #endif
@@ -198,7 +198,7 @@ void OggPlayer::resumeTrack() {
 #endif
 }
 
-bool OggPlayer::mix(int8 *buf, int len) {
+bool OggPlayer::mix(int8_t *buf, int len) {
 #ifdef USE_TREMOR
 	if (_impl) {
 		return _impl->read(buf, len) != 0;
@@ -207,7 +207,7 @@ bool OggPlayer::mix(int8 *buf, int len) {
 	return false;
 }
 
-bool OggPlayer::mixCallback(void *param, int8 *buf, int len) {
+bool OggPlayer::mixCallback(void *param, int8_t *buf, int len) {
 	return ((OggPlayer *)param)->mix(buf, len);
 }
 

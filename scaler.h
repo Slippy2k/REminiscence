@@ -20,7 +20,7 @@
 
 #include "intern.h"
 
-typedef void (*ScaleProc)(uint16 *dst, int dstPitch, const uint16 *src, int srcPitch, int w, int h);
+typedef void (*ScaleProc)(uint16_t *dst, int dstPitch, const uint16_t *src, int srcPitch, int w, int h);
 
 enum {
 	NUM_SCALERS = 7
@@ -29,7 +29,7 @@ enum {
 struct Scaler {
 	const char *name;
 	ScaleProc proc;
-	uint8 factor;
+	uint8_t factor;
 };
 
 extern const Scaler _scalers[];

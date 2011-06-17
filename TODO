@@ -1,6 +1,5 @@
 reminiscence/
 	0.2.2
-		switch to stdint types
 		libmikmod
 		amiga support
 			fix spc drawing w=24

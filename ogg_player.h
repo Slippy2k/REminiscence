@@ -33,8 +33,8 @@ struct OggPlayer {
 	void pauseTrack();
 	void resumeTrack();
 	bool isPlaying() const { return _impl != 0; }
-	bool mix(int8 *buf, int len);
-	static bool mixCallback(void *param, int8 *buf, int len);
+	bool mix(int8_t *buf, int len);
+	static bool mixCallback(void *param, int8_t *buf, int len);
 
 	Mixer *_mix;
 	FileSystem *_fs;
