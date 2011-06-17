@@ -1,0 +1,50 @@
+
+fbply README
+Release version: 0.1.0 (Jul 20 2004)
+-------------------------------------------------------------------------------
+
+About:
+------
+
+fbply is a cutscene player for the game Flashback from Delphine Software. More
+informations about the game can found on mobygames [1].
+
+Supported Versions:
+-------------------
+
+Currently, only the french PC DOS version has been tested.
+
+Compiling:
+----------
+
+Tweak the Makefile if needed and type make (only gcc3 has been tested so far).
+The SDL and OpenGL libraries are required.
+
+Running:
+--------
+
+You will need the original cutscene files. A cutscene is made of two files :
+- *.pol contains the vertices of the primitives (polygons, points, ellipse)
+- *.cmd contains some bytecode
+
+To start a video, type something like :
+  fbply --datapath=PATH --cutscene=NUM
+
+PATH should point to the directory holding the data files
+NUM is the cutscene number (to have the list, run fbply without any arguments)
+
+Credits:
+--------
+
+Delphine Software
+Yaz0r and Pixel for sharing some information they gathered on Flashback.
+
+Contact:
+--------
+
+Gregory Montoir, cyx@users.sourceforge.net
+
+URLs:
+-----
+
+[1] http://www.mobygames.com/game/sheet/p,2/gameId,555/.

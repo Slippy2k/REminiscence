@@ -1,0 +1,6 @@
+
+TODO (in no particular order of priority)
+  - handle timing in a better way
+  - handle credits cutscene (mostly hard-coded)
+  - add opcodes for texts / subtitles
+  - SystemStubs : SDLStub, W32Stub, SVGStub

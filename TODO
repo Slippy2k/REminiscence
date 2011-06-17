@@ -1,5 +1,6 @@
-reminiscence
+reminiscence/
 	0.2.2
+		switch to stdint types
 		libmikmod
 		amiga support
 			fix spc drawing w=24
@@ -7,10 +8,14 @@ reminiscence
 		systemstub_sdl
 			scalers
 				opengl
+		android support
+			thread for mainLoop
 
-fb
+proto/
 	test datafile present on start, message box to warn
 	resume/suspend fix
 	sound
 	controls fix
 
+move Fb android in rs.git
+move fbply in rs.git (fromdos, fix video window resize)
