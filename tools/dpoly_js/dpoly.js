@@ -5,18 +5,19 @@ var dpoly = {
 	m_buf : null,
 	m_palette : new Array( 32 ),
 	m_scale : 2,
+	m_opcode : 255,
 
 	init : function( canvas ) {
 		this.m_canvas = document.getElementById( canvas );
 		this.m_cmd = this.loadBinary( 'intro.cmd' );
 		this.m_pol = this.loadBinary( 'intro.pol' );
-		this.m_pos = 2;
 	},
 
 	start : function( ) {
+		this.m_pos = 2;
 		this.m_playing = true;
 		this.setDefaultPalette( );
-		setInterval( function( ) { dpoly.doTick( ) }, 20 );
+		this.m_timer = setInterval( function( ) { dpoly.doTick( ) }, 20 );
 	},
 
 	readByte : function( buf, pos ) {
@@ -57,21 +58,28 @@ var dpoly = {
 
 	doTick : function( ) {
 		if ( !this.m_playing ) {
+			if (this.m_timer) {
+				clearInterval( this.m_timer );
+				this.m_timer = null;
+			}
 			return;
 		}
 		if ( this.m_yield != 0 ) {
 			this.m_yield -= 1;
 			return;
 		}
-		this.flipScreen( );
+		if (this.m_opcode != 2) {
+			this.flipScreen( );
+		}
 		while ( this.m_yield == 0 ) {
 			var opcode = this.readNextByte( );
-			window.console.log('current opcode=' + opcode + ' pos=' + this.m_pos);
+			window.console.log('opcode=' + opcode + ' pos=' + this.m_pos);
 			if (opcode & 0x80) {
 				this.m_playing = false;
 				break;
 			}
-			switch (opcode >> 2) {
+			this.m_opcode = opcode >> 2;
+			switch (this.m_opcode) {
 			case 0:
 			case 5:
 			case 9:
@@ -148,8 +156,7 @@ var dpoly = {
 				this.m_yield = 10;
 				break;
 			default:
-				throw 'Invalid opcode ' + opcode;
-//				this.m_playing = false;
+				this.m_playing = false;
 				break;
 			}
 		}
