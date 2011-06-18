@@ -2,6 +2,60 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+
+static const char *_namesTable[] = {
+	"DEBUT",
+	"OBJET",
+	"CARTE",
+	"GEN",
+	"CHUTE",
+	"CODE",
+	"DESINTEG",
+	"INTRO1",
+	"STREM",
+	"HOLOSEQ",
+	"CARTEID",
+	"PONT",
+	"ASC",
+	"MAP",
+	"METRO",
+	"MISSIONS",
+	"GENMIS",
+	"MEMO",
+	"TAXI",
+	"ACCROCHE",
+	"VOYAGE",
+	"TELEPORT",
+	"LIFT",
+	"ESPIONS",
+	"LOG",
+	"FIN",
+	"GENEXP",
+	"LOGOS",
+	"OVER",
+	"SCORE",
+	"INTRO2"
+};
+
+static const uint16_t _offsetsTable[] = {
+	0x0000, 0x0000, 0x0001, 0x0003, 0x0001, 0x0004, 0xFFFF, 0x0000, 0x0001, 0x0002,
+	0x0003, 0x0000, 0x0004, 0x0000, 0xFFFF, 0x0100, 0xFFFF, 0x0000, 0x0006, 0x0000,
+	0x0001, 0x0001, 0xFFFF, 0x0000, 0xFFFF, 0x0200, 0x8007, 0x0000, 0x0003, 0x0001,
+	0x0001, 0x000B, 0x0001, 0x0005, 0x0009, 0x0000, 0x0001, 0x0006, 0xFFFF, 0x0000,
+	0x000B, 0x0000, 0x0001, 0x000A, 0xFFFF, 0x0001, 0xFFFF, 0x0002, 0xFFFF, 0x0000,
+	0x000D, 0x0004, 0x000D, 0x0000, 0x000D, 0x0001, 0x000D, 0x0002, 0x000D, 0x0003,
+	0xFFFF, 0x0000, 0xFFFF, 0x0001, 0x0001, 0x000C, 0x0001, 0x000D, 0x0001, 0x000E,
+	0x0001, 0x000F, 0x0001, 0x0010, 0x000F, 0x0000, 0x000F, 0x0001, 0x000F, 0x0001,
+	0x000F, 0x0003, 0x000F, 0x0002, 0x000F, 0x0004, 0x0001, 0x0008, 0x0001, 0x0007,
+	0x000F, 0x0005, 0xFFFF, 0x0000, 0x0004, 0x0001, 0x0011, 0x0000, 0x0001, 0x0009,
+	0x0012, 0x0000, 0xFFFF, 0x0000, 0x0014, 0x0000, 0x0015, 0x0000, 0x0016, 0x0000,
+	0x0016, 0x0001, 0xFFFF, 0x0012, 0x0017, 0x0000, 0x0001, 0x0011, 0x0018, 0x0000,
+	0x0001, 0x0013, 0x0019, 0x0000, 0x001A, 0x0000, 0x0019, 0x0001, 0x001B, 0x0000,
+	0x001C, 0x0000, 0x000F, 0x0006, 0x000F, 0x0006, 0x000F, 0x0007, 0x000F, 0x0008,
+	0x000F, 0x0009, 0x000F, 0x000A, 0x001D, 0x0000, 0x001B, 0x0001, 0x001E, 0x0000,
+	0xFFFF, 0x0000
+};
 
 static FILE *fp_CMD;
 static FILE *fp_POL;
@@ -25,7 +79,7 @@ static void printPalette(uint16_t num) {
 	fseek(fp_POL, offset + num * 32, SEEK_SET);
 	for (i = 0; i < 16; ++i) {
 		color = freadUint16BE(fp_POL);
-		printf(" 0x%03X", color);
+		fprintf(stdout, " 0x%03X", color);
 	}
 }
 
@@ -40,21 +94,21 @@ static void printShapeVertices() {
 		y = (int16_t)freadUint16BE(fp_POL);
 		rx = freadUint16BE(fp_POL);
 		ry = freadUint16BE(fp_POL);
-		printf("\n  ellipse ( x=%d,y=%d, rx=%d,ry=%d )", x, y, rx, ry);
+		fprintf(stdout, "\n  ellipse ( x=%d,y=%d, rx=%d,ry=%d )", x, y, rx, ry);
 	} else if (num == 0) {
 		x = (int16_t)freadUint16BE(fp_POL);
 		y = (int16_t)freadUint16BE(fp_POL);
-		printf("\n  point ( x=%d,y=%d )", x, y);
+		fprintf(stdout, "\n  point ( x=%d,y=%d )", x, y);
 	} else {
 		x = (int16_t)freadUint16BE(fp_POL);
 		y = (int16_t)freadUint16BE(fp_POL);
-		printf("\n  polygon ( ");
+		fprintf(stdout, "\n  polygon ( ");
 		for (--num; num >= 0; --num) {
 			dx = (int8_t)freadByte(fp_POL);
 			dy = (int8_t)freadByte(fp_POL);
-			printf("x=%d,y=%d ", x + dx, y + dy);
+			fprintf(stdout, "x=%d,y=%d ", x + dx, y + dy);
 		}
-		printf(" )");
+		fprintf(stdout, " )");
 	}	
 }
 
@@ -97,7 +151,7 @@ static void printShape(uint16_t shapeOffset) {
 		offset = freadUint16BE(fp_POL);
 		fseek(fp_POL, offset + verticesOffset, SEEK_SET);
 
-		printf("\n  shape %d/%d x %d y %d a %d c %d", i, count, x, y, alpha, color);
+		fprintf(stdout, "\n  shape %d/%d x %d y %d a %d c %d", i, count, x, y, alpha, color);
 		printShapeVertices();
 
 		fseek(fp_POL, previousOffset, SEEK_SET);
@@ -120,7 +174,7 @@ static void decodeDPoly(FILE *fp, const char *sequenceName, int num) {
 	
 	fseek(fp, offset1 + offset2, SEEK_SET);
 
-	printf("// sequenceName '%s' offsets 0x%X/0x%X\n", sequenceName, offset1, offset2);
+	fprintf(stdout, "// sequenceName '%s' offsets 0x%X/0x%X\n", sequenceName, offset1, offset2);
 
 	while (1) {
 		op = freadByte(fp);
@@ -129,20 +183,20 @@ static void decodeDPoly(FILE *fp, const char *sequenceName, int num) {
 		}
 		op >>= 2;
 		addr = ftell(fp);
-		printf("[%04X] (%02X) ", addr, op);
+		fprintf(stdout, "[%04X] (%02X) ", addr, op);
 		switch (op) {
 		case 0: {
-				printf("MARK_CURRENT_POS");
+				fprintf(stdout, "MARK_CURRENT_POS");
 			}
 			break;
 		case 1: {
 				uint8_t clr = freadByte(fp);
-				printf("REFRESH_SCREEN ( clear_screen=%d )", clr);
+				fprintf(stdout, "REFRESH_SCREEN ( clear_screen=%d )", clr);
 			}
 			break;
 		case 2: {
 				uint8_t delay = freadByte(fp);
-				printf("WAIT_FOR_SYNC ( delay=%d )", delay);
+				fprintf(stdout, "WAIT_FOR_SYNC ( delay=%d )", delay);
 			}
 			break;
 		case 3: {
@@ -155,38 +209,38 @@ static void decodeDPoly(FILE *fp, const char *sequenceName, int num) {
 					x = 0;
 					y = 0;
 				}
-				printf("DRAW_SHAPE ( offset=0x%X, x=%d, y=%d )", shapeOffset & 0x7FFF, x, y);
+				fprintf(stdout, "DRAW_SHAPE ( offset=0x%X, x=%d, y=%d )", shapeOffset & 0x7FFF, x, y);
 				printShape(shapeOffset);
 			}
 			break;
 		case 4: {
 				uint8_t spal = freadByte(fp);
 				uint8_t dpal = freadByte(fp);
-				printf("SET_PALETTE ( spal=%d, dpal=%d )", spal, dpal);
+				fprintf(stdout, "SET_PALETTE ( spal=%d, dpal=%d )", spal, dpal);
 				printPalette(spal);
 			}
 			break;
 		case 5: {
-				printf("MARK_CURRENT_POS");
+				fprintf(stdout, "MARK_CURRENT_POS");
 			}
 			break;
 		case 6: {
 				uint16_t str = freadUint16BE(fp);
-				printf("DRAW_STRING_AT_BOTTOM ( str=%d )", str);
+				fprintf(stdout, "DRAW_STRING_AT_BOTTOM ( str=%d )", str);
 			}
 			break;
 		case 7: {
-				printf("NOP");
+				fprintf(stdout, "NOP");
 			}
 			break;
 		case 8: {
 				freadByte(fp);
 				freadUint16BE(fp);
-				printf("SKIP3\n");
+				fprintf(stdout, "SKIP3\n");
 			}
 			break;
 		case 9: {
-				printf("REFRESH_ALL");
+				fprintf(stdout, "REFRESH_ALL");
 			}
 			break;
 		case 10: {
@@ -202,7 +256,7 @@ static void decodeDPoly(FILE *fp, const char *sequenceName, int num) {
 				z = 512 + freadUint16BE(fp);
 				ix = freadUint16BE(fp);
 				iy = freadUint16BE(fp);
-				printf("DRAW_SHAPE_SCALE ( offset=0x%X, x=%d, y=%d, z=%d, ix=%d, iy=%d )", shapeOffset & 0x7FFF, x, y, z, ix, iy);
+				fprintf(stdout, "DRAW_SHAPE_SCALE ( offset=0x%X, x=%d, y=%d, z=%d, ix=%d, iy=%d )", shapeOffset & 0x7FFF, x, y, z, ix, iy);
 				printShape(shapeOffset);
 			}
 			break;
@@ -233,12 +287,12 @@ static void decodeDPoly(FILE *fp, const char *sequenceName, int num) {
 				} else {
 					r3 = 90;
 				}
-				printf("DRAW_SHAPE_SCALE_ROTATE ( offset=0x%X, x=%d, y=%d, z=%d, ix=%d, iy=%d, r1=%d, r2=%d, r3=%d )", shapeOffset & 0x7FFF, x, y, z, ix, iy, r1, r2, r3);
+				fprintf(stdout, "DRAW_SHAPE_SCALE_ROTATE ( offset=0x%X, x=%d, y=%d, z=%d, ix=%d, iy=%d, r1=%d, r2=%d, r3=%d )", shapeOffset & 0x7FFF, x, y, z, ix, iy, r1, r2, r3);
 				printShape(shapeOffset);
 			}
 			break;
 		case 12: {
-				printf("DRAW_CREDITS_TEXT");
+				fprintf(stdout, "DRAW_CREDITS_TEXT");
 			}
 			break;
 		case 13: {
@@ -251,24 +305,44 @@ static void decodeDPoly(FILE *fp, const char *sequenceName, int num) {
 					x = 0;
 					y = 0;
 				}
-				printf("DRAW_STRING_AT_POS ( str=%d, x=%d, y=%d )", str, x, y);
+				fprintf(stdout, "DRAW_STRING_AT_POS ( str=%d, x=%d, y=%d )", str, x, y);
 			}
 			break;
 		default:
-			printf("Invalid opcode %d\n", op);
+			fprintf(stdout, "Invalid opcode %d\n", op);
 			exit(0);
 			break;
 		}
-		printf("\n");
+		fprintf(stdout, "\n");
 	}
 }
 
+static int findOffset(const char *p) {
+	int i;
+	const char *q, *name;
+
+	q = strrchr(p, '/');
+	if (q) {
+		p = q + 1;
+	}
+	for (i = 0; i < sizeof(_offsetsTable) / sizeof(_offsetsTable[0]); i += 2) {
+		if (_offsetsTable[i] != 0xFFFF) {
+			name = _namesTable[_offsetsTable[i] & 255];
+			if (strncmp(p, name, strlen(name)) == 0) {
+				fprintf(stdout, "// cutscene offset %d\n", _offsetsTable[i + 1]);
+				return _offsetsTable[i + 1];
+			}
+		}
+	}
+	return 0;
+}
+
 int main(int argc, char *argv[]) {
-	if (argc == 4) {
+	if (argc == 3) {
 		fp_CMD = fopen(argv[1], "rb");
 		fp_POL = fopen(argv[2], "rb");
 		if (fp_CMD && fp_POL) {
-			decodeDPoly(fp_CMD, argv[1], atoi(argv[3]));
+			decodeDPoly(fp_CMD, argv[1], findOffset(argv[1]));
 		}
 	}
 	return 0;
