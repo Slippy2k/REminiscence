@@ -139,6 +139,7 @@ void OGLStub::processEvents() {
 			exit(1);
 			break;
 		case SDL_VIDEORESIZE:
+			_screen = SDL_SetVideoMode(ev.resize.w, ev.resize.h, 16, SDL_OPENGL | SDL_RESIZABLE);
 			resize(ev.resize.w, ev.resize.h);
 			break;			
 		}

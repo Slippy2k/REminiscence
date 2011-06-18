@@ -17,4 +17,3 @@ proto/
 	controls fix
 
 move Fb android in rs.git
-move fbply in rs.git (fromdos, fix video window resize)
