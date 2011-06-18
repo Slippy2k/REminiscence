@@ -283,7 +283,7 @@ var dpoly = {
 		var scale = this.m_scale;
 
 		var context = this.m_canvas.getContext( '2d' );
-		context.fillStyle = this.m_palette[ color ];
+		context.fillStyle = context.strokeStyle = this.m_palette[ color ];
 		context.save( );
 		context.scale( scale, scale );
 		if (count & 0x80) {
@@ -300,10 +300,9 @@ var dpoly = {
 		} else if (count == 0) {
 			context.fillRect( x, y, scale, scale );
 		} else {
-			--count;
 			context.beginPath( );
 			context.moveTo( x, y );
-			while (count >= 0) {
+			for ( var i = 0; i < count; ++i ) {
 				var dx = this.toSignedByte( this.readByte( this.m_pol, offset ) );
 				offset++;
 				var dy = this.toSignedByte( this.readByte( this.m_pol, offset ) );
@@ -311,10 +310,13 @@ var dpoly = {
 				x += dx;
 				y += dy;
 				context.lineTo( x, y );
-				--count;
 			}
 			context.closePath( );
-			context.fill( );
+			if (count <= 2) {
+				context.stroke( );
+			} else {
+				context.fill( );
+			}
 		}
 		context.restore( );
 	},
