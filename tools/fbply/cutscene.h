@@ -81,6 +81,7 @@ struct Cutscene {
 	uint8 _primitiveColor;
 	uint16 _startOffset;
 	uint16 _cutId;
+	const char *_cutName;
 	Point _vertices[80];
 	uint32 _tstamp;
 	const char *_dataDir;

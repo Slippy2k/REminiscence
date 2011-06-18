@@ -777,19 +777,19 @@ void Cutscene::op_handleKeys() {
 
 void Cutscene::start() {
 	debug(DBG_CUTSCENE, "Cutscene::start() _cutId = %d", _cutId);
+	int offset = 0;
 	if (_cutId != 0xFFFF) {
 		uint16 cutName = _offsetsTable[_cutId * 2 + 0];
-		uint16 cutOff  = _offsetsTable[_cutId * 2 + 1];
+		offset = _offsetsTable[_cutId * 2 + 1];
 		assert(cutName != 0xFFFF);
-		const char *name = _namesTable[cutName & 0xFF];
-		debug(DBG_CUTSCENE, "starting cutscene '%s' offset = %d", name, cutOff);
-		readFile(name, "pol", &_polBuf);
-		readFile(name, "cmd", &_cmdBuf);
-		main(cutOff);
-//		if (_cutId == 0x3D) {
-//			startCredits();
-//		}
+		_cutName = _namesTable[cutName & 0xFF];
 	}
+	debug(DBG_CUTSCENE, "starting cutscene '%s' offset = %d", _cutName, offset);
+	readFile(_cutName, "pol", &_polBuf);
+	readFile(_cutName, "cmd", &_cmdBuf);
+	main(offset);
+//	if (_cutId == 0x3D) {
+//		startCredits();
 }
 
 void Cutscene::init(SystemStub *stub, const char *dataDir) {

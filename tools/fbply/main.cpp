@@ -37,19 +37,27 @@ static void parseOption(const char *arg, const char *longCmd, const char **opt) 
 #undef main
 int main(int argc, char *argv[]) {
 	const char *dataPath = ".";
+	const char *cutName = 0;
 	const char *cutId = NULL;
 	for (int i = 1; i < argc; ++i) {
 		parseOption(argv[i], "datapath=", &dataPath);
 		parseOption(argv[i], "cutscene=", &cutId);
+		parseOption(argv[i], "name=", &cutName);
 	}
-	if (cutId != NULL) {		
+	if (cutId || cutName) {
 		SystemStub *stub = SystemStub_OGL_create();
 		g_debugMask = 0; //DBG_CUTSCENE; // | DBG_SYSSTUB;
 		stub->init("Flashback Cutscene Player");
 		Cutscene cp;
 		memset(&cp, 0, sizeof(cp));
 		cp.init(stub, dataPath);
-		cp._cutId = strtol(cutId, NULL, 0);
+		if (cutId) {
+			cp._cutId = strtol(cutId, NULL, 0);
+		}
+		if (cutName) {
+			cp._cutId = 0xFFFF;
+			cp._cutName = cutName;
+		}
 		cp.start();
 		stub->destroy();
 		delete stub;
