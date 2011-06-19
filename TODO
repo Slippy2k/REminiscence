@@ -4,9 +4,6 @@ reminiscence/
 		amiga support
 			fix spc drawing w=24
 			title screen
-		systemstub_sdl
-			scalers
-				opengl
 		android support
 			thread for mainLoop
 
@@ -15,5 +12,3 @@ proto/
 	resume/suspend fix
 	sound
 	controls fix
-
-move Fb android in rs.git
