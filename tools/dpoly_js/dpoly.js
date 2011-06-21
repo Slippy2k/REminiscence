@@ -6,6 +6,8 @@ var dpoly = {
 	m_palette : new Array( 32 ),
 	m_scale : 2,
 	m_opcode : 255,
+	m_primitives : new Array( ),
+	m_savedPrimitives : new Array( ),
 
 	init : function( canvas ) {
 		this.m_canvas = document.getElementById( canvas );
@@ -18,6 +20,10 @@ var dpoly = {
 		this.m_playing = true;
 		this.setDefaultPalette( );
 		this.m_timer = setInterval( function( ) { dpoly.doTick( ) }, 20 );
+	},
+
+	pause : function( ) {
+		this.m_playing = !this.m_playing;
 	},
 
 	readByte : function( buf, pos ) {
@@ -57,26 +63,20 @@ var dpoly = {
 	},
 
 	doTick : function( ) {
-		if ( !this.m_playing ) {
-			if (this.m_timer) {
-				clearInterval( this.m_timer );
-				this.m_timer = null;
-			}
+		if ( !this.m_playing) {
 			return;
 		}
 		if ( this.m_yield != 0 ) {
 			this.m_yield -= 1;
 			return;
 		}
-		if (this.m_opcode != 2) {
-			this.flipScreen( );
-		}
 		while ( this.m_yield == 0 ) {
 			var opcode = this.readNextByte( );
-			window.console.log('opcode=' + opcode + ' pos=' + this.m_pos);
+//			window.console.log('opcode=' + opcode + ' pos=' + this.m_pos);
 			if (opcode & 0x80) {
-				this.m_playing = false;
-				break;
+				this.m_pos = 2;
+				this.setDefaultPalette( );
+				continue;
 			}
 			this.m_opcode = opcode >> 2;
 			switch (this.m_opcode) {
@@ -152,7 +152,6 @@ var dpoly = {
 				this.drawShapeScaleRotate( shape, x, y, z, ix, iy, r1, r2, r3 );
 				break;
 			case 12:
-				// memcpy page1 page0
 				this.m_yield = 10;
 				break;
 			default:
@@ -163,13 +162,19 @@ var dpoly = {
 	},
 
 	updateScreen : function( ) {
+		var context = this.m_canvas.getContext( '2d' );
+		context.fillStyle = '#000';
+		context.fillRect( 0, 0, this.m_canvas.width, this.m_canvas.height );
+		for (var i = 0; i < this.m_primitives.length; i++) {
+			var primitive = this.m_primitives[i];
+			this.drawPrimitive( primitive.x, primitive.y, primitive.num, primitive.color, false );
+		}
+		this.flipScreen();
 		this.m_yield = 5;
-//		this.flipScreen( );
-		// draw page0
 	},
 
 	clearScreen : function( ) {
-		if (this.m_clear) {
+		if (this.m_clear != 0) {
 			this.flipScreen( );
 		}
 	},
@@ -205,10 +210,10 @@ var dpoly = {
 				color += 16;
 			}
 
-			this.drawPrimitive( x + dx, y + dy, verticesOffset & 0x3FFF, color, alpha );
+			this.queuePrimitive( x + dx, y + dy, verticesOffset & 0x3FFF, color, alpha );
 		}
-		if (this.m_clear) {
-			this.copyScreen( );
+		if (this.m_clear != 0) {
+			this.savePrimitives( );
 		}
 	},
 
@@ -248,21 +253,29 @@ var dpoly = {
 		}
 	},
 
-	copyScreen : function( ) {
-		var context = this.m_canvas.getContext( '2d' );
-		this.m_buf = context.getImageData( 0, 0, this.m_canvas.width, this.m_canvas.height );
+	flipScreen : function( ) {
+		if ( this.m_clear != 0 ) {
+			this.clearPrimitives( );
+		} else {
+			this.restorePrimitives( );
+		}
 	},
 
-	flipScreen : function( ) {
-		var context = this.m_canvas.getContext( '2d' );
-		if ( this.m_clear ) {
-			context.fillStyle = '#000';
-			context.fillRect( 0, 0, this.m_canvas.width, this.m_canvas.height );
-		} else {
-			if ( this.m_buf ) {
-				context.putImageData( this.m_buf, 0, 0 );
-			}
-		}
+	queuePrimitive : function( x, y, num, color, alpha ) {
+		var primitive = { x : x, y : y, num : num, color : color };
+		this.m_primitives.push( primitive );
+	},
+
+	clearPrimitives : function( ) {
+		this.m_primitives = [ ];
+	},
+
+	restorePrimitives : function( ) {
+		this.m_primitives = this.m_savedPrimitives.slice();
+	},
+
+	savePrimitives : function( ) {
+		this.m_savedPrimitives = this.m_primitives.slice();
 	},
 
 	drawPrimitive : function( x, y, num, color, alpha ) {
@@ -324,16 +337,12 @@ var dpoly = {
 	loadBinary : function( name ) {
 		var req = new XMLHttpRequest( );
 		req.open( 'GET', name, false );
-		if (req.hasOwnProperty('responseType')) {
+		if (req.hasOwnProperty( 'responseType' )) {
 			req.responseType = 'arraybuffer';
-		} else {
-			req.overrideMimeType('text/plain; charset=x-user-defined');
 		}
 		req.send(null);
 		var ret;
-		if (req.mozResponseArrayBuffer) {
-			ret = req.mozResponseArrayBuffer;
-		} else if (req.hasOwnProperty('responseType')) {
+		if (req.hasOwnProperty('responseType')) {
 			ret = req.response;
 		} else {
 			ret = req.responseText;

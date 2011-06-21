@@ -8,16 +8,20 @@
 		<div style="width: 480px;">
 			<canvas id="screen" width="480" height="256"></canvas>
 			<div align="left">
-				<input type="button" value="Play" onclick="onClick()" />
+				<input type="button" value="Pause" onclick="onPlay()" id="playButton" />
 			</div>
 		</div>
-		<script type="text/javascript" src="dpoly.js"></script>
+		<script type="text/javascript" src="dpoly.min.js"></script>
 		<script type="text/javascript">
 			dpoly.init("screen");
 			dpoly.start();
-			function onClick() {
-				if (!dpoly.m_playing) {
-					dpoly.start();
+			function onPlay() {
+				dpoly.pause( );
+				var button = document.getElementById("playButton");
+				if (dpoly.m_playing) {
+					button.value = "Pause";
+				} else {
+					button.value = "Play";
 				}
 			}
 		</script>
