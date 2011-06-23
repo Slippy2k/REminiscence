@@ -11,8 +11,8 @@ var dpoly = {
 
 	init : function( canvas ) {
 		this.m_canvas = document.getElementById( canvas );
-		this.m_cmd = this.loadBinary( 'intro.cmd' );
-		this.m_pol = this.loadBinary( 'intro.pol' );
+		this.m_cmd = window.atob( g_cmd );
+		this.m_pol = window.atob( g_pol );
 	},
 
 	start : function( ) {
@@ -27,12 +27,12 @@ var dpoly = {
 	},
 
 	readByte : function( buf, pos ) {
-		var value = buf[ pos ];
+		var value = buf.charCodeAt( pos );
 		return value;
 	},
 
 	readWord : function( buf, pos ) {
-		var value = buf[ pos ] * 256 + buf[ pos + 1 ];
+		var value = buf.charCodeAt( pos ) * 256 + buf.charCodeAt( pos + 1 );
 		return value;
 	},
 
@@ -49,17 +49,11 @@ var dpoly = {
 	},
 
 	toSignedByte : function( value ) {
-		if (value & 0x80) {
-			return value - 0x100;
-		}
-		return value;
+		return value - ((value & 0x80) << 1);
 	},
 
 	toSignedWord : function( value ) {
-		if (value & 0x8000) {
-			return value - 0x10000;
-		}
-		return value;
+		return value - ((value & 0x8000) << 1);
 	},
 
 	doTick : function( ) {
@@ -332,22 +326,5 @@ var dpoly = {
 			}
 		}
 		context.restore( );
-	},
-
-	loadBinary : function( name ) {
-		var req = new XMLHttpRequest( );
-		req.open( 'GET', name, false );
-		if (req.hasOwnProperty( 'responseType' )) {
-			req.responseType = 'arraybuffer';
-		}
-		req.send(null);
-		var ret;
-		if (req.hasOwnProperty('responseType')) {
-			ret = req.response;
-		} else {
-			ret = req.responseText;
-		}
-		var buf = new Uint8Array(ret, 0, ret.byteLength);
-		return buf;
 	}
 }
