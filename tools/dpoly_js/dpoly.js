@@ -11,8 +11,10 @@ var dpoly = {
 
 	init : function( canvas ) {
 		this.m_canvas = document.getElementById( canvas );
-		this.m_cmd = window.atob( g_cmd );
-		this.m_pol = window.atob( g_pol );
+//		this.m_cmd = window.atob( g_cmd );
+		this.m_cmd = this.decode( window.atob( dat_cmd ) );
+//		this.m_pol = window.atob( g_pol );
+		this.m_pol = this.decode( window.atob( dat_pol ) );
 	},
 
 	start : function( ) {
@@ -57,7 +59,7 @@ var dpoly = {
 	},
 
 	doTick : function( ) {
-		if ( !this.m_playing) {
+		if ( !this.m_playing ) {
 			return;
 		}
 		if ( this.m_yield != 0 ) {
@@ -213,10 +215,10 @@ var dpoly = {
 
 	drawShapeScale : function( num, x, y, z, ix, iy ) {
 		// TODO:
-		// +1 sur le verticesDataTable
 	},
 
 	drawShapeScaleRotate : function( num, x, y, z, ix, iy, r1, r2, r3 ) {
+		// TODO:
 	},
 
 	setDefaultPalette : function( ) {
@@ -326,5 +328,30 @@ var dpoly = {
 			}
 		}
 		context.restore( );
+	},
+
+	decode : function( data ) {
+		var out = '';
+		var i = 0;
+		while (i < data.length) {
+			var mask = data.charCodeAt( i );
+			++i;
+			for (var bit = 0; bit < 8 && i < data.length; ++bit) {
+				if ((mask & (1 << bit)) == 0) {
+					out += data.charAt( i );
+					++i;
+				} else {
+					var offset = data.charCodeAt( i ) * 256 + data.charCodeAt( i + 1 );
+					i += 2;
+					var len = (offset >> 12) + 3;
+					offset &= 4095;
+					for (var j = 0; j < len; ++j) {
+						var chr = out[out.length - offset];
+						out += chr;
+					}
+				}
+			}
+		}
+		return out;
 	}
 }
