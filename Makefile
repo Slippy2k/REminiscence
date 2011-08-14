@@ -2,6 +2,7 @@
 SDL_CFLAGS = `sdl-config --cflags`
 SDL_LIBS = `sdl-config --libs`
 VORBIS_LIBS = -lvorbisidec
+ZLIB_LIBS = -lz
 
 DEFINES = -DBYPASS_PROTECTION
 #DEFINES = -DBYPASS_PROTECTION -DENABLE_PASSWORD_MENU -DNDEBUG
@@ -16,7 +17,7 @@ SRCS = collision.cpp cutscene.cpp file.cpp fs.cpp game.cpp graphics.cpp main.cpp
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)
 
-LIBS = $(SDL_LIBS) $(VORBIS_LIBS) -lz
+LIBS = $(SDL_LIBS) $(VORBIS_LIBS) $(ZLIB_LIBS)
 
 -include Makefile.local
 
