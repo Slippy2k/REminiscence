@@ -2632,13 +2632,13 @@ const char *SeqPlayer::_namesTable[] = {
 	/* 0x34 */
 	"VOYAGE", // 'VOYAGE' (0x0014) num 0
 	"TELEPORT", // 'TELEPORT' (0x0015) num 0
-	"LIFTDOWN", // 'LIFT' (0x0016) num 0
-	"LIFTUP", // 'LIFT' (0x0016) num 1
+	"LIFTUP", // 'LIFT' (0x0016) num 0
+	"LIFTDOWN", // 'LIFT' (0x0016) num 1
 	/* 0x38 */
 	0,
 	"SPY", // 'ESPIONS' (0x0017) num 0
 	"GETDYNAM", // 'OBJET' (0x0001) num 17
-	0, // 'LOG' (0x0018) num 0
+	"JOURNAL", // 'LOG' (0x0018) num 0
 	/* 0x3C */
 	"TKTELEX0", // 'OBJET' (0x0001) num 19
 	"END", // 'FIN' (0x0019) num 0

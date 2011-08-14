@@ -239,7 +239,7 @@ void Game::playCutscene(int id) {
 		if (_res._hasSeqData) {
 			int num = 0;
 			switch (_cut._id) {
-			case 0x03: {
+			case 0x02: {
 					static const uint8_t tab[] = { 1, 2, 1, 3, 3, 4, 4 };
 					num = tab[_currentLevel];
 				}
