@@ -331,7 +331,7 @@ while (true) {
 						_pi.dirMask &= ~PlayerInput::DIR_DOWN;
 					}
 				} else {
-					_pi.dirMask = 0;
+					_pi.dirMask &= ~(PlayerInput::DIR_UP | PlayerInput::DIR_DOWN);
 				}
 				break;
 			}
