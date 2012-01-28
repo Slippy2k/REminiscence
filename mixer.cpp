@@ -113,6 +113,6 @@ void Mixer::addclamp(int8_t& a, int b) {
 	a = add;
 }
 
-void Mixer::mixCallback(void *param, uint8_t *buf, int len) {
-	((Mixer *)param)->mix((int8_t *)buf, len);
+void Mixer::mixCallback(void *param, int8_t *buf, int len) {
+	((Mixer *)param)->mix(buf, len);
 }

@@ -72,7 +72,7 @@ struct Mixer {
 	void mix(int8_t *buf, int len);
 
 	static void addclamp(int8_t &a, int b);
-	static void mixCallback(void *param, uint8_t *buf, int len);
+	static void mixCallback(void *param, int8_t *buf, int len);
 };
 
 template <class T>

@@ -56,7 +56,7 @@ struct PlayerInput {
 };
 
 struct SystemStub {
-	typedef void (*AudioCallback)(void *param, uint8_t *stream, int len);
+	typedef void (*AudioCallback)(void *param, int8_t *stream, int len);
 
 	PlayerInput _pi;
 

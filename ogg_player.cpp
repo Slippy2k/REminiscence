@@ -97,11 +97,11 @@ struct OggDecoder_impl {
 		return true;
 	}
 	int read(int8_t *dst, int samples) {
-		int size = samples * _channels;
+		int size = samples * _channels * sizeof(int16_t);
 		if (size > _readBufSize) {
 			_readBufSize = size;
 			free(_readBuf);
-			_readBuf = (int8_t *)malloc(_readBufSize);
+			_readBuf = (int16_t *)malloc(_readBufSize);
 			if (!_readBuf) {
 				return 0;
 			}
@@ -120,13 +120,13 @@ struct OggDecoder_impl {
 			switch (_channels) {
 			case 2:
 				assert((len & 1) == 0);
-				for (int i = 0; i < len; i += 2) {
-					Mixer::addclamp(*dst++, (_readBuf[i] + _readBuf[i + 1]) / 2);
+				for (int i = 0; i < len / 2; i += 2) {
+					Mixer::addclamp(*dst++, ((_readBuf[i] + _readBuf[i + 1]) / 2) >> 8);
 				}
 				break;
 			case 1:
-				for (int i = 0; i < len; ++i) {
-					Mixer::addclamp(*dst++, _readBuf[i]);
+				for (int i = 0; i < len / 2; ++i) {
+					Mixer::addclamp(*dst++, _readBuf[i] >> 8);
 				}
 				break;
 			}
@@ -140,7 +140,7 @@ struct OggDecoder_impl {
 	OggVorbis_File _ovf;
 	int _channels;
 	bool _open;
-	int8_t *_readBuf;
+	int16_t *_readBuf;
 	int _readBufSize;
 };
 #endif
