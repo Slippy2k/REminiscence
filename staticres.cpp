@@ -1961,7 +1961,7 @@ const char *LocaleData::_textsTableSP[] = {
 	"SEGUIR",
 	"PARAR",
 	"PUNTOS",
-	"REANUDAR JUEGO",
+	"NIVEL",
 	"EMPEZAR",
 	"DIFICULTAD",
 	"CONTRASE}A",
