@@ -39,7 +39,6 @@ struct SystemStub_SDL : SystemStub {
 	SDL_Rect _blitRects[MAX_BLIT_RECTS];
 	int _numBlitRects;
 	bool _fadeOnUpdateScreen;
-	int8_t *_audioBuffer;
 	void (*_audioCbProc)(void *, int8_t *, int);
 	void *_audioCbData;
 
@@ -90,7 +89,6 @@ void SystemStub_SDL::init(const char *title, int w, int h) {
 	memset(_screenBuffer, 0, screenBufferSize);
 	_fadeScreenBuffer = 0;
 	_fadeOnUpdateScreen = false;
-	_audioBuffer = 0;
 	_fullscreen = false;
 	_currentScaler = 2;
 	memset(_pal, 0, sizeof(_pal));
@@ -106,7 +104,6 @@ void SystemStub_SDL::destroy() {
 	if (SDL_JoystickOpened(0)) {
 		SDL_JoystickClose(_joystick);
 	}
-	free(_audioBuffer);
 	SDL_Quit();
 }
 
@@ -500,9 +497,9 @@ uint32_t SystemStub_SDL::getTimeStamp() {
 
 static void mixAudioS8ToU8(void *param, uint8_t *buf, int len) {
 	SystemStub_SDL *stub = (SystemStub_SDL *)param;
-	stub->_audioCbProc(stub->_audioCbData, stub->_audioBuffer, len);
+	stub->_audioCbProc(stub->_audioCbData, (int8_t *)buf, len);
 	for (int i = 0; i < len; ++i) {
-		buf[i] = stub->_audioBuffer[i] ^ 0x80;
+		buf[i] ^= 0x80;
 	}
 }
 
@@ -516,7 +513,6 @@ void SystemStub_SDL::startAudio(AudioCallback callback, void *param) {
 	desired.callback = mixAudioS8ToU8;
 	desired.userdata = this;
 	if (SDL_OpenAudio(&desired, &obtained) == 0) {
-		_audioBuffer = (int8_t *)malloc(obtained.size);
 		_audioCbProc = callback;
 		_audioCbData = param;
 		SDL_PauseAudio(0);
