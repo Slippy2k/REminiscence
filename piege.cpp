@@ -2058,7 +2058,6 @@ int Game::pge_updateCollisionState(LivePGE *pge, int16_t pge_dy, uint8_t var8) {
 		grid_data += pge_pos_x + pge_pos_y * 16;
 
 		CollisionSlot2 *slot1 = _col_slots2Next;
-		CollisionSlot2 *slot2 = 0;
 		int16_t i = 255;
 		pge_pos_x = i;
 		if (_pge_currentPiegeFacingDir) {
@@ -2074,7 +2073,6 @@ int Game::pge_updateCollisionState(LivePGE *pge, int16_t pge_dy, uint8_t var8) {
 				return 1;
 			} else {
 				++i;
-				slot2 = slot1;
 				slot1 = slot1->next_slot;
 				if (--i == 0) {
 					break;
