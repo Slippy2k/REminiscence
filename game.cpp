@@ -259,8 +259,6 @@ void Game::playCutscene(int id) {
 					num = tab[_currentLevel];
 				}
 				break;
-			case 0x3B:
-				return;
 			case 0x3C: {
 					static const uint8_t tab[] = { 1, 1, 1, 1, 1, 2, 2 };
 					num = tab[_currentLevel];
