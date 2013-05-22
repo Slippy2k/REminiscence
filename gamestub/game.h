@@ -72,13 +72,16 @@ struct Game {
 	AnimBuffers _animBuffers;
 	uint16_t _deathCutsceneCounter;
 	bool _saveStateCompleted;
+	int _inventoryCurrentItem;
+	int _inventoryItemsCount;
+	InventoryItem _inventoryItems[24];
 
 	Game(const char *dataPath, const char *savePath, int level, ResourceType ver, Language lang);
 	~Game();
 
 	void init();
 	void resetGameState();
-	void run();
+	void doGame();
 	void playCutscene(int id = -1);
 	void loadLevelMap();
 	void loadLevelData();
@@ -105,6 +108,7 @@ struct Game {
 	uint16_t getRandomNumber();
 	void changeLevel();
 	uint16_t getLineLength(const uint8_t *str) const;
+	void initInventory();
 	void handleInventory();
 
 

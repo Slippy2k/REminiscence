@@ -55,9 +55,15 @@ static Language detectLanguage(const char *dataPath) {
 	return LANG_EN;
 }
 
+enum {
+	kStateGame = 0,
+	kStateInventory,
+};
+
 struct GameStub_Flashback : GameStub {
 
 	Game *_g;
+	int _newState, _state;
 
 	virtual int init(int argc, char *argv[], char *errBuf) {
 		const char *dataPath = argc > 0 ? argv[0] : "DATA";
@@ -71,6 +77,8 @@ struct GameStub_Flashback : GameStub {
 		Language lang = detectLanguage(dataPath);
 		_g = new Game(dataPath, ".", levelNum, (ResourceType)version, lang);
 		_g->init();
+		_state = -1;
+		_newState = kStateGame;
 		return 0;
 	}
 	virtual void quit() {
@@ -143,7 +151,34 @@ struct GameStub_Flashback : GameStub {
 		}
 	}
 	virtual int doTick() {
-		_g->run();
+		if (_newState != _state) {
+			switch (_state) { // fini
+			}
+			_state = _newState;
+			switch (_state) { // init
+			case kStateInventory:
+				_g->initInventory();
+				break;
+			}
+		}
+		switch (_state) {
+		case kStateGame:
+			_g->doGame();
+			if (_g->_pgeLive[0].life > 0 && _g->_pgeLive[0].current_inventory_PGE != 0xFF) {
+				if (_g->_pi.backspace) {
+					_g->_pi.backspace = false;
+					_newState = kStateInventory;
+				}
+			}
+			break;
+		case kStateInventory:
+			_g->handleInventory();
+			if (_g->_pi.backspace) {
+				_g->_pi.backspace = false;
+				_newState = kStateGame;
+			}
+			break;
+		}
 		return _g->_pi.quit;
 	}
 };

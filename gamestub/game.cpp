@@ -108,7 +108,7 @@ void Game::resetGameState() {
 	_textToDisplay = 0xFFFF;
 }
 
-void Game::run() {
+void Game::doGame() {
 //	_vid._unkPalSlot1 = 0;
 //	_vid._unkPalSlot2 = 0;
 //	_score = 0;
@@ -188,10 +188,6 @@ void Game::run() {
 	drawStoryTexts();
 // TODO:
 /*
-		if (_pi.backspace) {
-			_pi.backspace = false;
-			handleInventory();
-		}
 		if (_pi.escape) {
 			_pi.escape = false;
 			if (handleConfigPanel()) {
@@ -951,8 +947,97 @@ uint16_t Game::getLineLength(const uint8_t *str) const {
 	return len;
 }
 
+void Game::initInventory() {
+	_inventoryCurrentItem = 0;
+	_inventoryItemsCount = 0;
+	int i = _pgeLive[0].current_inventory_PGE;
+	while (i != 0xFF) {
+		_inventoryItems[_inventoryItemsCount].icon_num = _res._pgeInit[i].icon_num;
+		_inventoryItems[_inventoryItemsCount].init_pge = &_res._pgeInit[i];
+		_inventoryItems[_inventoryItemsCount].live_pge = &_pgeLive[i];
+		++_inventoryItemsCount;
+		i = _pgeLive[i].next_inventory_PGE;
+	}
+	_inventoryItems[_inventoryItemsCount].icon_num = 0xFF;
+}
+
 void Game::handleInventory() {
-	// TODO:
+	const int h = (_inventoryItemsCount - 1) / 4 + 1;
+	const int y = _inventoryCurrentItem / 4;
+	if (_pi.dirMask & PlayerInput::DIR_UP) {
+		_pi.dirMask &= ~PlayerInput::DIR_UP;
+		if (y < h - 1) {
+			_inventoryCurrentItem = (y + 1) * 4;
+		}
+	}
+	if (_pi.dirMask & PlayerInput::DIR_DOWN) {
+		_pi.dirMask &= ~PlayerInput::DIR_DOWN;
+		if (y > 0) {
+			_inventoryCurrentItem = (y - 1) * 4;
+		}
+	}
+	if (_pi.dirMask & PlayerInput::DIR_LEFT) {
+		_pi.dirMask &= ~PlayerInput::DIR_LEFT;
+		if (_inventoryCurrentItem > 0) {
+			const int num = _inventoryCurrentItem % 4;
+			if (num > 0) {
+				--_inventoryCurrentItem;
+			}
+		}
+	}
+	if (_pi.dirMask & PlayerInput::DIR_RIGHT) {
+		_pi.dirMask &= ~PlayerInput::DIR_RIGHT;
+		if (_inventoryCurrentItem < _inventoryItemsCount - 1) {
+			const int num = _inventoryCurrentItem % 4;
+			if (num < 3) {
+				++_inventoryCurrentItem;
+			}
+		}
+	}
+	if (_pi.backspace) {
+		pge_setCurrentInventoryObject(_inventoryItems[_inventoryCurrentItem].live_pge);
+	}
+	int iconNum = 31;
+	for (int y = 0; y < 5; ++y) {
+		for (int x = 0; x < 9; ++x) {
+			drawIcon(iconNum, 56 + x * 16, 140 + y * 16, 0xF);
+			++iconNum;
+		}
+	}
+	if (_pi.enter) {
+		char buf[50];
+		snprintf(buf, sizeof(buf), "SCORE %08u", _score);
+		_vid.drawString(buf, (114 - strlen(buf) * 8) / 2 + 72, 158, 0xE5);
+		snprintf(buf, sizeof(buf), "%s:%s", _res.getMenuString(LocaleData::LI_06_LEVEL), _res.getMenuString(LocaleData::LI_13_EASY + _skillLevel));
+		_vid.drawString(buf, (114 - strlen(buf) * 8) / 2 + 72, 166, 0xE5);
+		return;
+	}
+	for (int i = 0; i < 4; ++i) {
+		int currentItem = y * 4 + i;
+		if (_inventoryItems[currentItem].icon_num == 0xFF) {
+			break;
+		}
+		const int xPos = 72 + i * 32;
+		drawIcon(_inventoryItems[currentItem].icon_num, xPos, 157, 0xA);
+		if (_inventoryCurrentItem == currentItem) {
+			drawIcon(76, xPos, 157, 0xA);
+			const LivePGE *selected_pge = _inventoryItems[currentItem].live_pge;
+			uint8_t txt_num = _inventoryItems[currentItem].init_pge->text_num;
+			const char *str = (const char *)_res._tbn + READ_LE_UINT16(_res._tbn + txt_num * 2);
+			_vid.drawString(str, (256 - strlen(str) * 8) / 2, 189, 0xED);
+			if (_inventoryItems[currentItem].init_pge->init_flags & 4) {
+				char buf[10];
+				snprintf(buf, sizeof(buf), "%d", selected_pge->life);
+				_vid.drawString(buf, (256 - strlen(buf) * 8) / 2, 197, 0xED);
+			}
+		}
+	}
+	if (y != 0) {
+		drawIcon(78, 120, 176, 0xA); // down arrow
+	}
+	if (y != h - 1) {
+		drawIcon(77, 120, 143, 0xA); // up arrow
+	}
 }
 
 void Game::inp_update() {
