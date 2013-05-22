@@ -58,6 +58,7 @@ static Language detectLanguage(const char *dataPath) {
 enum {
 	kStateGame = 0,
 	kStateInventory,
+	kStateStoryTexts,
 };
 
 struct GameStub_Flashback : GameStub {
@@ -159,6 +160,9 @@ struct GameStub_Flashback : GameStub {
 			case kStateInventory:
 				_g->initInventory();
 				break;
+			case kStateStoryTexts:
+				_g->initStoryTexts();
+				break;
 			}
 		}
 		switch (_state) {
@@ -170,6 +174,9 @@ struct GameStub_Flashback : GameStub {
 					_newState = kStateInventory;
 				}
 			}
+			if (_g->_textToDisplay != 0xFFFF) {
+				_newState = kStateStoryTexts;
+			}
 			break;
 		case kStateInventory:
 			_g->handleInventory();
@@ -178,6 +185,12 @@ struct GameStub_Flashback : GameStub {
 				_newState = kStateGame;
 			}
 			break;
+		case kStateStoryTexts:
+			_g->handleStoryTexts();
+			if (_g->_textToDisplay == 0xFFFF) {
+				_newState = kStateGame;
+				break;
+			}
 		}
 		return _g->_pi.quit;
 	}

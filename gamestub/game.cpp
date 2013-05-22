@@ -185,7 +185,6 @@ void Game::doGame() {
 	}
 	_vid.updateScreen();
 //	updateTiming();
-	drawStoryTexts();
 // TODO:
 /*
 		if (_pi.escape) {
@@ -276,8 +275,41 @@ void Game::drawLevelTexts() {
 	_saveStateCompleted = false;
 }
 
-void Game::drawStoryTexts() {
-	// TODO:
+void Game::initStoryTexts() {
+	_textStoryOffset = 0;
+	memcpy(_vid._tempLayer, _vid._frontLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+}
+
+void Game::handleStoryTexts() {
+	memcpy(_vid._frontLayer, _vid._tempLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+	uint16_t text_col_mask = 0xE8;
+	const uint8_t *str = _res.getGameString(_textToDisplay) + _textStoryOffset;
+	drawIcon(_currentInventoryIconNum, 80, 8, 0xA);
+	int nextOffset = _textStoryOffset;
+	if (*str == 0xFF) {
+		text_col_mask = READ_LE_UINT16(str + 1);
+		str += 3;
+		nextOffset += 3;
+	}
+	int16_t text_y_pos = 26;
+	while (1) {
+		uint16_t len = getLineLength(str);
+		_vid.drawString((const char *)str, (176 - len * 8) / 2, text_y_pos, text_col_mask);
+		text_y_pos += 8;
+		nextOffset += len + 1;
+		str += len;
+		if (*str == 0 || *str == 0xB) {
+			break;
+		}
+		++str;
+	}
+	if (_pi.backspace) {
+		_pi.backspace = false;
+		_textStoryOffset = nextOffset;
+		if (*str == 0) {
+			_textToDisplay = 0xFFFF;
+		}
+	}
 }
 
 void Game::prepareAnims() {

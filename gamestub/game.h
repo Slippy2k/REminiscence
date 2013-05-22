@@ -75,6 +75,7 @@ struct Game {
 	int _inventoryCurrentItem;
 	int _inventoryItemsCount;
 	InventoryItem _inventoryItems[24];
+	int _textStoryOffset;
 
 	Game(const char *dataPath, const char *savePath, int level, ResourceType ver, Language lang);
 	~Game();
@@ -94,7 +95,8 @@ struct Game {
 	bool handleProtectionScreen();
 	void printSaveStateCompleted();
 	void drawLevelTexts();
-	void drawStoryTexts();
+	void initStoryTexts();
+	void handleStoryTexts();
 	void prepareAnims();
 	void prepareAnimsHelper(LivePGE *pge, int16_t dx, int16_t dy);
 	void drawAnims();
