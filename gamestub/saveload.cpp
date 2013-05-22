@@ -7,10 +7,10 @@ static const uint32_t kPtr0 = 0xFFFFFFFF;
 
 bool Game::openStateFile(File &f, char rw) {
 	if (_savePath) {
-		char path[MAXPATHLEN];
-		snprintf(path, sizeof(path), "%s/fb%d.state.z", _savePath, _currentLevel);
+		char name[32];
+		snprintf(name, sizeof(name), "fb%d.state", _currentLevel);
 		const char mode[3] = { rw, 'b', 0 };
-		return f.open(path, mode, "z");
+		return f.open(name, mode, _savePath);
 	}
 	return false;
 }
