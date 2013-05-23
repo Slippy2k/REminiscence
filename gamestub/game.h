@@ -3,6 +3,7 @@
 #define GAME_H__
 
 #include "intern.h"
+#include "cutscene.h"
 #include "mixer.h"
 #include "resource.h"
 #include "sfx_player.h"
@@ -41,6 +42,7 @@ struct Game {
 	static const uint8_t _protectionPal[];
 	static const char *_passwords[8][3];
 
+	Cutscene _cut;
 	Mixer _mix;
 	Resource _res;
 	SfxPlayer _sfx;
@@ -76,10 +78,12 @@ struct Game {
 	int _inventoryItemsCount;
 	InventoryItem _inventoryItems[24];
 	int _textStoryOffset;
+	bool _gameOver;
 
 	Game(const char *dataPath, const char *savePath, int level, ResourceType ver, Language lang);
 	~Game();
 
+	int getNextCutscene(int id);
 	void init();
 	void resetGameState();
 	void doGame();

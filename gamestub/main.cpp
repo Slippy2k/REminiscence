@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
 		tex.uploadData(buf.ptr, buf.w, buf.h);
 		drawGL(tex);
 		SDL_GL_SwapBuffers();
-		SDL_Delay(10);
+		SDL_Delay(30);
 	}
 	SDL_PauseAudio(1);
 	stub->quit();

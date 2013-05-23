@@ -5,7 +5,7 @@
 #include "game.h"
 
 Game::Game(const char *dataPath, const char *savePath, int level, ResourceType ver, Language lang)
-	: _res(dataPath, ver, lang), _sfx(&_mix), _vid(&_res), _dataPath(dataPath), _savePath(savePath) {
+	: _cut(&_pi, &_res, &_vid), _res(dataPath, ver, lang), _sfx(&_mix), _vid(&_res), _dataPath(dataPath), _savePath(savePath) {
 	memset(&_pi, 0, sizeof(_pi));
 	_stateSlot = 1;
 	_skillLevel = 1;
@@ -17,11 +17,23 @@ Game::~Game() {
 	_mix.free();
 }
 
+int Game::getNextCutscene(int id) {
+	if (id == 0x40) {
+		return 0xD;
+	}
+	if (id == 0xD && !_cut._interrupted && _res._type == kResourceTypePC) {
+		return 0x4A;
+	}
+	return 0xFFFF;
+}
+
 void Game::init() {
 
 	_randSeed = time(0);
 
 	_res.load_TEXT();
+
+	_cut._id = 0xFFFF;
 
 	switch (_res._type) {
 	case kResourceTypeAmiga:
@@ -43,14 +55,6 @@ void Game::init() {
 #endif
 */
 
-	playCutscene(0x40);
-	playCutscene(0x0D);
-// TODO:
-/*
-	if (!_cut._interrupted && _res._type == kResourceTypePC) {
-		playCutscene(0x4A);
-	}
-*/
 	switch (_res._type) {
 	case kResourceTypeAmiga:
 		_res.load("ICONE", Resource::OT_ICN, "SPR");
@@ -78,11 +82,11 @@ void Game::init() {
 //		mainLoop();
 	}
 
+	_cut._id = 0x40;
+
 	_vid._unkPalSlot1 = 0;
 	_vid._unkPalSlot2 = 0;
 	_score = 0;
-	loadLevelData();
-	resetGameState();
 }
 
 void Game::resetGameState() {
@@ -95,8 +99,7 @@ void Game::resetGameState() {
 	_animBuffers._states[3] = _animBuffer3State;
 	_animBuffers._curPos[3] = 0xFF;
 	_currentRoom = _res._pgeInit[0].init_room;
-// TODO:
-//	_cut._deathCutsceneId = 0xFFFF;
+	_cut._deathCutsceneId = 0xFFFF;
 	_pge_opTempVar2 = 0xFFFF;
 	_deathCutsceneCounter = 0;
 	_saveStateCompleted = false;
@@ -106,44 +109,38 @@ void Game::resetGameState() {
 	_pge_processOBJ = false;
 	_pge_opTempVar1 = 0;
 	_textToDisplay = 0xFFFF;
+	_gameOver = false;
 }
 
 void Game::doGame() {
-//	_vid._unkPalSlot1 = 0;
-//	_vid._unkPalSlot2 = 0;
-//	_score = 0;
-//	loadLevelData();
-//	resetGameState();
-//	while (!_pi.quit) {
-// TODO:
-/*
-		playCutscene();
-		if (_cut._id == 0x3D) {
-			showFinalScore();
-			break;
-		}
-		if (_deathCutsceneCounter) {
-			--_deathCutsceneCounter;
-			if (_deathCutsceneCounter == 0) {
-				playCutscene(_cut._deathCutsceneId);
-				if (!handleContinueAbort()) {
-					playCutscene(0x41);
-					break;
-				} else {
-					if (_validSaveState) {
-						if (!loadGameState(0)) {
-							break;
-						}
-					} else {
-						loadLevelData();
-						resetGameState();
-					}
-					continue;
-				}
-
-			}
-		}
+/* TODO:
+	if (_cut._id == 0x3D) {
+		showFinalScore();
+		break;
+	}
 */
+	if (_deathCutsceneCounter) {
+		--_deathCutsceneCounter;
+		if (_deathCutsceneCounter == 0) {
+			_gameOver = true;
+			playCutscene(_cut._deathCutsceneId);
+/*
+			if (!handleContinueAbort()) {
+				playCutscene(0x41);
+				break;
+			} else {
+				if (_validSaveState) {
+					if (!loadGameState(0)) {
+						break;
+					}
+				} else {
+					loadLevelData();
+					resetGameState();
+				}
+				continue;
+			}*/
+		}
+	}
 	memcpy(_vid._frontLayer, _vid._backLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
 	pge_getInput();
 	pge_prepare();
@@ -160,13 +157,11 @@ void Game::doGame() {
 	if (oldLevel != _currentLevel) {
 		changeLevel();
 		_pge_opTempVar1 = 0;
-// TODO
-//		continue;
+		return;
 	}
 	if (_loadMap) {
 		if (_currentRoom == 0xFF) {
-// TODO:
-//			_cut._id = 6;
+			_cut._deathCutsceneId = 6;
 			_deathCutsceneCounter = 1;
 		} else {
 			_currentRoom = _pgeLive[0].room_location;
@@ -184,7 +179,6 @@ void Game::doGame() {
 		--_blinkingConradCounter;
 	}
 	_vid.updateScreen();
-//	updateTiming();
 // TODO:
 /*
 		if (_pi.escape) {
@@ -198,7 +192,15 @@ void Game::doGame() {
 }
 
 void Game::playCutscene(int id) {
-	// TODO:
+	if (id != -1) {
+		_cut._deathCutsceneId = 0xFFFF;
+		_cut._id = id;
+		_sfx.stop();
+		if (_cut._id != 0x4A) {
+// TODO:
+//			_mod.play(Cutscene::_musicTable[_cut._id]);
+		}
+	}
 }
 
 void Game::inp_handleSpecialKeys() {
@@ -866,8 +868,7 @@ void Game::loadLevelData() {
 		break;
 	}
 
-// TODO:
-//	_cut._id = lvl->cutscene_id;
+	_cut._id = lvl->cutscene_id;
 
 	_curMonsterNum = 0xFFFF;
 	_curMonsterFrame = 0;

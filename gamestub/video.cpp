@@ -14,6 +14,8 @@ Video::Video(Resource *res)
 	memset(_tempLayer, 0, GAMESCREEN_W * GAMESCREEN_H);
 	_tempLayer2 = (uint8_t *)malloc(GAMESCREEN_W * GAMESCREEN_H);
 	memset(_tempLayer2, 0, GAMESCREEN_W * GAMESCREEN_H);
+	_tempLayer3 = (uint8_t *)malloc(GAMESCREEN_W * GAMESCREEN_H);
+	memset(_tempLayer3, 0, GAMESCREEN_W * GAMESCREEN_H);
 	_screenBlocks = (uint8_t *)malloc((GAMESCREEN_W / SCREENBLOCK_W) * (GAMESCREEN_H / SCREENBLOCK_H));
 	memset(_screenBlocks, 0, (GAMESCREEN_W / SCREENBLOCK_W) * (GAMESCREEN_H / SCREENBLOCK_H));
 	_fullRefresh = true;
@@ -28,6 +30,7 @@ Video::~Video() {
 	free(_backLayer);
 	free(_tempLayer);
 	free(_tempLayer2);
+	free(_tempLayer3);
 	free(_screenBlocks);
 }
 

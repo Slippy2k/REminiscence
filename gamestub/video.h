@@ -29,6 +29,7 @@ struct Video {
 	uint8_t *_backLayer;
 	uint8_t *_tempLayer;
 	uint8_t *_tempLayer2;
+	uint8_t *_tempLayer3;
 	uint8_t _unkPalSlot1, _unkPalSlot2;
 	uint8_t _mapPalSlot1, _mapPalSlot2, _mapPalSlot3, _mapPalSlot4;
 	uint8_t _charFrontColor;

@@ -59,6 +59,7 @@ enum {
 	kStateGame = 0,
 	kStateInventory,
 	kStateStoryTexts,
+	kStateCutscene,
 };
 
 struct GameStub_Flashback : GameStub {
@@ -78,8 +79,10 @@ struct GameStub_Flashback : GameStub {
 		Language lang = detectLanguage(dataPath);
 		_g = new Game(dataPath, ".", levelNum, (ResourceType)version, lang);
 		_g->init();
+		_g->loadLevelData();
+		_g->resetGameState();
 		_state = -1;
-		_newState = kStateGame;
+		_newState = kStateCutscene;
 		return 0;
 	}
 	virtual void quit() {
@@ -157,11 +160,16 @@ struct GameStub_Flashback : GameStub {
 			}
 			_state = _newState;
 			switch (_state) { // init
+			case kStateGame:
+				break;
 			case kStateInventory:
 				_g->initInventory();
 				break;
 			case kStateStoryTexts:
 				_g->initStoryTexts();
+				break;
+			case kStateCutscene:
+				_g->_cut.initCutscene();
 				break;
 			}
 		}
@@ -177,6 +185,9 @@ struct GameStub_Flashback : GameStub {
 			if (_g->_textToDisplay != 0xFFFF) {
 				_newState = kStateStoryTexts;
 			}
+			if (_g->_cut._id != 0xFFFF) {
+				_newState = kStateCutscene;
+			}
 			break;
 		case kStateInventory:
 			_g->handleInventory();
@@ -191,6 +202,27 @@ struct GameStub_Flashback : GameStub {
 				_newState = kStateGame;
 				break;
 			}
+		case kStateCutscene:
+			if (_g->_cut._id == 0xFFFF) {
+				_newState = kStateGame;
+				break;
+			}
+			_g->_cut.playCutscene();
+			if (_g->_cut._interrupted || _g->_cut._stop) {
+				int id = _g->getNextCutscene(_g->_cut._id);
+				if (id != 0xFFFF) {
+					_g->_cut._id = id;
+					_g->_cut.initCutscene();
+				} else {
+					_g->_cut._id = 0xFFFF;
+					if (_g->_gameOver) {
+						_g->loadLevelData();
+						_g->resetGameState();
+					}
+					_newState = kStateGame;
+				}
+			}
+			break;
 		}
 		return _g->_pi.quit;
 	}
