@@ -23,6 +23,7 @@ struct Cutscene {
 	static const uint16_t _sinTable[];
 	static const uint8_t _creditsData[];
 	static const uint16_t _creditsCutSeq[];
+	static const uint16_t _introCutSeq[];
 	static const uint8_t _musicTable[];
 	static const uint8_t _protectionShapeData[];
 
@@ -74,6 +75,7 @@ struct Cutscene {
 	uint8_t _creditsTextPosY;
 	int16_t _creditsTextCounter;
 	uint8_t *_page0, *_page1, *_pageC;
+	const uint16_t *_cutSeq;
 
 	Cutscene(PlayerInput *pi, Resource *res, Video *vid);
 
@@ -109,9 +111,7 @@ struct Cutscene {
 	uint16_t fetchNextCmdWord();
 	void load(uint16_t cutName);
 	void prepare();
-	void playCredits();
-	void play();
-
+	void initCredits();
 	void initCutscene();
 	void playCutscene();
 };

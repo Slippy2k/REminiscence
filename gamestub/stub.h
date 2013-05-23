@@ -28,6 +28,7 @@ enum {
 struct GameStub {
 	virtual int init(int argc, char *argv[], char *errBuf) = 0;
 	virtual void quit() = 0;
+	virtual int getFrameTimeMs() = 0;
 	virtual StubBackBuffer getBackBuffer() = 0;
 	virtual StubMixProc getMixProc(int rate, int fmt, void (*lock)(int)) = 0;
 	virtual void eventKey(int keycode, int pressed) = 0;

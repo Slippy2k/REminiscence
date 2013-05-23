@@ -60,7 +60,8 @@ void Game::init() {
 		break;
 	}
 
-	_cut._id = 0x40;
+	_cut._cutSeq = Cutscene::_introCutSeq;
+	_cut._id = *_cut._cutSeq++;
 
 	_vid._unkPalSlot1 = 0;
 	_vid._unkPalSlot2 = 0;
@@ -108,12 +109,6 @@ void Game::continueGame() {
 }
 
 void Game::doGame() {
-/* TODO:
-	if (_cut._id == 0x3D) {
-		showFinalScore();
-		break;
-	}
-*/
 	if (_deathCutsceneCounter) {
 		--_deathCutsceneCounter;
 		if (_deathCutsceneCounter == 0) {
@@ -168,7 +163,6 @@ void Game::playCutscene(int id) {
 		_cut._id = id;
 		_sfx.stop();
 		if (_cut._id != 0x4A) {
-// TODO:
 //			_mod.play(Cutscene::_musicTable[_cut._id]);
 		}
 	}
@@ -182,8 +176,22 @@ void Game::drawCurrentInventoryItem() {
 	}
 }
 
-void Game::showFinalScore() {
-	// TODO:
+void Game::initFinalScore() {
+	_cut._id = 0x49;
+	_cut.initCutscene();
+}
+
+void Game::handleFinalScore() {
+	if (!_cut._stop) {
+		_cut.playCutscene();
+		return;
+	}
+	memcpy(_vid._frontLayer, _cut._page0, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+	char buf[50];
+	snprintf(buf, sizeof(buf), "SCORE %08u", _score);
+	_vid.drawString(buf, (256 - strlen(buf) * 8) / 2, 40, 0xE5);
+	snprintf(buf, sizeof(buf), "%s", _passwords[7][_skillLevel]);
+	_vid.drawString(buf, (256 - strlen(buf) * 8) / 2, 16, 0xE7);
 }
 
 void Game::initConfigPanel() {

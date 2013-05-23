@@ -266,6 +266,11 @@ void Menu::initMenu() {
 	_selectedOption = -1;
 }
 
+void Menu::finiMenu() {
+	_currentScreen = -1;
+	_selectedOption = -1;
+}
+
 void Menu::handleMenu(PlayerInput *pi) {
 	if (_currentScreen != _newScreen) {
 		_currentScreen = _newScreen;

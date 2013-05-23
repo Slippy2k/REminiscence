@@ -19,6 +19,7 @@
 #endif
 #define ARRAYSIZE(a) (sizeof(a)/sizeof(a[0]))
 
+#define kGameFrameTimeMs 30
 
 inline void SWAP_UINT16(uint16_t *ptr) {
 	const uint8_t hi = *ptr >> 8;

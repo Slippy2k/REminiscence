@@ -6,21 +6,11 @@
 Cutscene::Cutscene(PlayerInput *pi, Resource *res, Video *vid)
 	: _pi(pi), _res(res), _vid(vid) {
 	memset(_palBuf, 0, sizeof(_palBuf));
+	_cutSeq = NULL;
 }
 
 void Cutscene::sync() {
-	// XXX input handling
-/* TODO:
-	if (!(_pi->dbgMask & PlayerInput::DF_FASTMODE)) {
-		int32_t delay = _stub->getTimeStamp() - _tstamp;
-		int32_t pause = _frameDelay * TIMER_SLICE - delay;
-		if (pause > 0) {
-			_stub->sleep(pause);
-		}
-	}
-	_tstamp = _stub->getTimeStamp();
-*/
-	_yieldSync = _frameDelay;
+	_yieldSync = _frameDelay * TIMER_SLICE / kGameFrameTimeMs;
 }
 
 void Cutscene::copyPalette(const uint8_t *pal, uint16_t num) {
@@ -52,7 +42,6 @@ void Cutscene::setPalette() {
 	sync();
 	updatePalette();
 	SWAP(_page0, _page1);
-	_yieldSync = 1;
 }
 
 void Cutscene::initRotationData(uint16_t a, uint16_t b, uint16_t c) {
@@ -896,7 +885,7 @@ void Cutscene::prepare() {
 	_gfx.setClippingRect(8, 50, 240, 128);
 }
 
-void Cutscene::playCredits() {
+void Cutscene::initCredits() {
 	_textCurPtr = _creditsData;
 	_textBuf[0] = 0xA;
 	_textCurBuf = _textBuf;
@@ -905,22 +894,6 @@ void Cutscene::playCredits() {
 	_varText = 0;
 	_textUnk2 = 0;
 	_creditsTextCounter = 0;
-	_interrupted = false;
-/* TODO:
-	const uint16_t *cut_seq = _creditsCutSeq;
-	while (!_pi->quit && !_interrupted) {
-		uint16_t cut_id = *cut_seq++;
-		if (cut_id == 0xFFFF) {
-			break;
-		}
-		prepare();
-		uint16_t cutName = _offsetsTable[cut_id * 2 + 0];
-		uint16_t cutOff  = _offsetsTable[cut_id * 2 + 1];
-		load(cutName);
-		mainLoop(cutOff);
-	}
-*/
-	_creditsSequence = false;
 }
 
 void Cutscene::initCutscene() {

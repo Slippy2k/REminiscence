@@ -59,6 +59,7 @@ struct Menu {
 	void handleTitleScreen(PlayerInput *pi);
 
 	void initMenu();
+	void finiMenu();
 	void handleMenu(PlayerInput *pi);
 };
 

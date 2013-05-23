@@ -92,7 +92,8 @@ struct Game {
 	void drawIcon(uint8_t iconNum, int16_t x, int16_t y, uint8_t colMask);
 	void drawCurrentInventoryItem();
 	void printLevelCode();
-	void showFinalScore();
+	void initFinalScore();
+	void handleFinalScore();
 	void initConfigPanel();
 	void handleConfigPanel();
 	void printSaveStateCompleted();

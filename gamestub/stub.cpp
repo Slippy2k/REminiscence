@@ -63,7 +63,8 @@ enum {
 	kStateCutscene,
 	kStateContinueAbort,
 	kStateGameOver,
-	kStateMenu
+	kStateScore,
+	kStateMenu,
 };
 
 struct GameStub_Flashback : GameStub {
@@ -91,6 +92,9 @@ struct GameStub_Flashback : GameStub {
 	virtual void quit() {
 		_g->saveState();
 		delete _g;
+	}
+	virtual int getFrameTimeMs() {
+		return kGameFrameTimeMs;
 	}
 	virtual StubBackBuffer getBackBuffer() {
 		StubBackBuffer buf;
@@ -161,6 +165,9 @@ struct GameStub_Flashback : GameStub {
 		if (_newState != _state) {
 			printf("changing from state %d to %d\n", _state, _newState);
 			switch (_state) { // fini
+			case kStateMenu:
+				_g->_menu.finiMenu();
+				break;
 			}
 			_state = _newState;
 			switch (_state) { // init
@@ -184,6 +191,9 @@ struct GameStub_Flashback : GameStub {
 			case kStateGameOver:
 				_g->_cut._id = 0x41;
 				_g->_cut.initCutscene();
+				break;
+			case kStateScore:
+				_g->initFinalScore();
 				break;
 			case kStateMenu:
 				break;
@@ -260,9 +270,12 @@ struct GameStub_Flashback : GameStub {
 				if (id != 0xFFFF) {
 					_g->_cut._id = id;
 					_g->_cut.initCutscene();
-				} else if (_g->_cut._id == 0xD || _g->_cut._id == 0x4A) {
+				} else if (_g->_cut._id == 0x40 || _g->_cut._id == 0xD || _g->_cut._id == 0x4A) {
 					_g->_cut._id = 0xFFFF;
 					_newState = kStateMenu;
+				} else if (_g->_cut._id == 0x3D) {
+					_g->_cut._id = 0xFFFF;
+					_newState = kStateScore; // kStateCredits
 				} else {
 					_g->_cut._id = 0xFFFF;
 					if (_g->_gameOver) {
@@ -292,6 +305,13 @@ struct GameStub_Flashback : GameStub {
 		case kStateGameOver:
 			_g->_cut.playCutscene();
 			if (_g->_cut._stop) {
+				_newState = kStateMenu;
+			}
+			break;
+		case kStateScore:
+			_g->handleFinalScore();
+			if (_g->_pi.enter) {
+				_g->_pi.enter = false;
 				_newState = kStateMenu;
 			}
 			break;
