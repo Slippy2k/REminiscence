@@ -253,8 +253,8 @@ struct GameStub_Flashback : GameStub {
 			_g->handleStoryTexts();
 			if (_g->_textToDisplay == 0xFFFF) {
 				_newState = kStateGame;
-				break;
 			}
+			break;
 		case kStateCutscene:
 			if (_g->_cut._id == 0xFFFF) {
 				_newState = kStateGame;
