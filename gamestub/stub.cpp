@@ -282,7 +282,7 @@ struct GameStub_Flashback : GameStub {
 				_g->_pi.enter = false;
 				if (_g->_continueAbortItem == 0) {
 					_g->continueGame();
-					_newState = kStateGame;
+					_newState = (_g->_cut._id != 0xFFFF) ? kStateCutscene : kStateGame;
 				} else {
 					_newState = kStateGameOver;
 				}
@@ -300,10 +300,11 @@ struct GameStub_Flashback : GameStub {
 			if (_g->_menu._currentScreen == Menu::SCREEN_TITLE) {
 				switch (_g->_menu._selectedOption) {
 				case Menu::MENU_OPTION_ITEM_START:
+					_g->_vid.clearScreen();
 					_g->_currentLevel = _g->_menu._level;
 					_g->_skillLevel = _g->_menu._skill;
 					_g->continueGame();
-					_newState = kStateGame;
+					_newState = (_g->_cut._id != 0xFFFF) ? kStateCutscene : kStateGame;
 					break;
 				case Menu::MENU_OPTION_ITEM_QUIT:
 					_g->_pi.quit = 1;

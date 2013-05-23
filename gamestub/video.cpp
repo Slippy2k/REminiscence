@@ -51,6 +51,7 @@ void Video::markBlockAsDirty(int16_t x, int16_t y, uint16_t w, uint16_t h) {
 
 void Video::clearScreen() {
 	memset(_backLayer, 0, GAMESCREEN_W * GAMESCREEN_H);
+	memset(_frontLayer, 0, GAMESCREEN_W * GAMESCREEN_H);
 }
 
 void Video::updateScreen() {
@@ -192,7 +193,7 @@ void Video::PC_decodeMap(int level, int room) {
 		_mapPalSlot4 = 5;
 	}
 	if (packed) {
-		uint8_t *vid = _frontLayer;
+		uint8_t *vid = _backLayer;
 		for (int i = 0; i < 4; ++i) {
 			const int sz = READ_LE_UINT16(p); p += 2;
 			PC_decodeMapHelper(sz, p, _res->_memBuf); p += sz;
@@ -203,12 +204,11 @@ void Video::PC_decodeMap(int level, int room) {
 		for (int i = 0; i < 4; ++i) {
 			for (int y = 0; y < 224; ++y) {
 				for (int x = 0; x < 64; ++x) {
-					_frontLayer[i + x * 4 + 256 * y] = p[256 * 56 * i + x + 64 * y];
+					_backLayer[i + x * 4 + 256 * y] = p[256 * 56 * i + x + 64 * y];
 				}
 			}
 		}
 	}
-	memcpy(_backLayer, _frontLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
 }
 
 void Video::PC_setLevelPalettes() {
