@@ -4,6 +4,7 @@
 
 #include "intern.h"
 #include "cutscene.h"
+#include "menu.h"
 #include "mixer.h"
 #include "resource.h"
 #include "sfx_player.h"
@@ -43,6 +44,7 @@ struct Game {
 	static const char *_passwords[8][3];
 
 	Cutscene _cut;
+	Menu _menu;
 	Mixer _mix;
 	Resource _res;
 	SfxPlayer _sfx;
@@ -83,6 +85,7 @@ struct Game {
 	int _continueAbortCounter;
 	Color _continueAbortColor;
 	int _continueAbortColorInc;
+	int _configPanelItem;
 
 	Game(const char *dataPath, const char *savePath, int level, ResourceType ver, Language lang);
 	~Game();
@@ -99,7 +102,8 @@ struct Game {
 	void drawCurrentInventoryItem();
 	void printLevelCode();
 	void showFinalScore();
-	bool handleConfigPanel();
+	void initConfigPanel();
+	void handleConfigPanel();
 	void initContinueAbort();
 	void handleContinueAbort();
 	bool handleProtectionScreen();

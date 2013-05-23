@@ -58,6 +58,7 @@ static Language detectLanguage(const char *dataPath) {
 enum {
 	kStateGame = 0,
 	kStateInventory,
+	kStateConfigurationPanel,
 	kStateStoryTexts,
 	kStateCutscene,
 	kStateContinueAbort,
@@ -167,6 +168,9 @@ struct GameStub_Flashback : GameStub {
 			case kStateInventory:
 				_g->initInventory();
 				break;
+			case kStateConfigurationPanel:
+				_g->initConfigPanel();
+				break;
 			case kStateStoryTexts:
 				_g->initStoryTexts();
 				break;
@@ -185,11 +189,15 @@ struct GameStub_Flashback : GameStub {
 		switch (_state) {
 		case kStateGame:
 			_g->doGame();
-			if (_g->_pgeLive[0].life > 0 && _g->_pgeLive[0].current_inventory_PGE != 0xFF) {
-				if (_g->_pi.backspace) {
-					_g->_pi.backspace = false;
+			if (_g->_pi.backspace) {
+				_g->_pi.backspace = false;
+				if (_g->_pgeLive[0].life > 0 && _g->_pgeLive[0].current_inventory_PGE != 0xFF) {
 					_newState = kStateInventory;
 				}
+			}
+			if (_g->_pi.escape) {
+				_g->_pi.escape = true;
+				_newState = kStateConfigurationPanel;
 			}
 			if (_g->_textToDisplay != 0xFFFF) {
 				_newState = kStateStoryTexts;
@@ -203,6 +211,26 @@ struct GameStub_Flashback : GameStub {
 			if (_g->_pi.backspace) {
 				_g->_pi.backspace = false;
 				_newState = kStateGame;
+			}
+			break;
+		case kStateConfigurationPanel:
+			_g->handleConfigPanel();
+			if (_g->_pi.enter) {
+				_g->_pi.enter = false;
+				switch (_g->_configPanelItem) {
+				case 0:
+					_newState = kStateGame;
+					break;
+				case 1:
+					_g->loadState();
+					break;
+				case 2:
+					_g->saveState();
+					break;
+				case 3:
+					_newState = kStateGameOver;
+					break;
+				}
 			}
 			break;
 		case kStateStoryTexts:

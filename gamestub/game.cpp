@@ -5,7 +5,8 @@
 #include "game.h"
 
 Game::Game(const char *dataPath, const char *savePath, int level, ResourceType ver, Language lang)
-	: _cut(&_pi, &_res, &_vid), _res(dataPath, ver, lang), _sfx(&_mix), _vid(&_res), _dataPath(dataPath), _savePath(savePath) {
+	: _cut(&_pi, &_res, &_vid), _menu(&_res, &_vid), _res(dataPath, ver, lang), _sfx(&_mix), _vid(&_res),
+	_dataPath(dataPath), _savePath(savePath) {
 	memset(&_pi, 0, sizeof(_pi));
 	_stateSlot = 1;
 	_skillLevel = 1;
@@ -174,15 +175,6 @@ void Game::doGame() {
 		--_blinkingConradCounter;
 	}
 	_vid.updateScreen();
-// TODO:
-/*
-		if (_pi.escape) {
-			_pi.escape = false;
-			if (handleConfigPanel()) {
-				break;
-			}
-		}
-*/
 	inp_handleSpecialKeys();
 }
 
@@ -214,9 +206,58 @@ void Game::showFinalScore() {
 	// TODO:
 }
 
-bool Game::handleConfigPanel() {
-	// TODO:
-	return true;
+void Game::initConfigPanel() {
+	_configPanelItem = 0;
+}
+
+void Game::handleConfigPanel() {
+	const int x = 7;
+	const int y = 10;
+	const int w = 17;
+	const int h = 10;
+
+	_vid._charShadowColor = 0xE2;
+	_vid._charFrontColor = 0xEE;
+	_vid._charTransparentColor = 0xFF;
+
+	_vid.PC_drawChar(0x81, y, x);
+	for (int i = 1; i < w; ++i) {
+		_vid.PC_drawChar(0x85, y, x + i);
+	}
+	_vid.PC_drawChar(0x82, y, x + w);
+	for (int j = 1; j < h; ++j) {
+		_vid.PC_drawChar(0x86, y + j, x);
+		for (int i = 1; i < w; ++i) {
+			_vid._charTransparentColor = 0xE2;
+			_vid.PC_drawChar(0x20, y + j, x + i);
+		}
+		_vid._charTransparentColor = 0xFF;
+		_vid.PC_drawChar(0x87, y + j, x + w);
+	}
+	_vid.PC_drawChar(0x83, y + h, x);
+	for (int i = 1; i < w; ++i) {
+		_vid.PC_drawChar(0x88, y + h, x + i);
+	}
+	_vid.PC_drawChar(0x84, y + h, x + w);
+
+	_menu._charVar3 = 0xE4;
+	_menu._charVar4 = 0xE5;
+	_menu._charVar1 = 0xE2;
+	_menu._charVar2 = 0xEE;
+
+	_menu.drawString(_res.getMenuString(LocaleData::LI_18_RESUME_GAME), y + 2, 9, _configPanelItem == 0 ? 2 : 3);
+	_menu.drawString(_res.getMenuString(LocaleData::LI_20_LOAD_GAME), y + 4, 9, _configPanelItem == 1 ? 2 : 3);
+	_menu.drawString(_res.getMenuString(LocaleData::LI_21_SAVE_GAME), y + 6, 9, _configPanelItem == 2 ? 2 : 3);
+	_menu.drawString(_res.getMenuString(LocaleData::LI_19_ABORT_GAME), y + 8, 9, _configPanelItem == 3 ? 2 : 3);
+
+	if (_pi.dirMask & PlayerInput::DIR_UP) {
+		_pi.dirMask &= ~PlayerInput::DIR_UP;
+		_configPanelItem = (_configPanelItem + 3) % 4;
+	}
+	if (_pi.dirMask & PlayerInput::DIR_DOWN) {
+		_pi.dirMask &= ~PlayerInput::DIR_DOWN;
+		_configPanelItem = (_configPanelItem + 1) % 4;
+	}
 }
 
 void Game::initContinueAbort() {
