@@ -5,7 +5,7 @@
 #include "game.h"
 
 Game::Game(const char *dataPath, const char *savePath, ResourceType ver, Language lang)
-	: _cut(&_pi, &_res, &_vid), _menu(&_res, &_vid), _res(dataPath, ver, lang), _sfx(&_mix), _vid(&_res),
+	: _cut(&_mod, &_pi, &_res, &_vid), _menu(&_res, &_vid), _mod(&_mix, dataPath), _res(dataPath, ver, lang), _sfx(&_mix), _vid(&_res),
 	_dataPath(dataPath), _savePath(savePath) {
 	memset(&_pi, 0, sizeof(_pi));
 	_skillLevel = kDefaultSkill;
@@ -162,9 +162,6 @@ void Game::playCutscene(int id) {
 		_cut._deathCutsceneId = 0xFFFF;
 		_cut._id = id;
 		_sfx.stop();
-		if (_cut._id != 0x4A) {
-//			_mod.play(Cutscene::_musicTable[_cut._id]);
-		}
 	}
 }
 

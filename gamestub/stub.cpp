@@ -166,6 +166,7 @@ struct GameStub_Flashback : GameStub {
 			printf("changing from state %d to %d\n", _state, _newState);
 			switch (_state) { // fini
 			case kStateMenu:
+				_g->_mod.stop();
 				_g->_menu.finiMenu();
 				break;
 			}
@@ -196,6 +197,7 @@ struct GameStub_Flashback : GameStub {
 				_g->initFinalScore();
 				break;
 			case kStateMenu:
+				_g->_mod.play(1);
 				break;
 			}
 		}
@@ -263,7 +265,7 @@ struct GameStub_Flashback : GameStub {
 			_g->_cut.playCutscene();
 			if (_g->_pi.backspace) {
 				_g->_pi.backspace = false;
-				_g->_cut._interrupted = true;
+				_g->_cut.stopCutscene();
 			}
 			if (_g->_cut._interrupted || _g->_cut._stop) {
 				int id = _g->getNextCutscene(_g->_cut._id);

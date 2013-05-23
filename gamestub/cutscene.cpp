@@ -1,10 +1,11 @@
 
 #include "cutscene.h"
+#include "mod_player.h"
 #include "resource.h"
 #include "video.h"
 
-Cutscene::Cutscene(PlayerInput *pi, Resource *res, Video *vid)
-	: _pi(pi), _res(res), _vid(vid) {
+Cutscene::Cutscene(ModPlayer *mod, PlayerInput *pi, Resource *res, Video *vid)
+	: _mod(mod), _pi(pi), _res(res), _vid(vid) {
 	memset(_palBuf, 0, sizeof(_palBuf));
 	_cutSeq = NULL;
 }
@@ -930,6 +931,9 @@ void Cutscene::initCutscene() {
 		_interrupted = false;
 		_stop = false;
 		_yieldSync = 0;
+		if (_id != 0x4A) {
+			_mod->play(_musicTable[_id]);
+		}
 	}
 }
 
@@ -949,4 +953,12 @@ void Cutscene::playCutscene() {
 	}
 	memcpy(_vid->_frontLayer, _page0, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
 	--_yieldSync;
+	if (_interrupted || _stop) {
+		_mod->stop();
+	}
+}
+
+void Cutscene::stopCutscene() {
+	_interrupted = true;
+	_mod->stop();
 }

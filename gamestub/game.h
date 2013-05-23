@@ -5,6 +5,7 @@
 #include "intern.h"
 #include "cutscene.h"
 #include "menu.h"
+#include "mod_player.h"
 #include "mixer.h"
 #include "resource.h"
 #include "sfx_player.h"
@@ -43,6 +44,7 @@ struct Game {
 
 	Cutscene _cut;
 	Menu _menu;
+	ModPlayer _mod;
 	Mixer _mix;
 	Resource _res;
 	SfxPlayer _sfx;

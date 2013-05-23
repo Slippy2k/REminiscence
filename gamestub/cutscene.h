@@ -5,6 +5,7 @@
 #include "intern.h"
 #include "graphics.h"
 
+struct ModPlayer;
 struct Resource;
 struct Video;
 
@@ -28,6 +29,7 @@ struct Cutscene {
 	static const uint8_t _protectionShapeData[];
 
 	Graphics _gfx;
+	ModPlayer *_mod;
 	PlayerInput *_pi;
 	Resource *_res;
 	Video *_vid;
@@ -77,7 +79,7 @@ struct Cutscene {
 	uint8_t *_page0, *_page1, *_pageC;
 	const uint16_t *_cutSeq;
 
-	Cutscene(PlayerInput *pi, Resource *res, Video *vid);
+	Cutscene(ModPlayer *mod, PlayerInput *pi, Resource *res, Video *vid);
 
 	void sync();
 	void copyPalette(const uint8_t *pal, uint16_t num);
@@ -114,6 +116,7 @@ struct Cutscene {
 	void initCredits();
 	void initCutscene();
 	void playCutscene();
+	void stopCutscene();
 };
 
 #endif // CUTSCENE_H__
