@@ -81,10 +81,9 @@ struct GameStub_Flashback : GameStub {
 			return -1;
 		}
 		Language lang = detectLanguage(dataPath);
-		_g = new Game(dataPath, ".", levelNum, (ResourceType)version, lang);
+		_g = new Game(dataPath, ".", (ResourceType)version, lang);
+		_g->_currentLevel = levelNum;
 		_g->init();
-		_g->loadLevelData();
-		_g->resetLevelState();
 		_state = -1;
 		_newState = kStateCutscene;
 		return 0;
@@ -160,6 +159,7 @@ struct GameStub_Flashback : GameStub {
 	}
 	virtual int doTick() {
 		if (_newState != _state) {
+			printf("changing from state %d to %d\n", _state, _newState);
 			switch (_state) { // fini
 			}
 			_state = _newState;
@@ -184,6 +184,8 @@ struct GameStub_Flashback : GameStub {
 			case kStateGameOver:
 				_g->_cut._id = 0x41;
 				_g->_cut.initCutscene();
+				break;
+			case kStateMenu:
 				break;
 			}
 		}
@@ -257,6 +259,9 @@ struct GameStub_Flashback : GameStub {
 				if (id != 0xFFFF) {
 					_g->_cut._id = id;
 					_g->_cut.initCutscene();
+				} else if (_g->_cut._id == 0xD || _g->_cut._id == 0x4A) {
+					_g->_cut._id = 0xFFFF;
+					_newState = kStateMenu;
 				} else {
 					_g->_cut._id = 0xFFFF;
 					if (_g->_gameOver) {
@@ -286,10 +291,23 @@ struct GameStub_Flashback : GameStub {
 		case kStateGameOver:
 			_g->_cut.playCutscene();
 			if (_g->_cut._stop) {
-// TEMP:
-				_g->loadLevelData();
-				_g->resetLevelState();
-				_newState = kStateGame;
+				_newState = kStateMenu;
+			}
+			break;
+		case kStateMenu:
+			_g->_menu.handleMenu(&_g->_pi);
+			if (_g->_menu._currentScreen == Menu::SCREEN_TITLE) {
+				switch (_g->_menu._selectedOption) {
+				case Menu::MENU_OPTION_ITEM_START:
+					_g->_currentLevel = _g->_menu._level;
+					_g->_skillLevel = _g->_menu._skill;
+					_g->continueGame();
+					_newState = kStateGame;
+					break;
+				case Menu::MENU_OPTION_ITEM_QUIT:
+					_g->_pi.quit = 1;
+					break;
+				}
 			}
 			break;
 		}

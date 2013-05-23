@@ -4,12 +4,12 @@
 #include "unpack.h"
 #include "game.h"
 
-Game::Game(const char *dataPath, const char *savePath, int level, ResourceType ver, Language lang)
+Game::Game(const char *dataPath, const char *savePath, ResourceType ver, Language lang)
 	: _cut(&_pi, &_res, &_vid), _menu(&_res, &_vid), _res(dataPath, ver, lang), _sfx(&_mix), _vid(&_res),
 	_dataPath(dataPath), _savePath(savePath) {
 	memset(&_pi, 0, sizeof(_pi));
-	_skillLevel = 1;
-	_currentLevel = level;
+	_skillLevel = kDefaultSkill;
+	_currentLevel = kDefaultLevel;
 }
 
 Game::~Game() {
@@ -60,18 +60,6 @@ void Game::init() {
 		break;
 	}
 
-// TODO:
-	if (_currentLevel == 7) {
-		_vid.fadeOut();
-		_vid.setTextPalette();
-		playCutscene(0x3D);
-	} else {
-		_vid.setTextPalette();
-		_vid.setPalette0xF();
-//		_stub->setOverscanColor(0xE0);
-//		mainLoop();
-	}
-
 	_cut._id = 0x40;
 
 	_vid._unkPalSlot1 = 0;
@@ -103,6 +91,14 @@ void Game::resetLevelState() {
 }
 
 void Game::continueGame() {
+	_vid.fadeOut();
+	if (_currentLevel == 7) {
+		_vid.setTextPalette();
+		playCutscene(0x3D);
+		return;
+	}
+	_vid.setTextPalette();
+	_vid.setPalette0xF();
 	if (_validSaveState) {
 		loadState();
 	} else {
@@ -164,7 +160,6 @@ void Game::doGame() {
 		--_blinkingConradCounter;
 	}
 	_vid.updateScreen();
-	inp_handleSpecialKeys();
 }
 
 void Game::playCutscene(int id) {
@@ -177,10 +172,6 @@ void Game::playCutscene(int id) {
 //			_mod.play(Cutscene::_musicTable[_cut._id]);
 		}
 	}
-}
-
-void Game::inp_handleSpecialKeys() {
-// TODO:
 }
 
 void Game::drawCurrentInventoryItem() {
@@ -892,6 +883,7 @@ void Game::loadLevelMap() {
 }
 
 void Game::loadLevelData() {
+	_vid.clearPalette();
 	_res.clearLevelRes();
 	const Level *lvl = &_gameLevels[_currentLevel];
 	switch (_res._type) {
@@ -1146,10 +1138,6 @@ void Game::handleInventory() {
 	if (y != h - 1) {
 		drawIcon(77, 120, 143, 0xA); // up arrow
 	}
-}
-
-void Game::inp_update() {
-	// TODO:
 }
 
 void AnimBuffers::addState(uint8_t stateNum, int16_t x, int16_t y, const uint8_t *dataPtr, LivePGE *pge, uint8_t w, uint8_t h) {

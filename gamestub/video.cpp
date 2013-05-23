@@ -5,7 +5,6 @@
 
 Video::Video(Resource *res)
 	: _res(res) {
-	memset(_palBuf, 0, sizeof(_palBuf));
 	_frontLayer = (uint8_t *)malloc(GAMESCREEN_W * GAMESCREEN_H);
 	memset(_frontLayer, 0, GAMESCREEN_W * GAMESCREEN_H);
 	_backLayer = (uint8_t *)malloc(GAMESCREEN_W * GAMESCREEN_H);
@@ -23,6 +22,7 @@ Video::Video(Resource *res)
 	_charFrontColor = 0;
 	_charTransparentColor = 0;
 	_charShadowColor = 0;
+	clearPalette();
 }
 
 Video::~Video() {
@@ -49,6 +49,10 @@ void Video::markBlockAsDirty(int16_t x, int16_t y, uint16_t w, uint16_t h) {
 	}
 }
 
+void Video::clearScreen() {
+	memset(_backLayer, 0, GAMESCREEN_W * GAMESCREEN_H);
+}
+
 void Video::updateScreen() {
 	debug(DBG_VIDEO, "Video::updateScreen()");
 	if (_shakeOffset != 0) {
@@ -65,12 +69,15 @@ void Video::fullRefresh() {
 
 void Video::fadeOut() {
 	debug(DBG_VIDEO, "Video::fadeOut()");
-// TODO:
-//	_stub->fadeScreen();
+	// TODO:
 }
 
 void Video::fadeOutPalette() {
 	// TODO:
+}
+
+void Video::clearPalette() {
+	memset(_palBuf, 0, sizeof(_palBuf));
 }
 
 void Video::setPaletteEntry(int i, const Color *c) {

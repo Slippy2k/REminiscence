@@ -6,6 +6,10 @@
 
 Menu::Menu(Resource *res, Video *vid)
 	: _res(res), _vid(vid) {
+	_currentScreen = -1;
+	_newScreen = SCREEN_TITLE;
+	_level = kDefaultLevel;
+	_skill = kDefaultSkill;
 }
 
 void Menu::drawString(const char *str, int16_t y, int16_t x, uint8_t color) {
@@ -70,7 +74,7 @@ void Menu::loadPicture(const char *prefix) {
 	for (int i = 0; i < 4; ++i) {
 		for (int y = 0; y < 224; ++y) {
 			for (int x = 0; x < 64; ++x) {
-				_vid->_frontLayer[i + x * 4 + 256 * y] = _res->_memBuf[0x3800 * i + x + 64 * y];
+				_vid->_backLayer[i + x * 4 + 256 * y] = _res->_memBuf[0x3800 * i + x + 64 * y];
 			}
 		}
 	}
@@ -86,164 +90,102 @@ void Menu::loadPicture(const char *prefix) {
 	}
 }
 
-void Menu::handleInfoScreen() {
+void Menu::handleInfoScreen(PlayerInput *pi) {
 	debug(DBG_MENU, "Menu::handleInfoScreen()");
-	_vid->fadeOut();
-	switch (_res->_lang) {
-	case LANG_FR:
-		loadPicture("instru_f");
-		break;
-	case LANG_EN:
-	case LANG_DE:
-	case LANG_SP:
-	case LANG_IT:
-		loadPicture("instru_e");
-		break;
+	if (pi->enter) {
+		pi->enter = false;
+		_newScreen = SCREEN_TITLE;
 	}
-/* TODO:
-	_vid->fullRefresh();
-	_vid->updateScreen();
-	do {
-		_stub->sleep(EVENTS_DELAY);
-		_stub->processEvents();
-		if (_stub->_pi.enter) {
-			_stub->_pi.enter = false;
-			break;
-		}
-	} while (!_stub->_pi.quit);
-*/
 }
 
-void Menu::handleSkillScreen(uint8_t &new_skill) {
+void Menu::handleSkillScreen(PlayerInput *pi) {
 	debug(DBG_MENU, "Menu::handleSkillScreen()");
 	static const uint8_t option_colors[3][3] = { { 2, 3, 3 }, { 3, 2, 3}, { 3, 3, 2 } };
-	_vid->fadeOut();
-	loadPicture("menu3");
-	_vid->fullRefresh();
 	drawString(_res->getMenuString(LocaleData::LI_12_SKILL_LEVEL), 12, 4, 3);
-	int skill_level = new_skill;
-/* TODO:
-	do {
-		drawString(_res->getMenuString(LocaleData::LI_13_EASY), 15, 14, option_colors[skill_level][0]);
-		drawString(_res->getMenuString(LocaleData::LI_14_NORMAL), 17, 14, option_colors[skill_level][1]);
-		drawString(_res->getMenuString(LocaleData::LI_15_EXPERT), 19, 14, option_colors[skill_level][2]);
+	drawString(_res->getMenuString(LocaleData::LI_13_EASY), 15, 14, option_colors[_skill][0]);
+	drawString(_res->getMenuString(LocaleData::LI_14_NORMAL), 17, 14, option_colors[_skill][1]);
+	drawString(_res->getMenuString(LocaleData::LI_15_EXPERT), 19, 14, option_colors[_skill][2]);
 
-		_vid->updateScreen();
-		_stub->sleep(EVENTS_DELAY);
-		_stub->processEvents();
-
-		if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_UP;
-			if (skill_level != 0) {
-				--skill_level;
-			} else {
-				skill_level = 2;
-			}
+	if (pi->dirMask & PlayerInput::DIR_UP) {
+		pi->dirMask &= ~PlayerInput::DIR_UP;
+		if (_skill != 0) {
+			--_skill;
+		} else {
+			_skill = 2;
 		}
-		if (_stub->_pi.dirMask & PlayerInput::DIR_DOWN) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_DOWN;
-			if (skill_level != 2) {
-				++skill_level;
-			} else {
-				skill_level = 0;
-			}
+	}
+	if (pi->dirMask & PlayerInput::DIR_DOWN) {
+		pi->dirMask &= ~PlayerInput::DIR_DOWN;
+		if (_skill != 2) {
+			++_skill;
+		} else {
+			_skill = 0;
 		}
-		if (_stub->_pi.enter) {
-			_stub->_pi.enter = false;
-			new_skill = skill_level;
-			return;
-		}
-	} while (!_stub->_pi.quit);
-*/
-	new_skill = 1;
+	}
+	if (pi->enter) {
+		pi->enter = false;
+		_newScreen = SCREEN_TITLE;
+	}
 }
 
-bool Menu::handleLevelScreen(uint8_t &new_skill, uint8_t &new_level) {
+void Menu::handleLevelScreen(PlayerInput *pi) {
 	debug(DBG_MENU, "Menu::handleLevelScreen()");
-	_vid->fadeOut();
-	loadPicture("menu2");
-	_vid->fullRefresh();
-/* TODO:
-	uint8_t currentSkill = new_skill;
-	uint8_t currentLevel = new_level;
-	do {
-		static const char *levelTitles[] = {
-			"Titan / The Jungle",
-			"Titan / New Washington",
-			"Titan / Death Tower Show",
-			"Earth / Surface",
-			"Earth / Paradise Club",
-			"Planet Morphs / Surface",
-			"Planet Morphs / Inner Core"
-		};
-		for (int i = 0; i < 7; ++i) {
-			drawString(levelTitles[i], 7 + i * 2, 4, (currentLevel == i) ? 2 : 3);
-		}
-		_vid->markBlockAsDirty(4 * 8, 7 * 8, 192, 7 * 8);
+	static const char *levelTitles[] = {
+		"Titan / The Jungle",
+		"Titan / New Washington",
+		"Titan / Death Tower Show",
+		"Earth / Surface",
+		"Earth / Paradise Club",
+		"Planet Morphs / Surface",
+		"Planet Morphs / Inner Core"
+	};
+	for (int i = 0; i < 7; ++i) {
+		drawString(levelTitles[i], 7 + i * 2, 4, (_level == i) ? 2 : 3);
+	}
 
-                drawString(_res->getMenuString(LocaleData::LI_13_EASY),   23,  4, (currentSkill == 0) ? 2 : 3);
-                drawString(_res->getMenuString(LocaleData::LI_14_NORMAL), 23, 14, (currentSkill == 1) ? 2 : 3);
-                drawString(_res->getMenuString(LocaleData::LI_15_EXPERT), 23, 24, (currentSkill == 2) ? 2 : 3);
-		_vid->markBlockAsDirty(4 * 8, 23 * 8, 192, 8);
+	drawString(_res->getMenuString(LocaleData::LI_13_EASY),   23,  4, (_skill == 0) ? 2 : 3);
+	drawString(_res->getMenuString(LocaleData::LI_14_NORMAL), 23, 14, (_skill == 1) ? 2 : 3);
+	drawString(_res->getMenuString(LocaleData::LI_15_EXPERT), 23, 24, (_skill == 2) ? 2 : 3);
 
-		_vid->updateScreen();
-		_stub->sleep(EVENTS_DELAY);
-		_stub->processEvents();
-
-		if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_UP;
-			if (currentLevel != 0) {
-				--currentLevel;
-			} else {
-				currentLevel = 6;
-			}
+	if (pi->dirMask & PlayerInput::DIR_UP) {
+		pi->dirMask &= ~PlayerInput::DIR_UP;
+		if (_level != 0) {
+			--_level;
+		} else {
+			_level = 6;
 		}
-		if (_stub->_pi.dirMask & PlayerInput::DIR_DOWN) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_DOWN;
-			if (currentLevel != 6) {
-				++currentLevel;
-			} else {
-				currentLevel = 0;
-			}
+	}
+	if (pi->dirMask & PlayerInput::DIR_DOWN) {
+		pi->dirMask &= ~PlayerInput::DIR_DOWN;
+		if (_level != 6) {
+			++_level;
+		} else {
+			_level = 0;
 		}
-		if (_stub->_pi.dirMask & PlayerInput::DIR_LEFT) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_LEFT;
-			if (currentSkill != 0) {
-				--currentSkill;
-			} else {
-				currentSkill = 2;
-			}
+	}
+	if (pi->dirMask & PlayerInput::DIR_LEFT) {
+		pi->dirMask &= ~PlayerInput::DIR_LEFT;
+		if (_skill != 0) {
+			--_skill;
+		} else {
+			_skill = 2;
 		}
-		if (_stub->_pi.dirMask & PlayerInput::DIR_RIGHT) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_RIGHT;
-			if (currentSkill != 2) {
-				++currentSkill;
-			} else {
-				currentSkill = 0;
-			}
+	}
+	if (pi->dirMask & PlayerInput::DIR_RIGHT) {
+		pi->dirMask &= ~PlayerInput::DIR_RIGHT;
+		if (_skill != 2) {
+			++_skill;
+		} else {
+			_skill = 0;
 		}
-		if (_stub->_pi.enter) {
-			_stub->_pi.enter = false;
-			new_skill = currentSkill;
-			new_level = currentLevel;
-			return true;
-		}
-	} while (!_stub->_pi.quit);
-*/
-	return false;
+	}
+	if (pi->enter) {
+		pi->enter = false;
+		_newScreen = SCREEN_TITLE;
+	}
 }
 
-bool Menu::handleTitleScreen(uint8_t &new_skill, uint8_t &new_level) {
-	debug(DBG_MENU, "Menu::handleTitleScreen()");
-	bool quit_loop = false;
-	int menu_entry = 0;
-	bool reinit_screen = true;
-	bool continue_game = true;
-	_charVar1 = 0;
-	_charVar2 = 0;
-	_charVar3 = 0;
-	_charVar4 = 0;
-	_charVar5 = 0;
+void Menu::handleTitleScreen(PlayerInput *pi) {
 	static const struct {
 		int str;
 		int opt;
@@ -254,80 +196,94 @@ bool Menu::handleTitleScreen(uint8_t &new_skill, uint8_t &new_level) {
 		{ LocaleData::LI_11_QUIT, MENU_OPTION_ITEM_QUIT }
 	};
 	static const int menu_items_count = ARRAYSIZE(menu_items);
-	while (!quit_loop) {
-		if (reinit_screen) {
-			_vid->fadeOut();
-			loadPicture("menu1");
-			_vid->fullRefresh();
-			_charVar3 = 1;
-			_charVar4 = 2;
-			menu_entry = 0;
-			reinit_screen = false;
-		}
-		int selected_menu_entry = -1;
-		const int y_start = 26 - menu_items_count * 2;
-		for (int i = 0; i < menu_items_count; ++i) {
-			drawString(_res->getMenuString(menu_items[i].str), y_start + i * 2, 20, (i == menu_entry) ? 2 : 3);
-		}
 
-		_vid->updateScreen();
-/* TODO:
-		_stub->sleep(EVENTS_DELAY);
-		_stub->processEvents();
+	const int y_start = 26 - menu_items_count * 2;
+	for (int i = 0; i < menu_items_count; ++i) {
+		drawString(_res->getMenuString(menu_items[i].str), y_start + i * 2, 20, (i == _currentOption) ? 2 : 3);
+	}
 
-		if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_UP;
-			if (menu_entry != 0) {
-				--menu_entry;
-			} else {
-				menu_entry = menu_items_count - 1;
-			}
+	if (pi->dirMask & PlayerInput::DIR_UP) {
+		pi->dirMask &= ~PlayerInput::DIR_UP;
+		if (_currentOption != 0) {
+			--_currentOption;
+		} else {
+			_currentOption = menu_items_count - 1;
 		}
-		if (_stub->_pi.dirMask & PlayerInput::DIR_DOWN) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_DOWN;
-			if (menu_entry != menu_items_count - 1) {
-				++menu_entry;
-			} else {
-				menu_entry = 0;
-			}
+	}
+	if (pi->dirMask & PlayerInput::DIR_DOWN) {
+		pi->dirMask &= ~PlayerInput::DIR_DOWN;
+		if (_currentOption != menu_items_count - 1) {
+			++_currentOption;
+		} else {
+			_currentOption = 0;
 		}
-		if (_stub->_pi.enter) {
-			_stub->_pi.enter = false;
-			selected_menu_entry = menu_entry;
-		}
-
-		if (selected_menu_entry != -1) {
-			switch (menu_items[selected_menu_entry].opt) {
-			case MENU_OPTION_ITEM_START:
-				quit_loop = true;
-				break;
-			case MENU_OPTION_ITEM_SKILL:
-				handleSkillScreen(new_skill);
-				reinit_screen = true;
-				break;
-			case MENU_OPTION_ITEM_LEVEL:
-				if (handleLevelScreen(new_skill, new_level)) {
-					quit_loop = true;
-				} else {
-					reinit_screen = true;
-				}
-				break;
-			case MENU_OPTION_ITEM_INFO:
-				handleInfoScreen();
-				reinit_screen = true;
-				break;
-			case MENU_OPTION_ITEM_QUIT:
-				continue_game = false;
-				quit_loop = true;
-				break;
-			}
-		}
-		if (_stub->_pi.quit) {
-			continue_game = false;
-			quit_loop = true;
+	}
+	if (pi->enter) {
+		pi->enter = false;
+		_selectedOption = menu_items[_currentOption].opt;
+		switch (_selectedOption) {
+		case MENU_OPTION_ITEM_START:
+			break;
+		case MENU_OPTION_ITEM_SKILL:
+			_newScreen = SCREEN_SKILL;
+			break;
+		case MENU_OPTION_ITEM_LEVEL:
+			_newScreen = SCREEN_LEVEL;
+			break;
+		case MENU_OPTION_ITEM_INFO:
+			_newScreen = SCREEN_INFO;
+			break;
+		case MENU_OPTION_ITEM_QUIT:
 			break;
 		}
-*/
 	}
-	return continue_game;
+}
+
+void Menu::initMenu() {
+	switch (_currentScreen) {
+	case SCREEN_TITLE:
+		loadPicture("menu1");
+		_charVar1 = 0;
+		_charVar2 = 0;
+		_charVar3 = 1;
+		_charVar4 = 2;
+		_charVar5 = 0;
+		break;
+	case SCREEN_SKILL:
+		loadPicture("menu3");
+		break;
+	case SCREEN_LEVEL:
+		loadPicture("menu2");
+		break;
+	case SCREEN_INFO:
+		if (_res->_lang == LANG_FR) {
+			loadPicture("instru_f");
+		} else {
+			loadPicture("instru_e");
+		}
+		break;
+	}
+	_selectedOption = -1;
+}
+
+void Menu::handleMenu(PlayerInput *pi) {
+	if (_currentScreen != _newScreen) {
+		_currentScreen = _newScreen;
+		initMenu();
+	}
+	memcpy(_vid->_frontLayer, _vid->_backLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+	switch (_currentScreen) {
+	case SCREEN_TITLE:
+		handleTitleScreen(pi);
+		break;
+	case SCREEN_SKILL:
+		handleSkillScreen(pi);
+		break;
+	case SCREEN_LEVEL:
+		handleLevelScreen(pi);
+		break;
+	case SCREEN_INFO:
+		handleInfoScreen(pi);
+		break;
+	}
 }

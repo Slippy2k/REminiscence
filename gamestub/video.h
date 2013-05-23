@@ -43,10 +43,12 @@ struct Video {
 	~Video();
 
 	void markBlockAsDirty(int16_t x, int16_t y, uint16_t w, uint16_t h);
+	void clearScreen();
 	void updateScreen();
 	void fullRefresh();
 	void fadeOut();
 	void fadeOutPalette();
+	void clearPalette();
 	void setPaletteEntry(int i, const Color *c);
 	void getPaletteEntry(int i, Color *c);
 	void setPaletteColorBE(int num, int offset);

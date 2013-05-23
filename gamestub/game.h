@@ -74,18 +74,11 @@ struct Game {
 	AnimBuffers _animBuffers;
 	uint16_t _deathCutsceneCounter;
 	bool _saveStateCompleted;
-	int _inventoryCurrentItem;
-	int _inventoryItemsCount;
-	InventoryItem _inventoryItems[24];
 	int _textStoryOffset;
 	bool _gameOver;
-	int _continueAbortItem;
-	int _continueAbortCounter;
-	Color _continueAbortColor;
-	int _continueAbortColorInc;
 	int _configPanelItem;
 
-	Game(const char *dataPath, const char *savePath, int level, ResourceType ver, Language lang);
+	Game(const char *dataPath, const char *savePath, ResourceType ver, Language lang);
 	~Game();
 
 	int getNextCutscene(int id);
@@ -102,8 +95,6 @@ struct Game {
 	void showFinalScore();
 	void initConfigPanel();
 	void handleConfigPanel();
-	void initContinueAbort();
-	void handleContinueAbort();
 	void printSaveStateCompleted();
 	void drawLevelTexts();
 	void initStoryTexts();
@@ -121,6 +112,21 @@ struct Game {
 	uint16_t getRandomNumber();
 	void changeLevel();
 	uint16_t getLineLength(const uint8_t *str) const;
+
+	// continue/abort
+	int _continueAbortItem;
+	int _continueAbortCounter;
+	Color _continueAbortColor;
+	int _continueAbortColorInc;
+
+	void initContinueAbort();
+	void handleContinueAbort();
+
+	// inventory
+	int _inventoryCurrentItem;
+	int _inventoryItemsCount;
+	InventoryItem _inventoryItems[24];
+
 	void initInventory();
 	void handleInventory();
 
@@ -354,10 +360,6 @@ struct Game {
 	// input
 	uint8_t _inp_lastKeysHit;
 	uint8_t _inp_lastKeysHitLeftRight;
-
-	void inp_handleSpecialKeys();
-	void inp_update();
-
 
 	// save/load state
 	bool _validSaveState;
