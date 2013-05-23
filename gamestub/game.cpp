@@ -8,7 +8,6 @@ Game::Game(const char *dataPath, const char *savePath, int level, ResourceType v
 	: _cut(&_pi, &_res, &_vid), _menu(&_res, &_vid), _res(dataPath, ver, lang), _sfx(&_mix), _vid(&_res),
 	_dataPath(dataPath), _savePath(savePath) {
 	memset(&_pi, 0, sizeof(_pi));
-	_stateSlot = 1;
 	_skillLevel = 1;
 	_currentLevel = level;
 }
@@ -46,16 +45,6 @@ void Game::init() {
 		break;
 	}
 
-// TODO:
-/*
-#ifndef BYPASS_PROTECTION
-	while (!handleProtectionScreen());
-	if (_pi.quit) {
-		return;
-	}
-#endif
-*/
-
 	switch (_res._type) {
 	case kResourceTypeAmiga:
 		_res.load("ICONE", Resource::OT_ICN, "SPR");
@@ -90,7 +79,7 @@ void Game::init() {
 	_score = 0;
 }
 
-void Game::resetGameState() {
+void Game::resetLevelState() {
 	_animBuffers._states[0] = _animBuffer0State;
 	_animBuffers._curPos[0] = 0xFF;
 	_animBuffers._states[1] = _animBuffer1State;
@@ -118,7 +107,7 @@ void Game::continueGame() {
 		loadState();
 	} else {
 		loadLevelData();
-		resetGameState();
+		resetLevelState();
 	}
 }
 
@@ -318,11 +307,6 @@ void Game::handleContinueAbort() {
 			_continueAbortItem = 1;
 		}
 	}
-}
-
-bool Game::handleProtectionScreen() {
-	// TODO:
-	return true;
 }
 
 void Game::printLevelCode() {

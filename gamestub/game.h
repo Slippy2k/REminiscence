@@ -39,8 +39,6 @@ struct Game {
 	static const char *_monsterNames[2][4];
 	static const pge_OpcodeProc _pge_opcodeTable[];
 	static const uint8_t _pge_modKeysTable[];
-	static const uint8_t _protectionCodeData[];
-	static const uint8_t _protectionPal[];
 	static const char *_passwords[8][3];
 
 	Cutscene _cut;
@@ -92,7 +90,7 @@ struct Game {
 
 	int getNextCutscene(int id);
 	void init();
-	void resetGameState();
+	void resetLevelState();
 	void continueGame();
 	void doGame();
 	void playCutscene(int id = -1);
@@ -106,7 +104,6 @@ struct Game {
 	void handleConfigPanel();
 	void initContinueAbort();
 	void handleContinueAbort();
-	bool handleProtectionScreen();
 	void printSaveStateCompleted();
 	void drawLevelTexts();
 	void initStoryTexts();
@@ -363,7 +360,6 @@ struct Game {
 
 
 	// save/load state
-	uint8_t _stateSlot;
 	bool _validSaveState;
 
 	bool openStateFile(File&, char);

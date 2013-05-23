@@ -63,6 +63,7 @@ enum {
 	kStateCutscene,
 	kStateContinueAbort,
 	kStateGameOver,
+	kStateMenu
 };
 
 struct GameStub_Flashback : GameStub {
@@ -83,7 +84,7 @@ struct GameStub_Flashback : GameStub {
 		_g = new Game(dataPath, ".", levelNum, (ResourceType)version, lang);
 		_g->init();
 		_g->loadLevelData();
-		_g->resetGameState();
+		_g->resetLevelState();
 		_state = -1;
 		_newState = kStateCutscene;
 		return 0;
@@ -223,9 +224,11 @@ struct GameStub_Flashback : GameStub {
 					break;
 				case 1:
 					_g->loadState();
+					_newState = kStateGame;
 					break;
 				case 2:
 					_g->saveState();
+					_newState = kStateGame;
 					break;
 				case 3:
 					_newState = kStateGameOver;
@@ -285,7 +288,7 @@ struct GameStub_Flashback : GameStub {
 			if (_g->_cut._stop) {
 // TEMP:
 				_g->loadLevelData();
-				_g->resetGameState();
+				_g->resetLevelState();
 				_newState = kStateGame;
 			}
 			break;

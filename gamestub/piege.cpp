@@ -1411,6 +1411,7 @@ int Game::pge_op_setCollisionState2(ObjectOpcodeArgs *args) {
 int Game::pge_op_saveState(ObjectOpcodeArgs *args) {
 	_saveStateCompleted = true;
 	saveState();
+	_validSaveState = true;
 	return 0xFFFF;
 }
 

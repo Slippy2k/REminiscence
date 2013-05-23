@@ -158,68 +158,6 @@ void Menu::handleSkillScreen(uint8_t &new_skill) {
 	new_skill = 1;
 }
 
-bool Menu::handlePasswordScreen(uint8_t &new_skill, uint8_t &new_level) {
-	debug(DBG_MENU, "Menu::handlePasswordScreen()");
-	_vid->fadeOut();
-	_vid->_charShadowColor = _charVar1;
-	_vid->_charTransparentColor = 0xFF;
-	_vid->_charFrontColor = _charVar4;
-	_vid->fullRefresh();
-/* TODO:
-	char password[7];
-	int len = 0;
-	do {
-		loadPicture("menu2");
-		drawString2(_res->getMenuString(LocaleData::LI_16_ENTER_PASSWORD1), 15, 3);
-		drawString2(_res->getMenuString(LocaleData::LI_17_ENTER_PASSWORD2), 17, 3);
-
-		for (int i = 0; i < len; ++i) {
-			_vid->PC_drawChar((uint8_t)password[i], 21, i + 15);
-		}
-		_vid->PC_drawChar(0x20, 21, len + 15);
-
-		_vid->markBlockAsDirty(15 * 8, 21 * 8, (len + 1) * 8, 8);
-		_vid->updateScreen();
-		_stub->sleep(EVENTS_DELAY);
-		_stub->processEvents();
-		char c = _stub->_pi.lastChar;
-		if (c != 0) {
-			_stub->_pi.lastChar = 0;
-			if (len < 6) {
-				if (c >= 'a' && c <= 'z') {
-					c &= ~0x20;
-				}
-				if ((c >= 'A' && c <= 'Z') || (c == 0x20)) {
-					password[len] = c;
-					++len;
-				}
-			}
-		}
-		if (_stub->_pi.backspace) {
-			_stub->_pi.backspace = false;
-			if (len > 0) {
-				--len;
-			}
-		}
-		if (_stub->_pi.enter) {
-			_stub->_pi.enter = false;
-			password[len] = '\0';
-			for (int level = 0; level < 8; ++level) {
-				for (int skill = 0; skill < 3; ++skill) {
-					if (strcmp(_passwords[level][skill], password) == 0) {
-						new_level = level;
-						new_skill = skill;
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-	} while (!_stub->_pi.quit);
-*/
-	return false;
-}
-
 bool Menu::handleLevelScreen(uint8_t &new_skill, uint8_t &new_level) {
 	debug(DBG_MENU, "Menu::handleLevelScreen()");
 	_vid->fadeOut();
@@ -366,13 +304,6 @@ bool Menu::handleTitleScreen(uint8_t &new_skill, uint8_t &new_level) {
 			case MENU_OPTION_ITEM_SKILL:
 				handleSkillScreen(new_skill);
 				reinit_screen = true;
-				break;
-			case MENU_OPTION_ITEM_PASSWORD:
-				if (handlePasswordScreen(new_skill, new_level)) {
-					quit_loop = true;
-				} else {
-					reinit_screen = true;
-				}
 				break;
 			case MENU_OPTION_ITEM_LEVEL:
 				if (handleLevelScreen(new_skill, new_level)) {

@@ -38,7 +38,6 @@ struct Menu {
 	void loadPicture(const char *prefix);
 	void handleInfoScreen();
 	void handleSkillScreen(uint8_t &new_skill);
-	bool handlePasswordScreen(uint8_t &new_skill, uint8_t &new_level);
 	bool handleLevelScreen(uint8_t &new_skill, uint8_t &new_level);
 	bool handleTitleScreen(uint8_t &new_skill, uint8_t &new_level);
 };
