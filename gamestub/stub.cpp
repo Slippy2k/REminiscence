@@ -226,6 +226,7 @@ struct GameStub_Flashback : GameStub {
 					break;
 				case 1:
 					_g->loadState();
+					_g->resetLevelState();
 					_newState = kStateGame;
 					break;
 				case 2:

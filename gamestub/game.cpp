@@ -103,8 +103,8 @@ void Game::continueGame() {
 		loadState();
 	} else {
 		loadLevelData();
-		resetLevelState();
 	}
+	resetLevelState();
 }
 
 void Game::doGame() {
@@ -883,7 +883,6 @@ void Game::loadLevelMap() {
 }
 
 void Game::loadLevelData() {
-	_vid.clearPalette();
 	_res.clearLevelRes();
 	const Level *lvl = &_gameLevels[_currentLevel];
 	switch (_res._type) {
