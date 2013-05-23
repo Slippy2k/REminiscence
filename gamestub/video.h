@@ -48,6 +48,7 @@ struct Video {
 	void fadeOut();
 	void fadeOutPalette();
 	void setPaletteEntry(int i, const Color *c);
+	void getPaletteEntry(int i, Color *c);
 	void setPaletteColorBE(int num, int offset);
 	void setPaletteSlotBE(int palSlot, int palNum);
 	void setPaletteSlotLE(int palSlot, const uint8_t *palData);

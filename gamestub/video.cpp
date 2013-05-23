@@ -79,6 +79,12 @@ void Video::setPaletteEntry(int i, const Color *c) {
 	_palBuf[i * 3 + 2] = c->b;
 }
 
+void Video::getPaletteEntry(int i, Color *c) {
+	c->r = _palBuf[i * 3];
+	c->g = _palBuf[i * 3 + 1];
+	c->b = _palBuf[i * 3 + 2];
+}
+
 void Video::setPaletteColorBE(int num, int offset) {
 	const int color = READ_BE_UINT16(_res->_pal + offset * 2);
 	Color c;

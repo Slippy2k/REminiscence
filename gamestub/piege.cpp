@@ -1274,8 +1274,7 @@ int Game::pge_op_decLifeCounter(ObjectOpcodeArgs *args) {
 
 int Game::pge_op_playCutscene(ObjectOpcodeArgs *args) {
 	if (_deathCutsceneCounter == 0) {
-// TODO:
-//		_cut._id = args->a;
+		_cut._id = args->a;
 	}
 	return 1;
 }
@@ -1290,8 +1289,7 @@ int Game::pge_op_isTempVar2Set(ObjectOpcodeArgs *args) {
 int Game::pge_op_playDeathCutscene(ObjectOpcodeArgs *args) {
 	if (_deathCutsceneCounter == 0) {
 		_deathCutsceneCounter = args->pge->init_PGE->counter_values[3] + 1;
-// TODO:
-//		_cut._deathCutsceneId = args->a;
+		_cut._deathCutsceneId = args->a;
 	}
 	return 1;
 }

@@ -112,6 +112,15 @@ void Game::resetGameState() {
 	_gameOver = false;
 }
 
+void Game::continueGame() {
+	if (_validSaveState) {
+		loadState();
+	} else {
+		loadLevelData();
+		resetGameState();
+	}
+}
+
 void Game::doGame() {
 /* TODO:
 	if (_cut._id == 0x3D) {
@@ -124,21 +133,7 @@ void Game::doGame() {
 		if (_deathCutsceneCounter == 0) {
 			_gameOver = true;
 			playCutscene(_cut._deathCutsceneId);
-/*
-			if (!handleContinueAbort()) {
-				playCutscene(0x41);
-				break;
-			} else {
-				if (_validSaveState) {
-					if (!loadGameState(0)) {
-						break;
-					}
-				} else {
-					loadLevelData();
-					resetGameState();
-				}
-				continue;
-			}*/
+			return;
 		}
 	}
 	memcpy(_vid._frontLayer, _vid._backLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
@@ -224,9 +219,64 @@ bool Game::handleConfigPanel() {
 	return true;
 }
 
-bool Game::handleContinueAbort() {
-	// TODO:
-	return true;
+void Game::initContinueAbort() {
+	_cut._id = 0x48;
+	_cut.initCutscene();
+	_continueAbortItem = 0;
+	_continueAbortCounter = 100;
+	_vid.getPaletteEntry(0xE4, &_continueAbortColor);
+	_continueAbortColorInc = 0xFF;
+}
+
+void Game::handleContinueAbort() {
+	if (!_cut._stop) {
+		_cut.playCutscene();
+		return;
+	}
+	memcpy(_vid._frontLayer, _cut._page0, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+	static const uint8_t colors[] = { 0xE4, 0xE5 };
+
+	const char *str = _res.getMenuString(LocaleData::LI_01_CONTINUE_OR_ABORT);
+	_vid.drawString(str, (256 - strlen(str) * 8) / 2, 64, 0xE3);
+	str = _res.getMenuString(LocaleData::LI_02_TIME);
+	char buf[50];
+	snprintf(buf, sizeof(buf), "%s : %d", str, _continueAbortCounter / 10);
+	_vid.drawString(buf, 96, 88, 0xE3);
+	str = _res.getMenuString(LocaleData::LI_03_CONTINUE);
+	_vid.drawString(str, (256 - strlen(str) * 8) / 2, 104, colors[_continueAbortItem]);
+	str = _res.getMenuString(LocaleData::LI_04_ABORT);
+	_vid.drawString(str, (256 - strlen(str) * 8) / 2, 112, colors[_continueAbortItem ^ 1]);
+	snprintf(buf, sizeof(buf), "SCORE  %08u", _score);
+	_vid.drawString(buf, 64, 154, 0xE3);
+
+	if (_continueAbortColor.b >= 0x3D) {
+		_continueAbortColorInc = 0;
+	} else if (_continueAbortColor.b < 2) {
+		_continueAbortColorInc = 0xFF;
+	}
+	if (_continueAbortColorInc == 0xFF) {
+		_continueAbortColor.b += 2;
+		_continueAbortColor.g += 2;
+	} else {
+		_continueAbortColor.b -= 2;
+		_continueAbortColor.g -= 2;
+	}
+	_vid.setPaletteEntry(0xE4, &_continueAbortColor);
+
+	--_continueAbortCounter;
+
+	if (_pi.dirMask & PlayerInput::DIR_UP) {
+		_pi.dirMask &= ~PlayerInput::DIR_UP;
+		if (_continueAbortItem != 0) {
+			_continueAbortItem = 0;
+		}
+	}
+	if (_pi.dirMask & PlayerInput::DIR_DOWN) {
+		_pi.dirMask &= ~PlayerInput::DIR_DOWN;
+		if (_continueAbortItem != 1) {
+			_continueAbortItem = 1;
+		}
+	}
 }
 
 bool Game::handleProtectionScreen() {

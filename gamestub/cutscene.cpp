@@ -1009,10 +1009,6 @@ void Cutscene::playCutscene() {
 			error("Invalid cutscene opcode = 0x%02X", op);
 		}
 		(this->*_opcodeTable[op])();
-		if (_pi->backspace) {
-			_pi->backspace = false;
-			_interrupted = true;
-		}
 	}
 	memcpy(_vid->_frontLayer, _page0, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
 	--_yieldSync;

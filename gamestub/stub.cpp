@@ -60,6 +60,8 @@ enum {
 	kStateInventory,
 	kStateStoryTexts,
 	kStateCutscene,
+	kStateContinueAbort,
+	kStateGameOver,
 };
 
 struct GameStub_Flashback : GameStub {
@@ -171,6 +173,13 @@ struct GameStub_Flashback : GameStub {
 			case kStateCutscene:
 				_g->_cut.initCutscene();
 				break;
+			case kStateContinueAbort:
+				_g->initContinueAbort();
+				break;
+			case kStateGameOver:
+				_g->_cut._id = 0x41;
+				_g->_cut.initCutscene();
+				break;
 			}
 		}
 		switch (_state) {
@@ -208,6 +217,10 @@ struct GameStub_Flashback : GameStub {
 				break;
 			}
 			_g->_cut.playCutscene();
+			if (_g->_pi.backspace) {
+				_g->_pi.backspace = false;
+				_g->_cut._interrupted = true;
+			}
 			if (_g->_cut._interrupted || _g->_cut._stop) {
 				int id = _g->getNextCutscene(_g->_cut._id);
 				if (id != 0xFFFF) {
@@ -216,11 +229,36 @@ struct GameStub_Flashback : GameStub {
 				} else {
 					_g->_cut._id = 0xFFFF;
 					if (_g->_gameOver) {
-						_g->loadLevelData();
-						_g->resetGameState();
+						_newState = kStateContinueAbort;
+					} else {
+						_newState = kStateGame;
 					}
-					_newState = kStateGame;
 				}
+			}
+			break;
+		case kStateContinueAbort:
+			_g->handleContinueAbort();
+			if (_g->_continueAbortCounter == 0) {
+				_newState = kStateGameOver;
+			}
+			if (_g->_pi.enter) {
+				_g->_pi.enter = false;
+				if (_g->_continueAbortItem == 0) {
+					_g->continueGame();
+					_newState = kStateGame;
+				} else {
+					_newState = kStateGameOver;
+				}
+                                break;
+			}
+			break;
+		case kStateGameOver:
+			_g->_cut.playCutscene();
+			if (_g->_cut._stop) {
+// TEMP:
+				_g->loadLevelData();
+				_g->resetGameState();
+				_newState = kStateGame;
 			}
 			break;
 		}

@@ -79,6 +79,10 @@ struct Game {
 	InventoryItem _inventoryItems[24];
 	int _textStoryOffset;
 	bool _gameOver;
+	int _continueAbortItem;
+	int _continueAbortCounter;
+	Color _continueAbortColor;
+	int _continueAbortColorInc;
 
 	Game(const char *dataPath, const char *savePath, int level, ResourceType ver, Language lang);
 	~Game();
@@ -86,6 +90,7 @@ struct Game {
 	int getNextCutscene(int id);
 	void init();
 	void resetGameState();
+	void continueGame();
 	void doGame();
 	void playCutscene(int id = -1);
 	void loadLevelMap();
@@ -95,7 +100,8 @@ struct Game {
 	void printLevelCode();
 	void showFinalScore();
 	bool handleConfigPanel();
-	bool handleContinueAbort();
+	void initContinueAbort();
+	void handleContinueAbort();
 	bool handleProtectionScreen();
 	void printSaveStateCompleted();
 	void drawLevelTexts();
