@@ -264,6 +264,7 @@ void Menu::initMenu() {
 		break;
 	}
 	_selectedOption = -1;
+	_currentOption = 0;
 }
 
 void Menu::finiMenu() {

@@ -10,6 +10,7 @@ Game::Game(const char *dataPath, const char *savePath, ResourceType ver, Languag
 	memset(&_pi, 0, sizeof(_pi));
 	_skillLevel = kDefaultSkill;
 	_currentLevel = kDefaultLevel;
+	_validSaveState = false;
 }
 
 Game::~Game() {
