@@ -217,6 +217,9 @@ struct GameStub_Flashback : GameStub {
 			if (_g->_textToDisplay != 0xFFFF) {
 				_newState = kStateStoryTexts;
 			}
+			if (_g->_gameOver) {
+				_newState = kStateContinueAbort;
+			}
 			if (_g->_cut._id != 0xFFFF) {
 				_newState = kStateCutscene;
 			}
