@@ -87,6 +87,7 @@ struct Game {
 	void init();
 	void resetLevelState();
 	void continueGame();
+	void endGame();
 	void doGame();
 	void playCutscene(int id = -1);
 	void loadLevelMap();

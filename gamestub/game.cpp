@@ -109,6 +109,10 @@ void Game::continueGame() {
 	resetLevelState();
 }
 
+void Game::endGame() {
+	_validSaveState = false;
+}
+
 void Game::doGame() {
 	if (_deathCutsceneCounter) {
 		--_deathCutsceneCounter;
