@@ -312,6 +312,7 @@ struct GameStub_Flashback : GameStub {
 		case kStateGameOver:
 			_g->_cut.playCutscene();
 			if (_g->_cut._stop) {
+				_g->_cut._id = 0xFFFF;
 				_newState = kStateMenu;
 			}
 			break;
@@ -319,6 +320,7 @@ struct GameStub_Flashback : GameStub {
 			_g->handleFinalScore();
 			if (_g->_pi.enter) {
 				_g->_pi.enter = false;
+				_g->_cut._id = 0xFFFF;
 				_newState = kStateMenu;
 			}
 			break;
