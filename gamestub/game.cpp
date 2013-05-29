@@ -246,11 +246,13 @@ void Game::handleConfigPanel() {
 	}
 }
 
+static const int kContinueAbortDurationMs = 5000;
+
 void Game::initContinueAbort() {
 	_cut._id = 0x48;
 	_cut.initCutscene();
 	_continueAbortItem = 0;
-	_continueAbortCounter = 100;
+	_continueAbortCounter = kContinueAbortDurationMs / kGameFrameTimeMs;
 	_vid.getPaletteEntry(0xE4, &_continueAbortColor);
 	_continueAbortColorInc = 0xFF;
 }
@@ -266,8 +268,9 @@ void Game::handleContinueAbort() {
 	const char *str = _res.getMenuString(LocaleData::LI_01_CONTINUE_OR_ABORT);
 	_vid.drawString(str, (256 - strlen(str) * 8) / 2, 64, 0xE3);
 	str = _res.getMenuString(LocaleData::LI_02_TIME);
+	const int counter = _continueAbortCounter * 10 / (kContinueAbortDurationMs / kGameFrameTimeMs);
 	char buf[50];
-	snprintf(buf, sizeof(buf), "%s : %d", str, _continueAbortCounter / 10);
+	snprintf(buf, sizeof(buf), "%s : %d", str, counter);
 	_vid.drawString(buf, 96, 88, 0xE3);
 	str = _res.getMenuString(LocaleData::LI_03_CONTINUE);
 	_vid.drawString(str, (256 - strlen(str) * 8) / 2, 104, colors[_continueAbortItem]);
