@@ -777,17 +777,14 @@ void Cutscene::op_drawStringAtPos() {
 				uint8_t color = 0xD0 + (strId >> 0xC);
 				drawText(x, y, str, color, _page1, 2);
 			}
-			// workaround for buggy cutscene script
-/* TODO:
 			if (_id == 0x34 && (strId & 0xFFF) == 0x45) {
+				// cutscene script calls drawString in loop
+				// workaround to refresh the screen and add delay
 				if ((_cmdPtr - _cmdPtrBak) == 0xA) {
-					_stub->copyRect(0, 0, Video::GAMESCREEN_W, Video::GAMESCREEN_H, _page1, 256);
-					_stub->updateScreen(0);
-				} else {
-					_stub->sleep(15);
+					memcpy(_page0, _page1, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+					_yieldSync = 200 * TIMER_SLICE / kGameFrameTimeMs;
 				}
 			}
-*/
 		}
 	}
 }
