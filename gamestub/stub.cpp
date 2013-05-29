@@ -246,6 +246,7 @@ struct GameStub_Flashback : GameStub {
 					break;
 				case 2:
 					_g->saveState();
+					_g->_validSaveState = true;
 					_newState = kStateGame;
 					break;
 				case 3:
