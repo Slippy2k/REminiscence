@@ -843,6 +843,10 @@ void Cutscene::op_handleKeys() {
 		n = READ_BE_UINT16(_cmdPtr + n * 2 + 2);
 	}
 	_cmdPtr = _cmdPtrBak = _res->_cmd + n + _startOffset;
+	if (_yieldSync == 0) {
+		// allow playerinput to get updated
+		_yieldSync = 1;
+	}
 }
 
 uint8_t Cutscene::fetchNextCmdByte() {
