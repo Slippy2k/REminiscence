@@ -7,6 +7,7 @@
 struct File_impl {
 	bool _ioErr;
 	File_impl() : _ioErr(false) {}
+	virtual ~File_impl() {}
 	virtual bool open(const char *path, const char *mode) = 0;
 	virtual void close() = 0;
 	virtual uint32_t size() = 0;
@@ -197,12 +198,12 @@ void File::writeByte(uint8_t val) {
 }
 
 void File::writeUint16BE(uint16_t val) {
-	uint8_t buf[2] = { (val >> 8) & 255, val & 255 };
+	uint8_t buf[2] = { uint8_t((val >> 8) & 255), uint8_t(val & 255) };
 	write(buf, sizeof(buf));
 }
 
 void File::writeUint32BE(uint32_t val) {
-	uint8_t buf[4] = { (val >> 24) & 255, (val >> 16) & 255, (val >> 8) & 255, val & 255 };
+	uint8_t buf[4] = { uint8_t((val >> 24) & 255), uint8_t((val >> 16) & 255), uint8_t((val >> 8) & 255), uint8_t(val & 255) };
 	write(buf, sizeof(buf));
 }
 

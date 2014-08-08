@@ -150,8 +150,9 @@ OggPlayer::OggPlayer(Mixer *mixer, FileSystem *fs)
 }
 
 OggPlayer::~OggPlayer() {
+#ifdef USE_TREMOR
 	delete _impl;
-	_impl = 0;
+#endif
 }
 
 bool OggPlayer::playTrack(int num) {

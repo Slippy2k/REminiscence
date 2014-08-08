@@ -23,7 +23,7 @@ struct File {
 	uint8_t readByte();
 	uint16_t readUint16BE();
 	uint32_t readUint32BE();
-	void write(void *ptr, size_t len);
+	void write(void *ptr, uint32_t len);
 	void writeByte(uint8_t val);
 	void writeUint16BE(uint16_t val);
 	void writeUint32BE(uint32_t val);
