@@ -1,4 +1,5 @@
 LD_LIBRARY_PATH=$(pwd) ./fb ../DATA/Flashback.bin
+./fb ~/Documents/Data/flashback/Flashback.bin
 
 split stub.cpp
 	gamestub.cpp

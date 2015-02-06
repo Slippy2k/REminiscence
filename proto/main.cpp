@@ -16,6 +16,7 @@ static int gWindowW = (int)(kDefaultW * gScale);
 static int gWindowH = (int)(kDefaultH * gScale);
 static const int gTickDuration = 16;
 
+static const bool gUseDynLib = false;
 static const char *gFbSoSym = "g_stub";
 #ifdef _WIN32
 static const char *gFbSoName = "fb.dll";
@@ -113,16 +114,22 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "%s datafile level\n", argv[0]);
 		return 0;
 	}
+	Stub *stub = 0;
 	DynLib_impl dl;
-	dl.open(gFbSoName);
-	if (!dl._dlso) {
-		fprintf(stderr, "unable to open '%s'\n", gFbSoName);
-		return 0;
-	}
-	Stub *stub = (struct Stub *)dl.getSymbol(gFbSoSym);
-	if (!stub) {
-		fprintf(stderr, "unable to lookup symbol '%s'\n", gFbSoSym);
-		return 0;
+	if (gUseDynLib) {
+		dl.open(gFbSoName);
+		if (!dl._dlso) {
+			fprintf(stderr, "unable to open '%s'\n", gFbSoName);
+			return 0;
+		}
+		stub = (struct Stub *)dl.getSymbol(gFbSoSym);
+		if (!stub) {
+			fprintf(stderr, "unable to lookup symbol '%s'\n", gFbSoSym);
+			return 0;
+		}
+	} else {
+		extern struct Stub g_stub;
+		stub = &g_stub;
 	}
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
