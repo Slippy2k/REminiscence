@@ -17,7 +17,7 @@ static int gWindowH = (int)(kDefaultH * gScale);
 static const int gTickDuration = 16;
 
 static const bool gUseDynLib = false;
-static const char *gFbSoSym = "g_stub";
+static const char *gFbSoSym = "GameStub_create";
 #ifdef _WIN32
 static const char *gFbSoName = "fb.dll";
 struct DynLib_impl {
@@ -39,6 +39,7 @@ struct DynLib_impl {
 	void *getSymbol(const char *name) {
 		return (void *)GetProcAddress(_dlso, name);
 	}
+
 };
 #else
 static const char *gFbSoName = "libfb.so";
@@ -63,6 +64,17 @@ struct DynLib_impl {
 	}
 };
 #endif
+
+static GameStub *getGameStub(DynLib_impl *lib) {
+	if (lib->open(gFbSoName)) {
+		void *proc = lib->getSymbol(gFbSoSym);
+		if (proc) {
+			typedef GameStub *(*createProc)();
+			return ((createProc)proc)();
+		}
+	}
+	return 0;
+}
 
 enum {
 	kScaleUp = 1,
@@ -92,8 +104,8 @@ static void rescaleWindowDim(int &w, int &h, int type) {
 	}
 }
 
-static void setupAudio(Stub *stub) {
-	if (stub->getMixProc) {
+static void setupAudio(GameStub *stub) {
+	if (0) {
 		SDL_AudioSpec desired;
 		memset(&desired, 0, sizeof(desired));
 		desired.freq = 11025;
@@ -114,22 +126,16 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "%s datafile level\n", argv[0]);
 		return 0;
 	}
-	Stub *stub = 0;
+	GameStub *stub = 0;
 	DynLib_impl dl;
 	if (gUseDynLib) {
-		dl.open(gFbSoName);
-		if (!dl._dlso) {
-			fprintf(stderr, "unable to open '%s'\n", gFbSoName);
-			return 0;
-		}
-		stub = (struct Stub *)dl.getSymbol(gFbSoSym);
-		if (!stub) {
-			fprintf(stderr, "unable to lookup symbol '%s'\n", gFbSoSym);
-			return 0;
-		}
+		stub = getGameStub(&dl);
 	} else {
-		extern struct Stub g_stub;
-		stub = &g_stub;
+		stub = GameStub_create();
+	}
+	if (!stub) {
+		fprintf(stderr, "Unable to create GameStub\n");
+		return -1;
 	}
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);

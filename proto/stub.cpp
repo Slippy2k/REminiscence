@@ -705,73 +705,67 @@ static void transformXY(int &x, int &y, int w, int h) {
 	}
 }
 
-static Main *gMain;
+struct GameStub_Flashback: GameStub {
 
-void stubInit(const char *filePath, const char *savePath, int level) {
-	gMain = new Main(filePath, savePath);
-	if (level != -1) {
-		gMain->_game._currentLevel = level;
+	Main *_m;
+
+	virtual void init(const char *filePath, const char *savePath, int level) {
+		_m = new Main(filePath, savePath);
+		if (level != -1) {
+			_m->_game._currentLevel = level;
+		}
+		_m->init();
 	}
-	gMain->init();
-}
 
-void stubQuit() {
-	delete gMain;
-	gMain = 0;
-}
-
-void stubSave() {
-	gMain->save();
-}
-
-void stubQueueKeyInput(int keycode, int pressed) {
-	updateKeyInput(keycode, pressed != 0, gMain->_game._pi);
-}
-
-void stubQueueTouchInput(int num, int x, int y, int pressed) {
-	transformXY(x, y, gMain->_w, gMain->_h);
-	if (gMain->_game._inventoryOn || gMain->_state == 0 || !gMain->_padInput[num].feed(x, y, pressed != 0, gMain->_game._pi)) {
-		updateTouchInput(pressed, x, y, gMain->_game._pi);
+	virtual void quit() {
+		delete _m;
+		_m = 0;
 	}
-}
 
-void stubDoTick() {
-	gMain->doTick();
-}
+	virtual void save() {
+		_m->save();
+	}
 
-void stubInitGL(int w, int h) {
-	gMain->_w = w;
-	gMain->_h = h;
-}
+	virtual void queueKeyInput(int keycode, int pressed) {
+		updateKeyInput(keycode, pressed != 0, _m->_game._pi);
+	}
 
-void stubDrawGL(int w, int h) {
-	gMain->drawFrame(w, h);
-}
+	virtual void queueTouchInput(int num, int x, int y, int pressed) {
+		transformXY(x, y, _m->_w, _m->_h);
+		if (_m->_game._inventoryOn || _m->_state == 0 || !_m->_padInput[num].feed(x, y, pressed != 0, _m->_game._pi)) {
+			updateTouchInput(pressed, x, y, _m->_game._pi);
+		}
+	}
 
-static void mixProc(void *data, uint8 *buf, int size) {
-	memset(buf, 0, size);
-	gMain->doSoundMix((int8 *)buf, size);
-}
+	virtual void doTick() {
+		_m->doTick();
+	}
 
-StubMixProc stubGetMixProc(int rate, int fmt) {
-	gMain->_mixRate = rate;
-	StubMixProc mix;
-	mix.proc = &mixProc;
-	mix.data = gMain;
-	return mix;
-}
+	virtual void initGL(int w, int h) {
+		_m->_w = w;
+		_m->_h = h;
+	}
+
+	void drawGL(int w, int h) {
+		_m->drawFrame(w, h);
+	}
+
+	static void mixProc(void *data, uint8 *buf, int size) {
+		memset(buf, 0, size);
+		((Main *)data)->doSoundMix((int8 *)buf, size);
+	}
+
+	virtual StubMixProc getMixProc(int rate, int fmt) {
+		_m->_mixRate = rate;
+		StubMixProc mix;
+		mix.proc = &mixProc;
+		mix.data = _m;
+		return mix;
+	}
+};
 
 extern "C" {
-	DYNLIB_SYMBOL struct Stub g_stub = {
-		stubInit,
-		stubQuit,
-		stubSave,
-		stubQueueKeyInput,
-		stubQueueTouchInput,
-		stubDoTick,
-		stubInitGL,
-		stubDrawGL,
-		stubGetMixProc
-	};
+	GameStub *GameStub_create() {
+		return new GameStub_Flashback;
+	}
 }
-

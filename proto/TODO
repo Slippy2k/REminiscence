@@ -2,13 +2,14 @@ LD_LIBRARY_PATH=$(pwd) ./fb ../DATA/Flashback.bin
 ./fb ~/Documents/Data/flashback/Flashback.bin
 
 split stub.cpp
-	gamestub.cpp
 	stub_state_machine.cpp
 	texture.cpp
 	render.cpp
 cleanup texture handling (one texture for background, one texture for gameplay ?)
 libSDL2 - android + gamepad support
 SDL_mixer
+	re-use rawgl
+	Stub_getMixerImpl()
 
 split game.cpp
 	hotspot.cpp
@@ -25,6 +26,7 @@ cutscenes
 sounds
 	decode sega vce segments to .wav (N-PART.wav)
 	convert .mod/.sfx in .ogg
+		SDL_mixer with DRIVER/OUTPUT=file ?
 
 texture rendering
 	inventory display background (saveGfxList)
