@@ -146,4 +146,28 @@ struct InventoryItem {
 	LivePGE *live_pge;
 };
 
+struct PlayerInput {
+	enum {
+		kDirectionUp    = 1 << 0,
+		kDirectionDown  = 1 << 1,
+		kDirectionLeft  = 1 << 2,
+		kDirectionRight = 1 << 3
+	};
+	uint8 dirMask;
+	bool enter;
+	bool space;
+	bool shift;
+	bool backspace;
+	bool quit;
+	enum {
+		kTouchNone,
+		kTouchUp,
+		kTouchDown
+	};
+	struct {
+		int x, y;
+		int press;
+	} touch;
+};
+
 #endif // INTERN_H__
