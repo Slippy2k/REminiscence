@@ -137,7 +137,7 @@ void ResourceData::decodeDataPGE(const uint8_t *ptr) {
 }
 
 void ResourceData::decodeDataOBJ(const uint8_t *ptr, int unpackedSize) {
-	uint32 offsets[256];
+	uint32_t offsets[256];
 	int tmpOffset = 0;
 	_numObjectNodes = READ_BE_UINT16(ptr); ptr += 2;
 	for (int i = 0; i < _numObjectNodes; ++i) {
@@ -145,7 +145,7 @@ void ResourceData::decodeDataOBJ(const uint8_t *ptr, int unpackedSize) {
 	}
 	offsets[_numObjectNodes] = unpackedSize;
 	int numObjectsCount = 0;
-	uint16 objectsCount[256];
+	uint16_t objectsCount[256];
 	for (int i = 0; i < _numObjectNodes; ++i) {
 		const int diff = offsets[i + 1] - offsets[i];
 		if (diff != 0) {
@@ -153,14 +153,14 @@ void ResourceData::decodeDataOBJ(const uint8_t *ptr, int unpackedSize) {
 			++numObjectsCount;
 		}
 	}
-	uint32 prevOffset = 0;
+	uint32_t prevOffset = 0;
 	ObjectNode *prevNode = 0;
 	int iObj = 0;
 	for (int i = 0; i < _numObjectNodes; ++i) {
 		if (prevOffset != offsets[i]) {
 			ObjectNode *on = (ObjectNode *)malloc(sizeof(ObjectNode));
 			assert(on);
-			const uint8 *objData = ptr - 2 + offsets[i];
+			const uint8_t *objData = ptr - 2 + offsets[i];
 			on->last_obj_number = READ_BE_UINT16(objData); objData += 2;
 			on->num_objects = objectsCount[iObj];
 			on->objects = (Object *)malloc(sizeof(Object) * on->num_objects);

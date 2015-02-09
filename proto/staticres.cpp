@@ -1,39 +1,39 @@
 
 #include "game.h"
 
-const uint16 Game::_scoreTable[] = {
+const uint16_t Game::_scoreTable[] = {
 	0, 200, 300, 400, 500, 800, 1000, 1200, 1500, 2000, 2200, 2500, 3000, 3200, 3500, 5000
 };
 
-static const uint8 _monsterListLevel1[] = {
+static const uint8_t _monsterListLevel1[] = {
 	0x22, 0, 0x23, 0, 0xFF
 };
 
-static const uint8 _monsterListLevel2[] = {
+static const uint8_t _monsterListLevel2[] = {
 	0x22, 0, 0x23, 0, 0x4B, 0, 0x49, 1, 0x4D, 1, 0x76, 2, 0xFF
 };
 
-static const uint8 _monsterListLevel3[] = {
+static const uint8_t _monsterListLevel3[] = {
 	0x76, 2, 0xFF
 };
 
-static const uint8 _monsterListLevel4_1[] = {
+static const uint8_t _monsterListLevel4_1[] = {
 	0x4D, 1, 0x76, 2, 0xFF
 };
 
-static const uint8 _monsterListLevel4_2[] = {
+static const uint8_t _monsterListLevel4_2[] = {
 	0x76, 2, 0xAC, 2, 0xD7, 3, 0xFF
 };
 
-static const uint8 _monsterListLevel5_1[] = {
+static const uint8_t _monsterListLevel5_1[] = {
 	0xB0, 3, 0xD7, 3, 0xFF
 };
 
-static const uint8 _monsterListLevel5_2[] = {
+static const uint8_t _monsterListLevel5_2[] = {
 	0xB0, 3, 0xD7, 3, 0xD8, 3, 0xFF
 };
 
-const uint8 *Game::_monsterListLevels[] = {
+const uint8_t *Game::_monsterListLevels[] = {
 	_monsterListLevel1,
 	_monsterListLevel2,
 	_monsterListLevel3,
@@ -242,7 +242,7 @@ const Game::pge_OpcodeProc Game::_pge_opcodeTable[] = {
 	&Game::pge_op_isTempVar1Set
 };
 
-const uint8 Game::_pge_modKeysTable[] = {
+const uint8_t Game::_pge_modKeysTable[] = {
 	0x40, 0x10, 0x20
 };
 

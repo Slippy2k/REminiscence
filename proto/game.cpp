@@ -166,8 +166,8 @@ void Game::doTick() {
 		pge_getInput();
 		pge_prepare();
 		col_prepareRoomState();
-		uint8 oldLevel = _currentLevel;
-		for (uint16 i = 0; i < _res._pgeNum; ++i) {
+		uint8_t oldLevel = _currentLevel;
+		for (uint16_t i = 0; i < _res._pgeNum; ++i) {
 			LivePGE *pge = _pge_liveTable2[i];
 			if (pge) {
 				_col_currentPiegeGridPosY = (pge->pos_y / 36) & ~1;
@@ -262,7 +262,7 @@ void Game::printSaveStateCompleted() {
 
 void Game::drawLevelTexts() {
 	LivePGE *pge = &_pgeLive[0];
-	int8 obj = col_findCurrentCollidingObject(pge, 3, 0xFF, 0xFF, &pge);
+	int8_t obj = col_findCurrentCollidingObject(pge, 3, 0xFF, 0xFF, &pge);
 	if (obj == 0) {
 		obj = col_findCurrentCollidingObject(pge, 0xFF, 5, 9, &pge);
 	}
@@ -337,7 +337,7 @@ void Game::doStoryTexts() {
 
 void Game::prepareAnims() {
 	if (!(_currentRoom & 0x80) && _currentRoom < 0x40) {
-		int8 pge_room;
+		int8_t pge_room;
 		LivePGE *pge = _pge_liveTable1[_currentRoom];
 		while (pge) {
 			prepareAnimsHelper(pge, 0, 0);
@@ -386,9 +386,9 @@ void Game::prepareAnims() {
 	}
 }
 
-void Game::prepareAnimsHelper(LivePGE *pge, int16 dx, int16 dy) {
+void Game::prepareAnimsHelper(LivePGE *pge, int16_t dx, int16_t dy) {
 	debug(DBG_GAME, "Game::prepareAnimsHelper() dx=0x%X dy=0x%X pge_num=%d pge->flags=0x%X pge->anim_number=0x%X", dx, dy, pge - &_pgeLive[0], pge->flags, pge->anim_number);
-	int16 xpos, ypos;
+	int16_t xpos, ypos;
 	if (!(pge->flags & 8)) {
 		if (pge->index != 0 && loadMonsterSprites(pge) == 0) {
 			return;
@@ -436,11 +436,11 @@ static void initDecodeBuffer(DecodeBuffer *buf, int x, int y, const uint8_t *dat
 	buf->y = y * 2;
 	if (dataPtr) {
 		if (xflip) {
-			buf->x += (int16)READ_BE_UINT16(dataPtr + 4) - READ_BE_UINT16(dataPtr) - 1;
+			buf->x += (int16_t)READ_BE_UINT16(dataPtr + 4) - READ_BE_UINT16(dataPtr) - 1;
 		} else {
-			buf->x -= (int16)READ_BE_UINT16(dataPtr + 4);
+			buf->x -= (int16_t)READ_BE_UINT16(dataPtr + 4);
 		}
-		buf->y -= (int16)READ_BE_UINT16(dataPtr + 6);
+		buf->y -= (int16_t)READ_BE_UINT16(dataPtr + 6);
 	}
 }
 
@@ -474,13 +474,13 @@ void Game::drawString(const unsigned char *str, int len, int x, int y, int color
 	addTextToGfxList(x, y, len, str, color);
 }
 
-void Game::drawAnimBuffer(uint8 stateNum, AnimBufferState *state) {
+void Game::drawAnimBuffer(uint8_t stateNum, AnimBufferState *state) {
 	debug(DBG_GAME, "Game::drawAnimBuffer() state=%d", stateNum);
 	assert(stateNum < 4);
 	_animBuffers._states[stateNum] = state;
-	const uint8 lastPos = _animBuffers._curPos[stateNum];
+	const uint8_t lastPos = _animBuffers._curPos[stateNum];
 	if (lastPos != 0xFF) {
-		uint8 numAnims = lastPos + 1;
+		uint8_t numAnims = lastPos + 1;
 		state += lastPos;
 		_animBuffers._curPos[stateNum] = 0xFF;
 		do {
@@ -509,7 +509,7 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 		return 0;
 	}
 
-	const uint8 *mList = _monsterListLevels[_currentLevel];
+	const uint8_t *mList = _monsterListLevels[_currentLevel];
 	while (*mList != init_pge->obj_node_number) {
 		if (*mList == 0xFF) { // end of list
 			return 0;
@@ -552,11 +552,11 @@ void Game::loadLevelData() {
 	memset(_pge_liveTable1, 0, sizeof(_pge_liveTable1));
 
 	_currentRoom = _res._pgeInit[0].init_room;
-	uint16 n = _res._pgeNum;
+	uint16_t n = _res._pgeNum;
 	while (n--) {
 		pge_loadForCurrentLevel(n);
 	}
-	for (uint16 i = 0; i < _res._pgeNum; ++i) {
+	for (uint16_t i = 0; i < _res._pgeNum; ++i) {
 		if (_res._pgeInit[i].skill <= _skillLevel) {
 			LivePGE *pge = &_pgeLive[i];
 			pge->next_PGE_in_room = _pge_liveTable1[pge->room_location];
@@ -566,14 +566,14 @@ void Game::loadLevelData() {
 	pge_resetGroups();
 }
 
-void Game::drawIcon(uint8 iconNum, int x, int y) {
+void Game::drawIcon(uint8_t iconNum, int x, int y) {
 	DecodeBuffer buf;
 	initDecodeBuffer(&buf, x, y, 0, false);
 	const uint8_t *dataPtr = _res.getImageData(_res._icn, iconNum);
 	addImageToGfxList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), false, true, _res._icn, iconNum);
 }
 
-void Game::playSound(uint8 sfxId, uint8 softVol) {
+void Game::playSound(uint8_t sfxId, uint8_t softVol) {
 	if (sfxId < 66) {
 		int index = -1;
 		for (int i = 0; i < 16; ++i) {
@@ -586,7 +586,7 @@ void Game::playSound(uint8 sfxId, uint8 softVol) {
 			}
 		}
 		if (index != -1) {
-			static const int8 table[] = {
+			static const int8_t table[] = {
 				 0, -1,  1,  2,  3,  4, -1,  5,  6,  7,  8,  9, 10, 11, -1, 12,
 				13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, 26, 27,
 				28, -1, 29, -1, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
@@ -604,8 +604,8 @@ void Game::playSound(uint8 sfxId, uint8 softVol) {
 	}
 }
 
-uint16 Game::getRandomNumber() {
-	uint32 n = _randSeed * 2;
+uint16_t Game::getRandomNumber() {
+	uint32_t n = _randSeed * 2;
 	if (_randSeed > n) {
 		n ^= 0x1D872B41;
 	}
@@ -713,7 +713,7 @@ void Game::doInventory() {
 	}
 }
 
-void AnimBuffers::addState(uint8 stateNum, int16 x, int16 y, LivePGE *pge) {
+void AnimBuffers::addState(uint8_t stateNum, int16_t x, int16_t y, LivePGE *pge) {
 	debug(DBG_GAME, "AnimBuffers::addState() stateNum=%d x=%d y=%d pge=0x%X", stateNum, x, y, pge);
 	assert(stateNum < 4);
 	AnimBufferState *state = _states[stateNum];

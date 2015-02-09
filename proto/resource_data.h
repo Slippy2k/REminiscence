@@ -25,7 +25,7 @@ struct ResourceData {
 	InitPGE _pgeInit[256];
 	int _numObjectNodes;
 	ObjectNode *_objectNodesMap[255];
-	int8 *_ctData;
+	int8_t *_ctData;
 	uint8_t *_ani;
 	uint8_t *_icn;
 	uint8_t *_fnt;

@@ -187,7 +187,7 @@ struct Main {
 		glPopMatrix();
 	}
 
-	void doSoundMix(int8 *buf, int size) {
+	void doSoundMix(int8_t *buf, int size) {
 		static const int kFrac = 16;
 		for (; size != 0; --size) {
 			for (int i = 0; i < 16; ++i) {
@@ -201,7 +201,7 @@ struct Main {
 					memset(sfx, 0, sizeof(Sfx));
 					continue;
 				}
-				const int pcm = *buf + (((int8)(sfx->dataPtr[pos] ^ 0x80)) >> sfx->volume);
+				const int pcm = *buf + (((int8_t)(sfx->dataPtr[pos] ^ 0x80)) >> sfx->volume);
 				if (pcm > 127) {
 					*buf = 127;
 				} else if (pcm < -128) {
@@ -332,9 +332,9 @@ struct GameStub_Flashback: GameStub {
 		_m->drawFrame(w, h);
 	}
 
-	static void mixProc(void *data, uint8 *buf, int size) {
+	static void mixProc(void *data, uint8_t *buf, int size) {
 		memset(buf, 0, size);
-		((Main *)data)->doSoundMix((int8 *)buf, size);
+		((Main *)data)->doSoundMix((int8_t *)buf, size);
 	}
 
 	virtual StubMixProc getMixProc(int rate, int fmt) {
