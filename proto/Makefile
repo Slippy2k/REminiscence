@@ -16,7 +16,7 @@ all: fb
 libfb.so: $(OBJS_LIB)
 	$(CXX) $(LDFLAGS) -shared -o $@ $(OBJS_LIB) $(GL_LIBS) -lz
 
-fb: main.o input.o $(OBJS_LIB)
+fb: main.o input.o render.o $(OBJS_LIB)
 	$(CXX) $(LDFLAGS) -o $@ $^ -ldl $(SDL_LIBS) $(GL_LIBS) -lz
 
 clean:

@@ -11,7 +11,7 @@
 static const int kDefaultW = 512;
 static const int kDefaultH = 448;
 static const char *gWindowTitle = "Flashback: The Quest For Identity";
-static const float gScale = 1.5;
+static const float gScale = 2;
 static int gWindowW = (int)(kDefaultW * gScale);
 static int gWindowH = (int)(kDefaultH * gScale);
 static const int gTickDuration = 16;

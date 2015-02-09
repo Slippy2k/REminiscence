@@ -1,15 +1,19 @@
 LD_LIBRARY_PATH=$(pwd) ./fb ../DATA/Flashback.bin
 ./fb ~/Documents/Data/flashback/Flashback.bin
 
-split stub.cpp
-	stub_state_machine.cpp
-	texture.cpp
-	render.cpp
+render.cpp
+	cleanup texture handling
+	npot support
+	move MAC data conversion to convert_data.h
+
 cleanup texture handling (one texture for background, one texture for gameplay ?)
 libSDL2 - android + gamepad support
 SDL_mixer
 	re-use rawgl
-	Stub_getMixerImpl()
+	Mixer_impl Stub::getMixerImpl()
+	get rid of _sfxList
+
+sprites, icone, fonte dans une texture (texturepacker)
 
 split game.cpp
 	hotspot.cpp
@@ -23,10 +27,12 @@ convert_mac_png
 cutscenes
 	scale2x
 
-sounds
+convert_data
 	decode sega vce segments to .wav (N-PART.wav)
 	convert .mod/.sfx in .ogg
 		SDL_mixer with DRIVER/OUTPUT=file ?
+	background dans un .tga ou .bmp (RLE ou zlib)
+	bundle format - mac resource fork
 
 texture rendering
 	inventory display background (saveGfxList)
