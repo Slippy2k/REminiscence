@@ -1,18 +1,5 @@
 
-#ifdef USE_GLES
-#include <GLES/gl.h>
-#else
-#include <SDL.h>
-#include <SDL_opengl.h>
-#endif
-#ifdef _WIN32
-#include <windows.h>
-#define DYNLIB_SYMBOL DECLSPEC_EXPORT
-#else
-#define DYNLIB_SYMBOL
-#endif
 #include <math.h>
-#include <sys/time.h>
 #include "render.h"
 #include "resource_data.h"
 #include "scaler.h"
@@ -50,6 +37,9 @@ TextureCache::TextureCache() {
 		const int h = roundPowerOfTwo(kH * _scalerFactor);
 		_texScaleBuf = (uint16_t *)malloc(w * h * sizeof(uint16_t));
 	}
+	gettimeofday(&_t0, 0);
+	_frameCounter = 0;
+	_framesPerSec = 0;
 }
 
 void TextureCache::updatePalette(Color *clut) {
@@ -291,28 +281,6 @@ void TextureCache::queueGfxImageDraw(int pos, const GfxImage *image) {
 	++_gfxImagesCount;
 }
 
-void TextureCache::draw(bool menu, int w, int h) {
-	if (menu) {
-		glColor4f(.7, .7, .7, 1.);
-		drawBackground(_title.texId, _title.u, _title.v);
-		glColor4f(1., 1., 1., 1.);
-		glAlphaFunc(GL_EQUAL, 1);
-	} else {
-		glAlphaFunc(GL_ALWAYS, 0);
-		drawBackground(_background.texId, _background.u, _background.v);
-		int i = 0;
-		glAlphaFunc(GL_EQUAL, 1);
-		for (; i < _gfxImagesCount && !_gfxImagesQueue[i].erase; ++i) {
-			drawGfxImage(i);
-		}
-		drawBackground(_background.texId, _background.u, _background.v);
-		for (; i < _gfxImagesCount; ++i) {
-			drawGfxImage(i);
-		}
-		_gfxImagesCount = 0;
-	}
-}
-
 static void emitQuadTex(int x1, int y1, int x2, int y2, GLfloat u1, GLfloat v1, GLfloat u2, GLfloat v2) {
 #ifdef USE_GLES
 	const GLfloat textureVertices[] = {
@@ -344,10 +312,32 @@ static void emitQuadTex(int x1, int y1, int x2, int y2, GLfloat u1, GLfloat v1, 
 #endif
 }
 
-void TextureCache::drawBackground(GLuint texId, GLfloat u, GLfloat v) {
+static void drawBackground(GLuint texId, GLfloat u, GLfloat v) {
 	if (texId != -1) {
 		glBindTexture(GL_TEXTURE_2D, texId);
 		emitQuadTex(0, 0, kW, kH, 0, 0, u, v);
+	}
+}
+
+void TextureCache::draw(bool menu, int w, int h) {
+	if (menu) {
+		glColor4f(.7, .7, .7, 1.);
+		drawBackground(_title.texId, _title.u, _title.v);
+		glColor4f(1., 1., 1., 1.);
+		glAlphaFunc(GL_EQUAL, 1);
+	} else {
+		glAlphaFunc(GL_ALWAYS, 0);
+		drawBackground(_background.texId, _background.u, _background.v);
+		int i = 0;
+		glAlphaFunc(GL_EQUAL, 1);
+		for (; i < _gfxImagesCount && !_gfxImagesQueue[i].erase; ++i) {
+			drawGfxImage(i);
+		}
+		drawBackground(_background.texId, _background.u, _background.v);
+		for (; i < _gfxImagesCount; ++i) {
+			drawGfxImage(i);
+		}
+		_gfxImagesCount = 0;
 	}
 }
 
@@ -380,4 +370,40 @@ void TextureCache::drawText(int x, int y, int color, const uint8_t *dataPtr, int
 		x += 16;
 	}
 	glColor4f(1., 1., 1., 1.);
+}
+
+void TextureCache::prepareFrameDraw(int w, int h) {
+#ifdef USE_GLES
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
+	glEnable(GL_ALPHA_TEST);
+	glEnable(GL_TEXTURE_2D);
+	glViewport(0, 0, w, h);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+#ifdef USE_GLES
+	glOrthof(0, w, 0, h, 0, 1);
+#else
+	glOrtho(0, w, 0, h, 0, 1);
+#endif
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glPushMatrix();
+	glScalef(w / (GLfloat)kW, h / (GLfloat)kH, 1.);
+}
+
+void TextureCache::endFrameDraw() {
+	++_frameCounter;
+	if ((_frameCounter & 31) == 0) {
+		struct timeval t1;
+		gettimeofday(&t1, 0);
+		const int msecs = (t1.tv_sec - _t0.tv_sec) * 1000 + (t1.tv_usec - _t0.tv_usec) / 1000;
+		_t0 = t1;
+		if (msecs != 0) {
+//			printf("fps %f\n", 1000. * 32 / msecs);
+			_framesPerSec = (int)(1000. * 32 / msecs);
+		}
+	}
+	glPopMatrix();
 }

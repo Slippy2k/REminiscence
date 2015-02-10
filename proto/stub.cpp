@@ -1,18 +1,10 @@
 
-#ifdef USE_GLES
-#include <GLES/gl.h>
-#else
-#include <SDL.h>
-#include <SDL_opengl.h>
-#endif
 #ifdef _WIN32
 #include <windows.h>
 #define DYNLIB_SYMBOL DECLSPEC_EXPORT
 #else
 #define DYNLIB_SYMBOL
 #endif
-#include <math.h>
-#include <sys/time.h>
 #include "game.h"
 #include "input.h"
 #include "render.h"
@@ -29,9 +21,6 @@ struct Main {
 	Game _game;
 	TextureCache _texCache;
 	PadInput _padInput[2];
-	struct timeval _t0;
-	int _frameCounter;
-	int _framesPerSec;
 	int _state, _nextState;
 	bool _gameInit;
 	bool _menuInit;
@@ -47,9 +36,6 @@ struct Main {
 	}
 
 	void init() {
-		gettimeofday(&_t0, 0);
-		_frameCounter = 0;
-		_framesPerSec = 0;
 		_resData.loadClutData();
 		_resData.loadIconData();
 		_resData.loadFontData();
@@ -145,46 +131,18 @@ struct Main {
 	}
 
 	void drawFrame(int w, int h) {
-#ifdef USE_GLES
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-#endif
-		glEnable(GL_ALPHA_TEST);
-		glEnable(GL_TEXTURE_2D);
-		glViewport(0, 0, w, h);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-#ifdef USE_GLES
-		glOrthof(0, w, 0, h, 0, 1);
-#else
-		glOrtho(0, w, 0, h, 0, 1);
-#endif
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glPushMatrix();
-		glScalef(w / (GLfloat)kW, h / (GLfloat)kH, 1.);
+		_texCache.prepareFrameDraw(w, h);
 		_texCache.draw((_state == kStateMenu), w, h);
 		for (int i = 0; i < _game._gfxTextsCount; ++i) {
 			const GfxText *gt = &_game._gfxTextsList[i];
 			_texCache.drawText(gt->x, gt->y, gt->color, gt->data, gt->len);
 		}
-		++_frameCounter;
-		if ((_frameCounter & 31) == 0) {
-			struct timeval t1;
-			gettimeofday(&t1, 0);
-			const int msecs = (t1.tv_sec - _t0.tv_sec) * 1000 + (t1.tv_usec - _t0.tv_usec) / 1000;
-			_t0 = t1;
-			if (msecs != 0) {
-//				printf("fps %f\n", 1000. * 32 / msecs);
-				_framesPerSec = (int)(1000. * 32 / msecs);
-			}
-		}
-		if (_framesPerSec != 0) {
+		if (_texCache._framesPerSec != 0) {
 			char buf[16];
-			const int len = snprintf(buf, sizeof(buf), "%d fps", _framesPerSec);
+			const int len = snprintf(buf, sizeof(buf), "%d fps", _texCache._framesPerSec);
 			_texCache.drawText(kW - len * 16, kH - 16, 0xED, (const uint8_t *)buf, len);
 		}
-		glPopMatrix();
+		_texCache.endFrameDraw();
 	}
 
 	void doSoundMix(int8_t *buf, int size) {

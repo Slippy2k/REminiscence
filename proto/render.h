@@ -2,6 +2,13 @@
 #ifndef RENDER_H__
 #define RENDER_H__
 
+#ifdef USE_GLES
+#include <GLES/gl.h>
+#else
+#include <SDL.h>
+#include <SDL_opengl.h>
+#endif
+#include <sys/time.h>
 #include "intern.h"
 #include "game.h" // GfxImage
 #include "resource_data.h" // ResourceData
@@ -56,6 +63,9 @@ struct TextureCache {
 	uint16_t _tex8to565[256];
 	uint16_t _tex8to5551[256];
 	uint16_t *_texScaleBuf;
+	struct timeval _t0;
+	int _frameCounter;
+	int _framesPerSec;
 
 	TextureCache();
 
@@ -68,9 +78,10 @@ struct TextureCache {
 	void createTextureGfxImage(ResourceData &res, const GfxImage *image);
 	void queueGfxImageDraw(int pos, const GfxImage *image);
 	void draw(bool menu, int w, int h);
-	void drawBackground(GLuint texId, GLfloat u, GLfloat v);
 	void drawGfxImage(int i);
 	void drawText(int x, int y, int color, const uint8_t *dataPtr, int len);
+	void prepareFrameDraw(int w, int h);
+	void endFrameDraw();
 };
 
 #endif
