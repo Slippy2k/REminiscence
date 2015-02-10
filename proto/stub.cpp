@@ -219,56 +219,46 @@ struct Main {
 
 static void updateKeyInput(int keyCode, bool pressed, PlayerInput &pi) {
 	switch (keyCode) {
-#ifdef USE_GLES
-	case 82: // back
-		pi.quit = true;
-		break;
-	case 84: // search
-		pi.backspace = true;
-		break;
-#else
-	case SDLK_LEFT:
+	case kKeyCodeLeft:
 		if (!pressed) {
 			pi.dirMask &= ~PlayerInput::kDirectionLeft;
 		} else {
 			pi.dirMask |= PlayerInput::kDirectionLeft;
 		}
 		break;
-	case SDLK_RIGHT:
+	case kKeyCodeRight:
 		if (!pressed) {
 			pi.dirMask &= ~PlayerInput::kDirectionRight;
 		} else {
 			pi.dirMask |= PlayerInput::kDirectionRight;
 		}
 		break;
-	case SDLK_UP:
+	case kKeyCodeUp:
 		if (!pressed) {
 			pi.dirMask &= ~PlayerInput::kDirectionUp;
 		} else {
 			pi.dirMask |= PlayerInput::kDirectionUp;
 		}
 		break;
-	case SDLK_DOWN:
+	case kKeyCodeDown:
 		if (!pressed) {
 			pi.dirMask &= ~PlayerInput::kDirectionDown;
 		} else {
 			pi.dirMask |= PlayerInput::kDirectionDown;
 		}
 		break;
-	case SDLK_SPACE:
+	case kKeyCodeSpace:
 		pi.space = pressed;
 		break;
-	case SDLK_RSHIFT:
-	case SDLK_LSHIFT:
+	case kKeyCodeShift:
 		pi.shift = pressed;
 		break;
-	case SDLK_RETURN:
+	case kKeyCodeReturn:
 		pi.enter = pressed;
 		break;
-	case SDLK_BACKSPACE:
+	case kKeyCodeBackspace:
 		pi.backspace = pressed;
 		break;
-#endif
 	}
 }
 

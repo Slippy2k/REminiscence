@@ -104,6 +104,49 @@ static void rescaleWindowDim(int &w, int &h, int type) {
 	}
 }
 
+static void queueKeyInput(GameStub *stub, int keyCode, bool pressed) {
+	int key = 0;
+	switch (keyCode) {
+#ifdef USE_GLES
+	case 82: // back
+		key = kKeyCodeQuit;
+		break;
+	case 84: // search
+		key = kKeyCodeBackspace;
+		break;
+#else
+	case SDLK_LEFT:
+		key = kKeyCodeLeft;
+		break;
+	case SDLK_RIGHT:
+		key = kKeyCodeRight;
+		break;
+	case SDLK_UP:
+		key = kKeyCodeUp;
+		break;
+	case SDLK_DOWN:
+		key = kKeyCodeDown;
+		break;
+	case SDLK_SPACE:
+		key = kKeyCodeSpace;
+		break;
+	case SDLK_RSHIFT:
+	case SDLK_LSHIFT:
+		key = kKeyCodeShift;
+		break;
+	case SDLK_RETURN:
+		key = kKeyCodeReturn;
+		break;
+	case SDLK_BACKSPACE:
+		key = kKeyCodeBackspace;
+		break;
+#endif
+	default:
+		return;
+	}
+	stub->queueKeyInput(key, pressed);
+}
+
 static void setupAudio(GameStub *stub) {
 	if (0) {
 		SDL_AudioSpec desired;
@@ -166,7 +209,7 @@ int main(int argc, char *argv[]) {
 					rescaleWindowDim(gWindowW, gWindowH, kScaleDown);
 					break;
 				default:
-					stub->queueKeyInput(ev.key.keysym.sym, 1);
+					queueKeyInput(stub, ev.key.keysym.sym, 1);
 					break;
 				}
 				break;
@@ -176,7 +219,7 @@ int main(int argc, char *argv[]) {
 				case SDLK_PAGEDOWN:
 					break;
 				default:
-					stub->queueKeyInput(ev.key.keysym.sym, 0);
+					queueKeyInput(stub, ev.key.keysym.sym, 0);
 					break;
 				}
 				break;

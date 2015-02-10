@@ -7,6 +7,18 @@ struct StubMixProc {
 	void *data;
 };
 
+enum {
+	kKeyCodeLeft = 1,
+	kKeyCodeRight,
+	kKeyCodeUp,
+	kKeyCodeDown,
+	kKeyCodeShift,
+	kKeyCodeSpace,
+	kKeyCodeReturn,
+	kKeyCodeBackspace,
+	kKeyCodeQuit,
+};
+
 struct GameStub {
 	virtual void init(const char *, const char *, int) = 0;
 	virtual void quit() = 0;
