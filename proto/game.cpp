@@ -6,6 +6,7 @@
 
 Game::Game(ResourceData &res, const char *savePath)
 	: _res(res), _saveDirectory(savePath) {
+	_mix = 0;
 	_randSeed = time(0);
 	_skillLevel = 1;
 	_currentLevel = 0;
@@ -15,7 +16,6 @@ Game::Game(ResourceData &res, const char *savePath)
 	_shakeOffset = 0;
 	_res.setupTextClut(_palette);
 	memset(&_pi, 0, sizeof(_pi));
-	memset(_sfxList, 0, sizeof(_sfxList));
 }
 
 Game::~Game() {
@@ -575,30 +575,20 @@ void Game::drawIcon(uint8_t iconNum, int x, int y) {
 
 void Game::playSound(uint8_t sfxId, uint8_t softVol) {
 	if (sfxId < 66) {
-		int index = -1;
-		for (int i = 0; i < 16; ++i) {
-			if (_sfxList[i].num == sfxId) {
-				_sfxList[i].playOffset = 0;
-				_sfxList[i].volume = softVol;
-				return;
-			} else if (!_sfxList[i].dataPtr) {
-				index = i;
-			}
-		}
-		if (index != -1) {
-			static const int8_t table[] = {
-				 0, -1,  1,  2,  3,  4, -1,  5,  6,  7,  8,  9, 10, 11, -1, 12,
-				13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, 26, 27,
-				28, -1, 29, -1, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
-				42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, -1, 53, 54, 55, 56,
-				-1, 57
-			};
-			if (table[sfxId] != -1) {
-				_sfxList[index].num = sfxId;
-				_sfxList[index].dataPtr = _res.getSoundData(table[sfxId], &_sfxList[index].dataSize);
-				_sfxList[index].freq = 3546897 / 650;
-				_sfxList[index].volume = softVol;
-				_sfxList[index].playOffset = 0;
+		static const int8_t table[] = {
+			 0, -1,  1,  2,  3,  4, -1,  5,  6,  7,  8,  9, 10, 11, -1, 12,
+			13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, 26, 27,
+			28, -1, 29, -1, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+			42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, -1, 53, 54, 55, 56,
+			-1, 57
+		};
+		if (table[sfxId] != -1) {
+			uint32_t size;
+			const uint8_t *data = _res.getSoundData(table[sfxId], &size);
+			if (data) {
+				const int freq = 3546897 / 650;
+				const int volume = 255 >> softVol;
+				_mix->playSoundRaw(data, size, freq, volume);
 			}
 		}
 	}

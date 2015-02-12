@@ -6,6 +6,7 @@
 #else
 #include <dlfcn.h>
 #endif
+#include "mixer.h"
 #include "stub.h"
 
 static const int kDefaultW = 512;
@@ -147,23 +148,6 @@ static void queueKeyInput(GameStub *stub, int keyCode, bool pressed) {
 	stub->queueKeyInput(key, pressed);
 }
 
-static void setupAudio(GameStub *stub) {
-	if (0) {
-		SDL_AudioSpec desired;
-		memset(&desired, 0, sizeof(desired));
-		desired.freq = 11025;
-		desired.format = AUDIO_S8;
-		desired.channels = 1;
-		desired.samples = 2048;
-		StubMixProc mix = stub->getMixProc(desired.freq, desired.format);
-		desired.callback = mix.proc;
-		desired.userdata = mix.data;
-		if (SDL_OpenAudio(&desired, 0) == 0) {
-			SDL_PauseAudio(0);
-		}
-	}
-}
-
 int main(int argc, char *argv[]) {
 	if (argc < 2) {
 		fprintf(stderr, "%s datafile level\n", argv[0]);
@@ -188,7 +172,9 @@ int main(int argc, char *argv[]) {
 	const char *saveDirectory = ".";
 	const int level = (argc >= 3) ? atoi(argv[2]) : -1;
 	stub->init(argv[1], saveDirectory, level);
-	setupAudio(stub);
+	Mixer mix;
+	stub->setMixerImpl(&mix);
+	mix.init();
 	stub->initGL(gWindowW, gWindowH);
 	bool quitGame = false;
 	while (!quitGame) {
@@ -244,15 +230,15 @@ int main(int argc, char *argv[]) {
 			SDL_SetVideoMode(gWindowW, gWindowH, 0, SDL_OPENGL | SDL_RESIZABLE);
 			stub->initGL(gWindowW, gWindowH);
 		}
-		SDL_LockAudio();
 		stub->doTick();
-		SDL_UnlockAudio();
 		stub->drawGL(gWindowW, gWindowH);
+		mix.update();
 		SDL_GL_SwapBuffers();
 		SDL_Delay(gTickDuration);
 	}
 	stub->save();
 	stub->quit();
+	mix.quit();
 	return 0;
 }
 

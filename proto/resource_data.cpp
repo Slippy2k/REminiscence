@@ -271,6 +271,10 @@ void ResourceData::unloadLevelData() {
 	_tbn = 0;
 	free(_str);
 	_str = 0;
+	for (int i = 0; i < ARRAYSIZE(_sounds); ++i) {
+		free(_sounds[i]);
+		_sounds[i] = 0;
+	}
 }
 
 void ResourceData::loadLevelData(int i) {
@@ -351,7 +355,7 @@ void ResourceData::decodeImageData(const uint8_t *ptr, int i, DecodeBuffer *dst)
 	}
 }
 
-uint8_t *ResourceData::getSoundData(int i, int *size) {
+uint8_t *ResourceData::getSoundData(int i, uint32_t *size) {
 	static const int kSoundType = 4;
 	assert(i >= 0 && i < _res._types[kSoundType].count);
 	const ResourceEntry *entry = &_res._entries[kSoundType][i];
@@ -360,15 +364,19 @@ uint8_t *ResourceData::getSoundData(int i, int *size) {
 	static const int kHeaderSize = 0x24;
 	assert(_resourceDataSize > kHeaderSize);
 	_resourceDataSize -= kHeaderSize;
-	uint8_t *data = (uint8_t *)malloc(_resourceDataSize);
-	if (data) {
-		_res._f.read(data, kHeaderSize);
-		assert(READ_BE_UINT32(data + 0x12) == _resourceDataSize - 2);
-		_res._f.read(data, _resourceDataSize);
+	assert(i >= 0 && i < ARRAYSIZE(_sounds));
+	if (!_sounds[i]) {
+		uint8_t *data = (uint8_t *)malloc(_resourceDataSize);
+		if (data) {
+			_res._f.read(data, kHeaderSize);
+			assert(READ_BE_UINT32(data + 0x12) == _resourceDataSize - 2);
+			_res._f.read(data, _resourceDataSize);
+		}
+		_sounds[i] = data;
 	}
 	if (size) {
 		*size = _resourceDataSize;
 	}
-	return data;
+	return _sounds[i];
 }
 

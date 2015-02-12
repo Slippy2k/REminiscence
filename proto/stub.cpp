@@ -144,35 +144,6 @@ struct Main {
 		}
 		_texCache.endFrameDraw();
 	}
-
-	void doSoundMix(int8_t *buf, int size) {
-		static const int kFrac = 16;
-		for (; size != 0; --size) {
-			for (int i = 0; i < 16; ++i) {
-				Sfx *sfx = &_game._sfxList[i];
-				if (!sfx->dataPtr) {
-					continue;
-				}
-				const int pos = sfx->playOffset >> kFrac;
-				if (pos >= sfx->dataSize) {
-					free(sfx->dataPtr);
-					memset(sfx, 0, sizeof(Sfx));
-					continue;
-				}
-				const int pcm = *buf + (((int8_t)(sfx->dataPtr[pos] ^ 0x80)) >> sfx->volume);
-				if (pcm > 127) {
-					*buf = 127;
-				} else if (pcm < -128) {
-					*buf = -128;
-				} else {
-					*buf = pcm;
-				}
-				const int inc = (sfx->freq << kFrac) / _mixRate;
-				sfx->playOffset += inc;
-			}
-			++buf;
-		}
-	}
 };
 
 static void updateKeyInput(int keyCode, bool pressed, PlayerInput &pi) {
@@ -276,21 +247,12 @@ struct GameStub_Flashback: GameStub {
 		_m->_h = h;
 	}
 
-	void drawGL(int w, int h) {
+	virtual void drawGL(int w, int h) {
 		_m->drawFrame(w, h);
 	}
 
-	static void mixProc(void *data, uint8_t *buf, int size) {
-		memset(buf, 0, size);
-		((Main *)data)->doSoundMix((int8_t *)buf, size);
-	}
-
-	virtual StubMixProc getMixProc(int rate, int fmt) {
-		_m->_mixRate = rate;
-		StubMixProc mix;
-		mix.proc = &mixProc;
-		mix.data = _m;
-		return mix;
+	virtual void setMixerImpl(Mixer *mix) {
+		_m->_game._mix = mix;
 	}
 };
 

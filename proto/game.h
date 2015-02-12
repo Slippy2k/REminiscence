@@ -3,6 +3,7 @@
 #define GAME_H__
 
 #include "intern.h"
+#include "mixer.h"
 #include "resource_data.h"
 
 struct Hotspot {
@@ -39,15 +40,6 @@ struct GfxText {
 	uint8_t color;
 };
 
-struct Sfx {
-	int num;
-	uint8_t *dataPtr;
-	int dataSize;
-	int freq;
-	int volume;
-	int playOffset;
-};
-
 struct Game {
 	typedef int (Game::*pge_OpcodeProc)(ObjectOpcodeArgs *args);
 	typedef int (Game::*pge_ZOrderCallback)(LivePGE *, LivePGE *, uint8_t, uint8_t);
@@ -75,6 +67,7 @@ struct Game {
 	static const uint8_t _pge_modKeysTable[];
 
 	ResourceData &_res;
+	Mixer *_mix;
 	uint8_t *_frontLayer;
 	Color _palette[256];
 	bool _paletteChanged;
@@ -86,7 +79,6 @@ struct Game {
 	int _gfxImagesCount;
 	GfxText _gfxTextsList[16];
 	int _gfxTextsCount;
-	Sfx _sfxList[16];
 	int _shakeOffset;
 	uint8_t _currentLevel;
 	uint8_t _skillLevel;

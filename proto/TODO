@@ -8,10 +8,10 @@ render.cpp
 
 cleanup texture handling (one texture for background, one texture for gameplay ?)
 libSDL2 - android + gamepad support
-SDL_mixer
-	re-use rawgl
-	Mixer_impl Stub::getMixerImpl()
-	get rid of _sfxList
+	remove USE_GLES
+
+voice support
+	ResourceData::getVoiceSegment(int num)
 
 sprites, icone, fonte dans une texture (texturepacker)
 
@@ -32,7 +32,10 @@ convert_data
 	convert .mod/.sfx in .ogg
 		SDL_mixer with DRIVER/OUTPUT=file ?
 	background dans un .tga ou .bmp (RLE ou zlib)
+	ConvertData::voiceSegmentToWav(File &, int num)
+	ConvertData::rawU8ToWav(const uint8_t *data, int len);
 	bundle format - mac resource fork
+	resource_fs - findEntry() -> f.open("FILE.name");
 
 texture rendering
 	inventory display background (saveGfxList)

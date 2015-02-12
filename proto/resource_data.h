@@ -34,6 +34,7 @@ struct ResourceData {
 	uint8_t *_monster;
 	uint8_t *_tbn;
 	uint8_t *_str;
+	uint8_t *_sounds[66];
 
 	ResourceData(const char *filePath)
 		: _res(filePath) {
@@ -49,6 +50,7 @@ struct ResourceData {
 		_monster = 0;
 		_tbn = 0;
 		_str = 0;
+		memset(_sounds, 0, sizeof(_sounds));
 	}
 	~ResourceData() {
 		unloadLevelData();
@@ -131,7 +133,7 @@ struct ResourceData {
 	void loadLevelObjects(int level);
 	const uint8_t *getImageData(const uint8_t *ptr, int i);
 	void decodeImageData(const uint8_t *ptr, int i, DecodeBuffer *dst);
-	uint8_t *getSoundData(int i, int *size);
+	uint8_t *getSoundData(int i, uint32_t *size);
 };
 
 #endif

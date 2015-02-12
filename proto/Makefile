@@ -1,6 +1,6 @@
 
 SDL_CFLAGS = `sdl-config --cflags`
-SDL_LIBS   = `sdl-config --libs`
+SDL_LIBS   = `sdl-config --libs` -lSDL_mixer
 
 GL_LIBS = -lGL
 
@@ -11,15 +11,19 @@ SRCS_LIB = collision.cpp decode.cpp file.cpp game.cpp piege.cpp resource_data.cp
 OBJS_LIB = $(SRCS_LIB:.cpp=.o)
 DEPS_LIB = $(SRCS_LIB:.cpp=.d)
 
+SRCS_EXE = main.cpp mixer.cpp input.cpp render.cpp
+OBJS_EXE = $(SRCS_EXE:.cpp=.o)
+DEPS_EXE = $(SRCS_EXE:.cpp=.d)
+
 all: fb
 
 libfb.so: $(OBJS_LIB)
 	$(CXX) $(LDFLAGS) -shared -o $@ $(OBJS_LIB) $(GL_LIBS) -lz
 
-fb: main.o input.o render.o $(OBJS_LIB)
+fb: $(OBJS_EXE) $(OBJS_LIB)
 	$(CXX) $(LDFLAGS) -o $@ $^ -ldl $(SDL_LIBS) $(GL_LIBS) -lz
 
 clean:
 	rm -f *.o *.d libfb.so fb
 
--include $(DEPS_LIB) main.d input.d
+-include $(DEPS_EXE) $(DEPS_LIB)

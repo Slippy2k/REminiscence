@@ -2,10 +2,7 @@
 #ifndef STUB_H__
 #define STUB_H__
 
-struct StubMixProc {
-	void (*proc)(void *data, uint8_t *buf, int size);
-	void *data;
-};
+struct Mixer;
 
 enum {
 	kKeyCodeLeft = 1,
@@ -28,7 +25,7 @@ struct GameStub {
 	virtual void doTick() = 0;
 	virtual void initGL(int, int) = 0;
 	virtual void drawGL(int, int) = 0;
-	virtual StubMixProc getMixProc(int rate, int fmt) = 0;
+	virtual void setMixerImpl(Mixer *) = 0;
 };
 
 extern "C" {
