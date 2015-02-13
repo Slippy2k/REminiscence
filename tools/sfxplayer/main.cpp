@@ -4,7 +4,7 @@
 #include "SDL.h"
 
 
-#define SAMPLE_RATE 22050
+#define SAMPLE_RATE 11025
 //#define PAULA_FREQ 3579545 // NTSC
 #define PAULA_FREQ 3546897 // PAL
 
@@ -30,6 +30,13 @@ struct SfxPlayer {
 		int freq;
 		int pos;
 		const uint8 *data;
+
+		uint8 getData(int offset) const {
+			if (offset >= len) {
+				offset = len - 1;
+			}
+			return data[offset];
+		}
 	};
 	
 	static const uint16 _periodTable[];
@@ -235,8 +242,8 @@ void SfxPlayer::mixSamples(int8 *buf, int samplesLen) {
 				}
 				while (count--) {
 					assert((pos >> FRAC_BITS) < si->len);
-					int8 b0 = si->data[(pos >> FRAC_BITS)];
-					int8 b1 = si->data[(pos >> FRAC_BITS) + 1];
+					int8 b0 = si->getData((pos >> FRAC_BITS));
+					int8 b1 = si->getData((pos >> FRAC_BITS) + 1);
 					int a1 = pos & ((1 << FRAC_BITS) - 1);
 					int a0 = (1 << FRAC_BITS) - a1;
 					int b = (b0 * a0 + b1 * a1) >> FRAC_BITS;
