@@ -12,6 +12,7 @@ libSDL2 - android + gamepad support
 
 voice support
 	ResourceData::getVoiceSegment(int num)
+	Mixer::isPlaying(const char *data)
 
 sprites, icone, fonte dans une texture (texturepacker)
 
@@ -29,8 +30,6 @@ cutscenes
 
 convert_data
 	decode sega vce segments to .wav (N-PART.wav)
-	convert .mod/.sfx in .ogg
-		SDL_mixer with DRIVER/OUTPUT=file ?
 	background dans un .tga ou .bmp (RLE ou zlib)
 	ConvertData::voiceSegmentToWav(File &, int num)
 	ConvertData::rawU8ToWav(const uint8_t *data, int len);

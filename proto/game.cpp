@@ -591,6 +591,18 @@ void Game::playSound(uint8_t sfxId, uint8_t softVol) {
 				_mix->playSoundRaw(data, size, freq, volume);
 			}
 		}
+	} else {
+		switch (sfxId) {
+		case 69:
+			sfxId = 68;
+			break;
+		case 71:
+			sfxId = 70;
+			break;
+		}
+		char name[16];
+		snprintf(name, sizeof(name), "sfx%d.ogg", sfxId);
+		_mix->playMusic(name);
 	}
 }
 
