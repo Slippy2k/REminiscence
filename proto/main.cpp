@@ -11,7 +11,7 @@
 
 static const int kDefaultW = 512;
 static const int kDefaultH = 448;
-static const char *gWindowTitle = "Flashback: The Quest For Identity";
+static const char *kCaption = "Flashback: The Quest For Identity";
 static const float gScale = 2;
 static int gWindowW = (int)(kDefaultW * gScale);
 static int gWindowH = (int)(kDefaultH * gScale);
@@ -116,29 +116,29 @@ static void queueKeyInput(GameStub *stub, int keyCode, bool pressed) {
 		key = kKeyCodeBackspace;
 		break;
 #else
-	case SDLK_LEFT:
+	case SDL_SCANCODE_LEFT:
 		key = kKeyCodeLeft;
 		break;
-	case SDLK_RIGHT:
+	case SDL_SCANCODE_RIGHT:
 		key = kKeyCodeRight;
 		break;
-	case SDLK_UP:
+	case SDL_SCANCODE_UP:
 		key = kKeyCodeUp;
 		break;
-	case SDLK_DOWN:
+	case SDL_SCANCODE_DOWN:
 		key = kKeyCodeDown;
 		break;
-	case SDLK_SPACE:
+	case SDL_SCANCODE_SPACE:
 		key = kKeyCodeSpace;
 		break;
-	case SDLK_RSHIFT:
-	case SDLK_LSHIFT:
+	case SDL_SCANCODE_RSHIFT:
+	case SDL_SCANCODE_LSHIFT:
 		key = kKeyCodeShift;
 		break;
-	case SDLK_RETURN:
+	case SDL_SCANCODE_RETURN:
 		key = kKeyCodeReturn;
 		break;
-	case SDLK_BACKSPACE:
+	case SDL_SCANCODE_BACKSPACE:
 		key = kKeyCodeBackspace;
 		break;
 #endif
@@ -165,10 +165,10 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-	SDL_SetVideoMode(gWindowW, gWindowH, 0, SDL_OPENGL | SDL_RESIZABLE);
-	SDL_WM_SetCaption(gWindowTitle, 0);
+//	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+	SDL_Window *window = SDL_CreateWindow(kCaption, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, gWindowW, gWindowH, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	SDL_GetWindowSize(window, &gWindowW, &gWindowH);
 	const char *saveDirectory = ".";
 	const int level = (argc >= 3) ? atoi(argv[2]) : -1;
 	stub->init(argv[1], saveDirectory, level);
@@ -187,25 +187,25 @@ int main(int argc, char *argv[]) {
 				quitGame = true;
 				break;
 			case SDL_KEYDOWN:
-				switch (ev.key.keysym.sym) {
-				case SDLK_PAGEUP:
+				switch (ev.key.keysym.scancode) {
+				case SDL_SCANCODE_PAGEUP:
 					rescaleWindowDim(gWindowW, gWindowH, kScaleUp);
 					break;
-				case SDLK_PAGEDOWN:
+				case SDL_SCANCODE_PAGEDOWN:
 					rescaleWindowDim(gWindowW, gWindowH, kScaleDown);
 					break;
 				default:
-					queueKeyInput(stub, ev.key.keysym.sym, 1);
+					queueKeyInput(stub, ev.key.keysym.scancode, 1);
 					break;
 				}
 				break;
 			case SDL_KEYUP:
-				switch (ev.key.keysym.sym) {
-				case SDLK_PAGEUP:
-				case SDLK_PAGEDOWN:
+				switch (ev.key.keysym.scancode) {
+				case SDL_SCANCODE_PAGEUP:
+				case SDL_SCANCODE_PAGEDOWN:
 					break;
 				default:
-					queueKeyInput(stub, ev.key.keysym.sym, 0);
+					queueKeyInput(stub, ev.key.keysym.scancode, 0);
 					break;
 				}
 				break;
@@ -220,26 +220,29 @@ int main(int argc, char *argv[]) {
 					stub->queueTouchInput(0, ev.motion.x, ev.motion.y, 1);
 				}
 				break;
-			case SDL_VIDEORESIZE:
-				gWindowW = ev.resize.w;
-				gWindowH = ev.resize.h;
+			case SDL_WINDOWEVENT:
+				if (ev.window.event == SDL_WINDOWEVENT_RESIZED) {
+					gWindowW = ev.window.data1;
+					gWindowH = ev.window.data2;
+				}
 				break;
 			}
 		}
 		if (w != gWindowW || h != gWindowH) {
-			SDL_SetVideoMode(gWindowW, gWindowH, 0, SDL_OPENGL | SDL_RESIZABLE);
 			stub->initGL(gWindowW, gWindowH);
 		}
 		stub->doTick();
 		stub->drawGL(gWindowW, gWindowH);
+		SDL_RenderPresent(renderer);
 		mix.update();
-		SDL_GL_SwapBuffers();
 		SDL_Delay(gTickDuration);
 	}
 	stub->save();
 	stub->quit();
 	mix.quit();
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
+	SDL_Quit();
 	return 0;
 }
-
 

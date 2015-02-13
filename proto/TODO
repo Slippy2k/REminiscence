@@ -31,8 +31,6 @@ cutscenes
 convert_data
 	decode sega vce segments to .wav (N-PART.wav)
 	background dans un .tga ou .bmp (RLE ou zlib)
-	ConvertData::voiceSegmentToWav(File &, int num)
-	ConvertData::rawU8ToWav(const uint8_t *data, int len);
 	bundle format - mac resource fork
 	resource_fs - findEntry() -> f.open("FILE.name");
 
