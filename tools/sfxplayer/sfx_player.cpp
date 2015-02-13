@@ -9,6 +9,7 @@
 #define PAULA_FREQ 3546897 // PAL
 
 
+static const bool kOutputToDisk = true;
 
 struct SfxPlayer {
 	enum {
@@ -125,18 +126,20 @@ void SfxPlayer::stop() {
 void SfxPlayer::start() {
 	memset(_samples, 0, sizeof(_samples));
 	_samplesLeft = 0;
-	SDL_AudioSpec desired;
-	memset(&desired, 0, sizeof(desired));
-	desired.freq = SAMPLE_RATE;
-	desired.format = AUDIO_S8;
-	desired.channels = 1;
-	desired.samples = 2048;
-	desired.callback = mixCallback;
-	desired.userdata = this;
-	if (SDL_OpenAudio(&desired, NULL) == 0) {
-		SDL_PauseAudio(0);
-	} else {
-		error("SfxPlayer::init() unable to open sound device");
+	if (!kOutputToDisk) {
+		SDL_AudioSpec desired;
+		memset(&desired, 0, sizeof(desired));
+		desired.freq = SAMPLE_RATE;
+		desired.format = AUDIO_S8;
+		desired.channels = 1;
+		desired.samples = 2048;
+		desired.callback = mixCallback;
+		desired.userdata = this;
+		if (SDL_OpenAudio(&desired, NULL) == 0) {
+			SDL_PauseAudio(0);
+		} else {
+			error("SfxPlayer::init() unable to open sound device");
+		}
 	}
 	_playing = true;
 }
@@ -252,7 +255,7 @@ void SfxPlayer::mixSamples(int8 *buf, int samplesLen) {
 				}
 			}
 			si->pos = pos;
-     	}
+     		}
 	}
 }
 
@@ -293,17 +296,29 @@ int main(int argc, char *argv[]) {
 		SfxPlayer p;
 		p.loadModule(atoi(argv[1]));
 		p.start();
-		bool quit = false;
-		while (!quit && p._playing) {
-			SDL_Event ev;
-			while (SDL_PollEvent(&ev)) {
-				switch (ev.type) {
-				case SDL_KEYUP:
-					quit = true;
-					break;
+		if (kOutputToDisk) {
+			FILE *fp = fopen("out.raw", "wb");
+			if (fp) {
+				while (p._playing) {
+					int8 buf[2048];
+					p.mix(buf, sizeof(buf));
+					fwrite(buf, 1, sizeof(buf), fp);
 				}
+				fclose(fp);
 			}
-			SDL_Delay(100);
+		} else {
+			bool quit = false;
+			while (!quit && p._playing) {
+				SDL_Event ev;
+				while (SDL_PollEvent(&ev)) {
+					switch (ev.type) {
+					case SDL_KEYUP:
+						quit = true;
+						break;
+					}
+				}
+				SDL_Delay(100);
+			}
 		}
 		p.stop();
 		SDL_Quit();

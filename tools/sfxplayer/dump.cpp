@@ -12,12 +12,6 @@ static uint32 read_u32(FILE *fp) {
 	return (d << 24) | (c << 16) | (b << 8) | a;
 }
 
-static uint16 read_u16(FILE *fp) {
-	uint8 a = fgetc(fp);
-	uint8 b = fgetc(fp);
-	return (b << 8) | a;
-}
-
 static void dump(FILE *fp, uint32 off1, uint32 off2, const char *name, bool isModule) {
 	fseek(fp, off1, SEEK_SET);
 	if (isModule) {
@@ -29,7 +23,7 @@ static void dump(FILE *fp, uint32 off1, uint32 off2, const char *name, bool isMo
 	uint8 lastByte = 0;
 	printf("const uint8 %s[] = {\n\t", name);
 	int i = 0;
-	while (ftell(fp) < off2) {
+	while (ftell(fp) < (int)off2) {
 		if (i == 16) {
 			printf("\n\t");
 			i = 0;
@@ -46,10 +40,10 @@ static void dump(FILE *fp, uint32 off1, uint32 off2, const char *name, bool isMo
 		printf("0x%02X", lastByte);
 	}
 	printf("\n};\n");
-	printf("// sizeof() = %d\n", off2 - off1);
+	printf("// sizeof() = %d\n", int(off2 - off1));
 }
 
-struct {
+struct Module {
 	const char *name;
 	uint32 offs_start;
 	uint32 offs_end;
@@ -78,7 +72,7 @@ struct {
 int main(int argc, char* argv[]) {
 	FILE *fp = fopen("flashback", "rb");
 	if (fp) {
-		for (int i = 0; i < sizeof(MODULES)/sizeof(MODULES[0]); ++i) {
+		for (size_t i = 0; i < sizeof(MODULES)/sizeof(MODULES[0]); ++i) {
 			dump(fp, MODULES[i].offs_start, MODULES[i].offs_end, MODULES[i].name, MODULES[i].module);
 		}
 		fclose(fp);

@@ -5,11 +5,10 @@ SDL_LIBS = `sdl-config --libs`
 DEFINES = -DSYS_LITTLE_ENDIAN
 
 CXX = g++
-CXXFLAGS:= -g -O -Wuninitialized -Wno-unknown-pragmas -Wshadow -Wimplicit 
-CXXFLAGS+= -Wundef -Wreorder -Wwrite-strings -Wnon-virtual-dtor -Wno-multichar
+CXXFLAGS:= -g -O -Wall
 CXXFLAGS+= $(SDL_CFLAGS) $(DEFINES)
 
-SRCS_SFXPLY = main.cpp util.cpp
+SRCS_SFXPLY = sfx_player.cpp util.cpp
 OBJS_SFXPLY = $(SRCS_SFXPLY:.cpp=.o)
 DEPS_SFXPLY = $(SRCS_SFXPLY:.cpp=.d)
 
