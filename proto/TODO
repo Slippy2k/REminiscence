@@ -3,7 +3,6 @@ LD_LIBRARY_PATH=$(pwd) ./fb ../DATA/Flashback.bin
 
 render.cpp
 	cleanup texture handling
-	npot support
 	move MAC data conversion to convert_data.h
 
 cleanup texture handling (one texture for background, one texture for gameplay ?)

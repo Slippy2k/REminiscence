@@ -33,13 +33,30 @@ TextureCache::TextureCache() {
 	memset(&_gfxImagesQueue, 0, sizeof(_gfxImagesQueue));
 	_gfxImagesCount = 0;
 	if (_scalerFactor != 1) {
-		const int w = roundPowerOfTwo(kW * _scalerFactor);
-		const int h = roundPowerOfTwo(kH * _scalerFactor);
+		const int w = _npotTex ? kW * _scalerFactor : roundPowerOfTwo(kW * _scalerFactor);
+		const int h = _npotTex ? kH * _scalerFactor : roundPowerOfTwo(kH * _scalerFactor);
 		_texScaleBuf = (uint16_t *)malloc(w * h * sizeof(uint16_t));
 	}
 	gettimeofday(&_t0, 0);
 	_frameCounter = 0;
 	_framesPerSec = 0;
+	_npotTex = false;
+}
+
+static bool hasExt(const char *exts, const char *name) {
+	const char *p = strstr(exts, name);
+	if (p) {
+		p += strlen(name);
+		return *p == ' ' || *p == 0;
+	}
+	return false;
+}
+
+void TextureCache::init() {
+	const char *exts = (const char *)glGetString(GL_EXTENSIONS);
+	if (hasExt(exts, "GL_ARB_texture_non_power_of_two")) {
+		_npotTex = true;
+	}
 }
 
 void TextureCache::updatePalette(Color *clut) {
@@ -74,8 +91,8 @@ void TextureCache::createTextureFont(ResourceData &res) {
 	_font.charsCount = 105;
 	const int w = _font.charsCount * 16 * _scalerFactor;
 	const int h = 16 * _scalerFactor;
-	const int texW = roundPowerOfTwo(w);
-	const int texH = roundPowerOfTwo(h);
+	const int texW = _npotTex ? w : roundPowerOfTwo(w);
+	const int texH = _npotTex ? h : roundPowerOfTwo(h);
 	if (_font.texId == -1) {
 		glGenTextures(1, &_font.texId);
 		glBindTexture(GL_TEXTURE_2D, _font.texId);
@@ -116,8 +133,8 @@ static void convertTextureTitle(DecodeBuffer *buf, int x, int y, int w, int h, u
 void TextureCache::createTextureTitle(ResourceData &res, int num) {
 	const int w = kW * _scalerFactor;
 	const int h = kH * _scalerFactor;
-	const int texW = roundPowerOfTwo(w);
-	const int texH = roundPowerOfTwo(h);
+	const int texW = _npotTex ? w : roundPowerOfTwo(w);
+	const int texH = _npotTex ? h : roundPowerOfTwo(h);
 	if (_title.texId == -1) {
 		glGenTextures(1, &_title.texId);
 		glBindTexture(GL_TEXTURE_2D, _title.texId);
@@ -157,8 +174,8 @@ static void convertTextureBackground(DecodeBuffer *buf, int x, int y, int w, int
 void TextureCache::createTextureBackground(ResourceData &res, int level, int room) {
 	const int w = kW * _scalerFactor;
 	const int h = kH * _scalerFactor;
-	const int texW = roundPowerOfTwo(w);
-	const int texH = roundPowerOfTwo(h);
+	const int texW = _npotTex ? w : roundPowerOfTwo(w);
+	const int texH = _npotTex ? h : roundPowerOfTwo(h);
 	if (_background.texId == -1) {
 		glGenTextures(1, &_background.texId);
 		glBindTexture(GL_TEXTURE_2D, _background.texId);
@@ -202,8 +219,8 @@ static void convertTextureImage(DecodeBuffer *buf, int x, int y, int w, int h, u
 void TextureCache::createTextureGfxImage(ResourceData &res, const GfxImage *image) {
 	const int w = image->w * _scalerFactor;
 	const int h = image->h * _scalerFactor;
-	const int texW = roundPowerOfTwo(w);
-	const int texH = roundPowerOfTwo(h);
+	const int texW = _npotTex ? w : roundPowerOfTwo(w);
+	const int texH = _npotTex ? h : roundPowerOfTwo(h);
 	int pos = -1;
 	for (int i = 0; i < ARRAYSIZE(_texturesList); ++i) {
 		if (_texturesList[i].texId == -1) {

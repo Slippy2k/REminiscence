@@ -67,7 +67,11 @@ struct TextureCache {
 	int _frameCounter;
 	int _framesPerSec;
 
+	bool _npotTex;
+
 	TextureCache();
+
+	void init();
 
 	void updatePalette(Color *clut);
 	uint16_t *rescaleTexture(DecodeBuffer *buf, int w, int h);

@@ -36,6 +36,7 @@ struct Main {
 	}
 
 	void init() {
+		_texCache.init();
 		_resData.loadClutData();
 		_resData.loadIconData();
 		_resData.loadFontData();
