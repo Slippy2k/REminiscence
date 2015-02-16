@@ -35,6 +35,15 @@ static void readClut(const uint8_t *ptr) {
 	printf("_clutSize %d\n", _clutSize);
 }
 
+static uint32_t getResourceDataSize(ResourceMac &res, const ResourceEntry *entry, bool lzss) {
+	res._f.seek(res._dataOffset + entry->dataOffset);
+	uint32_t size = res._f.readUint32BE();
+	if (lzss) {
+		size = res._f.readUint32BE();
+	}
+	return size;
+}
+
 static uint8_t *decodeResourceData(ResourceMac &res, const char *name, bool decompressLzss) {
 	uint8_t *data = 0;
 	const ResourceEntry *entry = res.findEntry(name);
@@ -335,11 +344,36 @@ static void decodeSoundData(ResourceMac &res) {
 	}
 }
 
+static void checkCutsceneData(ResourceMac &res) {
+	static const struct {
+		const char *name;
+		uint16_t cmdSize;
+		uint16_t polSize;
+	} fileSizes[] = {
+		// file sizes from the DOS version
+		{ "intro1", 3720, 57813 },
+		{ "intro2", 11099, 32699 },
+		{ "holoseq", 5807, 7280 },
+		{ "voyage", 21881, 26275 },
+		{  0, 0, 0 }
+	};
+	for (int i = 0; fileSizes[i].name; ++i) {
+		char name[32];
+		snprintf(name, sizeof(name), "%s movie", fileSizes[i].name);
+		const ResourceEntry *entry = res.findEntry(name);
+		assert(entry && getResourceDataSize(res, entry, true) == fileSizes[i].cmdSize + 2);
+		snprintf(name, sizeof(name), "%s polygons", fileSizes[i].name);
+		entry = res.findEntry(name);
+		assert(entry && getResourceDataSize(res, entry, true) == fileSizes[i].polSize);
+	}
+}
+
 int main(int argc, char *argv[]) {
 	if (argc > 1) {
 		ResourceMac res(argv[1]);
-		decodeSoundData(res);
+		// decodeSoundData(res);
 		checkAmigaData(res);
+		checkCutsceneData(res);
 		uint8_t *ptr = decodeResourceData(res, "Flashback colors", false);
 		readClut(ptr);
 		free(ptr);

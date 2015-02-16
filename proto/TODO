@@ -21,9 +21,6 @@ split game.cpp
 
 integrate with 'google play games' service to save gamestates in cloud (need screenshot)
 
-convert_mac_png
-	option to dump all files
-
 cutscenes
 	scale2x
 
@@ -32,6 +29,9 @@ convert_data
 	background dans un .tga ou .bmp (RLE ou zlib)
 	bundle format - mac resource fork
 	resource_fs - findEntry() -> f.open("FILE.name");
+
+convert_mac_png
+	output paletted .png
 
 texture rendering
 	inventory display background (saveGfxList)
