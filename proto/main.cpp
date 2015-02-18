@@ -171,75 +171,76 @@ int main(int argc, char *argv[]) {
 	SDL_GetWindowSize(window, &gWindowW, &gWindowH);
 	const char *saveDirectory = ".";
 	const int level = (argc >= 3) ? atoi(argv[2]) : -1;
-	stub->init(argv[1], saveDirectory, level);
-	Mixer mix;
-	stub->setMixerImpl(&mix);
-	mix.init();
-	stub->initGL(gWindowW, gWindowH);
-	bool quitGame = false;
-	while (!quitGame) {
-		int w = gWindowW;
-		int h = gWindowH;
-		SDL_Event ev;
-		while (SDL_PollEvent(&ev)) {
-			switch (ev.type) {
-			case SDL_QUIT:
-				quitGame = true;
-				break;
-			case SDL_KEYDOWN:
-				switch (ev.key.keysym.scancode) {
-				case SDL_SCANCODE_PAGEUP:
-					rescaleWindowDim(gWindowW, gWindowH, kScaleUp);
+	if (stub->init(argv[1], saveDirectory, level)) {
+		Mixer mix;
+		stub->setMixerImpl(&mix);
+		mix.init();
+		stub->initGL(gWindowW, gWindowH);
+		bool quitGame = false;
+		while (!quitGame) {
+			int w = gWindowW;
+			int h = gWindowH;
+			SDL_Event ev;
+			while (SDL_PollEvent(&ev)) {
+				switch (ev.type) {
+				case SDL_QUIT:
+					quitGame = true;
 					break;
-				case SDL_SCANCODE_PAGEDOWN:
-					rescaleWindowDim(gWindowW, gWindowH, kScaleDown);
+				case SDL_KEYDOWN:
+					switch (ev.key.keysym.scancode) {
+					case SDL_SCANCODE_PAGEUP:
+						rescaleWindowDim(gWindowW, gWindowH, kScaleUp);
+						break;
+					case SDL_SCANCODE_PAGEDOWN:
+						rescaleWindowDim(gWindowW, gWindowH, kScaleDown);
+						break;
+					default:
+						queueKeyInput(stub, ev.key.keysym.scancode, 1);
+						break;
+					}
 					break;
-				default:
-					queueKeyInput(stub, ev.key.keysym.scancode, 1);
+				case SDL_KEYUP:
+					switch (ev.key.keysym.scancode) {
+					case SDL_SCANCODE_PAGEUP:
+					case SDL_SCANCODE_PAGEDOWN:
+						break;
+					default:
+						queueKeyInput(stub, ev.key.keysym.scancode, 0);
+						break;
+					}
+					break;
+				case SDL_MOUSEBUTTONUP:
+					stub->queueTouchInput(0, ev.button.x, ev.button.y, 0);
+					break;
+				case SDL_MOUSEBUTTONDOWN:
+					stub->queueTouchInput(0, ev.button.x, ev.button.y, 1);
+					break;
+				case SDL_MOUSEMOTION:
+					if (ev.motion.state & SDL_BUTTON(1)) {
+						stub->queueTouchInput(0, ev.motion.x, ev.motion.y, 1);
+					}
+					break;
+				case SDL_WINDOWEVENT:
+					if (ev.window.event == SDL_WINDOWEVENT_RESIZED) {
+						gWindowW = ev.window.data1;
+						gWindowH = ev.window.data2;
+					}
 					break;
 				}
-				break;
-			case SDL_KEYUP:
-				switch (ev.key.keysym.scancode) {
-				case SDL_SCANCODE_PAGEUP:
-				case SDL_SCANCODE_PAGEDOWN:
-					break;
-				default:
-					queueKeyInput(stub, ev.key.keysym.scancode, 0);
-					break;
-				}
-				break;
-			case SDL_MOUSEBUTTONUP:
-				stub->queueTouchInput(0, ev.button.x, ev.button.y, 0);
-				break;
-			case SDL_MOUSEBUTTONDOWN:
-				stub->queueTouchInput(0, ev.button.x, ev.button.y, 1);
-				break;
-			case SDL_MOUSEMOTION:
-				if (ev.motion.state & SDL_BUTTON(1)) {
-					stub->queueTouchInput(0, ev.motion.x, ev.motion.y, 1);
-				}
-				break;
-			case SDL_WINDOWEVENT:
-				if (ev.window.event == SDL_WINDOWEVENT_RESIZED) {
-					gWindowW = ev.window.data1;
-					gWindowH = ev.window.data2;
-				}
-				break;
 			}
+			if (w != gWindowW || h != gWindowH) {
+				stub->initGL(gWindowW, gWindowH);
+			}
+			stub->doTick();
+			stub->drawGL(gWindowW, gWindowH);
+			SDL_RenderPresent(renderer);
+			mix.update();
+			SDL_Delay(gTickDuration);
 		}
-		if (w != gWindowW || h != gWindowH) {
-			stub->initGL(gWindowW, gWindowH);
-		}
-		stub->doTick();
-		stub->drawGL(gWindowW, gWindowH);
-		SDL_RenderPresent(renderer);
-		mix.update();
-		SDL_Delay(gTickDuration);
+		stub->save();
+		stub->quit();
+		mix.quit();
 	}
-	stub->save();
-	stub->quit();
-	mix.quit();
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();

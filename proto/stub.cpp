@@ -35,13 +35,17 @@ struct Main {
 		_h = kH;
 	}
 
-	void init() {
+	bool init() {
+		if (!_resData._res.isOpen()) {
+			return false;
+		}
 		_texCache.init();
 		_resData.loadClutData();
 		_resData.loadIconData();
 		_resData.loadFontData();
 		_resData.loadPersoData();
 		_texCache.createTextureFont(_resData);
+		return true;
 	}
 
 	void save() {
@@ -211,12 +215,12 @@ struct GameStub_Flashback: GameStub {
 
 	Main *_m;
 
-	virtual void init(const char *filePath, const char *savePath, int level) {
+	virtual bool init(const char *filePath, const char *savePath, int level) {
 		_m = new Main(filePath, savePath);
 		if (level != -1) {
 			_m->_game._currentLevel = level;
 		}
-		_m->init();
+		return _m->init();
 	}
 
 	virtual void quit() {

@@ -5,7 +5,7 @@
 #include "resource_mac.h"
 
 ResourceMac::ResourceMac(const char *filePath)
-	: _types(0), _entries(0) {
+	: _dataOffset(0), _types(0), _entries(0) {
 	memset(&_map, 0, sizeof(_map));
 	if (_f.open(filePath, "rb")) {
 		loadMap();

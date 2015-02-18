@@ -40,6 +40,7 @@ struct ResourceMac {
 	ResourceMac(const char *filePath);
 	~ResourceMac();
 
+	bool isOpen() const { return _entries != 0; }
 	void loadMap();
 	const ResourceEntry *findEntry(const char *name) const;
 };

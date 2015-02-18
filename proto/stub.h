@@ -17,7 +17,7 @@ enum {
 };
 
 struct GameStub {
-	virtual void init(const char *, const char *, int) = 0;
+	virtual bool init(const char *, const char *, int) = 0;
 	virtual void quit() = 0;
 	virtual void save() = 0;
 	virtual void queueKeyInput(int keycode, int pressed) = 0;
