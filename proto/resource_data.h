@@ -133,8 +133,8 @@ struct ResourceData {
 	void loadLevelObjects(int level);
 	const uint8_t *getImageData(const uint8_t *ptr, int i);
 	void decodeImageData(const uint8_t *ptr, int i, DecodeBuffer *dst);
-	uint8_t *getSoundData(int i, uint32_t *size);
-	uint8_t *getSoundWav(const char *name);
+	uint8_t *getSoundData(int i, int *freq, uint32_t *size);
+	uint8_t *getSfxData(int num);
 	uint8_t *getVoiceSegment(int num, int segment);
 };
 

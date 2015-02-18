@@ -612,25 +612,15 @@ void Game::playSound(uint8_t num, uint8_t softVol) {
 			}
 			_sounds[num] = 0;
 		}
+		int freq = 8000;
 		uint32_t size;
-		const uint8_t *data = _res.getSoundData(table[num], &size);
+		const uint8_t *data = _res.getSoundData(table[num], &freq, &size);
 		if (data) {
-			const int freq = 3546897 / 650;
 			const int volume = 255 >> softVol;
 			_sounds[num] = _mix->playSoundRaw(data, size, freq, volume);
 		}
 	} else if (num < 76) {
-		switch (num) {
-		case 69:
-			num = 68;
-			break;
-		case 71:
-			num = 70;
-			break;
-		}
-		char name[16];
-		snprintf(name, sizeof(name), "soundfx%d", num);
-		uint8_t *wav = _res.getSoundWav(name);
+		uint8_t *wav = _res.getSfxData(num);
 		if (wav) {
 			_mix->playSoundWav(wav);
 			free(wav);

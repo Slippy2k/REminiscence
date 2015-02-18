@@ -355,7 +355,7 @@ void ResourceData::decodeImageData(const uint8_t *ptr, int i, DecodeBuffer *dst)
 	}
 }
 
-uint8_t *ResourceData::getSoundData(int i, uint32_t *size) {
+uint8_t *ResourceData::getSoundData(int i, int *freq, uint32_t *size) {
 	static const int kSoundType = 4;
 	assert(i >= 0 && i < _res._types[kSoundType].count);
 	const ResourceEntry *entry = &_res._entries[kSoundType][i];
@@ -363,27 +363,39 @@ uint8_t *ResourceData::getSoundData(int i, uint32_t *size) {
 	_resourceDataSize = _res._f.readUint32BE();
 	static const int kHeaderSize = 0x24;
 	assert(_resourceDataSize > kHeaderSize);
-	_resourceDataSize -= kHeaderSize;
 	assert(i >= 0 && i < ARRAYSIZE(_sounds));
 	if (!_sounds[i]) {
 		uint8_t *data = (uint8_t *)malloc(_resourceDataSize);
 		if (data) {
-			_res._f.read(data, kHeaderSize);
-			assert(READ_BE_UINT32(data + 0x12) == _resourceDataSize - 2);
 			_res._f.read(data, _resourceDataSize);
+			static const bool checkHeader = true;
+			if (checkHeader) {
+				const int size = _resourceDataSize - kHeaderSize - 2;
+				assert(READ_BE_UINT32(data) == 131072);
+				assert(READ_BE_UINT32(data + 4) == 98384);
+				assert(READ_BE_UINT32(data + 8) == 0);
+				assert(READ_BE_UINT16(data + 0xC) == 0xE);
+				assert(READ_BE_UINT32(data + 0xE) == 0);
+				assert(READ_BE_UINT32(data + 0x12) == size);
+				assert(READ_BE_UINT16(data + 0x18) == 0);
+				assert(READ_BE_UINT32(data + 0x1A) == size);
+				assert(READ_BE_UINT32(data + 0x1E) == size);
+//				assert(READ_BE_UINT16(data + 0x22) == 60);
+			}
+			_sounds[i] = data;
 		}
-		_sounds[i] = data;
 	}
-	if (size) {
-		*size = _resourceDataSize;
+	if (_sounds[i]) {
+		uint8_t *data = _sounds[i];
+		*freq = READ_BE_UINT16(data + 0x16);
+		*size = READ_BE_UINT32(data + 0x12);
+		return data + kHeaderSize;
 	}
-	return _sounds[i];
+	return 0;
 }
 
-uint8_t *ResourceData::getSoundWav(const char *name) {
+static uint8_t *readFile(const char *path) {
 	uint8_t *buf = 0;
-	char path[32];
-	snprintf(path, sizeof(path), "%s.wav", name);
 	File f;
 	if (f.open(path, "rb")) {
 		const int fileSize = f.size();
@@ -395,8 +407,22 @@ uint8_t *ResourceData::getSoundWav(const char *name) {
 	return buf;
 }
 
+uint8_t *ResourceData::getSfxData(int num) {
+	switch (num) {
+	case 69:
+		num = 68;
+		break;
+	case 71:
+		num = 70;
+		break;
+	}
+	char name[16];
+	snprintf(name, sizeof(name), "soundfx%d.wav", num);
+	return readFile(name);
+}
+
 uint8_t *ResourceData::getVoiceSegment(int num, int segment) {
 	char name[16];
-	snprintf(name, sizeof(name), "v%02d_%02d", num, segment);
-	return getSoundWav(name);
+	snprintf(name, sizeof(name), "v%02d_%02d.wav", num, segment);
+	return readFile(name);
 }
