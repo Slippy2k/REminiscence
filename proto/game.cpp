@@ -64,7 +64,9 @@ void Game::resetGameState() {
 	_pge_opTempVar1 = 0;
 	_textToDisplay = 0xFFFF;
 	_nextTextSegment = 0;
+	_voiceSound = 0;
 	_gameOver = false;
+	memset(_sounds, 0, sizeof(_sounds));
 }
 
 void Game::initGame() {
@@ -221,8 +223,8 @@ void Game::playCutscene(int id) {
 		_cutId = id;
 	}
 	if (_cutId != 0xFFFF) {
+		_mix->stopAll();
 #if 0
-		_sfxPly.stop();
 		_cut.play();
 #endif
 	}
@@ -287,15 +289,33 @@ void Game::drawLevelTexts() {
 void Game::doStoryTexts() {
 	const uint8_t *str = _res.getStringData(ResourceData::kGameString + _textToDisplay);
 	const int segmentsCount = *str++;
+	bool nextText = false;
+	if (_voiceSound != 0 && !_mix->isPlayingSound(_voiceSound)) {
+		nextText = true;
+	}
 	if (_pi.backspace) {
 		_pi.backspace = false;
+		nextText = true;
+		if (_voiceSound != 0) {
+			_mix->stopSound(_voiceSound);
+			_voiceSound = 0;
+		}
+	}
+	if (nextText) {
+		// change to next text segment
 		if (_nextTextSegment >= segmentsCount) {
 			_nextTextSegment = 0;
 			_textToDisplay = 0xFFFF;
+			_voiceSound = 0;
 			return;
                 }
 	} else if (_nextTextSegment > 0) {
 		return;
+	}
+	uint8_t *wav = _res.getVoiceSegment(_textToDisplay, _nextTextSegment);
+	if (wav) {
+		_voiceSound = _mix->playSoundWav(wav);
+		free(wav);
 	}
 	_gfxTextsCount = 0;
 		// goto to current segment
@@ -573,8 +593,8 @@ void Game::drawIcon(uint8_t iconNum, int x, int y) {
 	addImageToGfxList(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), false, true, _res._icn, iconNum);
 }
 
-void Game::playSound(uint8_t sfxId, uint8_t softVol) {
-	if (sfxId < 66) {
+void Game::playSound(uint8_t num, uint8_t softVol) {
+	if (num < 66) {
 		static const int8_t table[] = {
 			 0, -1,  1,  2,  3,  4, -1,  5,  6,  7,  8,  9, 10, 11, -1, 12,
 			13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, 26, 27,
@@ -582,27 +602,39 @@ void Game::playSound(uint8_t sfxId, uint8_t softVol) {
 			42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, -1, 53, 54, 55, 56,
 			-1, 57
 		};
-		if (table[sfxId] != -1) {
-			uint32_t size;
-			const uint8_t *data = _res.getSoundData(table[sfxId], &size);
-			if (data) {
-				const int freq = 3546897 / 650;
-				const int volume = 255 >> softVol;
-				_mix->playSoundRaw(data, size, freq, volume);
-			}
+		if (table[num] == -1) {
+			return;
 		}
-	} else {
-		switch (sfxId) {
+		if (_sounds[num] != 0) {
+			// ignore already playing
+			if (_mix->isPlayingSound(_sounds[num])) {
+				return;
+			}
+			_sounds[num] = 0;
+		}
+		uint32_t size;
+		const uint8_t *data = _res.getSoundData(table[num], &size);
+		if (data) {
+			const int freq = 3546897 / 650;
+			const int volume = 255 >> softVol;
+			_sounds[num] = _mix->playSoundRaw(data, size, freq, volume);
+		}
+	} else if (num < 76) {
+		switch (num) {
 		case 69:
-			sfxId = 68;
+			num = 68;
 			break;
 		case 71:
-			sfxId = 70;
+			num = 70;
 			break;
 		}
 		char name[16];
-		snprintf(name, sizeof(name), "sfx%d.ogg", sfxId);
-		_mix->playMusic(name);
+		snprintf(name, sizeof(name), "soundfx%d", num);
+		uint8_t *wav = _res.getSoundWav(name);
+		if (wav) {
+			_mix->playSoundWav(wav);
+			free(wav);
+		}
 	}
 }
 

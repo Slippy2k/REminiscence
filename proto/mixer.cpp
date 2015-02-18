@@ -12,14 +12,17 @@ struct Mixer_impl {
 	static const int kMixChannels = 8;
 
 	struct {
+		int id;
 		Mix_Chunk *sound;
-		const uint8_t *sample;
+		uint8_t *sample;
 	} _channels[kMixChannels];
 	Mix_Music *_music;
+	int _channelId;
 
 	void init() {
 		memset(_channels, 0, sizeof(_channels));
 		_music = 0;
+		_channelId = 1;
 
 		Mix_Init(MIX_INIT_OGG);
 		if (Mix_OpenAudio(kMixFreq, AUDIO_S16SYS, 2, kMixBufSize) < 0) {
@@ -36,23 +39,28 @@ struct Mixer_impl {
 		for (int i = 0; i < kMixChannels; ++i) {
 			if (!Mix_Playing(i)) {
 				if (_channels[i].sound) {
-					freeSound(i);
-					// TODO: notify sound finished playback
+					freeChannel(i);
 				}
 			}
 		}
 	}
 
-	int findPlayingChannel(const uint8_t *data) const {
+	bool isPlayingSound(int id) const {
 		for (int i = 0; i < kMixChannels; ++i) {
-			if (_channels[i].sample == data) {
-				if (Mix_Playing(i)) {
-					return i;
-				}
-				break;
+			if (_channels[i].id == id) {
+				return Mix_Playing(i);
 			}
 		}
-		return -1;
+		return false;
+	}
+
+	void stopSound(int id) {
+		for (int i = 0; i < kMixChannels; ++i) {
+			if (_channels[i].id == id) {
+				Mix_HaltChannel(i);
+				freeChannel(i);
+			}
+		}
 	}
 
 	static uint8_t *convertSampleRaw(const uint8_t *data, uint32_t len, int freq, uint32_t *size) {
@@ -81,27 +89,18 @@ struct Mixer_impl {
 		}
 	}
 
-	void playSoundRaw(const uint8_t *data, uint32_t len, int freq, uint8_t volume) {
-		const int channel = findPlayingChannel(data);
-		if (channel != -1) {
-//			Mix_FadeOutChannel(channel, 500);
-//			_channels[channel].sample = 0;
-			return;
-		}
+	int playSoundRaw(const uint8_t *data, uint32_t len, int freq, uint8_t volume) {
+		int id = -1;
 		uint32_t size;
 		uint8_t *sample = convertSampleRaw(data, len, freq, &size);
 		if (sample) {
 			Mix_Chunk *chunk = Mix_QuickLoad_RAW(sample, size);
-			playSound(volume, chunk, data);
+			id = playSound(volume, chunk, sample);
 		}
+		return id;
 	}
-	void playSoundWav(const uint8_t *data, uint8_t volume) {
-		const int channel = findPlayingChannel(data);
-		if (channel != -1) {
-//			Mix_FadeOutChannel(channel, 500);
-//			_channels[channel].sample = 0;
-			return;
-		}
+	int playSoundWav(const uint8_t *data, uint8_t volume) {
+		int id = -1;
 		uint32_t size = READ_LE_UINT32(data + 4) + 8;
 		// check format for QuickLoad
 		bool canQuickLoad = (AUDIO_S16SYS == AUDIO_S16LSB);
@@ -116,47 +115,67 @@ struct Mixer_impl {
 				canQuickLoad = (format == 1 && channels == 2 && rate == kMixFreq && bits == 16);
 			}
                 }
-		if (canQuickLoad) {
-			Mix_Chunk *chunk = Mix_QuickLoad_WAV(const_cast<uint8_t *>(data));
-			playSound(volume, chunk, data);
-		} else {
-			SDL_RWops *rw = SDL_RWFromConstMem(data, size);
-			Mix_Chunk *chunk = Mix_LoadWAV_RW(rw, 1);
-			playSound(volume, chunk, data);
+		uint8_t *sample = (uint8_t *)malloc(size);
+		if (sample) {
+			memcpy(sample, data, size);
+			Mix_Chunk *chunk;
+			if (canQuickLoad) {
+				chunk = Mix_QuickLoad_WAV(sample);
+			} else {
+				SDL_RWops *rw = SDL_RWFromConstMem(sample, size);
+				chunk = Mix_LoadWAV_RW(rw, 1);
+			}
+			id = playSound(volume, chunk, sample);
 		}
+		return id;
 	}
-	void playSound(int volume, Mix_Chunk *chunk, const uint8_t *data) {
+	int playSound(int volume, Mix_Chunk *chunk, uint8_t *sample) {
+		int id = -1;
 		if (chunk) {
 			int channel = Mix_PlayChannel(-1, chunk, 0);
-			Mix_Volume(channel, volume * MIX_MAX_VOLUME / 255);
+			if (_channels[channel].sound) {
+				// free previous sample
+				if (Mix_GetChunk(channel) == _channels[channel].sound) {
+					freeChannel(channel);
+				}
+			}
+			Mix_Volume(channel, getSoundVolume(volume));
 			if (channel < kMixChannels) {
+				_channels[channel].id = id = generateNextChannelId();
 				_channels[channel].sound = chunk;
-				_channels[channel].sample = data;
+				_channels[channel].sample = sample;
 			} else {
 				warning("%d channels playing", channel + 1);
 			}
 		}
+		return id;
 	}
-	void freeSound(int channel) {
+
+	int generateNextChannelId() {
+		const int id = _channelId++;
+		if (_channelId > 999) {
+			_channelId = 1;
+		}
+		return id;
+	}
+
+	void freeChannel(int channel) {
 		Mix_Chunk *chunk = _channels[channel].sound;
 		if (chunk) {
 			if (!chunk->allocated) {
-				free(chunk->abuf);
+				assert(chunk->abuf == _channels[channel].sample);
+				free(_channels[channel].sample);
 			}
 			Mix_FreeChunk(chunk);
 		}
 		memset(&_channels[channel], 0, sizeof(_channels[channel]));
-	}
-	void stopSound(int channel) {
-		Mix_HaltChannel(channel);
-		freeSound(channel);
 	}
 
 	void playMusic(const char *path) {
 		stopMusic();
 		_music = Mix_LoadMUS(path);
 		if (_music) {
-			Mix_VolumeMusic(MIX_MAX_VOLUME / 2);
+			Mix_VolumeMusic(getMusicVolume());
 			Mix_PlayMusic(_music, 0);
 		}
 	}
@@ -168,9 +187,17 @@ struct Mixer_impl {
 
 	void stopAll() {
 		for (int i = 0; i < kMixChannels; ++i) {
-			stopSound(i);
+			Mix_HaltChannel(i);
+			freeChannel(i);
 		}
 		stopMusic();
+	}
+
+	static int getMusicVolume() {
+		return MIX_MAX_VOLUME / 2;
+	}
+	static int getSoundVolume(int volume) {
+		return MIX_MAX_VOLUME * 3 / 4 * volume / 255;
 	}
 };
 
@@ -196,18 +223,35 @@ void Mixer::update() {
 	}
 }
 
-void Mixer::playSoundRaw(const uint8_t *data, uint32_t len, int freq, uint8_t volume) {
+int Mixer::playSoundRaw(const uint8_t *data, uint32_t len, int freq, uint8_t volume) {
 	debug(DBG_SND, "Mixer::playSoundRaw(%p, %d, %d)", data, freq, volume);
 	if (_impl) {
 		return _impl->playSoundRaw(data, len, freq, volume);
 	}
+	return -1;
 }
 
-void Mixer::playSoundWav(const uint8_t *data, uint8_t volume) {
+int Mixer::playSoundWav(const uint8_t *data, uint8_t volume) {
 	debug(DBG_SND, "Mixer::playSoundWav(%p, %d)", data, volume);
 	if (_impl) {
 		return _impl->playSoundWav(data, volume);
 	}
+	return -1;
+}
+
+void Mixer::stopSound(int id) {
+	debug(DBG_SND, "Mixer::stopSound(%d)", id);
+	if (_impl) {
+		return _impl->stopSound(id);
+	}
+}
+
+bool Mixer::isPlayingSound(int id) {
+	debug(DBG_SND, "Mixer::isPlayingSound(%d)", id);
+	if (_impl) {
+		return _impl->isPlayingSound(id);
+	}
+	return false;
 }
 
 void Mixer::playMusic(const char *path) {

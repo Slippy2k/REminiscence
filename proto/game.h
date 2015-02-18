@@ -93,6 +93,7 @@ struct Game {
 	uint8_t _blinkingConradCounter;
 	uint16_t _textToDisplay;
 	int _nextTextSegment;
+	int _voiceSound;
 	bool _eraseBackground;
 	AnimBufferState _animBuffer0State[41];
 	AnimBufferState _animBuffer1State[6]; // Conrad
@@ -108,6 +109,7 @@ struct Game {
 	uint16_t _cutId;
 	uint16_t _cutDeathCutsceneId;
 	bool _gameOver;
+	int _sounds[66];
 
 	Game(ResourceData &, const char *savePath);
 	~Game();
@@ -131,7 +133,7 @@ struct Game {
 	void drawString(const unsigned char *str, int len, int x, int y, int color);
 	void drawAnimBuffer(uint8_t stateNum, AnimBufferState *state);
 	int loadMonsterSprites(LivePGE *pge);
-	void playSound(uint8_t sfxId, uint8_t softVol);
+	void playSound(uint8_t num, uint8_t softVol);
 	uint16_t getRandomNumber();
 	void changeLevel();
 	void initInventory();

@@ -9,9 +9,8 @@ cleanup texture handling (one texture for background, one texture for gameplay ?
 libSDL2 - android + gamepad support
 	remove USE_GLES
 
-voice support
-	ResourceData::getVoiceSegment(int num)
-	Mixer::isPlaying(const char *data)
+issues
+	text story color does not match speaker
 
 sprites, icone, fonte dans une texture (texturepacker)
 
@@ -25,10 +24,8 @@ cutscenes
 	scale2x
 
 convert_data
-	decode sega vce segments to .wav (N-PART.wav)
 	background dans un .tga ou .bmp (RLE ou zlib)
 	bundle format - mac resource fork
-	resource_fs - findEntry() -> f.open("FILE.name");
 
 convert_mac_png
 	output paletted .png
@@ -36,4 +33,3 @@ convert_mac_png
 texture rendering
 	inventory display background (saveGfxList)
 	visual feedback on user inputs
-

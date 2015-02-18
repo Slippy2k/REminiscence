@@ -380,3 +380,23 @@ uint8_t *ResourceData::getSoundData(int i, uint32_t *size) {
 	return _sounds[i];
 }
 
+uint8_t *ResourceData::getSoundWav(const char *name) {
+	uint8_t *buf = 0;
+	char path[32];
+	snprintf(path, sizeof(path), "%s.wav", name);
+	File f;
+	if (f.open(path, "rb")) {
+		const int fileSize = f.size();
+		buf = (uint8_t *)malloc(fileSize);
+		if (buf) {
+			f.read(buf, fileSize);
+		}
+	}
+	return buf;
+}
+
+uint8_t *ResourceData::getVoiceSegment(int num, int segment) {
+	char name[16];
+	snprintf(name, sizeof(name), "v%02d_%02d", num, segment);
+	return getSoundWav(name);
+}
