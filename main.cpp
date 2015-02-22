@@ -15,6 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <getopt.h>
+#include <sys/stat.h>
 #include "file.h"
 #include "fs.h"
 #include "game.h"
@@ -26,17 +28,6 @@ static const char *USAGE =
 	"  --datapath=PATH   Path to data files (default 'DATA')\n"
 	"  --savepath=PATH   Path to save files (default '.')\n"
 	"  --levelnum=NUM    Starting level (default '0')";
-
-static bool parseOption(const char *arg, const char *longCmd, const char **opt) {
-	bool handled = false;
-	if (arg[0] == '-' && arg[1] == '-') {
-		if (strncmp(arg + 2, longCmd, strlen(longCmd)) == 0) {
-			*opt = arg + 2 + strlen(longCmd);
-			handled = true;
-		}
-	}
-	return handled;
-}
 
 static int detectVersion(FileSystem *fs) {
 	static const struct {
@@ -106,7 +97,17 @@ int main(int argc, char *argv[]) {
 		if (c == -1) {
 			break;
 		}
-		if (!opt) {
+		switch (c) {
+		case 1:
+			dataPath = strdup(optarg);
+			break;
+		case 2:
+			savePath = strdup(optarg);
+			break;
+		case 3:
+			levelNum = atoi(optarg);
+			break;
+		default:
 			printf(USAGE, argv[0]);
 			return 0;
 		}
@@ -120,7 +121,7 @@ int main(int argc, char *argv[]) {
 	}
 	Language language = detectLanguage(&fs);
 	SystemStub *stub = SystemStub_SDL_create();
-	Game *g = new Game(stub, &fs, savePath, atoi(levelNum), (ResourceType)version, language);
+	Game *g = new Game(stub, &fs, savePath, levelNum, (ResourceType)version, language);
 	g->run();
 	delete g;
 	delete stub;
