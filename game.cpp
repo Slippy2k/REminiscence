@@ -291,10 +291,10 @@ void Game::playCutscene(int id) {
 			_mod.play(Cutscene::_musicTable[_cut._id]);
 		}
 		_cut.play();
-		if (_cut._id == 0x3D) {
+		if (id == 0x3D) {
 			_cut.startCredits();
 		}
-		if (_cut._interrupted || _cut._id != 0x0D) {
+		if (_cut._interrupted || id != 0x0D) {
 			_mod.stop();
 			_ogg.resumeTrack();
 		}
