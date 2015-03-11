@@ -63,6 +63,7 @@ void Game::resetGameState() {
 	_pge_processOBJ = false;
 	_pge_opTempVar1 = 0;
 	_textToDisplay = 0xFFFF;
+	_textColor = 0xE8;
 	_nextTextSegment = 0;
 	_voiceSound = 0;
 	_gameOver = false;
@@ -306,6 +307,7 @@ void Game::doStoryTexts() {
 		if (_nextTextSegment >= segmentsCount) {
 			_nextTextSegment = 0;
 			_textToDisplay = 0xFFFF;
+			_textColor = 0xE8;
 			_voiceSound = 0;
 			return;
                 }
@@ -324,15 +326,14 @@ void Game::doStoryTexts() {
 			str += segmentLength;
 		}
 		int len = *str++;
-		int color = 0xE8;
 		if (*str == '@') {
 			++str;
 			switch (*str) {
 			case '1':
-				color = 0xE9;
+				_textColor = 0xE9;
 				break;
 			case '2':
-				color = 0xEB;
+				_textColor = 0xEB;
 				break;
 			}
 			++str;
@@ -343,11 +344,11 @@ void Game::doStoryTexts() {
 		while (len > 0) {
 			const uint8_t *next = (const uint8_t *)memchr(str, 0x7C, len);
 			if (!next) {
-				drawString(str, len, (176 - len * 8) / 2, lineOffset, color);
+				drawString(str, len, (176 - len * 8) / 2, lineOffset, _textColor);
 				break;
 			}
 			const int lineLength = next - str;
-			drawString(str, lineLength, (176 - lineLength * 8) / 2, lineOffset, color);
+			drawString(str, lineLength, (176 - lineLength * 8) / 2, lineOffset, _textColor);
 			str = next + 1;
 			len -= lineLength + 1;
 			lineOffset += 8;
@@ -617,7 +618,11 @@ void Game::playSound(uint8_t num, uint8_t softVol) {
 		const uint8_t *data = _res.getSoundData(table[num], &freq, &size);
 		if (data) {
 			const int volume = 255 >> softVol;
-			_sounds[num] = _mix->playSoundRaw(data, size, freq, volume);
+			if (memcmp(data, "RIFF", 4) == 0) {
+				_sounds[num] = _mix->playSoundWav(data, volume);
+			} else {
+				_sounds[num] = _mix->playSoundRaw(data, size, freq, volume);
+			}
 		}
 	} else if (num < 76) {
 		uint8_t *wav = _res.getSfxData(num);

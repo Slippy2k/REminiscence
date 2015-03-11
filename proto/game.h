@@ -92,6 +92,7 @@ struct Game {
 	uint16_t _curMonsterNum;
 	uint8_t _blinkingConradCounter;
 	uint16_t _textToDisplay;
+	uint8_t _textColor;
 	int _nextTextSegment;
 	int _voiceSound;
 	bool _eraseBackground;

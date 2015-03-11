@@ -355,44 +355,6 @@ void ResourceData::decodeImageData(const uint8_t *ptr, int i, DecodeBuffer *dst)
 	}
 }
 
-uint8_t *ResourceData::getSoundData(int i, int *freq, uint32_t *size) {
-	static const int kSoundType = 4;
-	assert(i >= 0 && i < _res._types[kSoundType].count);
-	const ResourceEntry *entry = &_res._entries[kSoundType][i];
-	_res._f.seek(_res._dataOffset + entry->dataOffset);
-	_resourceDataSize = _res._f.readUint32BE();
-	static const int kHeaderSize = 0x24;
-	assert(_resourceDataSize > kHeaderSize);
-	_resourceDataSize -= kHeaderSize;
-	assert(i >= 0 && i < ARRAYSIZE(_sounds));
-	if (!_sounds[i]) {
-		uint8_t *data = (uint8_t *)malloc(_resourceDataSize);
-		if (data) {
-			_res._f.read(data, kHeaderSize);
-			static const bool checkHeader = true;
-			if (checkHeader) {
-				assert(READ_BE_UINT32(data) == 131072);
-				assert(READ_BE_UINT32(data + 4) == 98384);
-				assert(READ_BE_UINT32(data + 8) == 0);
-				assert(READ_BE_UINT16(data + 0xC) == 0xE);
-				assert(READ_BE_UINT32(data + 0xE) == 0);
-				assert(READ_BE_UINT32(data + 0x12) == _resourceDataSize - 2);
-				assert(READ_BE_UINT16(data + 0x18) == 0);
-				assert(READ_BE_UINT32(data + 0x1A) == _resourceDataSize - 2);
-				assert(READ_BE_UINT32(data + 0x1E) == _resourceDataSize - 2);
-//				assert(READ_BE_UINT16(data + 0x22) == 60);
-			}
-			*freq = READ_BE_UINT16(data + 0x16);
-			_res._f.read(data, _resourceDataSize);
-		}
-		_sounds[i] = data;
-	}
-	if (size) {
-		*size = _resourceDataSize;
-	}
-	return _sounds[i];
-}
-
 static uint8_t *readFile(const char *path) {
 	uint8_t *buf = 0;
 	File f;
@@ -404,6 +366,72 @@ static uint8_t *readFile(const char *path) {
 		}
 	}
 	return buf;
+}
+
+static void LE32(uint8_t *p, uint32_t value) {
+	for (int i = 0; i < 4; ++i) {
+		p[i] = (value >> (8 * i)) & 255;
+	}
+}
+
+static uint8_t *convertToWav(const uint8_t *data, int freq, int size) {
+	static const uint8_t kHeaderData[] = {
+		0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, 0x57, 0x41, 0x56, 0x45, 0x66, 0x6d, 0x74, 0x20, // RIFF$...WAVEfmt 
+		0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x7d, 0x00, 0x00, 0x00, 0x7d, 0x00, 0x00, // .........}...}..
+		0x01, 0x00, 0x08, 0x00, 0x64, 0x61, 0x74, 0x61, 0x00, 0x00, 0x00, 0x00                          // ....data....
+	};
+	uint8_t *out = (uint8_t *)malloc(sizeof(kHeaderData) + size);
+	if (out) {
+		memcpy(out, kHeaderData, sizeof(kHeaderData));
+		LE32(out + 4, 36 + size); // 'RIFF' size
+		LE32(out + 24, freq); // 'fmt ' sample rate
+		LE32(out + 28, freq); // 'fmt ' bytes per second
+		LE32(out + 40, size); // 'data' size
+		memcpy(out + sizeof(kHeaderData), data, size);
+	}
+	return out;
+}
+
+uint8_t *ResourceData::getSoundData(int i, int *freq, uint32_t *size) {
+	if (!_sounds[i]) {
+		char name[16];
+		snprintf(name, sizeof(name), "s%02d.wav", i);
+		_sounds[i] = readFile(name);
+	}
+	static const bool kConvertToWav = true;
+	static const int kHeaderSize = 0x24;
+	assert(i >= 0 && i < ARRAYSIZE(_sounds));
+	if (!_sounds[i]) {
+		static const int kSoundType = 4;
+		assert(i >= 0 && i < _res._types[kSoundType].count);
+		const ResourceEntry *entry = &_res._entries[kSoundType][i];
+		_res._f.seek(_res._dataOffset + entry->dataOffset);
+		const int dataSize = _res._f.readUint32BE();
+		assert(dataSize > kHeaderSize);
+		uint8_t *p = (uint8_t *)malloc(dataSize);
+		if (p) {
+			_res._f.read(p, dataSize);
+			if (kConvertToWav) {
+				const int len = READ_BE_UINT32(p + 0x12);
+				const int rate = READ_BE_UINT16(p + 0x16);
+				_sounds[i] = convertToWav(p + kHeaderSize, rate, len);
+				free(p);
+			} else {
+				_sounds[i] = p;
+			}
+		}
+	}
+	uint8_t *p = _sounds[i];
+	if (p && memcmp(p, "RIFF", 4) != 0) {
+		if (freq) {
+			*freq = READ_BE_UINT16(p + 0x16);
+		}
+		if (size) {
+			*size = READ_BE_UINT32(p + 0x12);
+		}
+		p += kHeaderSize;
+	}
+	return p;
 }
 
 uint8_t *ResourceData::getSfxData(int num) {

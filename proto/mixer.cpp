@@ -25,7 +25,7 @@ struct Mixer_impl {
 		_channelId = 1;
 
 		Mix_Init(MIX_INIT_OGG);
-		if (Mix_OpenAudio(kMixFreq, AUDIO_S16SYS, 2, kMixBufSize) < 0) {
+		if (Mix_OpenAudio(kMixFreq, AUDIO_S16SYS, 1, kMixBufSize) < 0) {
 			warning("Mix_OpenAudio failed: %s", Mix_GetError());
 		}
 		Mix_AllocateChannels(kMixChannels);
@@ -65,14 +65,13 @@ struct Mixer_impl {
 
 	static uint8_t *convertSampleRaw(const uint8_t *data, uint32_t len, int freq, uint32_t *size) {
 		SDL_AudioCVT cvt;
-		memset(&cvt, 0, sizeof(cvt));
-		if (SDL_BuildAudioCVT(&cvt, AUDIO_U8, 1, freq, AUDIO_S16SYS, 2, kMixFreq) < 0) {
+		if (SDL_BuildAudioCVT(&cvt, AUDIO_U8, 1, freq, AUDIO_S16SYS, 1, kMixFreq) < 0) {
 			warning("Failed to resample from %d Hz", freq);
 			return 0;
 		}
 		if (cvt.needed) {
 			cvt.len = len;
-			cvt.buf = (uint8_t *)calloc(1, len * cvt.len_mult);
+			cvt.buf = (uint8_t *)malloc(len * cvt.len_mult);
 			if (cvt.buf) {
 				memcpy(cvt.buf, data, len);
 				SDL_ConvertAudio(&cvt);
@@ -112,7 +111,7 @@ struct Mixer_impl {
 				const int rate = READ_LE_UINT32(fmt + 4);
 				const int bits = READ_LE_UINT16(fmt + 14);
 				debug(DBG_SND, "wave format %d channels %d rate %d bits %d", format, channels, rate, bits);
-				canQuickLoad = (format == 1 && channels == 2 && rate == kMixFreq && bits == 16);
+				canQuickLoad = (format == 1 && channels == 1 && rate == kMixFreq && bits == 16);
 			}
                 }
 		uint8_t *sample = (uint8_t *)malloc(size);

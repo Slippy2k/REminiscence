@@ -328,19 +328,40 @@ static void decodeSoundData(ResourceMac &res) {
 		const uint32_t dataSize = res._f.readUint32BE();
 		uint8_t *data = (uint8_t *)malloc(dataSize);
 		res._f.read(data, dataSize);
-		printf("Sound %d size %d\n", i, dataSize);
-		File f;
-		char tmpPath[128];
-		snprintf(tmpPath, sizeof(tmpPath), "DUMP/%03d.raw", i);
-		f.open(tmpPath, "wb");
-		f.write(data, dataSize);
+		static const int kHeaderSize = 0x24;
+		printf("Sound %d size %d (%d)\n", i, dataSize, dataSize - kHeaderSize);
+		assert(dataSize > kHeaderSize + 2);
+		assert(READ_BE_UINT32(data) == 0x20000);
+		assert(READ_BE_UINT32(data + 4) == 98384);
+		assert(READ_BE_UINT32(data + 8) == 0);
+		assert(READ_BE_UINT16(data + 0xC) == 0xE);
+		assert(READ_BE_UINT32(data + 0xE) == 0);
+		const int unk12 = READ_BE_UINT32(data + 0x12);
+		const int rate = READ_BE_UINT16(data + 0x16);
+		assert(READ_BE_UINT16(data + 0x18) == 0);
+		const int sampleLen = READ_BE_UINT32(data + 0x1A);
+		const int unk1E = READ_BE_UINT32(data + 0x1E);
+		const int unk22 = READ_BE_UINT16(data + 0x22);
+		if (rate != 11025 && rate != 22050) {
+			assert(unk12 == unk1E);
+			assert(READ_BE_UINT16(data + 0x22) == 60);
+		}
+		if (i <= 58) { // dump game sounds
+			File f;
+			char tmpPath[128];
+			snprintf(tmpPath, sizeof(tmpPath), "DUMP/%03d.raw", i);
+			if (f.open(tmpPath, "wb")) {
+				f.write(data + kHeaderSize, sampleLen);
+				f.close();
+			}
+			char path[128];
+			snprintf(path, sizeof(path), "DUMP/s%02d.wav", i);
+			char cmd[256];
+			snprintf(cmd, sizeof(cmd), "sox -r %d -e unsigned -b 8 -c 1 %s %s rate 11025", rate, tmpPath, path);
+			system(cmd);
+			unlink(tmpPath);
+		}
 		free(data);
-		char path[128];
-		snprintf(path, sizeof(path), "DUMP/%03d.wav", i);
-		char cmd[256];
-		const int rate = 3546897 / 650;
-		snprintf(cmd, sizeof(cmd), "sox -r %d -e unsigned -b 8 -c 1 %s %s", rate, tmpPath, path);
-		system(cmd);
 	}
 }
 
