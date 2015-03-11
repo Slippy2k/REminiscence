@@ -86,13 +86,25 @@ static Language detectLanguage(FileSystem *fs) {
 int main(int argc, char *argv[]) {
 	const char *dataPath = "DATA";
 	const char *savePath = ".";
-	const char *levelNum = "0";
-	for (int i = 1; i < argc; ++i) {
-		bool opt = false;
-		if (strlen(argv[i]) >= 2) {
-			opt |= parseOption(argv[i], "datapath=", &dataPath);
-			opt |= parseOption(argv[i], "savepath=", &savePath);
-			opt |= parseOption(argv[i], "levelnum=", &levelNum);
+	int levelNum = 0;
+	if (argc == 2) {
+		// data path as the only command line argument
+		struct stat st;
+		if (stat(argv[1], &st) == 0 && S_ISDIR(st.st_mode)) {
+			dataPath = strdup(argv[1]);
+		}
+	}
+	while (1) {
+		static struct option options[] = {
+			{ "datapath", required_argument, 0, 1 },
+			{ "savepath", required_argument, 0, 2 },
+			{ "levelnum", required_argument, 0, 3 },
+			{ 0, 0, 0, 0 }
+		};
+		int index;
+		const int c = getopt_long(argc, argv, "", options, &index);
+		if (c == -1) {
+			break;
 		}
 		if (!opt) {
 			printf(USAGE, argv[0]);
