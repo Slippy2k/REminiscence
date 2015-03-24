@@ -67,6 +67,7 @@ struct Mixer {
 	void free();
 	void setPremixHook(PremixHook premixHook, void *userData);
 	void play(const MixerChunk *mc, uint16_t freq, uint8_t volume);
+	bool isPlaying(const MixerChunk *mc) const;
 	void stopAll();
 	uint32_t getSampleRate() const;
 	void mix(int8_t *buf, int len);

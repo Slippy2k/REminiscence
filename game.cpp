@@ -720,6 +720,9 @@ void Game::drawStoryTexts() {
 			}
 			_vid.updateScreen();
 			while (!_stub->_pi.backspace && !_stub->_pi.quit) {
+				if (chunk.data && !_mix.isPlaying(&chunk)) {
+					break;
+				}
 				inp_update();
 				_stub->sleep(80);
 			}

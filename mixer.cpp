@@ -67,6 +67,18 @@ void Mixer::play(const MixerChunk *mc, uint16_t freq, uint8_t volume) {
 	}
 }
 
+bool Mixer::isPlaying(const MixerChunk *mc) const {
+	debug(DBG_SND, "Mixer::isPlaying");
+	LockAudioStack las(_stub);
+	for (int i = 0; i < NUM_CHANNELS; ++i) {
+		const MixerChannel *ch = &_channels[i];
+		if (ch->active && ch->chunk.data == mc->data) {
+			return true;
+		}
+	}
+	return false;
+}
+
 uint32_t Mixer::getSampleRate() const {
 	return _stub->getOutputSampleRate();
 }
