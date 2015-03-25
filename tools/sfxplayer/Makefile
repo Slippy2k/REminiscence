@@ -8,7 +8,7 @@ CXX = g++
 CXXFLAGS:= -g -O -Wall
 CXXFLAGS+= $(SDL_CFLAGS) $(DEFINES)
 
-SRCS_SFXPLY = sfx_player.cpp util.cpp
+SRCS_SFXPLY = low_pass.cpp sfx_player.cpp util.cpp
 OBJS_SFXPLY = $(SRCS_SFXPLY:.cpp=.o)
 DEPS_SFXPLY = $(SRCS_SFXPLY:.cpp=.d)
 

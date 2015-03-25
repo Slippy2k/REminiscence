@@ -8,6 +8,7 @@
 //#define PAULA_FREQ 3579545 // NTSC
 #define PAULA_FREQ 3546897 // PAL
 
+void low_pass(const int8_t *in, int len, int8_t *out);
 
 static const bool kOutputToDisk = true;
 
@@ -300,9 +301,10 @@ int main(int argc, char *argv[]) {
 			FILE *fp = fopen("out.raw", "wb");
 			if (fp) {
 				while (p._playing) {
-					int8 buf[2048];
+					int8 buf[2048], buf2[2048];
 					p.mix(buf, sizeof(buf));
-					fwrite(buf, 1, sizeof(buf), fp);
+					low_pass(buf, sizeof(buf), buf2);
+					fwrite(buf2, 1, sizeof(buf2), fp);
 				}
 				fclose(fp);
 			}
