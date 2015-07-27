@@ -93,7 +93,7 @@ void SystemStub_SDL::init(const char *title, int w, int h) {
 	_fadeScreenBuffer = 0;
 	_fadeOnUpdateScreen = false;
 	_fullscreen = false;
-	_currentScaler = 2;
+	_currentScaler = SCALER_SCALE_3X;
 	memset(_pal, 0, sizeof(_pal));
 	prepareGfxMode();
 	_joystick = NULL;
