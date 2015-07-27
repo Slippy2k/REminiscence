@@ -61,6 +61,9 @@ struct SystemStub_SDL : SystemStub {
 	virtual void lockAudio();
 	virtual void unlockAudio();
 
+	void processEvent(const SDL_Event &ev, bool &paused);
+	void updateScreen_GL(int shakeOffset);
+	void updateScreen_SW(int shakeOffset);
 	void prepareGfxMode();
 	void cleanupGfxMode();
 	void switchGfxMode(bool fullscreen, uint8_t scaler);
@@ -275,10 +278,23 @@ void SystemStub_SDL::updateScreen(int shakeOffset) {
 }
 
 void SystemStub_SDL::processEvents() {
-	bool paused = false;
-while (true) {
-	SDL_Event ev;
-	while (SDL_PollEvent(&ev)) {
+	while (true) {
+		bool paused = false;
+		SDL_Event ev;
+		while (SDL_PollEvent(&ev)) {
+			processEvent(ev, paused);
+			if (_pi.quit) {
+				return;
+			}
+		}
+		if (!paused) {
+			break;
+		}
+		SDL_Delay(100);
+	}
+}
+
+void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 		switch (ev.type) {
 		case SDL_QUIT:
 			_pi.quit = true;
@@ -479,12 +495,6 @@ while (true) {
 		default:
 			break;
 		}
-	}
-	if (!paused || _pi.quit) {
-		break;
-	}
-	SDL_Delay(100);
-}
 }
 
 void SystemStub_SDL::sleep(int duration) {
