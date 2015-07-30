@@ -149,6 +149,7 @@ struct Resource {
 
 	void clearLevelRes();
 	void load_FIB(const char *fileName);
+	void load_SPL_demo();
 	void load_MAP_menu(const char *fileName, uint8_t *dstPtr);
 	void load_PAL_menu(const char *fileName, uint8_t *dstPtr);
 	void load_SPR_OFF(const char *fileName, uint8_t *sprData);
@@ -169,6 +170,7 @@ struct Resource {
 	void load_OBJ(File *pf);
 	void free_OBJ();
 	void load_OBC(File *pf);
+	void decodeOBJ(const uint8_t *, int);
 	void load_PGE(File *pf);
 	void load_ANI(File *pf);
 	void load_TBN(File *pf);

@@ -56,7 +56,7 @@ struct FileSystem_impl {
 		debug(DBG_FILE, "Found %d files and %d directories", _filesCount, _dirsCount);
 	}
 
-	char *findPath(const char *name) {
+	char *findPath(const char *name) const {
 		for (int i = 0; i < _filesCount; ++i) {
 			if (strcasecmp(_filesList[i].name, name) == 0) {
 				const char *dir = _dirsList[_filesList[i].dir];
@@ -154,7 +154,14 @@ FileSystem::~FileSystem() {
 	delete _impl;
 }
 
-char *FileSystem::findPath(const char *filename) {
+char *FileSystem::findPath(const char *filename) const {
 	return _impl->findPath(filename);
 }
 
+bool FileSystem::exists(const char *filename) const {
+	char *path = findPath(filename);
+	if (path) {
+		free(path);
+	}
+	return path != 0;
+}

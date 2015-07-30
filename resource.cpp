@@ -122,6 +122,37 @@ void Resource::load_FIB(const char *fileName) {
 	}
 }
 
+void Resource::load_SPL_demo() {
+	struct {
+		int index;
+		const char *name;
+	} spl[] = {
+		{  2, "bip00205.spl" },
+		{  5, "explo.spl" },
+		{ 17, "stby0105.spl" },
+		{ 22, "touche.spl" },
+		{ -1, 0 }
+	};
+	_numSfx = 66;
+	_sfxList = (SoundFx *)calloc(_numSfx, sizeof(SoundFx));
+	if (!_sfxList) {
+		return;
+	}
+	for (int i = 0; spl[i].name; ++i) {
+		File f;
+		if (f.open(spl[i].name, "rb", _fs)) {
+			SoundFx *sfx = &_sfxList[spl[i].index];
+			const int size = f.size();
+			sfx->data = (uint8_t *)malloc(size);
+			if (sfx->data) {
+				f.read(sfx->data, size);
+				sfx->offset = 0;
+				sfx->len = size;
+			}
+		}
+	}
+}
+
 void Resource::load_MAP_menu(const char *fileName, uint8_t *dstPtr) {
 	debug(DBG_RES, "Resource::load_MAP_menu('%s')", fileName);
 	snprintf(_entryName, sizeof(_entryName), "%s.MAP", fileName);
@@ -571,6 +602,17 @@ void Resource::load_MAP(File *f) {
 
 void Resource::load_OBJ(File *f) {
 	debug(DBG_RES, "Resource::load_OBJ()");
+	if (_type == kResourceTypeAmiga) { // demo has uncompressed objects data
+		const int size = f->size();
+		uint8_t *buf = (uint8_t *)malloc(size);
+		if (!buf) {
+			error("Unable to allocate OBJ buffer");
+		} else {
+			f->read(buf, size);
+			decodeOBJ(buf, size);
+		}
+		return;
+	}
 	_numObjectNodes = f->readUint16LE();
 	assert(_numObjectNodes < 255);
 	uint32_t offsets[256];
@@ -658,13 +700,18 @@ void Resource::load_OBC(File *f) {
 		error("Bad CRC for compressed object data");
 	}
 	free(packedData);
+	decodeOBJ(tmp, unpackedSize);
+	free(tmp);
+}
+
+void Resource::decodeOBJ(const uint8_t *tmp, int size) {
 	uint32_t offsets[256];
 	int tmpOffset = 0;
 	_numObjectNodes = 230;
 	for (int i = 0; i < _numObjectNodes; ++i) {
 		offsets[i] = READ_BE_UINT32(tmp + tmpOffset); tmpOffset += 4;
 	}
-	offsets[_numObjectNodes] = unpackedSize;
+	offsets[_numObjectNodes] = size;
 	int numObjectsCount = 0;
 	uint16_t objectsCount[256];
 	for (int i = 0; i < _numObjectNodes; ++i) {
@@ -709,7 +756,6 @@ void Resource::load_OBC(File *f) {
 		}
 		_objectNodesMap[i] = prevNode;
 	}
-	free(tmp);
 }
 
 void Resource::load_PGE(File *f) {

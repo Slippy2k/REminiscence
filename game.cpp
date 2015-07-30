@@ -17,6 +17,7 @@
 
 #include <ctime>
 #include "file.h"
+#include "fs.h"
 #include "systemstub.h"
 #include "unpack.h"
 #include "game.h"
@@ -1248,6 +1249,25 @@ void Game::loadLevelData() {
 	const Level *lvl = &_gameLevels[_currentLevel];
 	switch (_res._type) {
 	case kResourceTypeAmiga:
+		if (_fs->exists("demo.lev")) { // demo data files
+			Cutscene::_namesTable[1] = "HOLOCUBE";
+			Cutscene::_namesTable[4] = "CHUTE2";
+			static const char *fname1 = "demo";
+			static const char *fname2 = "demof";
+			_res.load(fname1, Resource::OT_MBK);
+			_res.load(fname1, Resource::OT_CT);
+			_res.load(fname1, Resource::OT_PAL);
+			_res.load(fname1, Resource::OT_RPC);
+			_res.load(fname1, Resource::OT_SPC);
+			_res.load(fname1, Resource::OT_LEV);
+			_res.load(fname2, Resource::OT_PGE);
+			_res.load(fname1, Resource::OT_OBJ);
+			_res.load(fname1, Resource::OT_ANI);
+			_res.load(fname2, Resource::OT_TBN);
+			_res.load_SPL_demo();
+			_res.load("level1", Resource::OT_SGD);
+			break;
+		}
 		{
 			const char *name = lvl->nameAmiga;
 			if (_currentLevel == 4) {

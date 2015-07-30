@@ -37,6 +37,7 @@ static int detectVersion(FileSystem *fs) {
 	} table[] = {
 		{ "LEVEL1.MAP", kResourceTypePC, "PC" },
 		{ "LEVEL1.LEV", kResourceTypeAmiga, "Amiga" },
+		{ "DEMO.LEV", kResourceTypeAmiga, "Amiga" },
 		{ 0, -1 }
 	};
 	for (int i = 0; table[i].filename; ++i) {
