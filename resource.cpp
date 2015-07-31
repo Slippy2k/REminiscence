@@ -547,7 +547,7 @@ void Resource::load_SPR(File *f) {
 	int len = f->size() - 12;
 	_spr1 = (uint8_t *)malloc(len);
 	if (!_spr1) {
-		error("Unable to allocate SPR buffer");
+		error("Unable to allocate SPR1 buffer");
 	} else {
 		f->seek(12);
 		f->read(_spr1, len);
@@ -556,7 +556,8 @@ void Resource::load_SPR(File *f) {
 
 void Resource::load_SPRM(File *f) {
 	debug(DBG_RES, "Resource::load_SPRM()");
-	int len = f->size() - 12;
+	const uint32_t len = f->size() - 12;
+	assert(len <= sizeof(_sprm));
 	f->seek(12);
 	f->read(_sprm, len);
 }
@@ -1036,34 +1037,66 @@ void Resource::load_SGD(File *f) {
 	free(tmp);
 }
 
+static int getAmigaOffsetSPM(int size) {
+	static const int sizes[] = {
+		37142, // junky
+		61045, // garde
+		55636, // replicant
+		24220, // glue
+		0
+	};
+	static const int offsets[] = {
+		559, 746, 903, 1072, 1287
+	};
+	for (int i = 0; sizes[i] != 0; ++i) {
+		if (sizes[i] == size) {
+			return offsets[i];
+		}
+	}
+	return 0;
+}
+
 void Resource::load_SPM(File *f) {
 	static const int kPersoDatSize = 178647;
 	const int len = f->size();
 	f->seek(len - 4);
-	int size = f->readUint32BE();
+	const uint32_t size = f->readUint32BE();
 	f->seek(0);
 	uint8_t *tmp = (uint8_t *)malloc(len);
 	if (!tmp) {
 		error("Unable to allocate SPM temporary buffer");
 	}
 	f->read(tmp, len);
-	int sprOffset = 0;
+	memset(_spr_off, 0, sizeof(_spr_off));
 	if (size == kPersoDatSize) {
 		_spr1 = (uint8_t *)malloc(size);
+		if (!_spr1) {
+			error("Unable to allocate SPR1 buffer");
+		}
+		if (!delphine_unpack(_spr1, tmp, len)) {
+			error("Bad CRC for SPM data");
+		}
 	} else {
-		sprOffset = kPersoDatSize;
-		_spr1 = (uint8_t *)realloc(_spr1, sprOffset + size);
+		assert(size <= sizeof(_sprm));
+		if (!delphine_unpack(_sprm, tmp, len)) {
+			error("Bad CRC for SPM data");
+		}
+		int spmOffset = getAmigaOffsetSPM(size);
+		if (spmOffset == 0) {
+			error("Unknown SPM offset for size %d", size);
+		}
+		assert(_spmOffsetsTable[spmOffset] == kPersoDatSize);
+		do {
+			_spr_off[spmOffset] = _sprm + _spmOffsetsTable[spmOffset] - kPersoDatSize;
+			++spmOffset;
+		} while (spmOffset < 1287 && _spmOffsetsTable[spmOffset] != kPersoDatSize);
 	}
-	if (!_spr1) {
-		error("Unable to allocate SPM buffer");
-	}
-	if (!delphine_unpack(_spr1 + sprOffset, tmp, len)) {
-		error("Bad CRC for SPM data");
+	if (_spr1) {
+		for (int i = 0; _spmOffsetsTable[i] != kPersoDatSize; ++i) {
+			_spr_off[i] = _spr1 + _spmOffsetsTable[i];
+		}
 	}
 	free(tmp);
-	for (int i = 0; i < 1287; ++i) {
-		_spr_off[i] = _spr1 + _spmOffsetsTable[i];
-	}
 }
 
 void Resource::clearBankData() {

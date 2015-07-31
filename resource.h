@@ -118,7 +118,7 @@ struct Resource {
 	int8_t _ctData[0x1D00];
 	uint8_t *_spr1;
 	uint8_t *_spr_off[1287]; // 0-0x22F + 0x28E-0x2E9 ... conrad, 0x22F-0x28D : junkie
-	uint8_t _sprm[0x8411]; // MERCENAI.SPR size
+	uint8_t _sprm[0x10000];
 	uint16_t _pgeNum;
 	InitPGE _pgeInit[256];
 	uint8_t *_map;
