@@ -123,25 +123,15 @@ void Resource::load_FIB(const char *fileName) {
 }
 
 void Resource::load_SPL_demo() {
-	struct {
-		int index;
-		const char *name;
-	} spl[] = {
-		{  2, "bip00205.spl" },
-		{  5, "explo.spl" },
-		{ 17, "stby0105.spl" },
-		{ 22, "touche.spl" },
-		{ -1, 0 }
-	};
-	_numSfx = 66;
+	_numSfx = NUM_SFXS;
 	_sfxList = (SoundFx *)calloc(_numSfx, sizeof(SoundFx));
 	if (!_sfxList) {
 		return;
 	}
-	for (int i = 0; spl[i].name; ++i) {
+	for (int i = 0; _splNames[i] && i < NUM_SFXS; ++i) {
 		File f;
-		if (f.open(spl[i].name, "rb", _fs)) {
-			SoundFx *sfx = &_sfxList[spl[i].index];
+		if (f.open(_splNames[i], "rb", _fs)) {
+			SoundFx *sfx = &_sfxList[i];
 			const int size = f.size();
 			sfx->data = (uint8_t *)malloc(size);
 			if (sfx->data) {
@@ -981,7 +971,7 @@ void Resource::load_SPL(File *f) {
 		free(_sfxList[i].data);
 	}
 	free(_sfxList);
-	_numSfx = 66;
+	_numSfx = NUM_SFXS;
 	_sfxList = (SoundFx *)calloc(_numSfx, sizeof(SoundFx));
 	if (!_sfxList) {
 		error("Unable to allocate SoundFx table");

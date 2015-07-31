@@ -96,8 +96,13 @@ struct Resource {
 		OT_SPM
 	};
 
+	enum {
+		NUM_SFXS = 66
+	};
+
 	static const uint16_t _voicesOffsetsTable[];
 	static const uint32_t _spmOffsetsTable[];
+	static const char *_splNames[];
 
 	FileSystem *_fs;
 	ResourceType _type;
