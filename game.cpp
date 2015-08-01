@@ -800,7 +800,7 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16_t dx, int16_t dy) {
 			return;
 		}
 		assert(pge->anim_number < 1287);
-		const uint8_t *dataPtr = _res._spr_off[pge->anim_number];
+		const uint8_t *dataPtr = _res._sprData[pge->anim_number];
 		if (dataPtr == 0) {
 			return;
 		}

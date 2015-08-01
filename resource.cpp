@@ -194,11 +194,12 @@ void Resource::load_SPR_OFF(const char *fileName, uint8_t *sprData) {
 		const uint8_t *p = offData;
 		uint16_t pos;
 		while ((pos = READ_LE_UINT16(p)) != 0xFFFF) {
+			assert(pos < NUM_SPRITES);
 			uint32_t off = READ_LE_UINT32(p + 2);
 			if (off == 0xFFFFFFFF) {
-				_spr_off[pos] = 0;
+				_sprData[pos] = 0;
 			} else {
-				_spr_off[pos] = sprData + off;
+				_sprData[pos] = sprData + off;
 			}
 			p += 6;
 		}
@@ -1027,25 +1028,6 @@ void Resource::load_SGD(File *f) {
 	free(tmp);
 }
 
-static int getAmigaOffsetSPM(int size) {
-	static const int sizes[] = {
-		37142, // junky
-		61045, // garde
-		55636, // replicant
-		24220, // glue
-		0
-	};
-	static const int offsets[] = {
-		559, 746, 903, 1072, 1287
-	};
-	for (int i = 0; sizes[i] != 0; ++i) {
-		if (sizes[i] == size) {
-			return offsets[i];
-		}
-	}
-	return 0;
-}
-
 void Resource::load_SPM(File *f) {
 	static const int kPersoDatSize = 178647;
 	const int len = f->size();
@@ -1057,7 +1039,6 @@ void Resource::load_SPM(File *f) {
 		error("Unable to allocate SPM temporary buffer");
 	}
 	f->read(tmp, len);
-	memset(_spr_off, 0, sizeof(_spr_off));
 	if (size == kPersoDatSize) {
 		_spr1 = (uint8_t *)malloc(size);
 		if (!_spr1) {
@@ -1071,19 +1052,13 @@ void Resource::load_SPM(File *f) {
 		if (!delphine_unpack(_sprm, tmp, len)) {
 			error("Bad CRC for SPM data");
 		}
-		int spmOffset = getAmigaOffsetSPM(size);
-		if (spmOffset == 0) {
-			error("Unknown SPM offset for size %d", size);
-		}
-		assert(_spmOffsetsTable[spmOffset] == kPersoDatSize);
-		do {
-			_spr_off[spmOffset] = _sprm + _spmOffsetsTable[spmOffset] - kPersoDatSize;
-			++spmOffset;
-		} while (spmOffset < 1287 && _spmOffsetsTable[spmOffset] != kPersoDatSize);
 	}
-	if (_spr1) {
-		for (int i = 0; _spmOffsetsTable[i] != kPersoDatSize; ++i) {
-			_spr_off[i] = _spr1 + _spmOffsetsTable[i];
+	for (int i = 0; i < NUM_SPRITES; ++i) {
+		const uint32_t offset = _spmOffsetsTable[i];
+		if (offset >= kPersoDatSize) {
+			_sprData[i] = _sprm + offset - kPersoDatSize;
+		} else {
+			_sprData[i] = _spr1 + offset;
 		}
 	}
 	free(tmp);
