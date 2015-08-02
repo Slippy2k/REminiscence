@@ -19,6 +19,9 @@
 #define MIXER_H__
 
 #include "intern.h"
+#include "mod_player.h"
+#include "ogg_player.h"
+#include "sfx_player.h"
 
 struct MixerChunk {
 	uint8_t *data;
@@ -46,30 +49,47 @@ struct MixerChannel {
 	uint32_t chunkInc;
 };
 
+struct FileSystem;
 struct SystemStub;
 
 struct Mixer {
 	typedef bool (*PremixHook)(void *userData, int8_t *buf, int len);
 
+	enum MusicType {
+		MT_NONE,
+		MT_MOD,
+		MT_OGG,
+		MT_SFX,
+	};
+
 	enum {
+		MUSIC_TRACK = 1000,
 		NUM_CHANNELS = 4,
 		FRAC_BITS = 12,
 		MAX_VOLUME = 64
 	};
 
+	FileSystem *_fs;
 	SystemStub *_stub;
 	MixerChannel _channels[NUM_CHANNELS];
 	PremixHook _premixHook;
 	void *_premixHookData;
+	MusicType _musicType;
+	ModPlayer _mod;
+	OggPlayer _ogg;
+	SfxPlayer _sfx;
+	int _musicTrack;
 
-	Mixer(SystemStub *stub);
+	Mixer(FileSystem *fs, SystemStub *stub);
 	void init();
 	void free();
 	void setPremixHook(PremixHook premixHook, void *userData);
 	void play(const MixerChunk *mc, uint16_t freq, uint8_t volume);
 	bool isPlaying(const MixerChunk *mc) const;
-	void stopAll();
 	uint32_t getSampleRate() const;
+	void stopAll();
+	void playMusic(int num);
+	void stopMusic();
 	void mix(int8_t *buf, int len);
 
 	static void addclamp(int8_t &a, int b);

@@ -55,6 +55,7 @@ Resource::~Resource() {
 		free(_sfxList[i].data);
 	}
 	free(_sfxList);
+	free(_bankData);
 }
 
 void Resource::clearLevelRes() {

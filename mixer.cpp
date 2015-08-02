@@ -19,8 +19,9 @@
 #include "systemstub.h"
 
 
-Mixer::Mixer(SystemStub *stub)
-	: _stub(stub) {
+Mixer::Mixer(FileSystem *fs, SystemStub *stub)
+	: _stub(stub), _musicType(MT_NONE), _mod(this, fs), _ogg(this, fs), _sfx(this) {
+	_musicTrack = -1;
 }
 
 void Mixer::init() {
@@ -88,6 +89,58 @@ void Mixer::stopAll() {
 	LockAudioStack las(_stub);
 	for (uint8_t i = 0; i < NUM_CHANNELS; ++i) {
 		_channels[i].active = false;
+	}
+}
+
+static bool isMusicSfx(int num) {
+	return (num >= 68 && num <= 75);
+}
+
+void Mixer::playMusic(int num) {
+	debug(DBG_SND, "Mixer::playMusic(%d)", num);
+	if (num > MUSIC_TRACK && num != _musicTrack) {
+		if (_ogg.playTrack(num - MUSIC_TRACK)) {
+			_musicType = MT_OGG;
+			_musicTrack = num;
+			return;
+		}
+	}
+	if (num == 1) { // menu screen
+		if (_ogg.playTrack(2)) {
+			_musicType = MT_OGG;
+			_musicTrack = 2;
+			return;
+		}
+	}
+	if (isMusicSfx(num)) { // level action sequence
+		_sfx.play(num);
+		_musicType = MT_SFX;
+	} else { // cutscene
+		_mod.play(num);
+		_musicType = MT_MOD;
+	}
+}
+
+void Mixer::stopMusic() {
+	debug(DBG_SND, "Mixer::stopMusic()");
+	switch (_musicType) {
+	case MT_NONE:
+		break;
+	case MT_MOD:
+		_mod.stop();
+		break;
+	case MT_OGG:
+		_ogg.stopTrack();
+		_musicTrack = -1;
+		break;
+	case MT_SFX:
+		_sfx.stop();
+		break;
+	}
+	_musicType = MT_NONE;
+	if (_musicTrack != -1) {
+		_ogg.resumeTrack();
+		_musicType = MT_OGG;
 	}
 }
 

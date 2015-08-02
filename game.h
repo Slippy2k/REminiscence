@@ -22,11 +22,8 @@
 #include "cutscene.h"
 #include "menu.h"
 #include "mixer.h"
-#include "mod_player.h"
-#include "ogg_player.h"
 #include "resource.h"
 #include "seq_player.h"
-#include "sfx_player.h"
 #include "video.h"
 
 struct File;
@@ -66,11 +63,8 @@ struct Game {
 	Cutscene _cut;
 	Menu _menu;
 	Mixer _mix;
-	ModPlayer _mod;
-	OggPlayer _ogg;
 	Resource _res;
 	SeqPlayer _seq;
-	SfxPlayer _sfx;
 	Video _vid;
 	SystemStub *_stub;
 	FileSystem *_fs;
