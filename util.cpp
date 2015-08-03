@@ -15,6 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 #include <cstdarg>
 #include "util.h"
 
@@ -40,6 +44,9 @@ void error(const char *msg, ...) {
 	vsnprintf(buf, sizeof(buf), msg, va);
 	va_end(va);
 	fprintf(stderr, "ERROR: %s!\n", buf);
+#ifdef _WIN32
+	MessageBox(0, buf, g_caption, MB_ICONERROR);
+#endif
 	exit(-1);
 }
 

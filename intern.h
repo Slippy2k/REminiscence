@@ -29,7 +29,9 @@
 #define ABS(x) ((x)<0?-(x):(x))
 #define MAX(x,y) ((x)>(y)?(x):(y))
 #define MIN(x,y) ((x)<(y)?(x):(y))
+#ifndef ARRAYSIZE
 #define ARRAYSIZE(a) (sizeof(a)/sizeof(a[0]))
+#endif
 
 
 inline void SWAP_UINT16(uint16_t *ptr) {
@@ -216,5 +218,7 @@ struct SoundFx {
 	uint16_t len;
 	uint8_t *data;
 };
+
+extern const char *g_caption;
 
 #endif // INTERN_H__

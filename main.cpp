@@ -74,6 +74,8 @@ static Language detectLanguage(FileSystem *fs) {
 	return LANG_EN;
 }
 
+const char *g_caption = "REminiscence";
+
 #undef main
 int main(int argc, char *argv[]) {
 	const char *dataPath = "DATA";
