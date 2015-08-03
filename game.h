@@ -93,6 +93,7 @@ struct Game {
 	AnimBuffers _animBuffers;
 	uint16_t _deathCutsceneCounter;
 	bool _saveStateCompleted;
+	bool _endLoop;
 
 	Game(SystemStub *, FileSystem *, const char *savePath, int level, ResourceType ver, Language lang);
 
