@@ -99,7 +99,15 @@ void Game::run() {
 			_vid.setTextPalette();
 			_vid.setPalette0xF();
 			_stub->setOverscanColor(0xE0);
-			mainLoop();
+			_vid._unkPalSlot1 = 0;
+			_vid._unkPalSlot2 = 0;
+			_score = 0;
+			loadLevelData();
+			resetGameState();
+			_endLoop = false;
+			while (!_stub->_pi.quit && !_endLoop) {
+				mainLoop();
+			}
 		}
 	}
 
@@ -132,90 +140,84 @@ void Game::resetGameState() {
 }
 
 void Game::mainLoop() {
-	_vid._unkPalSlot1 = 0;
-	_vid._unkPalSlot2 = 0;
-	_score = 0;
-	loadLevelData();
-	resetGameState();
-	while (!_stub->_pi.quit) {
-		playCutscene();
-		if (_cut._id == 0x3D) {
-			showFinalScore();
-			break;
-		}
-		if (_deathCutsceneCounter) {
-			--_deathCutsceneCounter;
-			if (_deathCutsceneCounter == 0) {
-				playCutscene(_cut._deathCutsceneId);
-				if (!handleContinueAbort()) {
-					playCutscene(0x41);
-					break;
-				} else {
-					if (_validSaveState) {
-						if (!loadGameState(0)) {
-							break;
-						}
-					} else {
-						loadLevelData();
-						resetGameState();
-					}
-					continue;
-				}
-
-			}
-		}
-		memcpy(_vid._frontLayer, _vid._backLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
-		pge_getInput();
-		pge_prepare();
-		col_prepareRoomState();
-		uint8_t oldLevel = _currentLevel;
-		for (uint16_t i = 0; i < _res._pgeNum; ++i) {
-			LivePGE *pge = _pge_liveTable2[i];
-			if (pge) {
-				_col_currentPiegeGridPosY = (pge->pos_y / 36) & ~1;
-				_col_currentPiegeGridPosX = (pge->pos_x + 8) >> 4;
-				pge_process(pge);
-			}
-		}
-		if (oldLevel != _currentLevel) {
-			changeLevel();
-			_pge_opTempVar1 = 0;
-			continue;
-		}
-		if (_loadMap) {
-			if (_currentRoom == 0xFF) {
-				_cut._id = 6;
-				_deathCutsceneCounter = 1;
-			} else {
-				_currentRoom = _pgeLive[0].room_location;
-				loadLevelMap();
-				_loadMap = false;
-				_vid.fullRefresh();
-			}
-		}
-		prepareAnims();
-		drawAnims();
-		drawCurrentInventoryItem();
-		drawLevelTexts();
-		printLevelCode();
-		if (_blinkingConradCounter != 0) {
-			--_blinkingConradCounter;
-		}
-		_vid.updateScreen();
-		updateTiming();
-		drawStoryTexts();
-		if (_stub->_pi.backspace) {
-			_stub->_pi.backspace = false;
-			handleInventory();
-		}
-		if (_stub->_pi.escape) {
-			_stub->_pi.escape = false;
-			if (handleConfigPanel()) {
-				break;
-			}
-		}
-		inp_handleSpecialKeys();
+	playCutscene();
+	if (_cut._id == 0x3D) {
+		showFinalScore();
+		_endLoop = true;
+		return;
 	}
+	if (_deathCutsceneCounter) {
+		--_deathCutsceneCounter;
+		if (_deathCutsceneCounter == 0) {
+			playCutscene(_cut._deathCutsceneId);
+			if (!handleContinueAbort()) {
+				playCutscene(0x41);
+				_endLoop = true;
+			} else {
+				if (_validSaveState) {
+					if (!loadGameState(0)) {
+						_endLoop = true;
+					}
+				} else {
+					loadLevelData();
+					resetGameState();
+				}
+			}
+			return;
+		}
+	}
+	memcpy(_vid._frontLayer, _vid._backLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+	pge_getInput();
+	pge_prepare();
+	col_prepareRoomState();
+	uint8_t oldLevel = _currentLevel;
+	for (uint16_t i = 0; i < _res._pgeNum; ++i) {
+		LivePGE *pge = _pge_liveTable2[i];
+		if (pge) {
+			_col_currentPiegeGridPosY = (pge->pos_y / 36) & ~1;
+			_col_currentPiegeGridPosX = (pge->pos_x + 8) >> 4;
+			pge_process(pge);
+		}
+	}
+	if (oldLevel != _currentLevel) {
+		changeLevel();
+		_pge_opTempVar1 = 0;
+		return;
+	}
+	if (_loadMap) {
+		if (_currentRoom == 0xFF) {
+			_cut._id = 6;
+			_deathCutsceneCounter = 1;
+		} else {
+			_currentRoom = _pgeLive[0].room_location;
+			loadLevelMap();
+			_loadMap = false;
+			_vid.fullRefresh();
+		}
+	}
+	prepareAnims();
+	drawAnims();
+	drawCurrentInventoryItem();
+	drawLevelTexts();
+	printLevelCode();
+	if (_blinkingConradCounter != 0) {
+		--_blinkingConradCounter;
+	}
+	_vid.updateScreen();
+	updateTiming();
+	drawStoryTexts();
+	if (_stub->_pi.backspace) {
+		_stub->_pi.backspace = false;
+		handleInventory();
+	}
+	if (_stub->_pi.escape) {
+		_stub->_pi.escape = false;
+		if (handleConfigPanel()) {
+			_endLoop = true;
+			return;
+		}
+	}
+	inp_handleSpecialKeys();
 }
 
 void Game::updateTiming() {
