@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-VERSION = '0.2.2'
+VERSION = '0.2.3'
 
 SDL_TARBALL = [ 'REminiscence-%s-sdl-win32.zip',
 	(
 		'../README',
-		'../README-SDL',
 		'../rs.exe'
 	)
 ]
@@ -35,6 +34,8 @@ SRC_TARBALL = [ 'REminiscence-%s.tar.bz2',
 		'../mixer.h',
 		'../mod_player.cpp',
 		'../mod_player.h',
+		'../ogg_player.cpp',
+		'../ogg_player.h',
 		'../piege.cpp',
 		'../resource.cpp',
 		'../resource.h',
@@ -45,7 +46,6 @@ SRC_TARBALL = [ 'REminiscence-%s.tar.bz2',
 		'../sfx_player.cpp',
 		'../sfx_player.h',
 		'../staticres.cpp',
-		'../sys.h',
 		'../systemstub.h',
 		'../systemstub_sdl.cpp',
 		'../unpack.cpp',
