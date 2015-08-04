@@ -1,0 +1,10 @@
+
+DEMO_UK.ABA
+
+uint16_t - count
+uint16_t - entry length
+char [14]
+uint32_t offset
+uint32_t compressedSize
+uint32_t uncompressedSize
+0x44 0x2E 0x4D 0x2E
