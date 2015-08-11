@@ -2,17 +2,17 @@
 #include <cstdio>
 #include <cstring>
 #include <cassert>
-#include "sys.h"
+#include "intern.h"
 
-static uint32 read_u32(FILE *fp) {
-	uint8 a = fgetc(fp);
-	uint8 b = fgetc(fp);
-	uint8 c = fgetc(fp);
-	uint8 d = fgetc(fp);
+static uint32_t read_u32(FILE *fp) {
+	uint8_t a = fgetc(fp);
+	uint8_t b = fgetc(fp);
+	uint8_t c = fgetc(fp);
+	uint8_t d = fgetc(fp);
 	return (d << 24) | (c << 16) | (b << 8) | a;
 }
 
-static void dump(FILE *fp, uint32 off1, uint32 off2, const char *name, bool isModule) {
+static void dump(FILE *fp, uint32_t off1, uint32_t off2, const char *name, bool isModule) {
 	fseek(fp, off1, SEEK_SET);
 	if (isModule) {
 		// skip samples
@@ -20,8 +20,8 @@ static void dump(FILE *fp, uint32 off1, uint32 off2, const char *name, bool isMo
 			read_u32(fp);
 		}
 	}
-	uint8 lastByte = 0;
-	printf("const uint8 %s[] = {\n\t", name);
+	uint8_t lastByte = 0;
+	printf("const uint8_t %s[] = {\n\t", name);
 	int i = 0;
 	while (ftell(fp) < (int)off2) {
 		if (i == 16) {
@@ -45,8 +45,8 @@ static void dump(FILE *fp, uint32 off1, uint32 off2, const char *name, bool isMo
 
 struct Module {
 	const char *name;
-	uint32 offs_start;
-	uint32 offs_end;
+	uint32_t offs_start;
+	uint32_t offs_end;
 	bool module;
 } MODULES[] = {
 	/* module data */

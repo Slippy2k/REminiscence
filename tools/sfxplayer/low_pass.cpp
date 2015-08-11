@@ -15,3 +15,12 @@ void low_pass(const int8_t *in, int len, int8_t *out) {
 		out[i] = int8_t(sample);
 	}
 }
+
+void nr(const int8_t *in, int len, int8_t *out) {
+	static int prev = 0;
+	for (int i = 0; i < len; ++i) {
+		const int vnr = in[i] >> 1;
+		out[i] = vnr + prev;
+		prev = vnr;
+	}
+}

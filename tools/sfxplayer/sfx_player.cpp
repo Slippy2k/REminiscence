@@ -1,6 +1,6 @@
 
 #include <cmath>
-#include "util.h"
+#include "intern.h"
 #include "SDL.h"
 
 
@@ -9,6 +9,7 @@
 #define PAULA_FREQ 3546897 // PAL
 
 void low_pass(const int8_t *in, int len, int8_t *out);
+void nr(const int8_t *in, int len, int8_t *out);
 
 static const bool kOutputToDisk = true;
 
@@ -20,20 +21,20 @@ struct SfxPlayer {
 	};
 	
 	struct Module {
-		const uint8 *sampleData[NUM_SAMPLES];
-		const uint8 *moduleData;
+		const uint8_t *sampleData[NUM_SAMPLES];
+		const uint8_t *moduleData;
 	};
 	
 	struct SampleInfo {
-		uint16 len;
-		uint16 vol;
-		uint16 loopPos;
-		uint16 loopLen;
+		uint16_t len;
+		uint16_t vol;
+		uint16_t loopPos;
+		uint16_t loopLen;
 		int freq;
 		int pos;
-		const uint8 *data;
+		const uint8_t *data;
 
-		uint8 getData(int offset) const {
+		uint8_t getData(int offset) const {
 			if (offset >= len) {
 				offset = len - 1;
 			}
@@ -41,24 +42,24 @@ struct SfxPlayer {
 		}
 	};
 	
-	static const uint16 _periodTable[];
-	static const uint8 _musicData68_69[];
-//	static const uint8 _musicDataUnk[];
-	static const uint8 _musicData70_71[];
-	static const uint8 _musicData72[];
-	static const uint8 _musicData73[];
-	static const uint8 _musicData74[];
-	static const uint8 _musicData75[];
-	static const uint8 _musicDataSample1[];
-	static const uint8 _musicDataSample2[]; // tick
-	static const uint8 _musicDataSample3[]; // cloche
-	static const uint8 _musicDataSample4[];
-	static const uint8 _musicDataSample5[];
-	static const uint8 _musicDataSample6[];
-	static const uint8 _musicDataSample7[];
-	static const uint8 _musicDataSample8[];
+	static const uint16_t _periodTable[];
+	static const uint8_t _musicData68_69[];
+	static const uint8_t _musicDataUnk[];
+	static const uint8_t _musicData70_71[];
+	static const uint8_t _musicData72[];
+	static const uint8_t _musicData73[];
+	static const uint8_t _musicData74[];
+	static const uint8_t _musicData75[];
+	static const uint8_t _musicDataSample1[];
+	static const uint8_t _musicDataSample2[]; // tick
+	static const uint8_t _musicDataSample3[]; // cloche
+	static const uint8_t _musicDataSample4[];
+	static const uint8_t _musicDataSample5[];
+	static const uint8_t _musicDataSample6[];
+	static const uint8_t _musicDataSample7[];
+	static const uint8_t _musicDataSample8[];
 	static const Module _module68_69;
-//	static const Module _moduleUnk;
+	static const Module _moduleUnk;
 	static const Module _module70_71;
 	static const Module _module72;
 	static const Module _module73;
@@ -68,21 +69,21 @@ struct SfxPlayer {
 	const Module *_mod;
 	bool _playing;
 	int _samplesLeft;
-	uint16 _curOrder;
-	uint16 _numOrders;
-	uint16 _orderDelay;
-	const uint8 *_modData;
+	uint16_t _curOrder;
+	uint16_t _numOrders;
+	uint16_t _orderDelay;
+	const uint8_t *_modData;
 	SampleInfo _samples[NUM_CHANNELS];
 	
 	void loadModule(const int num);
 	void stop();
 	void start();
-	void playSample(int channel, const uint8 *sampleData, uint16 period);
+	void playSample(int channel, const uint8_t *sampleData, uint16_t period);
 	void handleTick();
-	void mix(int8 *buf, int len);
-	void mixSamples(int8 *buf, int samplesLen);
+	void mix(int8_t *buf, int len);
+	void mixSamples(int8_t *buf, int samplesLen);
 	
-	static void mixCallback(void *param, uint8 *buf, int len);
+	static void mixCallback(void *param, uint8_t *buf, int len);
 };
 
 void SfxPlayer::loadModule(const int num) {
@@ -107,8 +108,11 @@ void SfxPlayer::loadModule(const int num) {
 	case 75:
 		_mod = &_module75;
 		break;
+//	case 99:
+//		_mod = &_moduleUnk;
+//		break;
 	default:
-		error("Unknown module number %d", num);
+		fprintf(stderr, "Unknown module number %d\n", num);
 		break;	
 	}
 	_curOrder = 0;
@@ -139,13 +143,13 @@ void SfxPlayer::start() {
 		if (SDL_OpenAudio(&desired, NULL) == 0) {
 			SDL_PauseAudio(0);
 		} else {
-			error("SfxPlayer::init() unable to open sound device");
+			fprintf(stderr, "SfxPlayer::init() unable to open sound device\n");
 		}
 	}
 	_playing = true;
 }
 
-void SfxPlayer::playSample(int channel, const uint8 *sampleData, uint16 period) {
+void SfxPlayer::playSample(int channel, const uint8_t *sampleData, uint16_t period) {
 	assert(channel < NUM_CHANNELS);
 	SampleInfo *si = &_samples[channel];
 	si->len = READ_BE_UINT16(sampleData); sampleData += 2;
@@ -171,11 +175,11 @@ void SfxPlayer::handleTick() {
 		}
 	} else {
 		_orderDelay = READ_BE_UINT16(_mod->moduleData + 2);
-		printf("handleTick() order=%d/%d\n", _curOrder, _numOrders);
-		int16 period = 0;
+		fprintf(stdout, "handleTick() order=%d/%d\n", _curOrder, _numOrders);
+		int16_t period = 0;
 		for (int ch = 0; ch < 3; ++ch) {
-			const uint8 *sampleData = 0;
-			uint8 b = *_modData++;
+			const uint8_t *sampleData = 0;
+			uint8_t b = *_modData++;
 			if (b != 0) {
 				--b;
 				assert(b < 5);
@@ -184,13 +188,13 @@ void SfxPlayer::handleTick() {
 			}
 			b = *_modData++;
 			if (b != 0) {
-				int16 per = period + (b - 1);
+				int16_t per = period + (b - 1);
 				if (per >= 0 && per < 40) {
 					per = _periodTable[per];
 				} else if (per == -3) {
 					per = 0xA0;
 				} else {
-					warning("per = %d (0x%X) period = %d b = %d", per, per, period, b);
+					fprintf(stdout, "per = %d (0x%X) period = %d b = %d\n", per, per, period, b);
 					per = 0x71;
 				}
 				playSample(ch, sampleData, per);
@@ -205,7 +209,7 @@ void SfxPlayer::handleTick() {
 	}
 }
 
-static void addclamp(int8& a, int b) {
+static void addclamp(int8_t& a, int b) {
 	int add = a + b;
 	if (add < -128) {
 		add = -128;
@@ -215,12 +219,12 @@ static void addclamp(int8& a, int b) {
 	a = add;
 }
 
-void SfxPlayer::mixSamples(int8 *buf, int samplesLen) {
+void SfxPlayer::mixSamples(int8_t *buf, int samplesLen) {
 	memset(buf, 0, samplesLen);
 	for (int i = 0; i < NUM_CHANNELS; ++i) {
 		SampleInfo *si = &_samples[i];
 		if (si->data) {
-			int8 *mixbuf = buf;
+			int8_t *mixbuf = buf;
 			int len = si->len << FRAC_BITS;
 			int loopLen = si->loopLen << FRAC_BITS;
 			int loopPos = si->loopPos << FRAC_BITS;
@@ -246,8 +250,8 @@ void SfxPlayer::mixSamples(int8 *buf, int samplesLen) {
 				}
 				while (count--) {
 					assert((pos >> FRAC_BITS) < si->len);
-					int8 b0 = si->getData((pos >> FRAC_BITS));
-					int8 b1 = si->getData((pos >> FRAC_BITS) + 1);
+					int8_t b0 = si->getData((pos >> FRAC_BITS));
+					int8_t b1 = si->getData((pos >> FRAC_BITS) + 1);
 					int a1 = pos & ((1 << FRAC_BITS) - 1);
 					int a0 = (1 << FRAC_BITS) - a1;
 					int b = (b0 * a0 + b1 * a1) >> FRAC_BITS;
@@ -260,7 +264,7 @@ void SfxPlayer::mixSamples(int8 *buf, int samplesLen) {
 	}
 }
 
-void SfxPlayer::mix(int8 *buf, int len) {
+void SfxPlayer::mix(int8_t *buf, int len) {
 	if (!_playing) {
 		return;
 	}
@@ -283,14 +287,13 @@ void SfxPlayer::mix(int8 *buf, int len) {
 	}
 }
 
-void SfxPlayer::mixCallback(void *param, uint8 *buf, int len) {
-	((SfxPlayer *)param)->mix((int8 *)buf, len);
+void SfxPlayer::mixCallback(void *param, uint8_t *buf, int len) {
+	((SfxPlayer *)param)->mix((int8_t *)buf, len);
 }
 
 #undef main
 int main(int argc, char *argv[]) {
 	SDL_Init(SDL_INIT_AUDIO);
-	g_debugMask = DBG_INFO | DBG_SND | DBG_MOD;
 	if (argc != 2) {
 		printf("Syntax: %s mod\n",argv[0]);
 	} else {
@@ -301,10 +304,12 @@ int main(int argc, char *argv[]) {
 			FILE *fp = fopen("out.raw", "wb");
 			if (fp) {
 				while (p._playing) {
-					int8 buf[2048], buf2[2048];
-					p.mix(buf, sizeof(buf));
-					low_pass(buf, sizeof(buf), buf2);
-					fwrite(buf2, 1, sizeof(buf2), fp);
+					static const int kBufSize = 2048;
+					int8_t buf[3][kBufSize];
+					p.mix(buf[0], kBufSize);
+					nr(buf[0], kBufSize, buf[1]);
+					low_pass(buf[1], kBufSize, buf[2]);
+					fwrite(buf[2], 1, kBufSize, fp);
 				}
 				fclose(fp);
 			}
@@ -329,7 +334,7 @@ int main(int argc, char *argv[]) {
 }
 
 
-const uint16 SfxPlayer::_periodTable[] = {
+const uint16_t SfxPlayer::_periodTable[] = {
 	0x434, 0x3F8, 0x3C0, 0x38A, 0x358, 0x328, 0x2FA, 0x2D0, 0x2A6, 0x280,
 	0x25C, 0x23A, 0x21A, 0x1FC, 0x1E0, 0x1C5, 0x1AC, 0x194, 0x17D, 0x168,
 	0x153, 0x140, 0x12E, 0x11D, 0x10D, 0x0FE, 0x0F0, 0x0E2, 0x0D6, 0x0CA,
@@ -345,14 +350,14 @@ const SfxPlayer::Module SfxPlayer::_module68_69 = {
 	},
 	_musicData68_69
 };
-//const SfxPlayer::Module SfxPlayer::_moduleUnk = {
-//	{
-//		_musicDataSample2, _musicDataSample3, _musicDataSample8, _musicDataSample8, _musicDataSample8,
-//		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
-//		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
-//	},
+const SfxPlayer::Module SfxPlayer::_moduleUnk = {
+	{
+		_musicDataSample2, _musicDataSample3, _musicDataSample8, _musicDataSample8, _musicDataSample8,
+		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
+		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
+	},
 //	_musicDataUnk
-//};
+};
 const SfxPlayer::Module SfxPlayer::_module70_71 = {
 	{
 		_musicDataSample1, _musicDataSample2, _musicDataSample3, _musicDataSample3, _musicDataSample8,

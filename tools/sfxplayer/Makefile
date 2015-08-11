@@ -2,13 +2,10 @@
 SDL_CFLAGS = `sdl-config --cflags`
 SDL_LIBS = `sdl-config --libs`
 
-DEFINES = -DSYS_LITTLE_ENDIAN
-
 CXX = g++
-CXXFLAGS:= -g -O -Wall
-CXXFLAGS+= $(SDL_CFLAGS) $(DEFINES)
+CXXFLAGS := -g -O -Wall $(SDL_CFLAGS)
 
-SRCS_SFXPLY = low_pass.cpp sfx_player.cpp util.cpp
+SRCS_SFXPLY = low_pass.cpp sfx_player.cpp
 OBJS_SFXPLY = $(SRCS_SFXPLY:.cpp=.o)
 DEPS_SFXPLY = $(SRCS_SFXPLY:.cpp=.d)
 
@@ -28,6 +25,6 @@ sfxdump: $(OBJS_DUMP)
 	$(CXX) $(CXXFLAGS) -MMD -c $< -o $*.o
 
 clean:
-	rm -f *.o *.d
+	rm -f *.o *.d *.wav *.raw *.ogg
 
--include $(DEPS_SFXPLY)
+-include $(DEPS_SFXPLY) $(DEPS_DUMP)
