@@ -4,12 +4,13 @@
 #include "SDL.h"
 
 
-#define SAMPLE_RATE 11025
+#define SAMPLE_RATE 22050
 //#define PAULA_FREQ 3579545 // NTSC
 #define PAULA_FREQ 3546897 // PAL
 
 void low_pass(const int8_t *in, int len, int8_t *out);
 void nr(const int8_t *in, int len, int8_t *out);
+void sinc(double pos, const int8_t *in, int len, int fsr, int8_t *out);
 
 static const bool kOutputToDisk = true;
 
@@ -120,7 +121,7 @@ void SfxPlayer::loadModule(const int num) {
 	_orderDelay = 0;
 	_modData = _mod->moduleData + 0x22;
 	for (int i = 0; i < 5; ++i) {
-		printf("instrument %d period=%d\n", i, READ_BE_UINT16(_mod->moduleData + 4 + i * 2));
+		printf("instrument %d period=%d\n", i, (int16_t)READ_BE_UINT16(_mod->moduleData + 4 + i * 2));
 	}
 }
 
@@ -160,7 +161,7 @@ void SfxPlayer::playSample(int channel, const uint8_t *sampleData, uint16_t peri
 	si->pos = 0;
 	si->data = sampleData;
 	assert(si->loopPos + si->loopLen <= si->len);
-/*	printf("playSample(%d, 0x%X, %d)\n", channel, sampleData, si->freq);*/
+	fprintf(stdout, "playSample(channel=%d, freq=%d)\n", channel, si->freq);
 }
 
 void SfxPlayer::handleTick() {
@@ -191,11 +192,13 @@ void SfxPlayer::handleTick() {
 				int16_t per = period + (b - 1);
 				if (per >= 0 && per < 40) {
 					per = _periodTable[per];
-				} else if (per == -3) {
-					per = 0xA0;
 				} else {
-					fprintf(stdout, "per = %d (0x%X) period = %d b = %d\n", per, per, period, b);
-					per = 0x71;
+					fprintf(stdout, "per=%d period=%d b=%d\n", per, period, b);
+					if (per == -3) {
+						per = 0xA0;
+					} else {
+						per = 0x71;
+					}
 				}
 				playSample(ch, sampleData, per);
 			}
@@ -218,6 +221,29 @@ static void addclamp(int8_t& a, int b) {
 	}
 	a = add;
 }
+
+int resampleLinear(SfxPlayer::SampleInfo *si, int pos, int frac) {
+	int8_t b0 = si->getData((pos >> frac));
+	int8_t b1 = si->getData((pos >> frac) + 1);
+	int a1 = pos & ((1 << frac) - 1);
+	int a0 = (1 << frac) - a1;
+	int b = (b0 * a0 + b1 * a1) >> frac;
+	return b;
+}
+
+int resamplePoint(SfxPlayer::SampleInfo *si, int pos, int frac) {
+	const int8_t b = si->getData(pos >> frac);
+	return b;
+}
+
+int resampleSinc(SfxPlayer::SampleInfo *si, int pos, int frac) {
+	const double x = (double)pos / (1 << frac);
+	int8_t sample;
+	sinc(x, (const int8_t *)si->data, si->len, si->freq, &sample);
+	return sample;
+}
+
+static int (*resample)(SfxPlayer::SampleInfo *, int, int) = resamplePoint;
 
 void SfxPlayer::mixSamples(int8_t *buf, int samplesLen) {
 	memset(buf, 0, samplesLen);
@@ -249,13 +275,8 @@ void SfxPlayer::mixSamples(int8_t *buf, int samplesLen) {
 					curLen = 0;
 				}
 				while (count--) {
-					assert((pos >> FRAC_BITS) < si->len);
-					int8_t b0 = si->getData((pos >> FRAC_BITS));
-					int8_t b1 = si->getData((pos >> FRAC_BITS) + 1);
-					int a1 = pos & ((1 << FRAC_BITS) - 1);
-					int a0 = (1 << FRAC_BITS) - a1;
-					int b = (b0 * a0 + b1 * a1) >> FRAC_BITS;
-					addclamp(*mixbuf++, b * si->vol / 64); // XXX
+					const int sample = resample(si, pos, FRAC_BITS);
+					addclamp(*mixbuf++, sample * si->vol / 64);
 					pos += deltaPos;
 				}
 			}
