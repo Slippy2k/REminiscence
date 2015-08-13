@@ -1220,15 +1220,23 @@ void Game::loadLevelMap() {
 	switch (_res._type) {
 	case kResourceTypeAmiga:
 		if (_currentLevel == 1) {
-			static const uint8_t tab[64] = {
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 1, 0,
-				0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0,
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				0, 0, 0, 0, 1, 1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0
-			};
-			const int num = tab[_currentRoom];
+			int num = 0;
+			switch (_currentRoom) {
+			case 14:
+			case 19:
+			case 52:
+			case 53:
+				num = 1;
+				break;
+			case 11:
+			case 24:
+			case 27:
+			case 56:
+				num = 2;
+				break;
+			}
 			if (num != 0 && _res._levNum != num) {
-				char name[8];
+				char name[9];
 				snprintf(name, sizeof(name), "level2_%d", num);
 				_res.load(name, Resource::OT_LEV);
 				_res._levNum = num;
