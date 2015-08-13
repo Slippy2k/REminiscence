@@ -348,7 +348,8 @@ void Game::inp_handleSpecialKeys() {
 			} else {
 				if (_inp_demo->open(demoFile, "zwb", _savePath)) {
 					debug(DBG_INFO, "Recording input keys");
-					_inp_demo->writeUint32BE('FBDM');
+					static const uint32_t TAG_FBDM = 0x4642444D;
+					_inp_demo->writeUint32BE(TAG_FBDM);
 					_inp_demo->writeUint16BE(0);
 					_inp_demo->writeUint32BE(_randSeed);
 					record = true;
@@ -1601,6 +1602,8 @@ void Game::makeGameStateName(uint8_t slot, char *buf) {
 	sprintf(buf, "rs-level%d-%02d.state", _currentLevel + 1, slot);
 }
 
+static const uint32_t TAG_FBSV = 0x46425356;
+
 bool Game::saveGameState(uint8_t slot) {
 	bool success = false;
 	char stateFile[20];
@@ -1610,7 +1613,7 @@ bool Game::saveGameState(uint8_t slot) {
 		warning("Unable to save state file '%s'", stateFile);
 	} else {
 		// header
-		f.writeUint32BE('FBSV');
+		f.writeUint32BE(TAG_FBSV);
 		f.writeUint16BE(2);
 		char buf[32];
 		memset(buf, 0, sizeof(buf));
@@ -1637,7 +1640,7 @@ bool Game::loadGameState(uint8_t slot) {
 		warning("Unable to open state file '%s'", stateFile);
 	} else {
 		uint32_t id = f.readUint32BE();
-		if (id != 'FBSV') {
+		if (id != TAG_FBSV) {
 			warning("Bad save state format");
 		} else {
 			uint16_t ver = f.readUint16BE();

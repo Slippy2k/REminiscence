@@ -14,7 +14,7 @@ DEPS := $(SRCS:.cpp=.d)
 OBJDIR := obj
 
 CXX := i686-w64-mingw32-g++
-CXXFLAGS := -g -O -Wall -Wno-multichar $(SDL_CFLAGS) -UUSE_ZLIB $(DEFINES)
+CXXFLAGS := -g -O -Wall $(SDL_CFLAGS) -UUSE_ZLIB $(DEFINES)
 STRIP := i686-w64-mingw32-strip
 
 all: $(OBJDIR) rs.exe
