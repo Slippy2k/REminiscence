@@ -144,7 +144,17 @@ void Mixer::stopMusic() {
 	}
 }
 
-void Mixer::mix(int8_t *buf, int len) {
+static void nr(const int8_t *in, int len, int8_t *out) {
+	static int prev = 0;
+	for (int i = 0; i < len; ++i) {
+		const int vnr = in[i] >> 1;
+		out[i] = vnr + prev;
+		prev = vnr;
+	}
+}
+
+void Mixer::mix(int8_t *out, int len) {
+	int8_t buf[len];
 	memset(buf, 0, len);
 	if (_premixHook) {
 		if (!_premixHook(_premixHookData, buf, len)) {
@@ -160,12 +170,13 @@ void Mixer::mix(int8_t *buf, int len) {
 					ch->active = false;
 					break;
 				}
-				int out = resampleLinear(&ch->chunk, ch->chunkPos, ch->chunkInc, FRAC_BITS);
-				addclamp(buf[pos], out * ch->volume / Mixer::MAX_VOLUME);
+				const int sample = ch->chunk.getPCM(ch->chunkPos >> FRAC_BITS);
+				addclamp(buf[pos], sample * ch->volume / Mixer::MAX_VOLUME);
 				ch->chunkPos += ch->chunkInc;
 			}
 		}
 	}
+	nr(buf, len, out);
 }
 
 void Mixer::addclamp(int8_t& a, int b) {

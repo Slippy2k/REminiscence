@@ -96,13 +96,4 @@ struct Mixer {
 	static void mixCallback(void *param, int8_t *buf, int len);
 };
 
-template <class T>
-int resampleLinear(T *sample, int pos, int step, int fracBits) {
-	const int inputPos = pos >> fracBits;
-	const int inputFrac = pos & ((1 << fracBits) - 1);
-	int out = sample->getPCM(inputPos);
-	out += (sample->getPCM(inputPos + 1) - out) * inputFrac >> fracBits;
-	return out;
-}
-
 #endif // MIXER_H__

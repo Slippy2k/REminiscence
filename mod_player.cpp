@@ -485,7 +485,7 @@ void ModPlayer::mixSamples(int8_t *buf, int samplesLen) {
 					curLen = 0;
 				}
 				while (count--) {
-					int out = resampleLinear(si, pos, deltaPos, FRAC_BITS);
+					const int out = si->getPCM(pos >> FRAC_BITS);
 					Mixer::addclamp(*mixbuf++, out * tk->volume / 64);
 					pos += deltaPos;
 				}
