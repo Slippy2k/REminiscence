@@ -25,7 +25,7 @@ void Cutscene::dumpCutNum() {
 	for (int i = 0; i < size; i += 2) {
 		uint16 num = _offsetsTable[i];
 		if (num != 0xFFFF) {
-			printf("  num = 0x%02X  name = %s\n", i / 2, _namesTable[num & 0xFF]);
+			printf("  num=%d name:%s index:%d\n", i / 2, _namesTable[num & 0xFF], _offsetsTable[i + 1]);
 		}
 	}
 }
