@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 		stub->destroy();
 		delete stub;
 	} else {
-		printf(USAGE);
+		printf("%s\n", USAGE);
 		printf("\nAvailable cutscenes :\n");
 		Cutscene::dumpCutNum();
 	}

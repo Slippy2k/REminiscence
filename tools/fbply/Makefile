@@ -9,7 +9,7 @@ DEFINES = -DSYS_LITTLE_ENDIAN
 
 CXX = g++
 CXXFLAGS:= -g -O -Wall -Wuninitialized -Wno-unknown-pragmas -Wshadow
-CXXFLAGS+= -Wimplicit -Wundef -Wreorder -Wwrite-strings -Wnon-virtual-dtor -Wno-multichar
+CXXFLAGS+= -Wundef -Wreorder -Wwrite-strings -Wnon-virtual-dtor -Wno-multichar
 CXXFLAGS+= $(SDL_CFLAGS) $(DEFINES)
 
 SRCS = cutscene.cpp main.cpp oglstub.cpp staticres.cpp util.cpp

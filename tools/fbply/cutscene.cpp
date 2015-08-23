@@ -723,8 +723,8 @@ void Cutscene::op_drawStringAtPos() {
 	debug(DBG_CUTSCENE, "Cutscene::op_drawStringAtPos()");
 	uint16 strId = _cmdPtr.fetchWord();
 	if (strId != 0xFFFF) {
-		/*int16 x =*/ (int8)_cmdPtr.fetchByte() * 8;
-		/*int16 y =*/ (int8)_cmdPtr.fetchByte() * 8;
+		/*int16 x =*/ (int8)_cmdPtr.fetchByte(); // * 8;
+		/*int16 y =*/ (int8)_cmdPtr.fetchByte(); // * 8;
 //		uint16 var_6 = (strId >> 0xC) + 0xD0;
 //		uint16 offsetIndex = (strId & 0xFFF) * 2;
 		// XXX
