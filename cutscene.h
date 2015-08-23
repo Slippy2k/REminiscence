@@ -61,7 +61,7 @@ struct Cutscene {
 	uint8_t _palBuf[0x20 * 2];
 	uint16_t _startOffset;
 	bool _creditsSequence;
-	uint32_t _rotData[4];
+	uint32_t _rotMat[4];
 	uint8_t _primitiveColor;
 	uint8_t _clearScreen;
 	Point _vertices[0x80];
@@ -97,7 +97,7 @@ struct Cutscene {
 	void copyPalette(const uint8_t *pal, uint16_t num);
 	void updatePalette();
 	void setPalette();
-	void initRotationData(uint16_t a, uint16_t b, uint16_t c);
+	void setRotationTransform(uint16_t a, uint16_t b, uint16_t c);
 	uint16_t findTextSeparators(const uint8_t *p);
 	void drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, uint8_t *page, uint8_t n);
 	void swapLayers();

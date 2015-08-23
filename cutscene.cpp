@@ -15,6 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include "resource.h"
 #include "systemstub.h"
 #include "video.h"
@@ -71,17 +72,32 @@ void Cutscene::setPalette() {
 	_stub->updateScreen(0);
 }
 
-void Cutscene::initRotationData(uint16_t a, uint16_t b, uint16_t c) {
-	int16_t n1 = _sinTable[a];
-	int16_t n2 = _cosTable[a];
-	int16_t n3 = _sinTable[c];
-	int16_t n4 = _cosTable[c];
-	int16_t n5 = _sinTable[b];
-	int16_t n6 = _cosTable[b];
-	_rotData[0] = ((n2 * n6) >> 8) - ((((n4 * n1) >> 8) * n5) >> 8);
-	_rotData[1] = ((n1 * n6) >> 8) + ((((n4 * n2) >> 8) * n5) >> 8);
-	_rotData[2] = ( n3 * n1) >> 8;
-	_rotData[3] = (-n3 * n2) >> 8;
+#if 0
+#define SIN(a) (int16_t)(sin(a * M_PI / 180) * 256)
+#define COS(a) (int16_t)(cos(a * M_PI / 180) * 256)
+#else
+#define SIN(a) _sinTable[a]
+#define COS(a) _cosTable[a]
+#endif
+
+/*
+  cos(60)  table: 128, math: 127
+  cos(120) table:-127, math:-128
+  cos(240) table:-128, math:-127
+  sin(330) table: 221, math:-127
+*/
+
+void Cutscene::setRotationTransform(uint16_t a, uint16_t b, uint16_t c) { // identity a:0 b:180 c:90
+	const int16_t sin_a = SIN(a);
+	const int16_t cos_a = COS(a);
+	const int16_t sin_c = SIN(c);
+	const int16_t cos_c = COS(c);
+	const int16_t sin_b = SIN(b);
+	const int16_t cos_b = COS(b);
+	_rotMat[0] /* .x1 */ = ((cos_a * cos_b) >> 8) - ((((cos_c * sin_a) >> 8) * sin_b) >> 8);
+	_rotMat[1] /* .y1 */ = ((sin_a * cos_b) >> 8) + ((((cos_c * cos_a) >> 8) * sin_b) >> 8);
+	_rotMat[2] /* .x2 */ = ( sin_c * sin_a) >> 8;
+	_rotMat[3] /* .y2 */ = (-sin_c * cos_a) >> 8;
 }
 
 uint16_t Cutscene::findTextSeparators(const uint8_t *p) {
@@ -216,7 +232,7 @@ void Cutscene::drawProtectionShape(uint8_t shapeNum, int16_t zoom) {
 	int16_t x = 0;
 	int16_t y = 0;
 	zoom += 512;
-	initRotationData(0, 180, 90);
+	setRotationTransform(0, 180, 90);
 
 	const uint8_t *shapeOffsetTable    = _protectionShapeData + READ_BE_UINT16(_protectionShapeData + 0x02);
 	const uint8_t *shapeDataTable      = _protectionShapeData + READ_BE_UINT16(_protectionShapeData + 0x0E);
@@ -609,8 +625,8 @@ void Cutscene::drawShapeScaleRotate(const uint8_t *data, int16_t zoom, int16_t b
 		y = READ_BE_UINT16(data); data += 2;
 		_shape_cur_x16 = _shape_ix - ix;
 		_shape_cur_y16 = _shape_iy - iy;
-		_shape_ox = _shape_cur_x = _shape_ix + ((_shape_cur_x16 * _rotData[0] + _shape_cur_y16 * _rotData[1]) >> 8);
-		_shape_oy = _shape_cur_y = _shape_iy + ((_shape_cur_x16 * _rotData[2] + _shape_cur_y16 * _rotData[3]) >> 8);
+		_shape_ox = _shape_cur_x = _shape_ix + ((_shape_cur_x16 * _rotMat[0] + _shape_cur_y16 * _rotMat[1]) >> 8);
+		_shape_oy = _shape_cur_y = _shape_iy + ((_shape_cur_x16 * _rotMat[2] + _shape_cur_y16 * _rotMat[3]) >> 8);
 		pr[0].x =  0;
 		pr[0].y = -y;
 		pr[1].x = -x;
@@ -655,8 +671,8 @@ void Cutscene::drawShapeScaleRotate(const uint8_t *data, int16_t zoom, int16_t b
 		pt.y = c + READ_BE_UINT16(data); data += 2;
 		_shape_cur_x16 = _shape_ix - pt.x;
 		_shape_cur_y16 = _shape_iy - pt.y;
-		_shape_cur_x = _shape_ix + ((_rotData[0] * _shape_cur_x16 + _rotData[1] * _shape_cur_y16) >> 8);
-		_shape_cur_y = _shape_iy + ((_rotData[2] * _shape_cur_x16 + _rotData[3] * _shape_cur_y16) >> 8);
+		_shape_cur_x = _shape_ix + ((_rotMat[0] * _shape_cur_x16 + _rotMat[1] * _shape_cur_y16) >> 8);
+		_shape_cur_y = _shape_iy + ((_rotMat[2] * _shape_cur_x16 + _rotMat[3] * _shape_cur_y16) >> 8);
 		if (_shape_count != 0) {
 			_shape_cur_x16 = _shape_prev_x16 + (_shape_cur_x - _shape_prev_x) * zoom * 128;
 			pt.x = ((_shape_cur_x16 + 0x8000) >> 16) + _shape_ix + d;
@@ -685,12 +701,12 @@ void Cutscene::drawShapeScaleRotate(const uint8_t *data, int16_t zoom, int16_t b
 		_shape_cur_x16 = _shape_ix - x;
 		_shape_cur_y16 = _shape_iy - y;
 
-		a = _shape_ix + ((_rotData[0] * _shape_cur_x16 + _rotData[1] * _shape_cur_y16) >> 8);
+		a = _shape_ix + ((_rotMat[0] * _shape_cur_x16 + _rotMat[1] * _shape_cur_y16) >> 8);
 		if (_shape_count == 0) {
 			_shape_ox = a;
 		}
 		_shape_cur_x = shape_last_x = a;
-		a = _shape_iy + ((_rotData[2] * _shape_cur_x16 + _rotData[3] * _shape_cur_y16) >> 8);
+		a = _shape_iy + ((_rotMat[2] * _shape_cur_x16 + _rotMat[3] * _shape_cur_y16) >> 8);
 		if (_shape_count == 0) {
 			_shape_oy = a;
 		}
@@ -712,10 +728,10 @@ void Cutscene::drawShapeScaleRotate(const uint8_t *data, int16_t zoom, int16_t b
 				sx = 0;
 				_shape_cur_x16 = _shape_ix - ix;
 				_shape_cur_y16 = _shape_iy - iy;
-				a = _shape_ix + ((_rotData[0] * _shape_cur_x16 + _rotData[1] * _shape_cur_y16) >> 8);
+				a = _shape_ix + ((_rotMat[0] * _shape_cur_x16 + _rotMat[1] * _shape_cur_y16) >> 8);
 				pt2->x = a - shape_last_x;
 				shape_last_x = a;
-				a = _shape_iy + ((_rotData[2] * _shape_cur_x16 + _rotData[3] * _shape_cur_y16) >> 8);
+				a = _shape_iy + ((_rotMat[2] * _shape_cur_x16 + _rotMat[3] * _shape_cur_y16) >> 8);
 				pt2->y = a - shape_last_y;
 				shape_last_y = a;
 				++pt2;
@@ -786,7 +802,7 @@ void Cutscene::op_drawShapeScaleRotate() {
 	if (shapeOffset & 0x1000) {
 		r3 = fetchNextCmdWord();
 	}
-	initRotationData(r1, r2, r3);
+	setRotationTransform(r1, r2, r3);
 
 	const uint8_t *shapeOffsetTable    = _polPtr + READ_BE_UINT16(_polPtr + 0x02);
 	const uint8_t *shapeDataTable      = _polPtr + READ_BE_UINT16(_polPtr + 0x0E);
