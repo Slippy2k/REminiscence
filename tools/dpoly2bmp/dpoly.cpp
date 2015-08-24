@@ -12,9 +12,9 @@ void DPoly::Decode(const char *setFile) {
 	}
 	m_setFile = setFile;
 	m_gfx = new Graphics;
-	m_gfx->_layer = (uint8 *)malloc(DRAWING_BUFFER_W * DRAWING_BUFFER_H);
+	m_gfx->_layer = (uint8_t *)malloc(DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 	m_currentAnimFrame = 0;
-	uint8 hdr[8];
+	uint8_t hdr[8];
 	int ret = fread(hdr, 8, 1, m_fp);
 	if (ret != 1) {
 		fprintf(stderr, "fread() failed, ret %d", ret);
@@ -37,15 +37,15 @@ void DPoly::Decode(const char *setFile) {
 			ReadShapeMarker();
 			int numVertices = freadByte(m_fp);
 			if (numVertices == 255) numVertices = 1;
-			int ix = (int16)freadUint16BE(m_fp);
-			int iy = (int16)freadUint16BE(m_fp);
+			int ix = (int16_t)freadUint16BE(m_fp);
+			int iy = (int16_t)freadUint16BE(m_fp);
 			int unk1 = freadByte(m_fp); /* color1 */
 			freadByte(m_fp); /* color2 */ /* transparent ? */
 			printf("shape %d/%d x=%d y=%d color=%d\n", j, m_numShapes, ix, iy, unk1);
 			assert(numVertices < MAX_VERTICES);
 			for (int i = 0; i < numVertices; ++i) {
-				m_vertices[i].x = (int16)freadUint16BE(m_fp);
-				m_vertices[i].y = (int16)freadUint16BE(m_fp);
+				m_vertices[i].x = (int16_t)freadUint16BE(m_fp);
+				m_vertices[i].y = (int16_t)freadUint16BE(m_fp);
 				printf("  vertex %d/%d x=%d y=%d\n", i, numVertices, m_vertices[i].x, m_vertices[i].y);
 			}
 			m_gfx->setClippingRect(8, 50, 240, 128);
@@ -61,7 +61,7 @@ void DPoly::Decode(const char *setFile) {
 	}
 }
 
-void DPoly::SetPalette(const uint16 *pal) {
+void DPoly::SetPalette(const uint16_t *pal) {
 	memset(m_palette, 0, sizeof(m_palette));
 	for (int i = 0; i < 16; ++i) {
 		m_palette[i * 3 + 0] = (pal[i] >> 8) & 0xF;
@@ -146,8 +146,8 @@ void DPoly::ReadVerticesBuffer() {
 			break;
 		}
 		for (i = 0; i < (int)sizeof(buf); i += 4) {
-			int x = (int16)READ_BE_UINT16(buf + i);
-			int y = (int16)READ_BE_UINT16(buf + i + 2);
+			int x = (int16_t)READ_BE_UINT16(buf + i);
+			int y = (int16_t)READ_BE_UINT16(buf + i + 2);
 			printf("vertex buffer x=%d y=%d\n", x, y);
 		}
 	} 

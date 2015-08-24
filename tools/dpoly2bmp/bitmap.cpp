@@ -2,9 +2,9 @@
 #include "bitmap.h"
 #include "file.h"
 
-static const uint16 TAG_BM = 0x4D42;
+static const uint16_t TAG_BM = 0x4D42;
 
-void WriteBitmapFile(const char *filename, int w, int h, const uint8 *bits, const uint8 *pal) {
+void WriteBitmapFile(const char *filename, int w, int h, const uint8_t *bits, const uint8_t *pal) {
 	FILE *fp = fopen(filename, "wb");
 	if (fp) {
 		int alignWidth = (w + 3) & ~3;

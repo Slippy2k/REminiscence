@@ -13,14 +13,14 @@ struct DPoly {
 	const char *m_setFile;
 	FILE *m_fp;
 	Graphics *m_gfx;
-	uint16 m_amigaPalette[16];
-	uint8 m_palette[256 * 3];
+	uint16_t m_amigaPalette[16];
+	uint8_t m_palette[256 * 3];
 	Point m_vertices[MAX_VERTICES];
 	int m_currentAnimFrame;
 	int m_numShapes;
 
 	void Decode(const char *setFile);
-	void SetPalette(const uint16 *pal);
+	void SetPalette(const uint16_t *pal);
 	int GetStartingOffsetForSet(const char *filename);
 	void ReadShapeMarker();
 	void ReadPaletteMarker();
