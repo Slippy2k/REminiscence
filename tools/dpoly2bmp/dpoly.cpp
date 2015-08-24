@@ -86,6 +86,12 @@ int DPoly::GetStartingOffsetForSet(const char *filename) {
 	if (strcasecmp(filename, "MEMOSTORY3.SET") == 0) {
 		return 0x3480;
 	}
+	if (strcasecmp(filename, "JUPITERStation1.set") == 0) {
+		return 0x822C;
+	}
+	if (strcasecmp(filename, "TAKEMecha1-F.set") == 0) {
+		return 0x822C;
+	}
 	return 0;
 }
 
