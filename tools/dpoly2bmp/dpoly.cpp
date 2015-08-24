@@ -15,7 +15,10 @@ void DPoly::Decode(const char *setFile) {
 	m_gfx->_layer = (uint8 *)malloc(DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 	m_currentAnimFrame = 0;
 	uint8 hdr[8];
-	fread(hdr, 8, 1, m_fp);
+	int ret = fread(hdr, 8, 1, m_fp);
+	if (ret != 1) {
+		fprintf(stderr, "fread() failed, ret %d", ret);
+	}
 	assert(memcmp(hdr, "POLY\x00\x0A\x00\x02", 8) == 0) ;
 	ReadVerticesBuffer();
 	const int offset = GetStartingOffsetForSet(setFile);
@@ -37,7 +40,7 @@ void DPoly::Decode(const char *setFile) {
 			int ix = (int16)freadUint16BE(m_fp);
 			int iy = (int16)freadUint16BE(m_fp);
 			int unk1 = freadByte(m_fp); /* color1 */
-			int unk2 = freadByte(m_fp); /* color2 */ /* transparent ? */
+			freadByte(m_fp); /* color2 */ /* transparent ? */
 			printf("shape %d/%d x=%d y=%d color=%d\n", j, m_numShapes, ix, iy, unk1);
 			assert(numVertices < MAX_VERTICES);
 			for (int i = 0; i < numVertices; ++i) {
@@ -109,7 +112,7 @@ void DPoly::ReadShapeMarker() {
 	}
 	mark0 &= freadUint16BE(m_fp);
 	mark1 = freadByte(m_fp);
-	printf("pos 0x%X mark0 %d mark1 %d\n", ftell(m_fp), mark0, mark1);
+	printf("pos 0x%X mark0 %d mark1 %d\n", (int)ftell(m_fp), mark0, mark1);
 	assert(mark0 == 0 && (mark1 == 1 || mark1 == 0)); /* CAILLOU-F.SET 0x1679 */
 }
 
@@ -124,7 +127,7 @@ void DPoly::ReadPaletteMarker() {
 	mark0 &= freadUint16BE(m_fp);
 	mark1 = freadByte(m_fp);
 	mark1 &= freadByte(m_fp);
-	printf("pos 0x%X mark0 %d mark1 %d\n", ftell(m_fp), mark0, mark1);
+	printf("pos 0x%X mark0 %d mark1 %d\n", (int)ftell(m_fp), mark0, mark1);
 	assert(mark0 == 0 && mark1 == 1);
 }
 
@@ -135,11 +138,14 @@ void DPoly::ReadVerticesBuffer() {
 	mark = freadUint16BE(m_fp);
 	assert(mark == 0xFFFF);
 	while (1) {
-		fread(buf, sizeof(buf), 1, m_fp);
+		int ret = fread(buf, sizeof(buf), 1, m_fp);
+		if (ret != 1) {
+			fprintf(stderr, "fread() failed, ret %d\n", ret);
+		}
 		if (memcmp(buf, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8) == 0) {
 			break;
 		}
-		for (i = 0; i < sizeof(buf); i += 4) {
+		for (i = 0; i < (int)sizeof(buf); i += 4) {
 			int x = (int16)READ_BE_UINT16(buf + i);
 			int y = (int16)READ_BE_UINT16(buf + i + 2);
 			printf("vertex buffer x=%d y=%d\n", x, y);
