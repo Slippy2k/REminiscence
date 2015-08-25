@@ -14,6 +14,6 @@ dpoly2bmp: $(OBJS)
 	$(CXX) $(CXXFLAGS) -MMD -c $< -o $*.o
 
 clean:
-	rm -f *.o *.d
+	rm -f *.o *.d *.BMP
 
 -include $(DEPS)

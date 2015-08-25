@@ -16,16 +16,16 @@ struct DPoly {
 	uint16_t m_amigaPalette[16];
 	uint8_t m_palette[256 * 3];
 	Point m_vertices[MAX_VERTICES];
-	int m_currentAnimFrame;
+	int m_currentShape;
 	int m_numShapes;
 
 	void Decode(const char *setFile);
 	void SetPalette(const uint16_t *pal);
-	int GetStartingOffsetForSet(const char *filename);
+	int GetShapeOffsetForSet(const char *filename);
 	void ReadShapeMarker();
 	void ReadPaletteMarker();
-	void ReadVerticesBuffer();
-	void WriteAnimFrameToBitmap();
+	void ReadSequenceBuffer();
+	void WriteShapeToBitmap();
 };
 
 #endif // __DPOLY_H__

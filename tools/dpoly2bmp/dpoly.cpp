@@ -13,23 +13,24 @@ void DPoly::Decode(const char *setFile) {
 	m_setFile = setFile;
 	m_gfx = new Graphics;
 	m_gfx->_layer = (uint8_t *)malloc(DRAWING_BUFFER_W * DRAWING_BUFFER_H);
-	m_currentAnimFrame = 0;
+	m_currentShape = 0;
 	uint8_t hdr[8];
 	int ret = fread(hdr, 8, 1, m_fp);
 	if (ret != 1) {
 		fprintf(stderr, "fread() failed, ret %d", ret);
 	}
 	assert(memcmp(hdr, "POLY\x00\x0A\x00\x02", 8) == 0) ;
-	ReadVerticesBuffer();
-	const int offset = GetStartingOffsetForSet(setFile);
+	ReadSequenceBuffer();
+	// TODO:
+	const int offset = GetShapeOffsetForSet(setFile);
 	fseek(m_fp, offset, SEEK_SET);
-	while (1) {
+	for (int counter = 0; ; ++counter) {
 		int pos = ftell(m_fp);
 		m_numShapes = freadUint16BE(m_fp);
 		if (feof(m_fp)) {
 			break;
 		}
-		printf("numShapes %d pos 0x%X\n", m_numShapes, pos);
+		printf("counter %d numShapes %d pos 0x%X\n", counter, m_numShapes, pos);
 		memset(m_gfx->_layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 		m_numShapes--;
 		assert(m_numShapes >= 0);
@@ -39,9 +40,9 @@ void DPoly::Decode(const char *setFile) {
 			if (numVertices == 255) numVertices = 1;
 			int ix = (int16_t)freadUint16BE(m_fp);
 			int iy = (int16_t)freadUint16BE(m_fp);
-			int unk1 = freadByte(m_fp); /* color1 */
-			freadByte(m_fp); /* color2 */ /* transparent ? */
-			printf("shape %d/%d x=%d y=%d color=%d\n", j, m_numShapes, ix, iy, unk1);
+			int color1 = freadByte(m_fp);
+			int color2 = freadByte(m_fp);
+			printf(" shape %d/%d x=%d y=%d color1=%d color2=%d\n", j, m_numShapes, ix, iy, color1, color2);
 			assert(numVertices < MAX_VERTICES);
 			for (int i = 0; i < numVertices; ++i) {
 				m_vertices[i].x = (int16_t)freadUint16BE(m_fp);
@@ -49,7 +50,7 @@ void DPoly::Decode(const char *setFile) {
 				printf("  vertex %d/%d x=%d y=%d\n", i, numVertices, m_vertices[i].x, m_vertices[i].y);
 			}
 			m_gfx->setClippingRect(8, 50, 240, 128);
-			m_gfx->drawPolygon(unk1, false, m_vertices, numVertices);
+			m_gfx->drawPolygon(color1, false, m_vertices, numVertices);
 		}
 		ReadPaletteMarker();
 		for (int i = 0; i < 16; ++i) {
@@ -57,7 +58,7 @@ void DPoly::Decode(const char *setFile) {
 		}
 		SetPalette(m_amigaPalette);
 		freadByte(m_fp); /* 0x00 */
-		WriteAnimFrameToBitmap();
+		WriteShapeToBitmap();
 	}
 }
 
@@ -70,7 +71,7 @@ void DPoly::SetPalette(const uint16_t *pal) {
 	}
 }
 
-int DPoly::GetStartingOffsetForSet(const char *filename) {
+int DPoly::GetShapeOffsetForSet(const char *filename) {
 	if (strcasecmp(filename, "CAILLOU-F.SET") == 0) {
 		return 0x5E6;
 	}
@@ -112,7 +113,7 @@ void DPoly::ReadShapeMarker() {
 	}
 	mark0 &= freadUint16BE(m_fp);
 	mark1 = freadByte(m_fp);
-	printf("pos 0x%X mark0 %d mark1 %d\n", (int)ftell(m_fp), mark0, mark1);
+	printf("shape - pos 0x%X mark0 %d mark1 %d\n", (int)ftell(m_fp), mark0, mark1);
 	assert(mark0 == 0 && (mark1 == 1 || mark1 == 0)); /* CAILLOU-F.SET 0x1679 */
 }
 
@@ -127,40 +128,46 @@ void DPoly::ReadPaletteMarker() {
 	mark0 &= freadUint16BE(m_fp);
 	mark1 = freadByte(m_fp);
 	mark1 &= freadByte(m_fp);
-	printf("pos 0x%X mark0 %d mark1 %d\n", (int)ftell(m_fp), mark0, mark1);
-	assert(mark0 == 0 && mark1 == 1);
+	printf("palette - pos 0x%X mark0 %d mark1 %d\n", (int)ftell(m_fp), mark0, mark1);
+	assert(mark0 == 0 && (mark1 == 1 || mark1 == 2 || mark1 == 8 || mark1 == 9 || mark1 == 12));
 }
 
-void DPoly::ReadVerticesBuffer() {
-	int i, mark;
-	unsigned char buf[8];
+/* 0x00 0x00 0x00 0xB4 0x00 0x5A */
+
+void DPoly::ReadSequenceBuffer() {
+	int i, mark, count;
+	unsigned char buf[6];
 
 	mark = freadUint16BE(m_fp);
 	assert(mark == 0xFFFF);
+	count = freadUint16BE(m_fp);
+	printf("count %d\n", count);
 	while (1) {
-		int ret = fread(buf, sizeof(buf), 1, m_fp);
-		if (ret != 1) {
-			fprintf(stderr, "fread() failed, ret %d\n", ret);
-		}
-		if (memcmp(buf, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8) == 0) {
+		mark = freadUint16BE(m_fp);
+		assert(mark == 0);
+		count = freadUint16BE(m_fp);
+		printf("sequence - mark %d count %d pos 0x%x\n", mark, count, (int)ftell(m_fp));
+		if (count == 0) {
 			break;
 		}
-		for (i = 0; i < (int)sizeof(buf); i += 4) {
-			int x = (int16_t)READ_BE_UINT16(buf + i);
-			int y = (int16_t)READ_BE_UINT16(buf + i + 2);
-			printf("vertex buffer x=%d y=%d\n", x, y);
+		for (i = 0; i < count; ++i) {
+			const int ret = fread(buf, 1, sizeof(buf), m_fp);
+			if (ret != sizeof(buf)) {
+				fprintf(stderr, "fread() failed, ret %d\n", ret);
+			}
+			printf("  frame=%d .x=%d .y=%d\n", READ_BE_UINT16(buf), (int16_t)READ_BE_UINT16(buf + 2), (int16_t)READ_BE_UINT16(buf + 4));
 		}
-	} 
+	}
 }
 
-void DPoly::WriteAnimFrameToBitmap() {
+void DPoly::WriteShapeToBitmap() {
 	char filePath[1024];
 	strcpy(filePath, m_setFile);
 	char *p = strrchr(filePath, '.');
 	if (!p) {
 		p = filePath + strlen(filePath);
 	}
-	sprintf(p, "-%03d.BMP", m_currentAnimFrame);
+	sprintf(p, "-SHAPE-%03d.BMP", m_currentShape);
 	WriteBitmapFile(filePath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, m_gfx->_layer, m_palette);
-	++m_currentAnimFrame;
+	++m_currentShape;
 }
