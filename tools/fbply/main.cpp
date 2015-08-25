@@ -16,55 +16,81 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#include <sys/stat.h>
 #include <cstdio>
 #include "cutscene.h"
 #include "systemstub.h"
 
 static const char *USAGE = 
 	"fbply - Flashback Cutscene Player\n"
-	"Usage: fbply [OPTIONS]... \n"
-	"  --datapath=PATH   Path to where the datafiles are (default '.')\n"
-	"  --cutscene=NUM    Cutscene number to play\n";
+	"Usage: fbply FILE NUM\n";
 
-static void parseOption(const char *arg, const char *longCmd, const char **opt) {
-	if (arg[0] == '-' && arg[1] == '-') {
-		if (strncmp(arg + 2, longCmd, strlen(longCmd)) == 0) {
-			*opt = arg + 2 + strlen(longCmd);
+struct Parameters {
+	const char *path;
+	const char *name;
+	int num;
+};
+
+static void parsePath(const char *path, Parameters *params) {
+	char *p = strdup(path);
+	if (p) {
+		struct stat st;
+		if (stat(path, &st) == 0) {
+			if (S_ISDIR(st.st_mode)) {
+				params->path = p;
+				params->name = 0;
+			} else if (S_ISREG(st.st_mode)) {
+				char *sep = strrchr(p, '/');
+				if (sep) {
+					*sep = 0;
+					params->path = p;
+					params->name = sep + 1;
+					sep = strrchr(sep + 1, '.');
+					if (sep) {
+						*sep = 0;
+					}
+				}
+			}
 		}
 	}
 }
 
-#undef main
-int main(int argc, char *argv[]) {
-	const char *dataPath = ".";
-	const char *cutName = 0;
-	const char *cutId = NULL;
-	for (int i = 1; i < argc; ++i) {
-		parseOption(argv[i], "datapath=", &dataPath);
-		parseOption(argv[i], "cutscene=", &cutId);
-		parseOption(argv[i], "name=", &cutName);
-	}
-	if (cutId || cutName) {
-		SystemStub *stub = SystemStub_OGL_create();
-		g_debugMask = 0; //DBG_CUTSCENE; // | DBG_SYSSTUB;
-		stub->init("Flashback Cutscene Player");
-		Cutscene cp;
-		memset(&cp, 0, sizeof(cp));
-		cp.init(stub, dataPath);
-		if (cutId) {
-			cp._cutId = strtol(cutId, NULL, 0);
-		}
-		if (cutName) {
-			cp._cutId = 0xFFFF;
-			cp._cutName = cutName;
-		}
-		cp.start();
-		stub->destroy();
-		delete stub;
+static int playCutscene(const Parameters *params, Cutscene *cut) {
+	SystemStub *stub = SystemStub_OGL_create();
+	stub->init("Flashback Cutscene Player");
+	cut->init(stub, params->path);
+	int index;
+	if (params->name) {
+		cut->_cutId = 0xFFFF;
+		cut->_cutName = params->name;
+		cut->load();
+		index = params->num;
 	} else {
-		printf("%s\n", USAGE);
-		printf("\nAvailable cutscenes :\n");
-		Cutscene::dumpCutNum();
+		index = cut->load();
 	}
+	cut->main(index);
+	stub->destroy();
+	delete stub;
+	return 0;
+}
+
+int main(int argc, char *argv[]) {
+	Parameters params;
+	Cutscene cut;
+
+	memset(&params, 0, sizeof(params));
+	memset(&cut, 0, sizeof(cut));
+
+	g_debugMask = 0; // DBG_CUTSCENE;
+	if (argc == 2 || argc == 3) {
+		if (argc == 3) {
+			params.num = atoi(argv[2]);
+		}
+		parsePath(argv[1], &params);
+		return playCutscene(&params, &cut);
+	}
+	printf("%s\n", USAGE);
+	printf("\nAvailable cutscenes :\n");
+	Cutscene::dumpCutNum();
 	return 0;
 }

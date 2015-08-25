@@ -775,7 +775,7 @@ void Cutscene::op_handleKeys() {
 	}
 }
 
-void Cutscene::start() {
+int Cutscene::load() {
 	debug(DBG_CUTSCENE, "Cutscene::start() _cutId = %d", _cutId);
 	int offset = 0;
 	if (_cutId != 0xFFFF) {
@@ -787,9 +787,7 @@ void Cutscene::start() {
 	debug(DBG_CUTSCENE, "starting cutscene '%s' offset = %d", _cutName, offset);
 	readFile(_cutName, "pol", &_polBuf);
 	readFile(_cutName, "cmd", &_cmdBuf);
-	main(offset);
-//	if (_cutId == 0x3D) {
-//		startCredits();
+	return offset;
 }
 
 void Cutscene::init(SystemStub *stub, const char *dataDir) {
@@ -797,7 +795,7 @@ void Cutscene::init(SystemStub *stub, const char *dataDir) {
 	_dataDir = dataDir;
 }
 
-void Cutscene::main(uint16 offset) {
+void Cutscene::main(uint16 index) {
 	_creditsScene = 0;
 	_frameDelay = 5;
 	_tstamp = _stub->getTimeStamp();
@@ -815,12 +813,12 @@ void Cutscene::main(uint16 offset) {
 //	}
 	_palNew = 0;
 	uint8 *p = _cmdBuf.buf;
-	if (offset != 0) {
-		offset = READ_BE_UINT16(p + (offset + 1) * 2);
+	if (index != 0) {
+		index = READ_BE_UINT16(p + (index + 1) * 2);
 	}
 	_startOffset = (READ_BE_UINT16(p) + 1) * 2;
-	_cmdPtrBak = p + _startOffset + offset;
-	debug(DBG_CUTSCENE, "_startOffset = %d offset = %d", _startOffset, offset);
+	_cmdPtrBak = p + _startOffset + index;
+	debug(DBG_CUTSCENE, "_startOffset = %d offset = %d", _startOffset, index);
 	_cmdPtr.pc = _cmdPtrBak;
 
 	play();

@@ -118,8 +118,8 @@ struct Cutscene {
 	void op_handleKeys();
 
 	void init(SystemStub *stub, const char *dataDir);
-	void start();
-	void main(uint16 offset);
+	int load();
+	void main(uint16 index);
 	void play();
 };
 

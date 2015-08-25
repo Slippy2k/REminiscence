@@ -8,8 +8,7 @@ GL_LIBS = -lGL -lGLU
 DEFINES = -DSYS_LITTLE_ENDIAN
 
 CXX = g++
-CXXFLAGS:= -g -O -Wall -Wuninitialized -Wno-unknown-pragmas -Wshadow
-CXXFLAGS+= -Wundef -Wreorder -Wwrite-strings -Wnon-virtual-dtor -Wno-multichar
+CXXFLAGS:= -g -O -Wall -Wuninitialized -Wundef -Wreorder
 CXXFLAGS+= $(SDL_CFLAGS) $(DEFINES)
 
 SRCS = cutscene.cpp main.cpp oglstub.cpp staticres.cpp util.cpp
