@@ -21,7 +21,14 @@ void DPoly::Decode(const char *setFile) {
 	}
 	assert(memcmp(hdr, "POLY\x00\x0A\x00\x02", 8) == 0) ;
 	ReadSequenceBuffer();
-	// TODO:
+	if (strcasecmp(setFile, "CAILLOU-F.SET") == 0) {
+		fseek(m_fp, 0x432, SEEK_SET);
+		ReadAffineBuffer();
+	}
+	if (strcasecmp(setFile, "MEMOSTORY3.SET") == 0) {
+		fseek(m_fp, 0x1C56, SEEK_SET);
+		ReadAffineBuffer();
+	}
 	const int offset = GetShapeOffsetForSet(setFile);
 	fseek(m_fp, offset, SEEK_SET);
 	for (int counter = 0; ; ++counter) {
@@ -66,6 +73,7 @@ void DPoly::Decode(const char *setFile) {
 			m_amigaPalette[i] = freadUint16BE(m_fp);
 		}
 		SetPalette(m_amigaPalette);
+		printf("pos 0x%x\n", (int)ftell(m_fp));
 		freadByte(m_fp); /* 0x00 */
 		WriteShapeToBitmap();
 	}
@@ -111,7 +119,7 @@ int DPoly::GetShapeOffsetForSet(const char *filename) {
 /* 0x00 0x00 0x00 0x00 0x01 */
 void DPoly::ReadShapeMarker() {
 	int mark0, mark1;
-	
+
 	/* HACK */
 	mark0 = freadUint16BE(m_fp);
 	if (mark0 != 0) {
@@ -141,8 +149,6 @@ void DPoly::ReadPaletteMarker() {
 	assert(mark0 == 0 && (mark1 == 1 || mark1 == 2 || mark1 == 8 || mark1 == 9 || mark1 == 12));
 }
 
-/* 0x00 0x00 0x00 0xB4 0x00 0x5A */
-
 void DPoly::ReadSequenceBuffer() {
 	int i, mark, count;
 	unsigned char buf[6];
@@ -150,7 +156,7 @@ void DPoly::ReadSequenceBuffer() {
 	mark = freadUint16BE(m_fp);
 	assert(mark == 0xFFFF);
 	count = freadUint16BE(m_fp);
-	printf("count %d\n", count);
+	printf("sequence count %d\n", count);
 	while (1) {
 		mark = freadUint16BE(m_fp);
 //		assert(mark == 0);
@@ -167,6 +173,29 @@ void DPoly::ReadSequenceBuffer() {
 			printf("  frame=%d .x=%d .y=%d\n", READ_BE_UINT16(buf), (int16_t)READ_BE_UINT16(buf + 2), (int16_t)READ_BE_UINT16(buf + 4));
 		}
 	}
+}
+
+void DPoly::ReadAffineBuffer() {
+	int i, mark, count;
+
+	mark = freadUint16BE(m_fp);
+	assert(mark == 0xFFFF);
+	count = freadUint16BE(m_fp);
+	printf("unk count %d\n", count);
+	for (i = 0; i < count; ++i) {
+		int x1 = (int16_t)freadUint16BE(m_fp);
+		int y1 = (int16_t)freadUint16BE(m_fp);
+		printf("  bounds=%d .x1=%d .y1=%d\n", i, x1, y1);
+	}
+	mark = freadUint16BE(m_fp);
+	assert(mark == 0xFFFF);
+	for (i = 0; i < 62; ++i) {
+		int r1 = (int16_t)freadUint16BE(m_fp);
+		int r2 = (int16_t)freadUint16BE(m_fp);
+		int r3 = (int16_t)freadUint16BE(m_fp);
+		printf("  rotation .r1=%d .r2=%d .r3=%d\n", r1, r2, r3);
+	}
+	printf("pos 0x%x\n", (int)ftell(m_fp));
 }
 
 void DPoly::WriteShapeToBitmap() {

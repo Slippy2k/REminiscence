@@ -21,10 +21,11 @@ struct DPoly {
 
 	void Decode(const char *setFile);
 	void SetPalette(const uint16_t *pal);
-	int GetShapeOffsetForSet(const char *filename);
+	int  GetShapeOffsetForSet(const char *filename);
 	void ReadShapeMarker();
 	void ReadPaletteMarker();
 	void ReadSequenceBuffer();
+	void ReadAffineBuffer();
 	void WriteShapeToBitmap();
 };
 
