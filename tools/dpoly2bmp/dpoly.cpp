@@ -37,19 +37,28 @@ void DPoly::Decode(const char *setFile) {
 		for (int j = 0; j < m_numShapes; ++j) {
 			ReadShapeMarker();
 			int numVertices = freadByte(m_fp);
-			if (numVertices == 255) numVertices = 1;
 			int ix = (int16_t)freadUint16BE(m_fp);
 			int iy = (int16_t)freadUint16BE(m_fp);
 			int color1 = freadByte(m_fp);
 			int color2 = freadByte(m_fp);
 			printf(" shape %d/%d x=%d y=%d color1=%d color2=%d\n", j, m_numShapes, ix, iy, color1, color2);
+			m_gfx->setClippingRect(8, 50, 240, 128);
+			if (numVertices == 255) {
+				int rx = (int16_t)freadUint16BE(m_fp);
+				int ry = (int16_t)freadUint16BE(m_fp);
+				Point pt;
+				pt.x = ix;
+				pt.y = iy;
+				m_gfx->drawEllipse(color1, false, &pt, rx, ry);
+				continue;
+			}
+			assert((numVertices & 0x80) == 0);
 			assert(numVertices < MAX_VERTICES);
 			for (int i = 0; i < numVertices; ++i) {
 				m_vertices[i].x = (int16_t)freadUint16BE(m_fp);
 				m_vertices[i].y = (int16_t)freadUint16BE(m_fp);
 				printf("  vertex %d/%d x=%d y=%d\n", i, numVertices, m_vertices[i].x, m_vertices[i].y);
 			}
-			m_gfx->setClippingRect(8, 50, 240, 128);
 			m_gfx->drawPolygon(color1, false, m_vertices, numVertices);
 		}
 		ReadPaletteMarker();
@@ -144,7 +153,7 @@ void DPoly::ReadSequenceBuffer() {
 	printf("count %d\n", count);
 	while (1) {
 		mark = freadUint16BE(m_fp);
-		assert(mark == 0);
+//		assert(mark == 0);
 		count = freadUint16BE(m_fp);
 		printf("sequence - mark %d count %d pos 0x%x\n", mark, count, (int)ftell(m_fp));
 		if (count == 0) {
