@@ -27,7 +27,7 @@ struct DPoly {
 	void ReadPaletteMarker();
 	void ReadSequenceBuffer();
 	void ReadAffineBuffer();
-	void WriteShapeToBitmap();
+	void WriteShapeToBitmap(int group, int shape);
 };
 
 #endif // __DPOLY_H__

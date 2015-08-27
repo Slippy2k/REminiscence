@@ -30,8 +30,8 @@ void DPoly::Decode(const char *setFile) {
 		ReadAffineBuffer();
 	}
 	const int offset = GetShapeOffsetForSet(setFile);
-	fseek(m_fp, offset - 2, SEEK_SET);
-	for (int frameCounter = 0; ; ++frameCounter) {
+	fseek(m_fp, offset, SEEK_SET);
+	for (int counter = 0; ; ++counter) {
 		const int groupCount = freadUint16BE(m_fp);
 		for (int i = 0; i < groupCount; ++i) {
 			const int pos = ftell(m_fp);
@@ -39,8 +39,9 @@ void DPoly::Decode(const char *setFile) {
 			if (feof(m_fp)) {
 				return;
 			}
-			printf("frameCounter %d group %d/%d numShapes %d pos 0x%X\n", frameCounter, i, groupCount, m_numShapes, pos);
+			printf("counter %d group %d/%d numShapes %d pos 0x%X\n", counter, i, groupCount, m_numShapes, pos);
 			ReadFrame();
+			WriteShapeToBitmap(counter, i);
 		}
 	}
 }
@@ -82,9 +83,8 @@ void DPoly::ReadFrame() {
 	}
 	SetPalette(m_amigaPalette);
 	const int b = freadByte(m_fp); /* 0x00 */
-	assert(b == 0);
+//	assert(b == 0);
 	printf("after palette pos 0x%x, b %d\n", (int)ftell(m_fp), b);
-	WriteShapeToBitmap();
 }
 
 void DPoly::SetPalette(const uint16_t *pal) {
@@ -98,49 +98,41 @@ void DPoly::SetPalette(const uint16_t *pal) {
 
 int DPoly::GetShapeOffsetForSet(const char *filename) {
 	if (strcasecmp(filename, "CAILLOU-F.SET") == 0) {
-		return 0x5E6;
+		return 0x5E4;
 	}
 	if (strcasecmp(filename, "MEMOTECH.SET") == 0) {
-		return 0x530A;
+		return 0x52EC;
 	}
 	if (strcasecmp(filename, "MEMOSTORY0.SET") == 0) {
-		return 0x859D;
+		return 0x55D6;
 	}
 	if (strcasecmp(filename, "MEMOSTORY1.SET") == 0) {
-		return 0x9596;
+		return 0x7070;
 	}
 	if (strcasecmp(filename, "MEMOSTORY2.SET") == 0) {
-		return 0x54BD;
+		return 0x49FA;
 	}
 	if (strcasecmp(filename, "MEMOSTORY3.SET") == 0) {
-		return 0x3480;
+		return 0x347E;
 	}
 	if (strcasecmp(filename, "JUPITERStation1.set") == 0) {
-		return 0x822C;
+		return 0x822A;
 	}
 	if (strcasecmp(filename, "TAKEMecha1-F.set") == 0) {
-		return 0x822C;
+		return 0x822A;
 	}
 	return 0;
 }
 
 /* 0x00 0x00 0x00 0x00 0x01 */
 void DPoly::ReadShapeMarker() {
-	int mark0, mark1;
+	int mark0, mark2, mark1;
 
 	mark0 = freadUint16BE(m_fp);
-#if 0
-	if (mark0 != 0) { /* HACK */
-		m_numShapes = mark0;
-		mark0 = freadUint16BE(m_fp);
-		--m_numShapes;
-		printf("fixUp numShapes %d - mark0 %d pos 0x%X\n", m_numShapes, mark0, (int)ftell(m_fp));
-	}
-#endif
-	mark0 &= freadUint16BE(m_fp);
+	mark2 = freadUint16BE(m_fp);
 	mark1 = freadByte(m_fp);
-	printf("shape - pos 0x%X mark0 %d mark1 %d\n", (int)ftell(m_fp), mark0, mark1);
-	assert(mark0 == 0 && (mark1 == 1 || mark1 == 0)); /* CAILLOU-F.SET 0x1679 */
+	printf("shape - pos 0x%X mark0 %d mark2 %d mark1 %d\n", (int)ftell(m_fp), mark0, mark2, mark1);
+	assert(mark0 == 0 && mark2 == 0 && (mark1 == 1 || mark1 == 0));
 }
 
 /* 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x01 0x01 */
@@ -155,7 +147,7 @@ void DPoly::ReadPaletteMarker() {
 	mark1 = freadByte(m_fp);
 	mark1 &= freadByte(m_fp);
 	printf("palette - pos 0x%X mark0 %d mark1 %d\n", (int)ftell(m_fp), mark0, mark1);
-	assert(mark0 == 0 && (mark1 == 1 || mark1 == 2 || mark1 == 8 || mark1 == 9 || mark1 == 12));
+	assert(mark0 == 0 && (mark1 != 0 && mark1 < 16));
 }
 
 void DPoly::ReadSequenceBuffer() {
@@ -207,14 +199,14 @@ void DPoly::ReadAffineBuffer() {
 	printf("pos 0x%x\n", (int)ftell(m_fp));
 }
 
-void DPoly::WriteShapeToBitmap() {
+void DPoly::WriteShapeToBitmap(int group, int shape) {
 	char filePath[1024];
 	strcpy(filePath, m_setFile);
 	char *p = strrchr(filePath, '.');
 	if (!p) {
 		p = filePath + strlen(filePath);
 	}
-	sprintf(p, "-SHAPE-%03d.BMP", m_currentShape);
+	sprintf(p, "-SHAPE-%02d-%03d.BMP", group, shape);
 	WriteBitmapFile(filePath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, m_gfx->_layer, m_palette);
 	++m_currentShape;
 }
