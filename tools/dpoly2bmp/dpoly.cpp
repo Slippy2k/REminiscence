@@ -30,53 +30,61 @@ void DPoly::Decode(const char *setFile) {
 		ReadAffineBuffer();
 	}
 	const int offset = GetShapeOffsetForSet(setFile);
-	fseek(m_fp, offset, SEEK_SET);
-	for (int counter = 0; ; ++counter) {
-		int pos = ftell(m_fp);
-		m_numShapes = freadUint16BE(m_fp);
-		if (feof(m_fp)) {
-			break;
-		}
-		printf("counter %d numShapes %d pos 0x%X\n", counter, m_numShapes, pos);
-		memset(m_gfx->_layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
-		m_numShapes--;
-		assert(m_numShapes >= 0);
-		for (int j = 0; j < m_numShapes; ++j) {
-			ReadShapeMarker();
-			int numVertices = freadByte(m_fp);
-			int ix = (int16_t)freadUint16BE(m_fp);
-			int iy = (int16_t)freadUint16BE(m_fp);
-			int color1 = freadByte(m_fp);
-			int color2 = freadByte(m_fp);
-			printf(" shape %d/%d x=%d y=%d color1=%d color2=%d\n", j, m_numShapes, ix, iy, color1, color2);
-			m_gfx->setClippingRect(8, 50, 240, 128);
-			if (numVertices == 255) {
-				int rx = (int16_t)freadUint16BE(m_fp);
-				int ry = (int16_t)freadUint16BE(m_fp);
-				Point pt;
-				pt.x = ix;
-				pt.y = iy;
-				m_gfx->drawEllipse(color1, false, &pt, rx, ry);
-				continue;
+	fseek(m_fp, offset - 2, SEEK_SET);
+	for (int frameCounter = 0; ; ++frameCounter) {
+		const int groupCount = freadUint16BE(m_fp);
+		for (int i = 0; i < groupCount; ++i) {
+			const int pos = ftell(m_fp);
+			m_numShapes = freadUint16BE(m_fp);
+			if (feof(m_fp)) {
+				return;
 			}
-			assert((numVertices & 0x80) == 0);
-			assert(numVertices < MAX_VERTICES);
-			for (int i = 0; i < numVertices; ++i) {
-				m_vertices[i].x = (int16_t)freadUint16BE(m_fp);
-				m_vertices[i].y = (int16_t)freadUint16BE(m_fp);
-				printf("  vertex %d/%d x=%d y=%d\n", i, numVertices, m_vertices[i].x, m_vertices[i].y);
-			}
-			m_gfx->drawPolygon(color1, false, m_vertices, numVertices);
+			printf("frameCounter %d group %d/%d numShapes %d pos 0x%X\n", frameCounter, i, groupCount, m_numShapes, pos);
+			ReadFrame();
 		}
-		ReadPaletteMarker();
-		for (int i = 0; i < 16; ++i) {
-			m_amigaPalette[i] = freadUint16BE(m_fp);
-		}
-		SetPalette(m_amigaPalette);
-		printf("pos 0x%x\n", (int)ftell(m_fp));
-		freadByte(m_fp); /* 0x00 */
-		WriteShapeToBitmap();
 	}
+}
+
+void DPoly::ReadFrame() {
+	memset(m_gfx->_layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
+	m_numShapes--;
+	assert(m_numShapes >= 0);
+	for (int j = 0; j < m_numShapes; ++j) {
+		ReadShapeMarker();
+		int numVertices = freadByte(m_fp);
+		int ix = (int16_t)freadUint16BE(m_fp);
+		int iy = (int16_t)freadUint16BE(m_fp);
+		int color1 = freadByte(m_fp);
+		int color2 = freadByte(m_fp);
+		printf(" shape %d/%d x=%d y=%d color1=%d color2=%d\n", j, m_numShapes, ix, iy, color1, color2);
+		m_gfx->setClippingRect(8, 50, 240, 128);
+		if (numVertices == 255) {
+			int rx = (int16_t)freadUint16BE(m_fp);
+			int ry = (int16_t)freadUint16BE(m_fp);
+			Point pt;
+			pt.x = ix;
+			pt.y = iy;
+			m_gfx->drawEllipse(color1, false, &pt, rx, ry);
+			continue;
+		}
+		assert((numVertices & 0x80) == 0);
+		assert(numVertices < MAX_VERTICES);
+		for (int i = 0; i < numVertices; ++i) {
+			m_vertices[i].x = (int16_t)freadUint16BE(m_fp);
+			m_vertices[i].y = (int16_t)freadUint16BE(m_fp);
+			printf("  vertex %d/%d x=%d y=%d\n", i, numVertices, m_vertices[i].x, m_vertices[i].y);
+		}
+		m_gfx->drawPolygon(color1, false, m_vertices, numVertices);
+	}
+	ReadPaletteMarker();
+	for (int i = 0; i < 16; ++i) {
+		m_amigaPalette[i] = freadUint16BE(m_fp);
+	}
+	SetPalette(m_amigaPalette);
+	const int b = freadByte(m_fp); /* 0x00 */
+	assert(b == 0);
+	printf("after palette pos 0x%x, b %d\n", (int)ftell(m_fp), b);
+	WriteShapeToBitmap();
 }
 
 void DPoly::SetPalette(const uint16_t *pal) {
@@ -120,14 +128,15 @@ int DPoly::GetShapeOffsetForSet(const char *filename) {
 void DPoly::ReadShapeMarker() {
 	int mark0, mark1;
 
-	/* HACK */
 	mark0 = freadUint16BE(m_fp);
-	if (mark0 != 0) {
+#if 0
+	if (mark0 != 0) { /* HACK */
 		m_numShapes = mark0;
 		mark0 = freadUint16BE(m_fp);
 		--m_numShapes;
-		printf("numShapes %d\n", m_numShapes);
+		printf("fixUp numShapes %d - mark0 %d pos 0x%X\n", m_numShapes, mark0, (int)ftell(m_fp));
 	}
+#endif
 	mark0 &= freadUint16BE(m_fp);
 	mark1 = freadByte(m_fp);
 	printf("shape - pos 0x%X mark0 %d mark1 %d\n", (int)ftell(m_fp), mark0, mark1);

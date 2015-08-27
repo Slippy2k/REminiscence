@@ -20,6 +20,7 @@ struct DPoly {
 	int m_numShapes;
 
 	void Decode(const char *setFile);
+	void ReadFrame();
 	void SetPalette(const uint16_t *pal);
 	int  GetShapeOffsetForSet(const char *filename);
 	void ReadShapeMarker();
