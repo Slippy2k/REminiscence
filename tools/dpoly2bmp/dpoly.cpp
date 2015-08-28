@@ -54,7 +54,9 @@ void DPoly::Decode(const char *setFile) {
 		for (int i = 0; _seqOffsets[i] != 0; ++i) {
 			memset(_rgb, 0, sizeof(_rgb));
 			// background
-			int shapeOffset = _shapesOffsets[0][0];
+			fseek(_fp, _seqOffsets[i], SEEK_SET);
+			int background = freadUint16BE(_fp);
+			int shapeOffset = _shapesOffsets[0][background];
 			if (shapeOffset != 0) {
 				memset(_gfx._layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 				fseek(_fp, shapeOffset, SEEK_SET);
@@ -64,10 +66,10 @@ void DPoly::Decode(const char *setFile) {
 				DoFrameLUT();
 			}
 			// shapes
-			fseek(_fp, _seqOffsets[i], SEEK_SET);
+			fseek(_fp, _seqOffsets[i] + 2, SEEK_SET);
 			int shapesCount = freadUint16BE(_fp);
 			for (int j = 0; j < shapesCount; ++j) {
-				fseek(_fp, _seqOffsets[i] + 2 + j * 6, SEEK_SET);
+				fseek(_fp, _seqOffsets[i] + 4 + j * 6, SEEK_SET);
 				int frame = freadUint16BE(_fp);
 				int dx = (int16_t)freadUint16BE(_fp);
 				int dy = (int16_t)freadUint16BE(_fp);
@@ -184,7 +186,7 @@ void DPoly::ReadShapeMarker() {
 
 /* 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x01 0x01 */
 void DPoly::ReadPaletteMarker() {
-	int mark0, mark1;
+	int mark0, mark1, mark2;
 	
 	mark0 = freadUint16BE(_fp);
 	mark0 &= freadUint16BE(_fp);
@@ -192,9 +194,9 @@ void DPoly::ReadPaletteMarker() {
 	mark0 &= freadUint16BE(_fp);
 	mark0 &= freadUint16BE(_fp);
 	mark1 = freadByte(_fp);
-	mark1 &= freadByte(_fp);
-	printf("palette - pos 0x%X mark0 %d mark1 %d\n", (int)ftell(_fp), mark0, mark1);
-	assert(mark0 == 0 && (mark1 != 0 && mark1 < 16));
+	mark2 = freadByte(_fp);
+	printf("palette - pos 0x%X mark0 %d mark1 %d mark2 %d\n", (int)ftell(_fp), mark0, mark1, mark2);
+	assert(mark0 == 0); // && (mark1 != 0 && mark1 < 16));
 }
 
 void DPoly::ReadSequenceBuffer() {
@@ -207,12 +209,11 @@ void DPoly::ReadSequenceBuffer() {
 	printf("sequence count %d\n", count);
 	num = 0;
 	while (1) {
-		mark = freadUint16BE(_fp);
-//		assert(mark == 0);
 		assert(num < MAX_SEQUENCES);
 		_seqOffsets[num++] = ftell(_fp);
+		mark = freadUint16BE(_fp);
 		count = freadUint16BE(_fp);
-		printf("sequence - mark %d count %d pos 0x%x\n", mark, count, (int)ftell(_fp));
+		printf("sequence - background %d count %d pos 0x%x\n", mark, count, (int)ftell(_fp));
 		if (count == 0) {
 			break;
 		}
