@@ -1,6 +1,6 @@
 
 CXX = g++
-CXXFLAGS = -g -O -Wall -Wuninitialized -Wno-multichar
+CXXFLAGS = -g -O -Wall -Wuninitialized
 
 SRCS = bitmap.cpp dpoly.cpp file.cpp graphics.cpp main.cpp
 
@@ -14,6 +14,6 @@ dpoly2bmp: $(OBJS)
 	$(CXX) $(CXXFLAGS) -MMD -c $< -o $*.o
 
 clean:
-	rm -f *.o *.d *.BMP
+	rm -f *.o *.d *.BMP *.RGBA *.PNG
 
 -include $(DEPS)

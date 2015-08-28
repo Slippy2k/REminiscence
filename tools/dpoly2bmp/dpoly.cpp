@@ -12,10 +12,7 @@ void DPoly::Decode(const char *setFile) {
 		return;
 	}
 	_setFile = setFile;
-	_gfx = new Graphics;
-	_gfx->_layer = (uint8_t *)malloc(DRAWING_BUFFER_W * DRAWING_BUFFER_H);
-	_paletteCount = 0;
-	memset(_palettes, 0, sizeof(_palettes));
+	_gfx._layer = (uint8_t *)malloc(DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 	memset(_seqOffsets, 0, sizeof(_seqOffsets));
 	memset(_shapesOffsets, 0, sizeof(_shapesOffsets));
 	uint8_t hdr[8];
@@ -46,24 +43,25 @@ void DPoly::Decode(const char *setFile) {
 			_shapesOffsets[counter][i] = pos;
 			const int numShapes = freadUint16BE(_fp);
 			printf("counter %d group %d/%d numShapes %d pos 0x%X\n", counter, i, groupCount, numShapes, pos);
-			memset(_gfx->_layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
+			memset(_gfx._layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 			DecodeShape(numShapes, 0, 0);
 			DecodePalette();
 			WriteShapeToBitmap(counter, i);
 		}
 	}
 	if (1) {
-		memset(_gfx->_layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
-		_gfx->setClippingRect(8, 50, 240, 128);
-		SetPalette(_palettes[0]);
-
+		_gfx.setClippingRect(8, 50, 240, 128);
 		for (int i = 0; _seqOffsets[i] != 0; ++i) {
+			memset(_rgb, 0, sizeof(_rgb));
 			// background
 			int shapeOffset = _shapesOffsets[0][0];
 			if (shapeOffset != 0) {
+				memset(_gfx._layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 				fseek(_fp, shapeOffset, SEEK_SET);
 				int count = freadUint16BE(_fp);
 				DecodeShape(count, 0, 0);
+				DecodePalette();
+				DoFrameLUT();
 			}
 			// shapes
 			fseek(_fp, _seqOffsets[i], SEEK_SET);
@@ -75,12 +73,16 @@ void DPoly::Decode(const char *setFile) {
 				int dy = (int16_t)freadUint16BE(_fp);
 				shapeOffset = _shapesOffsets[1][frame];
 				if (shapeOffset != 0) {
+					memset(_gfx._layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 					fseek(_fp, shapeOffset, SEEK_SET);
 					int count = freadUint16BE(_fp);
 					DecodeShape(count, dx, dy);
+					DecodePalette();
+					DoFrameLUT();
 				}
 			}
 			WriteFrameToBitmap(i);
+			// TODO: flag for background bitmap flip ?
 		}
 	}
 }
@@ -96,24 +98,25 @@ void DPoly::DecodeShape(int count, int dx, int dy) {
 		int color1 = freadByte(_fp);
 		int color2 = freadByte(_fp);
 		printf(" shape %d/%d x=%d y=%d color1=%d color2=%d\n", j, count, ix, iy, color1, color2);
-		_gfx->setClippingRect(8, 50, 240, 128);
+		_gfx.setClippingRect(8, 50, 240, 128);
 		if (numVertices == 255) {
-			int rx = dx + (int16_t)freadUint16BE(_fp);
-			int ry = dy + (int16_t)freadUint16BE(_fp);
+			int rx = (int16_t)freadUint16BE(_fp);
+			int ry = (int16_t)freadUint16BE(_fp);
 			Point pt;
-			pt.x = ix;
-			pt.y = iy;
-			_gfx->drawEllipse(color1, false, &pt, rx, ry);
+			pt.x = dx + ix;
+			pt.y = dy + iy;
+			_gfx.drawEllipse(color1, false, &pt, rx, ry);
 			continue;
 		}
 		assert((numVertices & 0x80) == 0);
+		Point vertices[MAX_VERTICES];
 		assert(numVertices < MAX_VERTICES);
 		for (int i = 0; i < numVertices; ++i) {
-			_vertices[i].x = dx + (int16_t)freadUint16BE(_fp);
-			_vertices[i].y = dy + (int16_t)freadUint16BE(_fp);
-			printf("  vertex %d/%d x=%d y=%d\n", i, numVertices, _vertices[i].x, _vertices[i].y);
+			vertices[i].x = dx + (int16_t)freadUint16BE(_fp);
+			vertices[i].y = dy + (int16_t)freadUint16BE(_fp);
+			printf("  vertex %d/%d x=%d y=%d\n", i, numVertices, vertices[i].x, vertices[i].y);
 		}
-		_gfx->drawPolygon(color1, false, _vertices, numVertices);
+		_gfx.drawPolygon(color1, false, vertices, numVertices);
 	}
 }
 
@@ -126,17 +129,17 @@ void DPoly::DecodePalette() {
 	const int b = freadByte(_fp); /* 0x00 */
 //	assert(b == 0);
 	printf("after palette pos 0x%x, b %d\n", (int)ftell(_fp), b);
-	assert(_paletteCount < MAX_PALETTES);
-	memcpy(_palettes[_paletteCount], _amigaPalette, 16 * sizeof(uint16_t));
-	++_paletteCount;
 }
 
 void DPoly::SetPalette(const uint16_t *pal) {
 	memset(_currentPalette, 0, sizeof(_currentPalette));
 	for (int i = 0; i < 16; ++i) {
-		_currentPalette[i * 3 + 0] = (pal[i] >> 8) & 0xF;
-		_currentPalette[i * 3 + 1] = (pal[i] >> 4) & 0xF;
-		_currentPalette[i * 3 + 2] = (pal[i] >> 0) & 0xF;
+		const uint8_t r = (pal[i] >> 8) & 0xF;
+		_currentPalette[i * 3 + 0] = (r << 4) | r;
+		const uint8_t g = (pal[i] >> 4) & 0xF;
+		_currentPalette[i * 3 + 1] = (g << 4) | g;
+		const uint8_t b = (pal[i] >> 0) & 0xF;
+		_currentPalette[i * 3 + 2] = (b << 4) | b;
 	}
 }
 
@@ -254,16 +257,38 @@ void DPoly::WriteShapeToBitmap(int group, int shape) {
 		p = filePath + strlen(filePath);
 	}
 	sprintf(p, "-SHAPE-%02d-%03d.BMP", group, shape);
-	WriteBitmapFile(filePath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, _gfx->_layer, _currentPalette);
+	WriteFile_BMP_PAL(filePath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, _gfx._layer, _currentPalette);
 }
 
 void DPoly::WriteFrameToBitmap(int frame) {
-	char filePath[MAXPATHLEN];
-	strcpy(filePath, _setFile);
-	char *p = strrchr(filePath, '.');
-	if (!p) {
-		p = filePath + strlen(filePath);
+	char rgbPath[MAXPATHLEN];
+	strcpy(rgbPath, _setFile);
+	char *p = strrchr(rgbPath, '.');
+	assert(p);
+	sprintf(p, "-FRAME-%03d.RGBA", frame);
+	WriteFile_RAW_RGB(rgbPath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, _rgb);
+	char pngPath[MAXPATHLEN];
+	strcpy(pngPath, rgbPath);
+	p = strrchr(pngPath, '.');
+	assert(p);
+	strcpy(p + 1, "PNG");
+	char cmd[MAXPATHLEN];
+	snprintf(cmd, sizeof(cmd), "convert -size %dx%d -depth 8 %s %s", DRAWING_BUFFER_W, DRAWING_BUFFER_H, rgbPath, pngPath);
+	int ret = system(cmd);
+	if (ret != 0) {
+		fprintf(stderr, "system() failed, ret %d\n", ret);
 	}
-	sprintf(p, "-FRAME-%03d.BMP", frame);
-	WriteBitmapFile(filePath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, _gfx->_layer, _currentPalette);
+}
+
+static uint32_t RGBA(int color, const uint8_t *palette) {
+	return 0xFF000000 | (palette[color * 3 + 2] << 16) | (palette[color * 3 + 1] << 8) | palette[color * 3];
+}
+
+void DPoly::DoFrameLUT() {
+	for (int i = 0; i < DRAWING_BUFFER_W * DRAWING_BUFFER_H; ++i) {
+		const int color = _gfx._layer[i];
+		if (color != 0) {
+			_rgb[i] = RGBA(color, _currentPalette);
+		}
+	}
 }

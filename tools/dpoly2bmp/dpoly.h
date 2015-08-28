@@ -5,7 +5,6 @@
 #include "endian.h"
 #include "graphics.h"
 
-#define MAX_PALETTES  256
 #define MAX_SEQUENCES 512
 #define MAX_SHAPES    256
 #define MAX_VERTICES  256
@@ -15,14 +14,12 @@
 struct DPoly {
 	const char *_setFile;
 	FILE *_fp;
-	Graphics *_gfx;
+	Graphics _gfx;
 	uint16_t _amigaPalette[16];
 	uint8_t _currentPalette[16 * 3];
-	int _paletteCount;
-	uint16_t _palettes[MAX_PALETTES][16];
-	Point _vertices[MAX_VERTICES];
 	uint32_t _seqOffsets[MAX_SEQUENCES];
-	uint32_t _shapesOffsets[2][MAX_SHAPES];
+	uint32_t _shapesOffsets[2][MAX_SHAPES]; // background, foreground
+	uint32_t _rgb[DRAWING_BUFFER_W * DRAWING_BUFFER_H];
 
 	void Decode(const char *setFile);
 	void DecodeShape(int count, int dx, int dy);
@@ -35,6 +32,7 @@ struct DPoly {
 	void ReadAffineBuffer();
 	void WriteShapeToBitmap(int group, int shape);
 	void WriteFrameToBitmap(int frame);
+	void DoFrameLUT();
 };
 
 #endif // __DPOLY_H__

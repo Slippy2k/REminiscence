@@ -4,7 +4,7 @@
 
 static const uint16_t TAG_BM = 0x4D42;
 
-void WriteBitmapFile(const char *filename, int w, int h, const uint8_t *bits, const uint8_t *pal) {
+void WriteFile_BMP_PAL(const char *filename, int w, int h, const uint8_t *bits, const uint8_t *pal) {
 	FILE *fp = fopen(filename, "wb");
 	if (fp) {
 		int alignWidth = (w + 3) & ~3;
@@ -32,9 +32,9 @@ void WriteBitmapFile(const char *filename, int w, int h, const uint8_t *bits, co
 
 		// Write palette data
 		for (int i = 0; i < 256; ++i) {
-			fwriteByte(fp, (pal[2] << 4) | pal[2]);
-			fwriteByte(fp, (pal[1] << 4) | pal[1]);
-			fwriteByte(fp, (pal[0] << 4) | pal[0]);
+			fwriteByte(fp, pal[2]);
+			fwriteByte(fp, pal[1]);
+			fwriteByte(fp, pal[0]);
 			fwriteByte(fp, 0);
 			pal += 3;
 		}
@@ -51,6 +51,14 @@ void WriteBitmapFile(const char *filename, int w, int h, const uint8_t *bits, co
 			}
 		}
 		
+		fclose(fp);
+	}
+}
+
+void WriteFile_RAW_RGB(const char *filename, int w, int h, const uint32_t *bits) {
+	FILE *fp = fopen(filename, "wb");
+	if (fp) {
+		fwrite(bits, w * h * sizeof(uint32_t), 1, fp);
 		fclose(fp);
 	}
 }
