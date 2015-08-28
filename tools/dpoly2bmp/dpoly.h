@@ -10,14 +10,14 @@
 #define DRAWING_BUFFER_H 224
 
 struct DPoly {
-	const char *m_setFile;
-	FILE *m_fp;
-	Graphics *m_gfx;
-	uint16_t m_amigaPalette[16];
-	uint8_t m_palette[256 * 3];
-	Point m_vertices[MAX_VERTICES];
-	int m_currentShape;
-	int m_numShapes;
+	const char *_setFile;
+	FILE *_fp;
+	Graphics *_gfx;
+	uint16_t _amigaPalette[16];
+	uint8_t _palette[256 * 3];
+	Point _vertices[MAX_VERTICES];
+	int _currentShape;
+	int _numShapes;
 
 	void Decode(const char *setFile);
 	void ReadFrame();
