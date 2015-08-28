@@ -14,6 +14,8 @@ void DPoly::Decode(const char *setFile) {
 	_setFile = setFile;
 	_gfx = new Graphics;
 	_gfx->_layer = (uint8_t *)malloc(DRAWING_BUFFER_W * DRAWING_BUFFER_H);
+	_paletteCount = 0;
+	memset(_palettes, 0, sizeof(_palettes));
 	memset(_seqOffsets, 0, sizeof(_seqOffsets));
 	memset(_shapesOffsets, 0, sizeof(_shapesOffsets));
 	uint8_t hdr[8];
@@ -46,12 +48,14 @@ void DPoly::Decode(const char *setFile) {
 			printf("counter %d group %d/%d numShapes %d pos 0x%X\n", counter, i, groupCount, numShapes, pos);
 			memset(_gfx->_layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 			DecodeShape(numShapes, 0, 0);
+			DecodePalette();
 			WriteShapeToBitmap(counter, i);
 		}
 	}
 	if (1) {
 		memset(_gfx->_layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 		_gfx->setClippingRect(8, 50, 240, 128);
+		SetPalette(_palettes[0]);
 
 		for (int i = 0; _seqOffsets[i] != 0; ++i) {
 			// background
@@ -111,6 +115,9 @@ void DPoly::DecodeShape(int count, int dx, int dy) {
 		}
 		_gfx->drawPolygon(color1, false, _vertices, numVertices);
 	}
+}
+
+void DPoly::DecodePalette() {
 	ReadPaletteMarker();
 	for (int i = 0; i < 16; ++i) {
 		_amigaPalette[i] = freadUint16BE(_fp);
@@ -119,14 +126,17 @@ void DPoly::DecodeShape(int count, int dx, int dy) {
 	const int b = freadByte(_fp); /* 0x00 */
 //	assert(b == 0);
 	printf("after palette pos 0x%x, b %d\n", (int)ftell(_fp), b);
+	assert(_paletteCount < MAX_PALETTES);
+	memcpy(_palettes[_paletteCount], _amigaPalette, 16 * sizeof(uint16_t));
+	++_paletteCount;
 }
 
 void DPoly::SetPalette(const uint16_t *pal) {
-	memset(_palette, 0, sizeof(_palette));
+	memset(_currentPalette, 0, sizeof(_currentPalette));
 	for (int i = 0; i < 16; ++i) {
-		_palette[i * 3 + 0] = (pal[i] >> 8) & 0xF;
-		_palette[i * 3 + 1] = (pal[i] >> 4) & 0xF;
-		_palette[i * 3 + 2] = (pal[i] >> 0) & 0xF;
+		_currentPalette[i * 3 + 0] = (pal[i] >> 8) & 0xF;
+		_currentPalette[i * 3 + 1] = (pal[i] >> 4) & 0xF;
+		_currentPalette[i * 3 + 2] = (pal[i] >> 0) & 0xF;
 	}
 }
 
@@ -244,7 +254,7 @@ void DPoly::WriteShapeToBitmap(int group, int shape) {
 		p = filePath + strlen(filePath);
 	}
 	sprintf(p, "-SHAPE-%02d-%03d.BMP", group, shape);
-	WriteBitmapFile(filePath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, _gfx->_layer, _palette);
+	WriteBitmapFile(filePath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, _gfx->_layer, _currentPalette);
 }
 
 void DPoly::WriteFrameToBitmap(int frame) {
@@ -255,5 +265,5 @@ void DPoly::WriteFrameToBitmap(int frame) {
 		p = filePath + strlen(filePath);
 	}
 	sprintf(p, "-FRAME-%03d.BMP", frame);
-	WriteBitmapFile(filePath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, _gfx->_layer, _palette);
+	WriteBitmapFile(filePath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, _gfx->_layer, _currentPalette);
 }
