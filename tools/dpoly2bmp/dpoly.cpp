@@ -1,4 +1,5 @@
 
+#include <sys/param.h>
 #include "bitmap.h"
 #include "dpoly.h"
 #include "file.h"
@@ -13,7 +14,8 @@ void DPoly::Decode(const char *setFile) {
 	_setFile = setFile;
 	_gfx = new Graphics;
 	_gfx->_layer = (uint8_t *)malloc(DRAWING_BUFFER_W * DRAWING_BUFFER_H);
-	_currentShape = 0;
+	memset(_seqOffsets, 0, sizeof(_seqOffsets));
+	memset(_shapesOffsets, 0, sizeof(_shapesOffsets));
 	uint8_t hdr[8];
 	int ret = fread(hdr, 8, 1, _fp);
 	if (ret != 1) {
@@ -33,35 +35,67 @@ void DPoly::Decode(const char *setFile) {
 	fseek(_fp, offset, SEEK_SET);
 	for (int counter = 0; ; ++counter) {
 		const int groupCount = freadUint16BE(_fp);
+		if (feof(_fp)) {
+			break;
+		}
 		for (int i = 0; i < groupCount; ++i) {
 			const int pos = ftell(_fp);
-			_numShapes = freadUint16BE(_fp);
-			if (feof(_fp)) {
-				return;
-			}
-			printf("counter %d group %d/%d numShapes %d pos 0x%X\n", counter, i, groupCount, _numShapes, pos);
-			ReadFrame();
+			assert(counter < 2 && i < MAX_SHAPES);
+			_shapesOffsets[counter][i] = pos;
+			const int numShapes = freadUint16BE(_fp);
+			printf("counter %d group %d/%d numShapes %d pos 0x%X\n", counter, i, groupCount, numShapes, pos);
+			memset(_gfx->_layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
+			DecodeShape(numShapes, 0, 0);
 			WriteShapeToBitmap(counter, i);
+		}
+	}
+	if (1) {
+		memset(_gfx->_layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
+		_gfx->setClippingRect(8, 50, 240, 128);
+
+		for (int i = 0; _seqOffsets[i] != 0; ++i) {
+			// background
+			int shapeOffset = _shapesOffsets[0][0];
+			if (shapeOffset != 0) {
+				fseek(_fp, shapeOffset, SEEK_SET);
+				int count = freadUint16BE(_fp);
+				DecodeShape(count, 0, 0);
+			}
+			// shapes
+			fseek(_fp, _seqOffsets[i], SEEK_SET);
+			int shapesCount = freadUint16BE(_fp);
+			for (int j = 0; j < shapesCount; ++j) {
+				fseek(_fp, _seqOffsets[i] + 2 + j * 6, SEEK_SET);
+				int frame = freadUint16BE(_fp);
+				int dx = (int16_t)freadUint16BE(_fp);
+				int dy = (int16_t)freadUint16BE(_fp);
+				shapeOffset = _shapesOffsets[1][frame];
+				if (shapeOffset != 0) {
+					fseek(_fp, shapeOffset, SEEK_SET);
+					int count = freadUint16BE(_fp);
+					DecodeShape(count, dx, dy);
+				}
+			}
+			WriteFrameToBitmap(i);
 		}
 	}
 }
 
-void DPoly::ReadFrame() {
-	memset(_gfx->_layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
-	_numShapes--;
-	assert(_numShapes >= 0);
-	for (int j = 0; j < _numShapes; ++j) {
+void DPoly::DecodeShape(int count, int dx, int dy) {
+	count--;
+	assert(count >= 0);
+	for (int j = 0; j < count; ++j) {
 		ReadShapeMarker();
 		int numVertices = freadByte(_fp);
 		int ix = (int16_t)freadUint16BE(_fp);
 		int iy = (int16_t)freadUint16BE(_fp);
 		int color1 = freadByte(_fp);
 		int color2 = freadByte(_fp);
-		printf(" shape %d/%d x=%d y=%d color1=%d color2=%d\n", j, _numShapes, ix, iy, color1, color2);
+		printf(" shape %d/%d x=%d y=%d color1=%d color2=%d\n", j, count, ix, iy, color1, color2);
 		_gfx->setClippingRect(8, 50, 240, 128);
 		if (numVertices == 255) {
-			int rx = (int16_t)freadUint16BE(_fp);
-			int ry = (int16_t)freadUint16BE(_fp);
+			int rx = dx + (int16_t)freadUint16BE(_fp);
+			int ry = dy + (int16_t)freadUint16BE(_fp);
 			Point pt;
 			pt.x = ix;
 			pt.y = iy;
@@ -71,8 +105,8 @@ void DPoly::ReadFrame() {
 		assert((numVertices & 0x80) == 0);
 		assert(numVertices < MAX_VERTICES);
 		for (int i = 0; i < numVertices; ++i) {
-			_vertices[i].x = (int16_t)freadUint16BE(_fp);
-			_vertices[i].y = (int16_t)freadUint16BE(_fp);
+			_vertices[i].x = dx + (int16_t)freadUint16BE(_fp);
+			_vertices[i].y = dy + (int16_t)freadUint16BE(_fp);
 			printf("  vertex %d/%d x=%d y=%d\n", i, numVertices, _vertices[i].x, _vertices[i].y);
 		}
 		_gfx->drawPolygon(color1, false, _vertices, numVertices);
@@ -151,16 +185,19 @@ void DPoly::ReadPaletteMarker() {
 }
 
 void DPoly::ReadSequenceBuffer() {
-	int i, mark, count;
+	int i, mark, count, num;
 	unsigned char buf[6];
 
 	mark = freadUint16BE(_fp);
 	assert(mark == 0xFFFF);
 	count = freadUint16BE(_fp);
 	printf("sequence count %d\n", count);
+	num = 0;
 	while (1) {
 		mark = freadUint16BE(_fp);
 //		assert(mark == 0);
+		assert(num < MAX_SEQUENCES);
+		_seqOffsets[num++] = ftell(_fp);
 		count = freadUint16BE(_fp);
 		printf("sequence - mark %d count %d pos 0x%x\n", mark, count, (int)ftell(_fp));
 		if (count == 0) {
@@ -200,7 +237,7 @@ void DPoly::ReadAffineBuffer() {
 }
 
 void DPoly::WriteShapeToBitmap(int group, int shape) {
-	char filePath[1024];
+	char filePath[MAXPATHLEN];
 	strcpy(filePath, _setFile);
 	char *p = strrchr(filePath, '.');
 	if (!p) {
@@ -208,5 +245,15 @@ void DPoly::WriteShapeToBitmap(int group, int shape) {
 	}
 	sprintf(p, "-SHAPE-%02d-%03d.BMP", group, shape);
 	WriteBitmapFile(filePath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, _gfx->_layer, _palette);
-	++_currentShape;
+}
+
+void DPoly::WriteFrameToBitmap(int frame) {
+	char filePath[MAXPATHLEN];
+	strcpy(filePath, _setFile);
+	char *p = strrchr(filePath, '.');
+	if (!p) {
+		p = filePath + strlen(filePath);
+	}
+	sprintf(p, "-FRAME-%03d.BMP", frame);
+	WriteBitmapFile(filePath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, _gfx->_layer, _palette);
 }
