@@ -84,6 +84,9 @@ void Graphics::addEllipseRadius(int16_t y, int16_t x1, int16_t x2) {
 }
 
 void Graphics::drawEllipse(uint8_t color, bool hasAlpha, const Point *pt, int16_t rx, int16_t ry) {
+	if (rx <= 0 || ry <= 0) {
+		return;
+	}
 	bool flag = false;
 	int16_t y = pt->y - ry;
 	if (y < 0) {
@@ -190,11 +193,12 @@ void Graphics::drawEllipse(uint8_t color, bool hasAlpha, const Point *pt, int16_
 
 void Graphics::fillArea(uint8_t color, bool hasAlpha) {
 	int16_t *pts = _areaPoints;
-	uint8_t *dst = _layer + (_cry + *pts++) * 256 + _crx;
+	int16_t y1 = *pts++;
+	uint8_t *dst = _layer + (_cry + y1) * 256 + _crx;
 	int16_t x1 = *pts++;
 	if (x1 >= 0) {
 		if (hasAlpha && color > 0xC7) {
-			do {
+			for (; x1 >= 0 && y1 < _crh; ++y1) {
 				int16_t x2 = *pts++;
 				if (x2 < _crw && x2 >= x1) {
 					int len = x2 - x1 + 1;
@@ -204,9 +208,9 @@ void Graphics::fillArea(uint8_t color, bool hasAlpha) {
 				}
 				dst += 256;
 				x1 = *pts++;
-			} while (x1 >= 0);
+			}
 		} else {
-			do {
+			for (; x1 >= 0 && y1 < _crh; ++y1) {
 				int16_t x2 = *pts++;
 				if (x2 < _crw && x2 >= x1) {
 					int len = x2 - x1 + 1;
@@ -214,7 +218,7 @@ void Graphics::fillArea(uint8_t color, bool hasAlpha) {
 				}
 				dst += 256;
 				x1 = *pts++;
-			} while (x1 >= 0);
+			}
 		}
 	}
 }
@@ -323,10 +327,10 @@ static void drawPolygonHelper2(int32_t &x, int16_t &y, int32_t &step, int16_t *&
 }
 
 void Graphics::drawPolygon(uint8_t color, bool hasAlpha, const Point *pts, uint8_t numPts) {
-	assert(numPts * 4 < 0x800);
+	assert(numPts * 4 < 0x100);
 
-	int16_t *apts1 = &_areaPoints[0x800];
-	int16_t *apts2 = &_areaPoints[0x800 + numPts * 2];
+	int16_t *apts1 = &_areaPoints[0x100];
+	int16_t *apts2 = &_areaPoints[0x100 + numPts * 2];
 
 	int16_t xmin, xmax, ymin, ymax;
 	xmin = xmax = pts[0].x;
