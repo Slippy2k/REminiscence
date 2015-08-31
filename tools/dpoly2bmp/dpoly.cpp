@@ -37,6 +37,10 @@ void DPoly::Decode(const char *setFile) {
 		if (feof(_fp)) {
 			break;
 		}
+		if (counter >= 2) {
+			fprintf(stderr, "Unexpected group %d count %d\n", counter, groupCount);
+			break;
+		}
 		for (int i = 0; i < groupCount; ++i) {
 			const int pos = ftell(_fp);
 			assert(counter < 2 && i < MAX_SHAPES);
@@ -56,14 +60,16 @@ void DPoly::Decode(const char *setFile) {
 			// background
 			fseek(_fp, _seqOffsets[i], SEEK_SET);
 			int background = freadUint16BE(_fp);
-			int shapeOffset = _shapesOffsets[0][background];
-			if (shapeOffset != 0) {
-				memset(_gfx._layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
-				fseek(_fp, shapeOffset, SEEK_SET);
-				int count = freadUint16BE(_fp);
-				DecodeShape(count, 0, 0);
-				DecodePalette();
-				DoFrameLUT();
+			if (background < MAX_SHAPES) {
+				const int shapeOffset = _shapesOffsets[0][background];
+				if (shapeOffset != 0) {
+					memset(_gfx._layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
+					fseek(_fp, shapeOffset, SEEK_SET);
+					int count = freadUint16BE(_fp);
+					DecodeShape(count, 0, 0);
+					DecodePalette();
+					DoFrameLUT();
+				}
 			}
 			// shapes
 			fseek(_fp, _seqOffsets[i] + 2, SEEK_SET);
@@ -73,18 +79,19 @@ void DPoly::Decode(const char *setFile) {
 				int frame = freadUint16BE(_fp);
 				int dx = (int16_t)freadUint16BE(_fp);
 				int dy = (int16_t)freadUint16BE(_fp);
-				shapeOffset = _shapesOffsets[1][frame];
-				if (shapeOffset != 0) {
-					memset(_gfx._layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
-					fseek(_fp, shapeOffset, SEEK_SET);
-					int count = freadUint16BE(_fp);
-					DecodeShape(count, dx, dy);
-					DecodePalette();
-					DoFrameLUT();
+				if (frame < MAX_SHAPES) {
+					const int shapeOffset = _shapesOffsets[1][frame];
+					if (shapeOffset != 0) {
+						memset(_gfx._layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
+						fseek(_fp, shapeOffset, SEEK_SET);
+						int count = freadUint16BE(_fp);
+						DecodeShape(count, dx, dy);
+						DecodePalette();
+						DoFrameLUT();
+					}
 				}
 			}
 			WriteFrameToBitmap(i);
-			// TODO: flag for background bitmap flip ?
 		}
 	}
 }
