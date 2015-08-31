@@ -66,6 +66,7 @@ static int playCutscene(const Parameters *params, Cutscene *cut) {
 		cut->load();
 		index = params->num;
 	} else {
+		cut->_cutId = params->num;
 		index = cut->load();
 	}
 	cut->main(index);
