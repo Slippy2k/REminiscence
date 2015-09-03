@@ -78,9 +78,47 @@ Options g_options;
 const char *g_caption = "REminiscence";
 
 static void initOptions() {
+	// defaults
 	g_options.bypass_protection = true;
 	g_options.play_disabled_cutscenes = false;
 	g_options.enable_password_menu = false;
+	// read configuration file
+	struct {
+		const char *name;
+		bool *value;
+	} opts[] = {
+		{ "bypass_protection", &g_options.bypass_protection },
+		{ "play_disabled_cutscenes", &g_options.play_disabled_cutscenes },
+		{ "enable_password_menu", &g_options.enable_password_menu },
+		{ 0, 0 }
+	};
+	static const char *filename = "rs.cfg";
+	FILE *fp = fopen(filename, "rb");
+	if (fp) {
+		char buf[256];
+		while (fgets(buf, sizeof(buf), fp)) {
+			if (buf[0] == '#') {
+				continue;
+			}
+			const char *p = strchr(buf, '=');
+			if (p) {
+				++p;
+				while (*p && isspace(*p)) {
+					++p;
+				}
+				if (*p) {
+					const bool value = (*p == 't' || *p == 'T' || *p == '1');
+					for (int i = 0; opts[i].name; ++i) {
+						if (strncmp(buf, opts[i].name, strlen(opts[i].name)) == 0) {
+							*opts[i].value = value;
+							break;
+						}
+					}
+				}
+			}
+		}
+		fclose(fp);
+	}
 }
 
 #undef main
