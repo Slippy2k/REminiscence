@@ -72,7 +72,8 @@ const char *Cutscene::_namesTable[] = {
 	"LOGOS",
 	"OVER",
 	"SCORE",
-	"INTRO2"
+	"INTRO2",
+	"SERRURE"
 };
 
 const uint16_t Cutscene::_offsetsTable[] = {

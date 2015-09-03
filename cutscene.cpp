@@ -1037,6 +1037,9 @@ void Cutscene::play() {
 		uint16_t cutOff  = _offsetsTable[_id * 2 + 1];
 		if (cutName == 0xFFFF && g_options.play_disabled_cutscenes) {
 			switch (_id) {
+			case 19:
+				cutName = 31; // SERRURE
+				break;
 			case 22:
 			case 23:
 			case 24:
