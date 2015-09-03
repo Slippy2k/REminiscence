@@ -4,10 +4,7 @@ SDL_LIBS = `sdl-config --libs`
 VORBIS_LIBS = -lvorbisidec
 ZLIB_LIBS = -lz
 
-DEFINES = -DBYPASS_PROTECTION
-#DEFINES = -DBYPASS_PROTECTION -DENABLE_PASSWORD_MENU -DNDEBUG
-
-CXXFLAGS := -Wall -MMD $(SDL_CFLAGS) -DUSE_ZLIB $(DEFINES)
+CXXFLAGS := -Wall -MMD $(SDL_CFLAGS) -DUSE_ZLIB
 
 SRCS = collision.cpp cutscene.cpp file.cpp fs.cpp game.cpp graphics.cpp main.cpp menu.cpp \
 	mixer.cpp mod_player.cpp ogg_player.cpp piege.cpp resource.cpp scaler.cpp seq_player.cpp \

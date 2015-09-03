@@ -53,12 +53,12 @@ void Game::run() {
 		break;
 	}
 
-#ifndef BYPASS_PROTECTION
-	while (!handleProtectionScreen());
-	if (_stub->_pi.quit) {
-		return;
+	if (!g_options.bypass_protection) {
+		while (!handleProtectionScreen());
+		if (_stub->_pi.quit) {
+			return;
+		}
 	}
-#endif
 
 	_mix.init();
 

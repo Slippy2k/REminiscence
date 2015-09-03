@@ -74,7 +74,14 @@ static Language detectLanguage(FileSystem *fs) {
 	return LANG_EN;
 }
 
+Options g_options;
 const char *g_caption = "REminiscence";
+
+static void initOptions() {
+	g_options.bypass_protection = true;
+	g_options.play_disabled_cutscenes = false;
+	g_options.enable_password_menu = false;
+}
 
 #undef main
 int main(int argc, char *argv[]) {
@@ -115,6 +122,7 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 	}
+	initOptions();
 	g_debugMask = DBG_INFO; // DBG_CUT | DBG_VIDEO | DBG_RES | DBG_MENU | DBG_PGE | DBG_GAME | DBG_UNPACK | DBG_COL | DBG_MOD | DBG_SFX | DBG_FILE;
 	FileSystem fs(dataPath);
 	const int version = detectVersion(&fs);

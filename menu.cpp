@@ -297,6 +297,11 @@ bool Menu::handleLevelScreen(uint8_t &new_skill, uint8_t &new_level) {
 	return false;
 }
 
+struct MenuItem {
+	int str;
+	int opt;
+};
+
 bool Menu::handleTitleScreen(uint8_t &new_skill, uint8_t &new_level) {
 	debug(DBG_MENU, "Menu::handleTitleScreen()");
 	bool quit_loop = false;
@@ -308,21 +313,33 @@ bool Menu::handleTitleScreen(uint8_t &new_skill, uint8_t &new_level) {
 	_charVar3 = 0;
 	_charVar4 = 0;
 	_charVar5 = 0;
-	static const struct {
-		int str;
-		int opt;
-	} menu_items[] = {
-		{ LocaleData::LI_07_START, MENU_OPTION_ITEM_START },
-#ifdef ENABLE_PASSWORD_MENU
-		{ LocaleData::LI_08_SKILL, MENU_OPTION_ITEM_SKILL },
-		{ LocaleData::LI_09_PASSWORD, MENU_OPTION_ITEM_PASSWORD },
-#else
-		{ LocaleData::LI_06_LEVEL, MENU_OPTION_ITEM_LEVEL },
-#endif
-		{ LocaleData::LI_10_INFO, MENU_OPTION_ITEM_INFO },
-		{ LocaleData::LI_11_QUIT, MENU_OPTION_ITEM_QUIT }
-	};
-	static const int menu_items_count = ARRAYSIZE(menu_items);
+
+	static const int MAX_MENU_ITEMS = 5;
+	MenuItem menu_items[MAX_MENU_ITEMS];
+	int menu_items_count = 0;
+
+	menu_items[menu_items_count].str = LocaleData::LI_07_START;
+	menu_items[menu_items_count].opt = MENU_OPTION_ITEM_START;
+	++menu_items_count;
+	if (g_options.enable_password_menu) {
+		menu_items[menu_items_count].str = LocaleData::LI_08_SKILL;
+		menu_items[menu_items_count].opt = MENU_OPTION_ITEM_SKILL;
+		++menu_items_count;
+		menu_items[menu_items_count].str = LocaleData::LI_09_PASSWORD;
+		menu_items[menu_items_count].opt = MENU_OPTION_ITEM_PASSWORD;
+		++menu_items_count;
+	} else {
+		menu_items[menu_items_count].str = LocaleData::LI_06_LEVEL;
+		menu_items[menu_items_count].opt = MENU_OPTION_ITEM_LEVEL;
+		++menu_items_count;
+	}
+	menu_items[menu_items_count].str = LocaleData::LI_10_INFO;
+	menu_items[menu_items_count].opt = MENU_OPTION_ITEM_INFO;
+	++menu_items_count;
+	menu_items[menu_items_count].str = LocaleData::LI_11_QUIT;
+	menu_items[menu_items_count].opt = MENU_OPTION_ITEM_QUIT;
+	++menu_items_count;
+
 	while (!quit_loop) {
 		if (reinit_screen) {
 			_vid->fadeOut();

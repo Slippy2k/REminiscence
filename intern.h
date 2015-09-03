@@ -80,6 +80,12 @@ enum ResourceType {
 	kResourceTypePC
 };
 
+struct Options {
+	bool bypass_protection;
+	bool play_disabled_cutscenes;
+	bool enable_password_menu;
+};
+
 struct Color {
 	uint8_t r;
 	uint8_t g;
@@ -219,6 +225,7 @@ struct SoundFx {
 	uint8_t *data;
 };
 
+extern Options g_options;
 extern const char *g_caption;
 
 #endif // INTERN_H__

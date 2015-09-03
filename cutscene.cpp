@@ -1035,8 +1035,7 @@ void Cutscene::play() {
 		prepare();
 		uint16_t cutName = _offsetsTable[_id * 2 + 0];
 		uint16_t cutOff  = _offsetsTable[_id * 2 + 1];
-#ifdef PLAY_DISABLED_CUTSCENES
-		if (cutName == 0xFFFF) { // disabled cutscenes from level2
+		if (cutName == 0xFFFF && g_options.play_disabled_cutscenes) {
 			switch (_id) {
 			case 22:
 			case 23:
@@ -1049,7 +1048,6 @@ void Cutscene::play() {
 				break;
 			}
 		}
-#endif
 		if (cutName != 0xFFFF) {
 			load(cutName);
 			mainLoop(cutOff);
