@@ -20,6 +20,7 @@ all: $(OBJDIR) rs.exe
 rs.exe: $(addprefix $(OBJDIR)/, $(OBJS))
 	$(CXX) -o $@ -static-libgcc -static-libstdc++ $^ $(SDL_LIBS)
 	$(STRIP) $@
+	upx -9 $@
 
 $(OBJDIR):
 	mkdir $(OBJDIR)
