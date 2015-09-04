@@ -500,6 +500,10 @@ bool Game::handleConfigPanel() {
 			}
 			break;
 		}
+		if (_stub->_pi.escape) {
+			_stub->_pi.escape = false;
+			break;
+		}
 	}
 	_vid.fullRefresh();
 	return (current == MENU_ITEM_ABORT);
