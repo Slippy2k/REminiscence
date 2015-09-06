@@ -105,6 +105,7 @@ void Game::run() {
 			loadLevelData();
 			resetGameState();
 			_endLoop = false;
+			_frameTimestamp = _stub->getTimeStamp();
 			while (!_stub->_pi.quit && !_endLoop) {
 				mainLoop();
 			}
@@ -221,14 +222,14 @@ void Game::mainLoop() {
 }
 
 void Game::updateTiming() {
-	static uint32_t tstamp = 0;
-	int32_t delay = _stub->getTimeStamp() - tstamp;
-	int32_t pause = (_stub->_pi.dbgMask & PlayerInput::DF_FASTMODE) ? 20 : 30;
+	static const int frameHz = 30;
+	int32_t delay = _stub->getTimeStamp() - _frameTimestamp;
+	int32_t pause = (_stub->_pi.dbgMask & PlayerInput::DF_FASTMODE) ? 20 : (1000 / frameHz);
 	pause -= delay;
 	if (pause > 0) {
 		_stub->sleep(pause);
 	}
-	tstamp = _stub->getTimeStamp();
+	_frameTimestamp = _stub->getTimeStamp();
 }
 
 void Game::playCutscene(int id) {
