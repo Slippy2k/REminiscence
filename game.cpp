@@ -86,9 +86,12 @@ void Game::run() {
 	while (!_stub->_pi.quit) {
 		if (_res._type == kResourceTypePC) {
 			_mix.playMusic(1);
-			if (!_menu.handleTitleScreen(_skillLevel, _currentLevel)) {
+			_menu.handleTitleScreen();
+			if (_menu._selectedOption == Menu::MENU_OPTION_ITEM_QUIT) {
 				break;
 			}
+			_skillLevel = _menu._skill;
+			_currentLevel = _menu._level;
 			_mix.stopMusic();
 		}
 		if (_currentLevel == 7) {
