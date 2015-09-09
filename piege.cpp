@@ -1277,7 +1277,8 @@ int Game::pge_op_setPiegeDefaultAnim(ObjectOpcodeArgs *args) {
 	int16_t r = args->pge->init_PGE->counter_values[args->a];
 	args->pge->room_location = r;
 	if (r == 1) {
-		warning("setting _loadMap to true");
+		// this happens after death tower, on earth, when Conrad passes
+		// by the first policeman who's about to shoot him in the back
 		_loadMap = true;
 	}
 	pge_setupDefaultAnim(args->pge);
