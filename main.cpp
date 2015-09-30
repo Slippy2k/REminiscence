@@ -36,6 +36,7 @@ static int detectVersion(FileSystem *fs) {
 		int type;
 		const char *name;
 	} table[] = {
+		{ "DEMO_UK.ABA", kResourceTypePC, "PC" },
 		{ "LEVEL1.MAP", kResourceTypePC, "PC" },
 		{ "LEVEL1.LEV", kResourceTypeAmiga, "Amiga" },
 		{ "DEMO.LEV", kResourceTypeAmiga, "Amiga" },

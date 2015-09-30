@@ -19,6 +19,7 @@
 #define RESOURCE_H__
 
 #include "intern.h"
+#include "resource_aba.h"
 
 struct File;
 struct FileSystem;
@@ -108,6 +109,9 @@ struct Resource {
 	FileSystem *_fs;
 	ResourceType _type;
 	Language _lang;
+	ResourceAba *_aba;
+	uint16_t (*_readUint16)(const void *);
+	uint32_t (*_readUint32)(const void *);
 	bool _hasSeqData;
 	char _entryName[32];
 	uint8_t *_fnt;
@@ -153,6 +157,9 @@ struct Resource {
 	Resource(FileSystem *fs, ResourceType type, Language lang);
 	~Resource();
 
+	void init();
+	void fini();
+
 	void clearLevelRes();
 	void load_FIB(const char *fileName);
 	void load_SPL_demo();
@@ -178,6 +185,7 @@ struct Resource {
 	void load_OBC(File *pf);
 	void decodeOBJ(const uint8_t *, int);
 	void load_PGE(File *pf);
+	void decodePGE(const uint8_t *, int);
 	void load_ANI(File *pf);
 	void load_TBN(File *pf);
 	void load_CMD(File *pf);

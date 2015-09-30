@@ -7,7 +7,8 @@ ZLIB_LIBS = -lz
 CXXFLAGS := -Wall -MMD $(SDL_CFLAGS) -DUSE_ZLIB
 
 SRCS = collision.cpp cutscene.cpp file.cpp fs.cpp game.cpp graphics.cpp main.cpp menu.cpp \
-	mixer.cpp mod_player.cpp ogg_player.cpp piege.cpp resource.cpp scaler.cpp seq_player.cpp \
+	mixer.cpp mod_player.cpp ogg_player.cpp piege.cpp resource.cpp resource_aba.cpp \
+	scaler.cpp seq_player.cpp \
 	sfx_player.cpp staticres.cpp systemstub_sdl.cpp unpack.cpp util.cpp video.cpp
 
 OBJS = $(SRCS:.cpp=.o)

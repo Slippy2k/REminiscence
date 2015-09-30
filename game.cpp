@@ -39,6 +39,7 @@ Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, Re
 void Game::run() {
 	_randSeed = time(0);
 
+	_res.init();
 	_res.load_TEXT();
 
 	switch (_res._type) {
@@ -114,8 +115,8 @@ void Game::run() {
 	}
 
 	_res.free_TEXT();
-
 	_mix.free();
+	_res.fini();
 }
 
 void Game::resetGameState() {
@@ -1251,7 +1252,9 @@ void Game::loadLevelMap() {
 		_vid.AMIGA_decodeLev(_currentLevel, _currentRoom);
 		break;
 	case kResourceTypePC:
-		_vid.PC_decodeMap(_currentLevel, _currentRoom);
+		if (_res._map) {
+			_vid.PC_decodeMap(_currentLevel, _currentRoom);
+		}
 		_vid.PC_setLevelPalettes();
 		break;
 	}
