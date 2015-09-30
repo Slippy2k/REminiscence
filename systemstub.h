@@ -62,7 +62,7 @@ struct SystemStub {
 
 	virtual ~SystemStub() {}
 
-	virtual void init(const char *title, int w, int h) = 0;
+	virtual void init(const char *title, int w, int h, int scaler, bool fullscreen) = 0;
 	virtual void destroy() = 0;
 
 	virtual void setPalette(const uint8_t *pal, int n) = 0;

@@ -37,8 +37,6 @@ Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, Re
 }
 
 void Game::run() {
-	_stub->init(g_caption, Video::GAMESCREEN_W, Video::GAMESCREEN_H);
-
 	_randSeed = time(0);
 
 	_res.load_TEXT();
@@ -118,7 +116,6 @@ void Game::run() {
 	_res.free_TEXT();
 
 	_mix.free();
-	_stub->destroy();
 }
 
 void Game::resetGameState() {

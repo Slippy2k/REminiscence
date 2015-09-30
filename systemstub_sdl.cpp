@@ -43,7 +43,7 @@ struct SystemStub_SDL : SystemStub {
 	void *_audioCbData;
 
 	virtual ~SystemStub_SDL() {}
-	virtual void init(const char *title, int w, int h);
+	virtual void init(const char *title, int w, int h, int scaler, bool fullscreen);
 	virtual void destroy();
 	virtual void setPalette(const uint8_t *pal, int n);
 	virtual void setPaletteEntry(int i, const Color *c);
@@ -76,7 +76,7 @@ SystemStub *SystemStub_SDL_create() {
 	return new SystemStub_SDL();
 }
 
-void SystemStub_SDL::init(const char *title, int w, int h) {
+void SystemStub_SDL::init(const char *title, int w, int h, int scaler, bool fullscreen) {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
 	SDL_ShowCursor(SDL_DISABLE);
 	SDL_WM_SetCaption(title, NULL);
@@ -92,8 +92,8 @@ void SystemStub_SDL::init(const char *title, int w, int h) {
 	memset(_screenBuffer, 0, screenBufferSize);
 	_fadeScreenBuffer = 0;
 	_fadeOnUpdateScreen = false;
-	_fullscreen = false;
-	_currentScaler = SCALER_SCALE_3X;
+	_fullscreen = fullscreen;
+	_currentScaler = scaler;
 	memset(_pal, 0, sizeof(_pal));
 	prepareGfxMode();
 	_joystick = NULL;

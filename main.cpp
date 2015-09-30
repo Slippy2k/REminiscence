@@ -20,6 +20,7 @@
 #include "file.h"
 #include "fs.h"
 #include "game.h"
+#include "scaler.h"
 #include "systemstub.h"
 
 static const char *USAGE =
@@ -121,11 +122,15 @@ static void initOptions() {
 	}
 }
 
+static const int DEFAULT_SCALER = SCALER_SCALE_3X;
+
 #undef main
 int main(int argc, char *argv[]) {
 	const char *dataPath = "DATA";
 	const char *savePath = ".";
 	int levelNum = 0;
+	int scaler = DEFAULT_SCALER;
+	bool fullscreen = false;
 	if (argc == 2) {
 		// data path as the only command line argument
 		struct stat st;
@@ -135,9 +140,12 @@ int main(int argc, char *argv[]) {
 	}
 	while (1) {
 		static struct option options[] = {
-			{ "datapath", required_argument, 0, 1 },
-			{ "savepath", required_argument, 0, 2 },
-			{ "levelnum", required_argument, 0, 3 },
+			{ "datapath",   required_argument, 0, 1 },
+			{ "savepath",   required_argument, 0, 2 },
+			{ "levelnum",   required_argument, 0, 3 },
+			{ "fullscreen", no_argument,       0, 4 },
+			{ "windowed",   no_argument,       0, 5 },
+			{ "scaler",     required_argument, 0, 6 },
 			{ 0, 0, 0, 0 }
 		};
 		int index;
@@ -155,6 +163,18 @@ int main(int argc, char *argv[]) {
 		case 3:
 			levelNum = atoi(optarg);
 			break;
+		case 4:
+			fullscreen = true;
+			break;
+		case 5:
+			fullscreen = false;
+			break;
+		case 6:
+			scaler = atoi(optarg);
+			if (scaler < 0 || scaler >= NUM_SCALERS) {
+				scaler = DEFAULT_SCALER;
+			}
+			break;
 		default:
 			printf(USAGE, argv[0]);
 			return 0;
@@ -171,8 +191,10 @@ int main(int argc, char *argv[]) {
 	Language language = detectLanguage(&fs);
 	SystemStub *stub = SystemStub_SDL_create();
 	Game *g = new Game(stub, &fs, savePath, levelNum, (ResourceType)version, language);
+	stub->init(g_caption, Video::GAMESCREEN_W, Video::GAMESCREEN_H, scaler, fullscreen);
 	g->run();
 	delete g;
+	stub->destroy();
 	delete stub;
 	return 0;
 }
