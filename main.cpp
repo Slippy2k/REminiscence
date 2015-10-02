@@ -85,6 +85,7 @@ static void initOptions() {
 	g_options.bypass_protection = true;
 	g_options.play_disabled_cutscenes = false;
 	g_options.enable_password_menu = false;
+	g_options.fade_out_palette = true;
 	// read configuration file
 	struct {
 		const char *name;
@@ -93,6 +94,7 @@ static void initOptions() {
 		{ "bypass_protection", &g_options.bypass_protection },
 		{ "play_disabled_cutscenes", &g_options.play_disabled_cutscenes },
 		{ "enable_password_menu", &g_options.enable_password_menu },
+		{ "fade_out_palette", &g_options.fade_out_palette },
 		{ 0, 0 }
 	};
 	static const char *filename = "rs.cfg";

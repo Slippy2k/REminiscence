@@ -112,8 +112,11 @@ void Video::fullRefresh() {
 
 void Video::fadeOut() {
 	debug(DBG_VIDEO, "Video::fadeOut()");
-	_stub->fadeScreen();
-//	fadeOutPalette();
+	if (g_options.fade_out_palette) {
+		fadeOutPalette();
+	} else {
+		_stub->fadeScreen();
+	}
 }
 
 void Video::fadeOutPalette() {
