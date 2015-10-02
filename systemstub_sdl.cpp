@@ -278,8 +278,8 @@ void SystemStub_SDL::updateScreen(int shakeOffset) {
 }
 
 void SystemStub_SDL::processEvents() {
+	bool paused = false;
 	while (true) {
-		bool paused = false;
 		SDL_Event ev;
 		while (SDL_PollEvent(&ev)) {
 			processEvent(ev, paused);
