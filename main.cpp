@@ -148,7 +148,6 @@ int main(int argc, char *argv[]) {
 			{ "savepath",   required_argument, 0, 2 },
 			{ "levelnum",   required_argument, 0, 3 },
 			{ "fullscreen", no_argument,       0, 4 },
-			{ "windowed",   no_argument,       0, 5 },
 			{ "scaler",     required_argument, 0, 6 },
 			{ 0, 0, 0, 0 }
 		};
