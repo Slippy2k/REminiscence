@@ -63,9 +63,6 @@ void Game::run() {
 
 	playCutscene(0x40);
 	playCutscene(0x0D);
-	if (!_cut._interrupted && _res._type == kResourceTypePC) {
-		playCutscene(0x4A);
-	}
 
 	switch (_res._type) {
 	case kResourceTypeAmiga:
@@ -297,9 +294,11 @@ void Game::playCutscene(int id) {
 		if (id == 0x3D) {
 			_cut.startCredits();
 		}
-		if (_cut._interrupted || id != 0x0D) {
-			_mix.stopMusic();
+		if (!_cut._interrupted && _res._type == kResourceTypePC) {
+			_cut._id = 0x4A;
+			_cut.play();
 		}
+		_mix.stopMusic();
 	}
 }
 
