@@ -197,8 +197,11 @@ struct Resource {
 	void load_SGD(File *pf);
 	void load_SPM(File *f);
 	const uint8_t *getAniData(int num) const {
-		const int offset = READ_LE_UINT16(_ani + num * 2);
-		return _ani + offset;
+		const int offset = _readUint16(_ani + 2 + num * 2);
+		return _ani + 2 + offset;
+	}
+	const uint8_t *getTextString(int num) {
+		return _tbn + _readUint16(_tbn + num * 2);
 	}
 	const uint8_t *getGameString(int num) {
 		return _stringsTable + READ_LE_UINT16(_stringsTable + num * 2);

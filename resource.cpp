@@ -573,14 +573,7 @@ void Resource::load(const char *objName, int objType, const char *ext) {
 					decodeOBJ(dat + 2, size - 2);
 					break;
 				case OT_ANI:
-					assert(size > 2);
-					_ani = (uint8_t *)malloc(size - 2);
-					if (!_ani) {
-						error("Failed to allocate %d bytes", size - 2);
-					} else {
-						memcpy(_ani, dat + 2, size - 2);
-						free(dat);
-					}
+					_ani = dat;
 					break;
 				case OT_TBN:
 					_tbn = dat;
@@ -952,38 +945,12 @@ void Resource::decodePGE(const uint8_t *p, int size) {
 
 void Resource::load_ANI(File *f) {
 	debug(DBG_RES, "Resource::load_ANI()");
-	int size = f->size() - 2;
+	const int size = f->size();
 	_ani = (uint8_t *)malloc(size);
 	if (!_ani) {
 		error("Unable to allocate ANI buffer");
 	} else {
-		uint16_t count = f->readUint16LE();
 		f->read(_ani, size);
-		if (_type == kResourceTypeAmiga) {
-			const uint8_t *end = _ani + size;
-			SWAP_UINT16(&count);
-			// byte-swap animation data
-			for (uint16_t i = 0; i < count; ++i) {
-				uint8_t *p = _ani + READ_BE_UINT16(_ani + 2 * i);
-				// byte-swap offset
-				SWAP<uint8_t>(_ani[2 * i], _ani[2 * i + 1]);
-				if (p >= end) {
-					continue;
-				}
-				const int frames = READ_BE_UINT16(p);
-				if (p[0] != 0) {
-					// byte-swap only once
-					continue;
-				}
-				// byte-swap anim count
-				SWAP<uint8_t>(p[0], p[1]);
-				debug(DBG_RES, "ani=%d frames=%d", i, frames);
-				for (int j = 0; j < frames; ++j) {
-					// byte-swap next frame
-					SWAP<uint8_t>(p[6 + j * 4], p[6 + j * 4 + 1]);
-				}
-			}
-		}
 	}
 }
 
@@ -995,13 +962,6 @@ void Resource::load_TBN(File *f) {
 		error("Unable to allocate TBN buffer");
 	} else {
 		f->read(_tbn, len);
-	}
-	if (_type == kResourceTypeAmiga) {
-		const int firstOffset = READ_BE_UINT16(_tbn);
-		for (int i = 0; i < firstOffset; i += 2) {
-			// byte-swap offset
-			SWAP<uint8_t>(_tbn[i], _tbn[i + 1]);
-		}
 	}
 }
 
