@@ -68,7 +68,7 @@ void Cutscene::setPalette() {
 	sync();
 	updatePalette();
 	SWAP(_page0, _page1);
-	_stub->copyRect(0, 0, Video::GAMESCREEN_W, Video::GAMESCREEN_H, _page0, 256);
+	_stub->copyRect(0, 0, _vid->_w, _vid->_h, _page0, 256);
 	_stub->updateScreen(0);
 }
 
@@ -175,9 +175,9 @@ void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, 
 
 void Cutscene::swapLayers() {
 	if (_clearScreen == 0) {
-		memcpy(_page1, _pageC, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+		memcpy(_page1, _pageC, _vid->_layerSize);
 	} else {
-		memset(_page1, 0xC0, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+		memset(_page1, 0xC0, _vid->_layerSize);
 	}
 }
 
@@ -288,7 +288,7 @@ void Cutscene::op_waitForSync() {
 			if (_textBuf == _textCurBuf) {
 				_creditsTextCounter = 20;
 			}
-			memcpy(_page1, _page0, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+			memcpy(_page1, _page0, _vid->_layerSize);
 			drawCreditsText();
 			setPalette();
 		} while (--n);
@@ -380,7 +380,7 @@ void Cutscene::op_drawShape() {
 		drawShape(primitiveVertices, x + dx, y + dy);
 	}
 	if (_clearScreen != 0) {
-		memcpy(_pageC, _page1, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+		memcpy(_pageC, _page1, _vid->_layerSize);
 	}
 }
 
@@ -838,7 +838,7 @@ void Cutscene::op_drawCreditsText() {
 	if (_textCurBuf == _textBuf) {
 		++_creditsTextCounter;
 	}
-	memcpy(_page1, _page0, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+	memcpy(_page1, _page0, _vid->_layerSize);
 	_frameDelay = 10;
 	setPalette();
 }
@@ -858,7 +858,7 @@ void Cutscene::op_drawStringAtPos() {
 			// workaround for buggy cutscene script
 			if (_id == 0x34 && (strId & 0xFFF) == 0x45) {
 				if ((_cmdPtr - _cmdPtrBak) == 0xA) {
-					_stub->copyRect(0, 0, Video::GAMESCREEN_W, Video::GAMESCREEN_H, _page1, 256);
+					_stub->copyRect(0, 0, _vid->_w, _vid->_h, _page1, 256);
 					_stub->updateScreen(0);
 				} else {
 					_stub->sleep(15);

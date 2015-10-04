@@ -23,16 +23,14 @@
 
 Video::Video(Resource *res, SystemStub *stub)
 	: _res(res), _stub(stub) {
-	_frontLayer = (uint8_t *)malloc(GAMESCREEN_W * GAMESCREEN_H);
-	memset(_frontLayer, 0, GAMESCREEN_W * GAMESCREEN_H);
-	_backLayer = (uint8_t *)malloc(GAMESCREEN_W * GAMESCREEN_H);
-	memset(_backLayer, 0, GAMESCREEN_W * GAMESCREEN_H);
-	_tempLayer = (uint8_t *)malloc(GAMESCREEN_W * GAMESCREEN_H);
-	memset(_tempLayer, 0, GAMESCREEN_W * GAMESCREEN_H);
-	_tempLayer2 = (uint8_t *)malloc(GAMESCREEN_W * GAMESCREEN_H);
-	memset(_tempLayer2, 0, GAMESCREEN_W * GAMESCREEN_H);
-	_screenBlocks = (uint8_t *)malloc((GAMESCREEN_W / SCREENBLOCK_W) * (GAMESCREEN_H / SCREENBLOCK_H));
-	memset(_screenBlocks, 0, (GAMESCREEN_W / SCREENBLOCK_W) * (GAMESCREEN_H / SCREENBLOCK_H));
+	_w = GAMESCREEN_W;
+	_h = GAMESCREEN_H;
+	_layerSize = _w * _h;
+	_frontLayer = (uint8_t *)calloc(1, _layerSize);
+	_backLayer = (uint8_t *)calloc(1,_layerSize);
+	_tempLayer = (uint8_t *)calloc(1, _layerSize);
+	_tempLayer2 = (uint8_t *)calloc(1, _layerSize);
+	_screenBlocks = (uint8_t *)calloc(1, (_w / SCREENBLOCK_W) * (_h / SCREENBLOCK_H));
 	_fullRefresh = true;
 	_shakeOffset = 0;
 	_charFrontColor = 0;
@@ -50,15 +48,15 @@ Video::~Video() {
 
 void Video::markBlockAsDirty(int16_t x, int16_t y, uint16_t w, uint16_t h) {
 	debug(DBG_VIDEO, "Video::markBlockAsDirty(%d, %d, %d, %d)", x, y, w, h);
-	assert(x >= 0 && x + w <= GAMESCREEN_W && y >= 0 && y + h <= GAMESCREEN_H);
+	assert(x >= 0 && x + w <= _w && y >= 0 && y + h <= _h);
 	int bx1 = x / SCREENBLOCK_W;
 	int by1 = y / SCREENBLOCK_H;
 	int bx2 = (x + w - 1) / SCREENBLOCK_W;
 	int by2 = (y + h - 1) / SCREENBLOCK_H;
-	assert(bx2 < GAMESCREEN_W / SCREENBLOCK_W && by2 < GAMESCREEN_H / SCREENBLOCK_H);
+	assert(bx2 < _w / SCREENBLOCK_W && by2 < _h / SCREENBLOCK_H);
 	for (; by1 <= by2; ++by1) {
 		for (int i = bx1; i <= bx2; ++i) {
-			_screenBlocks[by1 * (GAMESCREEN_W / SCREENBLOCK_W) + i] = 2;
+			_screenBlocks[by1 * (_w / SCREENBLOCK_W) + i] = 2;
 		}
 	}
 }
@@ -67,16 +65,16 @@ void Video::updateScreen() {
 	debug(DBG_VIDEO, "Video::updateScreen()");
 //	_fullRefresh = true;
 	if (_fullRefresh) {
-		_stub->copyRect(0, 0, Video::GAMESCREEN_W, Video::GAMESCREEN_H, _frontLayer, 256);
+		_stub->copyRect(0, 0, _w, _h, _frontLayer, 256);
 		_stub->updateScreen(_shakeOffset);
 		_fullRefresh = false;
 	} else {
 		int i, j;
 		int count = 0;
 		uint8_t *p = _screenBlocks;
-		for (j = 0; j < GAMESCREEN_H / SCREENBLOCK_H; ++j) {
+		for (j = 0; j < _h / SCREENBLOCK_H; ++j) {
 			uint16_t nh = 0;
-			for (i = 0; i < GAMESCREEN_W / SCREENBLOCK_W; ++i) {
+			for (i = 0; i < _w / SCREENBLOCK_W; ++i) {
 				if (p[i] != 0) {
 					--p[i];
 					++nh;
@@ -92,7 +90,7 @@ void Video::updateScreen() {
 				_stub->copyRect(x, j * SCREENBLOCK_H, nh * SCREENBLOCK_W, SCREENBLOCK_H, _frontLayer, 256);
 				++count;
 			}
-			p += GAMESCREEN_W / SCREENBLOCK_W;
+			p += _w / SCREENBLOCK_W;
 		}
 		if (count != 0) {
 			_stub->updateScreen(_shakeOffset);
@@ -107,7 +105,7 @@ void Video::updateScreen() {
 void Video::fullRefresh() {
 	debug(DBG_VIDEO, "Video::fullRefresh()");
 	_fullRefresh = true;
-	memset(_screenBlocks, 0, (GAMESCREEN_W / SCREENBLOCK_W) * (GAMESCREEN_H / SCREENBLOCK_H));
+	memset(_screenBlocks, 0, (_w / SCREENBLOCK_W) * (_h / SCREENBLOCK_H));
 }
 
 void Video::fadeOut() {
@@ -251,7 +249,7 @@ void Video::PC_decodeMap(int level, int room) {
 			}
 		}
 	}
-	memcpy(_backLayer, _frontLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+	memcpy(_backLayer, _frontLayer, _layerSize);
 }
 
 void Video::PC_setLevelPalettes() {
@@ -599,14 +597,14 @@ void Video::AMIGA_decodeLev(int level, int room) {
 			}
 		}
 	}
-	memset(_frontLayer, 0, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+	memset(_frontLayer, 0, _layerSize);
 	if (tmp[1] != 0) {
 		assert(_res->_sgd);
 		AMIGA_decodeSgd(_frontLayer, tmp + offset10, _res->_sgd);
 		offset10 = 0;
 	}
 	AMIGA_decodeLevHelper(_frontLayer, tmp, offset10, offset12, buf, tmp[1] != 0);
-	memcpy(_backLayer, _frontLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+	memcpy(_backLayer, _frontLayer, _layerSize);
 	uint16_t num[4];
 	for (int i = 0; i < 4; ++i) {
 		num[i] = READ_BE_UINT16(tmp + 2 + i * 2);

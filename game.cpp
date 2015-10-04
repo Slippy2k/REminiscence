@@ -165,7 +165,7 @@ void Game::mainLoop() {
 			return;
 		}
 	}
-	memcpy(_vid._frontLayer, _vid._backLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+	memcpy(_vid._frontLayer, _vid._backLayer, _vid._layerSize);
 	pge_getInput();
 	pge_prepare();
 	col_prepareRoomState();
@@ -397,7 +397,7 @@ void Game::showFinalScore() {
 	strcpy(buf, _menu._passwords[7][_skillLevel]);
 	_vid.drawString(buf, (256 - strlen(buf) * 8) / 2, 16, 0xE7);
 	while (!_stub->_pi.quit) {
-		_stub->copyRect(0, 0, Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._frontLayer, 256);
+		_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._frontLayer, 256);
 		_stub->updateScreen(0);
 		_stub->processEvents();
 		if (_stub->_pi.enter) {
@@ -518,7 +518,7 @@ bool Game::handleContinueAbort() {
 	uint8_t color_inc = 0xFF;
 	Color col;
 	_stub->getPaletteEntry(0xE4, &col);
-	memcpy(_vid._tempLayer, _vid._frontLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+	memcpy(_vid._tempLayer, _vid._frontLayer, _vid._layerSize);
 	while (timeout >= 0 && !_stub->_pi.quit) {
 		const char *str;
 		str = _res.getMenuString(LocaleData::LI_01_CONTINUE_OR_ABORT);
@@ -551,7 +551,7 @@ bool Game::handleContinueAbort() {
 			_stub->_pi.enter = false;
 			return (current_color == 0);
 		}
-		_stub->copyRect(0, 0, Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._frontLayer, 256);
+		_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._frontLayer, 256);
 		_stub->updateScreen(0);
 		if (col.b >= 0x3D) {
 			color_inc = 0;
@@ -570,7 +570,7 @@ bool Game::handleContinueAbort() {
 		_stub->processEvents();
 		_stub->sleep(100);
 		--timeout;
-		memcpy(_vid._frontLayer, _vid._tempLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+		memcpy(_vid._frontLayer, _vid._tempLayer, _vid._layerSize);
 	}
 	return false;
 }
@@ -590,7 +590,7 @@ bool Game::handleProtectionScreen() {
 	int shapeNum = getRandomNumber() % 30;
 	for (int16_t zoom = 2000; zoom != 0; zoom -= 100) {
 		_cut.drawProtectionShape(shapeNum, zoom);
-		_stub->copyRect(0, 0, Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._tempLayer, 256);
+		_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._tempLayer, 256);
 		_stub->updateScreen(0);
 		_stub->sleep(30);
 	}
@@ -601,7 +601,7 @@ bool Game::handleProtectionScreen() {
 	int len = 0;
 	do {
 		codeText[len] = '\0';
-		memcpy(_vid._frontLayer, _vid._tempLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+		memcpy(_vid._frontLayer, _vid._tempLayer, _vid._layerSize);
 		_menu.drawString("PROTECTION", 2, 11, 5);
 		char buf[20];
 		snprintf(buf, sizeof(buf), "CODE %d :  %s", codeNum + 1, codeText);
@@ -660,7 +660,7 @@ void Game::printLevelCode() {
 		if (_printLevelCodeCounter != 0) {
 			char buf[32];
 			snprintf(buf, sizeof(buf), "CODE: %s", _menu._passwords[_currentLevel][_skillLevel]);
-			_vid.drawString(buf, (Video::GAMESCREEN_W - strlen(buf) * 8) / 2, 16, 0xE7);
+			_vid.drawString(buf, (_vid._w - strlen(buf) * 8) / 2, 16, 0xE7);
 		}
 	}
 }
@@ -701,7 +701,7 @@ void Game::drawStoryTexts() {
 	if (_textToDisplay != 0xFFFF) {
 		uint16_t text_col_mask = 0xE8;
 		const uint8_t *str = _res.getGameString(_textToDisplay);
-		memcpy(_vid._tempLayer, _vid._frontLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+		memcpy(_vid._tempLayer, _vid._frontLayer, _vid._layerSize);
 		int textSpeechSegment = 0;
 		while (!_stub->_pi.quit) {
 			drawIcon(_currentInventoryIconNum, 80, 8, 0xA);
@@ -741,7 +741,7 @@ void Game::drawStoryTexts() {
 				break;
 			}
 			++str;
-			memcpy(_vid._frontLayer, _vid._tempLayer, Video::GAMESCREEN_W * Video::GAMESCREEN_H);
+			memcpy(_vid._frontLayer, _vid._tempLayer, _vid._layerSize);
 		}
 		_textToDisplay = 0xFFFF;
 	}

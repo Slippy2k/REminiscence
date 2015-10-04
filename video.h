@@ -41,6 +41,8 @@ struct Video {
 	Resource *_res;
 	SystemStub *_stub;
 
+	int _w, _h;
+	int _layerSize;
 	uint8_t *_frontLayer;
 	uint8_t *_backLayer;
 	uint8_t *_tempLayer;
