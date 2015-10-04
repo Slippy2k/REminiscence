@@ -26,9 +26,15 @@
 
 #include "util.h"
 
+#ifndef ABS
 #define ABS(x) ((x)<0?-(x):(x))
+#endif
+#ifndef MAX
 #define MAX(x,y) ((x)>(y)?(x):(y))
+#endif
+#ifndef MIN
 #define MIN(x,y) ((x)<(y)?(x):(y))
+#endif
 #ifndef ARRAYSIZE
 #define ARRAYSIZE(a) (sizeof(a)/sizeof(a[0]))
 #endif

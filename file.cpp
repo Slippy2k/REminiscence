@@ -15,6 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <sys/param.h>
 #include "fs.h"
 #ifdef USE_ZLIB
 #include "zlib.h"
@@ -183,7 +184,7 @@ bool File::open(const char *filename, const char *mode, const char *directory) {
 	if (!_impl) {
 		_impl = new stdFile;
 	}
-	char path[512];
+	char path[MAXPATHLEN];
 	snprintf(path, sizeof(path), "%s/%s", directory, filename);
 	debug(DBG_FILE, "Open file name '%s' mode '%s' path '%s'", filename, mode, path);
 	return _impl->open(path, mode);

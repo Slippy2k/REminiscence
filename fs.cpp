@@ -21,6 +21,7 @@
 #else
 #include <dirent.h>
 #include <sys/stat.h>
+#include <sys/param.h>
 #endif
 #include "fs.h"
 
@@ -129,7 +130,7 @@ void FileSystem_impl::getPathListFromDirectory(const char *dir) {
 			if (de->d_name[0] == '.') {
 				continue;
 			}
-			char filePath[512];
+			char filePath[MAXPATHLEN];
 			snprintf(filePath, sizeof(filePath), "%s/%s", dir, de->d_name);
 			struct stat st;
 			if (stat(filePath, &st) == 0) {
