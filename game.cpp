@@ -291,12 +291,12 @@ void Game::playCutscene(int id) {
 			_mix.playMusic(Cutscene::_musicTable[_cut._id]);
 		}
 		_cut.play();
-		if (id == 0x3D) {
-			_cut.startCredits();
-		}
-		if (!_cut._interrupted && _res._type == kResourceTypePC) {
+		if (id == 0xD && !_cut._interrupted && _res._type == kResourceTypePC) {
 			_cut._id = 0x4A;
 			_cut.play();
+		}
+		if (id == 0x3D) {
+			_cut.startCredits();
 		}
 		_mix.stopMusic();
 	}
