@@ -295,14 +295,15 @@ void Video::PC_decodeSpc(const uint8_t *src, int w, int h, uint8_t *dst) {
 	}
 }
 
-static void AMIGA_blit3pNxN(uint8_t *dst, int pitch, int w, int h, const uint8_t *src) {
+static void AMIGA_planar16(uint8_t *dst, int w, int h, int depth, const uint8_t *src) {
+	const int pitch = w * 16;
 	const int planarSize = w * 2 * h;
 	for (int y = 0; y < h; ++y) {
 		for (int x = 0; x < w; ++x) {
 			for (int i = 0; i < 16; ++i) {
 				int color = 0;
 				const int mask = 1 << (15 - i);
-				for (int bit = 0; bit < 3; ++bit) {
+				for (int bit = 0; bit < depth; ++bit) {
 					if (READ_BE_UINT16(src + bit * planarSize) & mask) {
 						color |= 1 << bit;
 					}
@@ -312,25 +313,6 @@ static void AMIGA_blit3pNxN(uint8_t *dst, int pitch, int w, int h, const uint8_t
 			src += 2;
 		}
 		dst += pitch;
-	}
-}
-
-static void AMIGA_blit4p16xN(uint8_t *dst, int w, int h, const uint8_t *src) {
-	const int planarSize = w * 2 * h;
-	assert(w == 1);
-	for (int y = 0; y < h; ++y) {
-		for (int i = 0; i < 16; ++i) {
-			int color = 0;
-			const int mask = 1 << (15 - i);
-			for (int bit = 0; bit < 4; ++bit) {
-				if (READ_BE_UINT16(src + bit * planarSize) & mask) {
-					color |= 1 << bit;
-				}
-			}
-			dst[i] = color;
-		}
-		src += 2;
-		dst += 16;
 	}
 }
 
@@ -627,7 +609,7 @@ void Video::AMIGA_decodeSpm(const uint8_t *src, uint8_t *dst) {
 	AMIGA_decodeRLE(buf, src + 3);
 	const int w = (src[2] >> 7) + 1;
 	const int h = src[2] & 0x7F;
-	AMIGA_blit3pNxN(dst, w * 16, w, h, buf);
+	AMIGA_planar16(dst, w, h, 3, buf);
 }
 
 void Video::AMIGA_decodeIcn(const uint8_t *src, int num, uint8_t *dst) {
@@ -639,7 +621,7 @@ void Video::AMIGA_decodeIcn(const uint8_t *src, int num, uint8_t *dst) {
 	}
 	const int h = 1 + *src++;
 	const int w = 1 + *src++;
-	AMIGA_blit4p16xN(dst, w, h, src + 4);
+	AMIGA_planar16(dst, w, h, 4, src + 4);
 }
 
 void Video::AMIGA_decodeSpc(const uint8_t *src, int w, int h, uint8_t *dst) {
