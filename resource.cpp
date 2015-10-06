@@ -161,13 +161,13 @@ void Resource::load_SPL_demo() {
 
 void Resource::load_MAP_menu(const char *fileName, uint8_t *dstPtr) {
 	debug(DBG_RES, "Resource::load_MAP_menu('%s')", fileName);
+	static const int kMenuMapSize = 0x3800 * 4;
 	snprintf(_entryName, sizeof(_entryName), "%s.MAP", fileName);
 	File f;
 	if (f.open(_entryName, "rb", _fs)) {
-		if (f.size() != 0x3800 * 4) {
-			error("Wrong file size for '%s', %d", _entryName, f.size());
+		if (f.read(dstPtr, kMenuMapSize) != kMenuMapSize) {
+			error("Failed to read '%s'", _entryName);
 		}
-		f.read(dstPtr, 0x3800 * 4);
 		if (f.ioErr()) {
 			error("I/O error when reading '%s'", _entryName);
 		}
@@ -176,26 +176,26 @@ void Resource::load_MAP_menu(const char *fileName, uint8_t *dstPtr) {
 		uint32_t size = 0;
 		uint8_t *dat = _aba->loadEntry(_entryName, &size);
 		if (dat) {
-			if (size != 0x3800 * 4) {
+			if (size != kMenuMapSize) {
 				error("Unexpected size %d for '%s'", size, _entryName);
 			}
 			memcpy(dstPtr, dat, size);
 			free(dat);
+			return;
 		}
-		return;
 	}
 	error("Cannot load '%s'", _entryName);
 }
 
 void Resource::load_PAL_menu(const char *fileName, uint8_t *dstPtr) {
 	debug(DBG_RES, "Resource::load_PAL_menu('%s')", fileName);
+	static const int kMenuPalSize = 768;
 	snprintf(_entryName, sizeof(_entryName), "%s.PAL", fileName);
 	File f;
 	if (f.open(_entryName, "rb", _fs)) {
-		if (f.size() != 768) {
-			error("Wrong file size for '%s', %d", _entryName, f.size());
+		if (f.read(dstPtr, kMenuPalSize) != kMenuPalSize) {
+			error("Failed to read '%s'", _entryName);
 		}
-		f.read(dstPtr, 768);
 		if (f.ioErr()) {
 			error("I/O error when reading '%s'", _entryName);
 		}
@@ -204,13 +204,13 @@ void Resource::load_PAL_menu(const char *fileName, uint8_t *dstPtr) {
 		uint32_t size = 0;
 		uint8_t *dat = _aba->loadEntry(_entryName, &size);
 		if (dat) {
-			if (size != 768) {
+			if (size != kMenuPalSize) {
 				error("Unexpected size %d for '%s'", size, _entryName);
 			}
 			memcpy(dstPtr, dat, size);
 			free(dat);
+			return;
 		}
-		return;
 	}
 	error("Cannot load '%s'", _entryName);
 }
