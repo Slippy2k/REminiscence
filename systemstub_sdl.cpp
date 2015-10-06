@@ -45,6 +45,7 @@ struct SystemStub_SDL : SystemStub {
 	virtual ~SystemStub_SDL() {}
 	virtual void init(const char *title, int w, int h, int scaler, bool fullscreen);
 	virtual void destroy();
+	virtual void setScreenSize(int w, int h);
 	virtual void setPalette(const uint8_t *pal, int n);
 	virtual void setPaletteEntry(int i, const Color *c);
 	virtual void getPaletteEntry(int i, Color *c);
@@ -62,8 +63,6 @@ struct SystemStub_SDL : SystemStub {
 	virtual void unlockAudio();
 
 	void processEvent(const SDL_Event &ev, bool &paused);
-	void updateScreen_GL(int shakeOffset);
-	void updateScreen_SW(int shakeOffset);
 	void prepareGfxMode();
 	void cleanupGfxMode();
 	void switchGfxMode(bool fullscreen, uint8_t scaler);
@@ -81,21 +80,13 @@ void SystemStub_SDL::init(const char *title, int w, int h, int scaler, bool full
 	SDL_ShowCursor(SDL_DISABLE);
 	SDL_WM_SetCaption(title, NULL);
 	memset(&_pi, 0, sizeof(_pi));
-	_screenW = w;
-	_screenH = h;
-	// allocate some extra bytes for the scaling routines
-	const int screenBufferSize = (w + 2) * (h + 2) * sizeof(uint16_t);
-	_screenBuffer = (uint16_t *)malloc(screenBufferSize);
-	if (!_screenBuffer) {
-		error("SystemStub_SDL::init() Unable to allocate offscreen buffer");
-	}
-	memset(_screenBuffer, 0, screenBufferSize);
+	_screenBuffer = 0;
 	_fadeScreenBuffer = 0;
 	_fadeOnUpdateScreen = false;
 	_fullscreen = fullscreen;
 	_currentScaler = scaler;
 	memset(_pal, 0, sizeof(_pal));
-	prepareGfxMode();
+	setScreenSize(w, h);
 	_joystick = NULL;
 	if (SDL_NumJoysticks() > 0) {
 		_joystick = SDL_JoystickOpen(0);
@@ -108,6 +99,25 @@ void SystemStub_SDL::destroy() {
 		SDL_JoystickClose(_joystick);
 	}
 	SDL_Quit();
+}
+
+void SystemStub_SDL::setScreenSize(int w, int h) {
+	if (_screenW == w && _screenH == h) {
+		return;
+	}
+	free(_screenBuffer);
+	_screenBuffer = 0;
+	free(_fadeScreenBuffer);
+	_fadeScreenBuffer = 0;
+	// allocate some extra bytes for the scaling routines
+	const int screenBufferSize = (w + 2) * (h + 2) * sizeof(uint16_t);
+	_screenBuffer = (uint16_t *)calloc(1, screenBufferSize);
+	if (!_screenBuffer) {
+		error("SystemStub_SDL::setScreenSize() Unable to allocate offscreen buffer, w=%d, h=%d", w, h);
+	}
+	_screenW = w;
+	_screenH = h;
+	prepareGfxMode();
 }
 
 void SystemStub_SDL::setPalette(const uint8_t *pal, int n) {
