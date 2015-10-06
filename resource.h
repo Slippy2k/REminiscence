@@ -165,6 +165,7 @@ struct Resource {
 	void load_SPL_demo();
 	void load_MAP_menu(const char *fileName, uint8_t *dstPtr);
 	void load_PAL_menu(const char *fileName, uint8_t *dstPtr);
+	void load_CMP_menu(const char *fileName, uint8_t *dstPtr);
 	void load_SPR_OFF(const char *fileName, uint8_t *sprData);
 	void load_CINE();
 	void load_TEXT();

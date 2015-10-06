@@ -79,6 +79,11 @@ void Game::run() {
 		break;
 	}
 
+	if (_res._type == kResourceTypeAmiga) {
+		displayTitleScreenAmiga();
+		_stub->setScreenSize(Video::GAMESCREEN_W, Video::GAMESCREEN_H);
+	}
+
 	while (!_stub->_pi.quit) {
 		if (_res._type == kResourceTypePC) {
 			_mix.playMusic(1);
@@ -114,6 +119,53 @@ void Game::run() {
 	_res.free_TEXT();
 	_mix.free();
 	_res.fini();
+}
+
+static void convertAmigaColor(const uint16_t color, Color *c) {
+	const int r = (color >> 8) & 15;
+	const int g = (color >> 4) & 15;
+	const int b =  color       & 15;
+	c->r = ((r << 4) | r) >> 2;
+	c->g = ((g << 4) | g) >> 2;
+	c->b = ((b << 4) | b) >> 2;
+}
+
+void Game::displayTitleScreenAmiga() {
+	static const char *FILENAME = "present.cmp";
+	_res.load_CMP_menu(FILENAME, _res._memBuf);
+	static const int kW = 320;
+	static const int kH = 224;
+	uint8_t *buf = (uint8_t *)malloc(kW * kH);
+	if (!buf) {
+		error("Failed to allocate screen buffer w=%d h=%d", kW, kH);
+	}
+	_vid.AMIGA_decodeCmp(_res._memBuf + 6, buf);
+	static const int kAmigaColors[] = {
+		0x000, 0x123, 0x012, 0x134, 0x433, 0x453, 0x046, 0x245,
+		0x751, 0x455, 0x665, 0x268, 0x961, 0x478, 0x677, 0x786,
+		0x17B, 0x788, 0xB84, 0xC92, 0x49C, 0xF00, 0x9A8, 0x9AA,
+		0xCA7, 0xEA3, 0x8BD, 0xBBB, 0xEC7, 0xBCD, 0xDDB, 0xEED
+	};
+	for (int i = 0; i < 32; ++i) {
+		Color c;
+		convertAmigaColor(kAmigaColors[i], &c);
+		_stub->setPaletteEntry(i, &c);
+	}
+	_stub->setScreenSize(kW, kH);
+	_stub->copyRect(0, 0, kW, kH, buf, kW);
+	_stub->updateScreen(0);
+	free(buf);
+	while (1) {
+		_stub->processEvents();
+		if (_stub->_pi.quit) {
+			break;
+		}
+		if (_stub->_pi.enter) {
+			_stub->_pi.enter = false;
+			break;
+		}
+		_stub->sleep(30);
+	}
 }
 
 void Game::resetGameState() {

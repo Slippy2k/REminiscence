@@ -77,6 +77,7 @@ struct Video {
 	void AMIGA_decodeSpm(const uint8_t *src, uint8_t *dst);
 	void AMIGA_decodeIcn(const uint8_t *src, int num, uint8_t *dst);
 	void AMIGA_decodeSpc(const uint8_t *src, int w, int h, uint8_t *dst);
+	void AMIGA_decodeCmp(const uint8_t *src, uint8_t *dst);
 	void drawSpriteSub1(const uint8_t *src, uint8_t *dst, int pitch, int h, int w, uint8_t colMask);
 	void drawSpriteSub2(const uint8_t *src, uint8_t *dst, int pitch, int h, int w, uint8_t colMask);
 	void drawSpriteSub3(const uint8_t *src, uint8_t *dst, int pitch, int h, int w, uint8_t colMask);

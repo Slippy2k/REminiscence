@@ -29,7 +29,7 @@ Resource::Resource(FileSystem *fs, ResourceType ver, Language lang) {
 	_aba = 0;
 	_readUint16 = (_type == kResourceTypePC) ? READ_LE_UINT16 : READ_BE_UINT16;
 	_readUint32 = (_type == kResourceTypePC) ? READ_LE_UINT32 : READ_BE_UINT32;
-	_memBuf = (uint8_t *)malloc(256 * 224);
+	_memBuf = (uint8_t *)malloc(320 * 224 + 1024);
 	if (!_memBuf) {
 		error("Unable to allocate temporary memory buffer");
 	}
@@ -213,6 +213,24 @@ void Resource::load_PAL_menu(const char *fileName, uint8_t *dstPtr) {
 		}
 	}
 	error("Cannot load '%s'", _entryName);
+}
+
+void Resource::load_CMP_menu(const char *fileName, uint8_t *dstPtr) {
+	File f;
+	if (f.open(fileName, "rb", _fs)) {
+		const uint32_t size = f.readUint32BE();
+		uint8_t *tmp = (uint8_t *)malloc(size);
+		if (!tmp) {
+			error("Failed to allocate CMP temporary buffer");
+		}
+		f.read(tmp, size);
+		if (!delphine_unpack(dstPtr, tmp, size)) {
+			error("Bad CRC for %s", fileName);
+		}
+                free(tmp);
+		return;
+	}
+	error("Cannot load '%s'", fileName);
 }
 
 void Resource::load_SPR_OFF(const char *fileName, uint8_t *sprData) {

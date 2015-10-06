@@ -618,6 +618,10 @@ void Video::AMIGA_decodeSpc(const uint8_t *src, int w, int h, uint8_t *dst) {
 	}
 }
 
+void Video::AMIGA_decodeCmp(const uint8_t *src, uint8_t *dst) {
+	AMIGA_planar16(dst, 20, 224, 5, src);
+}
+
 void Video::drawSpriteSub1(const uint8_t *src, uint8_t *dst, int pitch, int h, int w, uint8_t colMask) {
 	debug(DBG_VIDEO, "Video::drawSpriteSub1(0x%X, 0x%X, 0x%X, 0x%X)", pitch, w, h, colMask);
 	while (h--) {
