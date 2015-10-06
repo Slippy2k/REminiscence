@@ -962,10 +962,6 @@ void Game::drawObjectFrame(const uint8_t *bankDataPtr, const uint8_t *dataPtr, i
 
 	switch (_res._type) {
 	case kResourceTypeAmiga:
-		if (sprite_w == 24) {
-			// TODO: fix p24xN
-			return;
-		}
 		_vid.AMIGA_decodeSpc(src, sprite_w, sprite_h, _res._memBuf);
 		break;
 	case kResourceTypePC:
