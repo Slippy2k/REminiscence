@@ -39,13 +39,6 @@
 #define ARRAYSIZE(a) (sizeof(a)/sizeof(a[0]))
 #endif
 
-
-inline void SWAP_UINT16(uint16_t *ptr) {
-	const uint8_t hi = *ptr >> 8;
-	const uint8_t lo = *ptr & 255;
-	*ptr = (lo << 8) | hi;
-}
-
 inline uint16_t READ_BE_UINT16(const void *ptr) {
 	const uint8_t *b = (const uint8_t *)ptr;
 	return (b[0] << 8) | b[1];

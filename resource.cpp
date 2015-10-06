@@ -866,13 +866,20 @@ void Resource::decodeOBJ(const uint8_t *tmp, int size) {
 
 void Resource::load_PGE(File *f) {
 	debug(DBG_RES, "Resource::load_PGE()");
-	int len = f->size() - 2;
-	_pgeNum = f->readUint16LE();
 	if (_type == kResourceTypeAmiga) {
-		SWAP_UINT16(&_pgeNum);
+		const int size = f->size();
+		uint8_t *tmp = (uint8_t *)malloc(size);
+		if (!tmp) {
+			error("Unable to allocate PGE temporary buffer");
+		}
+		f->read(tmp, size);
+		decodePGE(tmp, size);
+		free(tmp);
+		return;
 	}
+	_pgeNum = f->readUint16LE();
 	memset(_pgeInit, 0, sizeof(_pgeInit));
-	debug(DBG_RES, "len=%d _pgeNum=%d", len, _pgeNum);
+	debug(DBG_RES, "_pgeNum=%d", _pgeNum);
 	for (uint16_t i = 0; i < _pgeNum; ++i) {
 		InitPGE *pge = &_pgeInit[i];
 		pge->type = f->readUint16LE();
@@ -896,20 +903,6 @@ void Resource::load_PGE(File *f) {
 		pge->unk1C = f->readByte();
 		f->readByte();
 		pge->text_num = f->readUint16LE();
-	}
-	if (_type == kResourceTypeAmiga) {
-		for (uint16_t i = 0; i < _pgeNum; ++i) {
-			InitPGE *pge = &_pgeInit[i];
-			SWAP_UINT16((uint16_t *)&pge->type);
-			SWAP_UINT16((uint16_t *)&pge->pos_x);
-			SWAP_UINT16((uint16_t *)&pge->pos_y);
-			SWAP_UINT16((uint16_t *)&pge->obj_node_number);
-			SWAP_UINT16((uint16_t *)&pge->life);
-			for (int lc = 0; lc < 4; ++lc) {
-				SWAP_UINT16((uint16_t *)&pge->counter_values[lc]);
-			}
-			SWAP_UINT16((uint16_t *)&pge->text_num);
-		}
 	}
 }
 
