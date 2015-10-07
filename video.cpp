@@ -194,6 +194,24 @@ void Video::setPalette0xF() {
 	}
 }
 
+void Video::PC_decodeLev(int level, int room) {
+	uint8_t *tmp = _res->_memBuf;
+	const int offset = READ_BE_UINT32(_res->_lev + room * 4);
+	if (!delphine_unpack(tmp, _res->_lev, offset)) {
+		error("Bad CRC for level %d room %d", level, room);
+	}
+	_mapPalSlot1 = READ_BE_UINT16(tmp + 2);
+	_mapPalSlot2 = READ_BE_UINT16(tmp + 4);
+	_mapPalSlot3 = READ_BE_UINT16(tmp + 6);
+	_mapPalSlot4 = READ_BE_UINT16(tmp + 8);
+	const int offset10 = READ_BE_UINT16(tmp + 10); // sgd
+	const int offset12 = READ_BE_UINT16(tmp + 12); // tileMap
+	const int offset14 = READ_BE_UINT16(tmp + 14); // mbk
+	assert(offset14 - offset12 == (256 / 8) * (224 / 8) * sizeof(uint16_t));
+	const uint32_t size = READ_BE_UINT32(_res->_lev + offset - 4);
+	warning("Video::PC_decodeLev(%d) size=%d flags=%d,%d offsets=%d,%d,%d unimplemented", room, size, tmp[0], tmp[1], offset10, offset12, offset14);
+}
+
 static void PC_decodeMapHelper(int sz, const uint8_t *src, uint8_t *dst) {
 	const uint8_t *end = src + sz;
 	while (src < end) {

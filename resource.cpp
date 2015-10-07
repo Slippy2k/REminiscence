@@ -544,12 +544,21 @@ void Resource::load(const char *objName, int objType, const char *ext) {
 		}
 	} else {
 		if (_aba) {
-			if (objType == OT_MAP) {
-				// The PC demo data files comes with .SGD and .LEV,
-				// similar to the Amiga files.
-				warning("Ignoring MAP loading");
-				_map = 0;
-				return;
+			if (objType == OT_MAP) { // PC demo comes with .SGD and .LEV instead of .MAP
+				warning("Loading .LEV and .SGD data files");
+				load(objName, OT_LEV);
+				snprintf(_entryName, sizeof(_entryName), "%s.SGD", objName);
+				File f;
+				if (f.open(_entryName, "rb", _fs)) {
+					const uint32_t size = f.size();
+					_sgd = (uint8_t *)malloc(size);
+					if (!_sgd) {
+						error("Failed to allocate SGD buffer");
+					}
+					f.read(_sgd, size);
+					return;
+				}
+				// fall-through
 			}
 			uint32_t size;
 			uint8_t *dat = _aba->loadEntry(_entryName, &size);
