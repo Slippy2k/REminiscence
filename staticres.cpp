@@ -73,7 +73,9 @@ const char *Cutscene::_namesTable[] = {
 	"OVER",
 	"SCORE",
 	"INTRO2",
-	"SERRURE"
+	"SERRURE",
+	"HOLOCUBE",
+	"CHUTE2"
 };
 
 const uint16_t Cutscene::_offsetsTable[] = {
@@ -93,6 +95,12 @@ const uint16_t Cutscene::_offsetsTable[] = {
 	0x001C, 0x0000, 0x000F, 0x0006, 0x000F, 0x0006, 0x000F, 0x0007, 0x000F, 0x0008,
 	0x000F, 0x0009, 0x000F, 0x000A, 0x001D, 0x0000, 0x001B, 0x0001, 0x001E, 0x0000,
 	0xFFFF, 0x0000
+};
+
+const uint8_t Cutscene::_amigaDemoOffsetsTable[] = {
+	1, 32, 0, /* HOLOCUBE */
+	6, 33, 0, /* CHUTE2 */
+	255
 };
 
 const uint16_t Cutscene::_cosTable[] = {

@@ -36,6 +36,7 @@ struct Cutscene {
 	static const OpcodeStub _opcodeTable[];
 	static const char *_namesTable[];
 	static const uint16_t _offsetsTable[];
+	static const uint8_t _amigaDemoOffsetsTable[];
 	static const uint16_t _cosTable[];
 	static const uint16_t _sinTable[];
 	static const uint8_t _creditsData[];
@@ -47,6 +48,7 @@ struct Cutscene {
 	Resource *_res;
 	SystemStub *_stub;
 	Video *_vid;
+	const uint8_t *_patchedOffsetsTable;
 
 	uint16_t _id;
 	uint16_t _deathCutsceneId;

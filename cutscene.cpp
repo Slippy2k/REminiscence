@@ -24,6 +24,7 @@
 
 Cutscene::Cutscene(Resource *res, SystemStub *stub, Video *vid)
 	: _res(res), _stub(stub), _vid(vid) {
+	_patchedOffsetsTable = 0;
 	memset(_palBuf, 0, sizeof(_palBuf));
 }
 
@@ -1049,6 +1050,15 @@ void Cutscene::play() {
 			case 31:
 				cutName = 14; // METRO
 				break;
+			}
+		}
+		if (_patchedOffsetsTable) {
+			for (int i = 0; _patchedOffsetsTable[i] != 255; i += 3) {
+				if (_patchedOffsetsTable[i] == _id) {
+					cutName = _patchedOffsetsTable[i + 1];
+					cutOff = _patchedOffsetsTable[i + 2];
+					break;
+				}
 			}
 		}
 		if (cutName != 0xFFFF) {

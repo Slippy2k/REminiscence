@@ -1313,8 +1313,7 @@ void Game::loadLevelData() {
 	switch (_res._type) {
 	case kResourceTypeAmiga:
 		if (_fs->exists("demo.lev")) { // demo data files
-			Cutscene::_namesTable[1] = "HOLOCUBE";
-			Cutscene::_namesTable[4] = "CHUTE2";
+			_cut._patchedOffsetsTable = Cutscene::_amigaDemoOffsetsTable;
 			static const char *fname1 = "demo";
 			static const char *fname2 = "demof";
 			_res.load(fname1, Resource::OT_MBK);
