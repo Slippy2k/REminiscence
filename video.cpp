@@ -415,7 +415,7 @@ static void AMIGA_decodeSgd(uint8_t *dst, const uint8_t *src, const uint8_t *dat
 	} while (--count >= 0);
 }
 
-static const uint8_t *AMIGA_mirrorY(const uint8_t *a2) {
+static const uint8_t *AMIGA_mirrorTileY(const uint8_t *a2) {
 	static uint8_t buf[32];
 
         a2 += 24;
@@ -428,7 +428,7 @@ static const uint8_t *AMIGA_mirrorY(const uint8_t *a2) {
 	return buf;
 }
 
-static const uint8_t *AMIGA_mirrorX(const uint8_t *a2) {
+static const uint8_t *AMIGA_mirrorTileX(const uint8_t *a2) {
 	static uint8_t buf[32];
 
 	for (int i = 0; i < 32; ++i) {
@@ -443,7 +443,7 @@ static const uint8_t *AMIGA_mirrorX(const uint8_t *a2) {
 	return buf;
 }
 
-static void AMIGA_blit4p8x8(uint8_t *dst, int pitch, const uint8_t *src, int pal, int colorKey = -1) {
+static void AMIGA_drawTile(uint8_t *dst, int pitch, const uint8_t *src, int pal, int colorKey) {
 	for (int y = 0; y < 8; ++y) {
 		for (int i = 0; i < 8; ++i) {
 			const int mask = 1 << (7 - i);
@@ -472,16 +472,16 @@ static void AMIGA_decodeLevHelper(uint8_t *dst, const uint8_t *src, int offset10
 				if (d0 != 0) {
 					const uint8_t *a2 = a5 + d0 * 32;
 					if ((d3 & (1 << 12)) != 0) {
-						a2 = AMIGA_mirrorY(a2);
+						a2 = AMIGA_mirrorTileY(a2);
 					}
 					if ((d3 & (1 << 11)) != 0) {
-						a2 = AMIGA_mirrorX(a2);
+						a2 = AMIGA_mirrorTileX(a2);
 					}
 					int mask = 0;
 					if ((d3 < (1 << 15)) == 0) {
 						mask = 0x80;
 					}
-					AMIGA_blit4p8x8(dst + y * 256 + x, 256, a2, mask);
+					AMIGA_drawTile(dst + y * 256 + x, 256, a2, mask, -1);
 				}
 			}
 		}
@@ -498,10 +498,10 @@ static void AMIGA_decodeLevHelper(uint8_t *dst, const uint8_t *src, int offset10
 				if (d0 != 0) {
 					const uint8_t *a2 = a5 + d0 * 32;
 					if ((d3 & (1 << 12)) != 0) {
-						a2 = AMIGA_mirrorY(a2);
+						a2 = AMIGA_mirrorTileY(a2);
 					}
 					if ((d3 & (1 << 11)) != 0) {
-						a2 = AMIGA_mirrorX(a2);
+						a2 = AMIGA_mirrorTileX(a2);
 					}
 					int mask = 0;
 					if ((d3 & 0x6000) != 0 && sgdBuf) {
@@ -509,7 +509,7 @@ static void AMIGA_decodeLevHelper(uint8_t *dst, const uint8_t *src, int offset10
 					} else if ((d3 < (1 << 15)) == 0) {
 						mask = 0x80;
 					}
-					AMIGA_blit4p8x8(dst + y * 256 + x, 256, a2, mask, 0);
+					AMIGA_drawTile(dst + y * 256 + x, 256, a2, mask, 0);
 				}
 			}
 		}
@@ -610,10 +610,11 @@ void Video::AMIGA_decodeSpc(const uint8_t *src, int w, int h, uint8_t *dst) {
 		AMIGA_planar8(dst, w, h, src);
 		break;
 	case 16:
-		AMIGA_planar16(dst, 1, h, 4, src);
+	case 32:
+		AMIGA_planar16(dst, w / 16, h, 4, src);
 		break;
 	default:
-		warning("AMIGA_decodeSpc w=%d unimplemented");
+		warning("AMIGA_decodeSpc w=%d unimplemented", w);
 		break;
 	}
 }
