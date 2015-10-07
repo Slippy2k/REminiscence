@@ -79,13 +79,13 @@ void Game::run() {
 		break;
 	}
 
-	if (_res._type == kResourceTypeAmiga) {
+	if (_res.isAmiga()) {
 		displayTitleScreenAmiga();
 		_stub->setScreenSize(Video::GAMESCREEN_W, Video::GAMESCREEN_H);
 	}
 
 	while (!_stub->_pi.quit) {
-		if (_res._type == kResourceTypePC) {
+		if (_res.isPC()) {
 			_mix.playMusic(1);
 			_menu.handleTitleScreen();
 			if (_menu._selectedOption == Menu::MENU_OPTION_ITEM_QUIT) {
@@ -343,7 +343,7 @@ void Game::playCutscene(int id) {
 			_mix.playMusic(Cutscene::_musicTable[_cut._id]);
 		}
 		_cut.play();
-		if (id == 0xD && !_cut._interrupted && _res._type == kResourceTypePC) {
+		if (id == 0xD && !_cut._interrupted && _res.isPC()) {
 			_cut._id = 0x4A;
 			_cut.play();
 		}
@@ -461,7 +461,7 @@ void Game::showFinalScore() {
 }
 
 bool Game::handleConfigPanel() {
-	if (_res._type == kResourceTypeAmiga) {
+	if (_res.isAmiga()) {
 		return true;
 	}
 	const int x = 7;
@@ -1251,7 +1251,7 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 	_curMonsterFrame = mList[0];
 	if (_curMonsterNum != mList[1]) {
 		_curMonsterNum = mList[1];
-		if (_res._type == kResourceTypeAmiga) {
+		if (_res.isAmiga()) {
 			_res.load(_monsterNames[1][_curMonsterNum], Resource::OT_SPM);
 			static const uint8_t tab[4] = { 0, 8, 0, 8 };
 			const int offset = _vid._mapPalSlot2 * 16 + tab[_curMonsterNum];
@@ -1455,7 +1455,7 @@ void Game::playSound(uint8_t sfxId, uint8_t softVol) {
 			MixerChunk mc;
 			mc.data = sfx->data;
 			mc.len = sfx->len;
-			const int freq = _res._type == kResourceTypeAmiga ? 3546897 / 650 : 6000;
+			const int freq = _res.isAmiga() ? 3546897 / 650 : 6000;
 			_mix.play(&mc, freq, Mixer::MAX_VOLUME >> softVol);
 		}
 	} else {

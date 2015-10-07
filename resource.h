@@ -160,6 +160,9 @@ struct Resource {
 	void init();
 	void fini();
 
+	bool isPC()    const { return _type == kResourceTypePC; }
+	bool isAmiga() const { return _type == kResourceTypeAmiga; }
+
 	void clearLevelRes();
 	void load_FIB(const char *fileName);
 	void load_SPL_demo();
