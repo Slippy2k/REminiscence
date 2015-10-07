@@ -565,7 +565,9 @@ void Resource::load(const char *objName, int objType, const char *ext) {
 					_pal = dat;
 					break;
 				case OT_CT:
-					delphine_unpack((uint8_t *)_ctData, dat, size);
+					if (!delphine_unpack((uint8_t *)_ctData, dat, size)) {
+						error("Bad CRC for '%s'", _entryName);
+					}
 					free(dat);
 					break;
 				case OT_SPC:

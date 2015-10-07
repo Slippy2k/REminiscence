@@ -6,14 +6,22 @@ const char *ResourceAba::FILENAME = "DEMO_UK.ABA";
 
 ResourceAba::ResourceAba(FileSystem *fs)
 	: _fs(fs) {
-	memset(_entries, 0, sizeof(_entries));
+	_entries = 0;
 	_entriesCount = 0;
+}
+
+ResourceAba::~ResourceAba() {
+	free(_entries);
 }
 
 void ResourceAba::readEntries() {
 	if (_f.open(FILENAME, "rb", _fs)) {
 		_entriesCount = _f.readUint16BE();
-		assert(_entriesCount <= MAX_ENTRIES);
+		_entries = (ResourceAbaEntry *)calloc(_entriesCount, sizeof(ResourceAbaEntry));
+		if (!_entries) {
+			error("Failed to allocate %d _entries", _entriesCount);
+			return;
+		}
 		const int entrySize = _f.readUint16BE();
 		assert(entrySize == 30);
 		uint32_t nextOffset = 0;
