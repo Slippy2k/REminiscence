@@ -4,6 +4,7 @@ SDL_LIBS = `sdl-config --libs`
 VORBIS_LIBS = -lvorbisidec
 ZLIB_LIBS = -lz
 
+CXX := clang++
 CXXFLAGS := -Wall -MMD $(SDL_CFLAGS) -DUSE_ZLIB
 
 SRCS = collision.cpp cutscene.cpp file.cpp fs.cpp game.cpp graphics.cpp main.cpp menu.cpp \
