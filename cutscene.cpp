@@ -213,9 +213,7 @@ void Cutscene::drawCreditsText() {
 				}
 			} else {
 				*_textCurBuf++ = code;
-				_textCurBuf = _textCurBuf;
-				*_textCurBuf = 0xA;
-				++_textCurPtr;
+				*_textCurBuf++ = 0xA;
 			}
 		} else {
 			_creditsTextCounter -= 10; // XXX adjust
