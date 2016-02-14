@@ -120,17 +120,11 @@ void SystemStub_SDL::setPalette(const uint8_t *pal, int n) {
 }
 
 void SystemStub_SDL::setPaletteEntry(int i, const Color *c) {
-	uint8_t r = (c->r << 2) | (c->r & 3);
-	uint8_t g = (c->g << 2) | (c->g & 3);
-	uint8_t b = (c->b << 2) | (c->b & 3);
-	_pal[i] = SDL_MapRGB(_screenSurface->format, r, g, b);
+	_pal[i] = SDL_MapRGB(_screenSurface->format, c->r, c->g, c->b);
 }
 
 void SystemStub_SDL::getPaletteEntry(int i, Color *c) {
 	SDL_GetRGB(_pal[i], _screenSurface->format, &c->r, &c->g, &c->b);
-	c->r >>= 2;
-	c->g >>= 2;
-	c->b >>= 2;
 }
 
 void SystemStub_SDL::setOverscanColor(int i) {

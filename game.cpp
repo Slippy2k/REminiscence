@@ -110,15 +110,6 @@ void Game::run() {
 	_res.fini();
 }
 
-static void convertAmigaColor(const uint16_t color, Color *c) {
-	const int r = (color >> 8) & 15;
-	const int g = (color >> 4) & 15;
-	const int b =  color       & 15;
-	c->r = ((r << 4) | r) >> 2;
-	c->g = ((g << 4) | g) >> 2;
-	c->b = ((b << 4) | b) >> 2;
-}
-
 void Game::displayTitleScreenAmiga() {
 	static const char *FILENAME = "present.cmp";
 	_res.load_CMP_menu(FILENAME, _res._memBuf);
@@ -136,8 +127,7 @@ void Game::displayTitleScreenAmiga() {
 		0xCA7, 0xEA3, 0x8BD, 0xBBB, 0xEC7, 0xBCD, 0xDDB, 0xEED
 	};
 	for (int i = 0; i < 32; ++i) {
-		Color c;
-		convertAmigaColor(kAmigaColors[i], &c);
+		Color c = Video::AMIGA_convertColor(kAmigaColors[i]);
 		_stub->setPaletteEntry(i, &c);
 	}
 	_stub->setScreenSize(kW, kH);
@@ -594,18 +584,20 @@ bool Game::handleContinueAbort() {
 		}
 		_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._frontLayer, 256);
 		_stub->updateScreen(0);
-		if (col.b >= 0x3D) {
+		static const int COLOR_STEP = 8;
+		static const int COLOR_MIN = 16;
+		static const int COLOR_MAX = 256 - 16;
+		if (col.b >= COLOR_MAX) {
 			color_inc = 0;
-		}
-		if (col.b < 2) {
+		} else if (col.b < COLOR_MIN) {
 			color_inc = 0xFF;
 		}
 		if (color_inc == 0xFF) {
-			col.b += 2;
-			col.g += 2;
+			col.b += COLOR_STEP;
+			col.g += COLOR_STEP;
 		} else {
-			col.b -= 2;
-			col.g -= 2;
+			col.b -= COLOR_STEP;
+			col.g -= COLOR_STEP;
 		}
 		_stub->setPaletteEntry(0xE4, &col);
 		_stub->processEvents();

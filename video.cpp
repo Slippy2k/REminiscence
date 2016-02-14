@@ -124,15 +124,7 @@ void Video::fadeOutPalette() {
 
 void Video::setPaletteColorBE(int num, int offset) {
 	const int color = READ_BE_UINT16(_res->_pal + offset * 2);
-	Color c;
-	c.r = (color & 0x00F) << 2;
-	c.g = (color & 0x0F0) >> 2;
-	c.b = (color & 0xF00) >> 6;
-	if (color != 0) {
-		c.r |= 3;
-		c.g |= 3;
-		c.b |= 3;
-	}
+	Color c = AMIGA_convertColor(color, true);
 	_stub->setPaletteEntry(num, &c);
 }
 
@@ -141,15 +133,7 @@ void Video::setPaletteSlotBE(int palSlot, int palNum) {
 	const uint8_t *p = _res->_pal + palNum * 0x20;
 	for (int i = 0; i < 16; ++i) {
 		const int color = READ_BE_UINT16(p); p += 2;
-		Color c;
-		c.r = (color & 0x00F) << 2;
-		c.g = (color & 0x0F0) >> 2;
-		c.b = (color & 0xF00) >> 6;
-		if (color != 0) {
-			c.r |= 3;
-			c.g |= 3;
-			c.b |= 3;
-		}
+		Color c = AMIGA_convertColor(color, true);
 		_stub->setPaletteEntry(palSlot * 0x10 + i, &c);
 	}
 }
@@ -158,10 +142,7 @@ void Video::setPaletteSlotLE(int palSlot, const uint8_t *palData) {
 	debug(DBG_VIDEO, "Video::setPaletteSlotLE()");
 	for (int i = 0; i < 16; ++i) {
 		uint16_t color = READ_LE_UINT16(palData); palData += 2;
-		Color c;
-		c.b = (color & 0x00F) << 2;
-		c.g = (color & 0x0F0) >> 2;
-		c.r = (color & 0xF00) >> 6;
+		Color c = AMIGA_convertColor(color);
 		_stub->setPaletteEntry(palSlot * 0x10 + i, &c);
 	}
 }
@@ -176,9 +157,9 @@ void Video::setPalette0xF() {
 	const uint8_t *p = _palSlot0xF;
 	for (int i = 0; i < 16; ++i) {
 		Color c;
-		c.r = *p++ >> 2;
-		c.g = *p++ >> 2;
-		c.b = *p++ >> 2;
+		c.r = *p++;
+		c.g = *p++;
+		c.b = *p++;
 		_stub->setPaletteEntry(0xF0 + i, &c);
 	}
 }
@@ -806,4 +787,18 @@ const char *Video::drawString(const char *str, int16_t x, int16_t y, uint8_t col
 	}
 	markBlockAsDirty(x, y, len * 8, 8);
 	return str - 1;
+}
+
+Color Video::AMIGA_convertColor(const uint16_t color, bool bgr) { // 4bits to 8bits
+	int r = (color & 0xF00) >> 8;
+	int g = (color & 0xF0)  >> 4;
+	int b =  color & 0xF;
+	if (bgr) {
+		SWAP(r, b);
+	}
+	Color c;
+	c.r = (r << 4) | r;
+	c.g = (g << 4) | g;
+	c.b = (b << 4) | b;
+	return c;
 }

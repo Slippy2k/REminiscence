@@ -78,6 +78,7 @@ struct Video {
 	void PC_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8_t color, uint8_t chr);
 	void AMIGA_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8_t color, uint8_t chr);
 	const char *drawString(const char *str, int16_t x, int16_t y, uint8_t col);
+	static Color AMIGA_convertColor(const uint16_t color, bool bgr = false);
 };
 
 #endif // VIDEO_H__
