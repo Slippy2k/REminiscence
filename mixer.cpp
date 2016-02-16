@@ -6,7 +6,7 @@
 
 #include "mixer.h"
 #include "systemstub.h"
-
+#include "util.h"
 
 Mixer::Mixer(FileSystem *fs, SystemStub *stub)
 	: _stub(stub), _musicType(MT_NONE), _mod(this, fs), _ogg(this, fs), _sfx(this) {

@@ -5,7 +5,7 @@
  */
 
 #include "scaler.h"
-
+#include "util.h"
 
 static void point1x(uint16_t *dst, int dstPitch, const uint16_t *src, int srcPitch, int w, int h) {
 	dstPitch >>= 1;

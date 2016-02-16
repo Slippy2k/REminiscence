@@ -13,6 +13,7 @@
 #include <sys/param.h>
 #endif
 #include "fs.h"
+#include "util.h"
 
 struct FileName {
 	char *name;

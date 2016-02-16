@@ -7,11 +7,11 @@
 #include <ctime>
 #include "file.h"
 #include "fs.h"
-#include "systemstub.h"
-#include "unpack.h"
 #include "game.h"
 #include "seq_player.h"
-
+#include "systemstub.h"
+#include "unpack.h"
+#include "util.h"
 
 Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang)
 	: _cut(&_res, stub, &_vid), _menu(&_res, stub, &_vid),

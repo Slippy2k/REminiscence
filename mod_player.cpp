@@ -7,6 +7,7 @@
 #include "file.h"
 #include "mixer.h"
 #include "mod_player.h"
+#include "util.h"
 
 
 ModPlayer::ModPlayer(Mixer *mixer, FileSystem *fs)

@@ -1,6 +1,7 @@
 
 #include "resource_aba.h"
 #include "unpack.h"
+#include "util.h"
 
 const char *ResourceAba::FILENAME = "DEMO_UK.ABA";
 

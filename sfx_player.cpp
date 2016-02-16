@@ -6,7 +6,7 @@
 
 #include "mixer.h"
 #include "sfx_player.h"
-
+#include "util.h"
 
 SfxPlayer::SfxPlayer(Mixer *mixer)
 	: _mod(0), _playing(false), _mix(mixer) {

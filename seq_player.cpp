@@ -9,7 +9,7 @@
 #include "mixer.h"
 #include "seq_player.h"
 #include "systemstub.h"
-
+#include "util.h"
 
 bool SeqDemuxer::open(File *f) {
 	_f = f;

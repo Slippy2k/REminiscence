@@ -12,6 +12,7 @@
 #include "game.h"
 #include "scaler.h"
 #include "systemstub.h"
+#include "util.h"
 
 static const char *USAGE =
 	"REminiscence - Flashback Interpreter\n"

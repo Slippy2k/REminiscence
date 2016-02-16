@@ -6,9 +6,9 @@
 
 #include "file.h"
 #include "fs.h"
-#include "unpack.h"
 #include "resource.h"
-
+#include "unpack.h"
+#include "util.h"
 
 Resource::Resource(FileSystem *fs, ResourceType ver, Language lang) {
 	memset(this, 0, sizeof(Resource));

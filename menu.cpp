@@ -5,11 +5,11 @@
  */
 
 #include "game.h"
+#include "menu.h"
 #include "resource.h"
 #include "systemstub.h"
+#include "util.h"
 #include "video.h"
-#include "menu.h"
-
 
 Menu::Menu(Resource *res, SystemStub *stub, Video *vid)
 	: _res(res), _stub(stub), _vid(vid) {

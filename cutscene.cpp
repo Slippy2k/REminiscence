@@ -5,11 +5,11 @@
  */
 
 #include <math.h>
+#include "cutscene.h"
 #include "resource.h"
 #include "systemstub.h"
+#include "util.h"
 #include "video.h"
-#include "cutscene.h"
-
 
 Cutscene::Cutscene(Resource *res, SystemStub *stub, Video *vid)
 	: _res(res), _stub(stub), _vid(vid) {

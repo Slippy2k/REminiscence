@@ -7,7 +7,7 @@
 #include <SDL.h>
 #include "scaler.h"
 #include "systemstub.h"
-
+#include "util.h"
 
 struct SystemStub_SDL : SystemStub {
 	enum {

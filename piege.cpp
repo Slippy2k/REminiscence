@@ -5,10 +5,10 @@
  */
 
 #include "cutscene.h"
+#include "game.h"
 #include "resource.h"
 #include "systemstub.h"
-#include "game.h"
-
+#include "util.h"
 
 void Game::pge_resetGroups() {
 	memset(_pge_groupsTable, 0, sizeof(_pge_groupsTable));

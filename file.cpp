@@ -5,12 +5,12 @@
  */
 
 #include <sys/param.h>
+#include "file.h"
 #include "fs.h"
+#include "util.h"
 #ifdef USE_ZLIB
 #include "zlib.h"
 #endif
-#include "file.h"
-
 
 struct File_impl {
 	bool _ioErr;

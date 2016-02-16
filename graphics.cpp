@@ -5,7 +5,7 @@
  */
 
 #include "graphics.h"
-
+#include "util.h"
 
 void Graphics::setClippingRect(int16_t rx, int16_t ry, int16_t rw, int16_t rh) {
 	debug(DBG_VIDEO, "Graphics::setClippingRect(%d, %d, %d, %d)", rx, ry, rw, rh);

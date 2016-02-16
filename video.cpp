@@ -7,8 +7,8 @@
 #include "resource.h"
 #include "systemstub.h"
 #include "unpack.h"
+#include "util.h"
 #include "video.h"
-
 
 Video::Video(Resource *res, SystemStub *stub)
 	: _res(res), _stub(stub) {
