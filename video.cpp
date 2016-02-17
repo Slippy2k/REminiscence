@@ -770,7 +770,7 @@ const char *Video::drawString(const char *str, int16_t x, int16_t y, uint8_t col
 	case kResourceTypeAmiga:
 		drawCharFunc = &Video::AMIGA_drawStringChar;
 		break;
-	case kResourceTypePC:
+	case kResourceTypeDOS:
 		drawCharFunc = &Video::PC_drawStringChar;
 		break;
 	}

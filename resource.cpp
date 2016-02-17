@@ -16,8 +16,8 @@ Resource::Resource(FileSystem *fs, ResourceType ver, Language lang) {
 	_type = ver;
 	_lang = lang;
 	_aba = 0;
-	_readUint16 = (_type == kResourceTypePC) ? READ_LE_UINT16 : READ_BE_UINT16;
-	_readUint32 = (_type == kResourceTypePC) ? READ_LE_UINT32 : READ_BE_UINT32;
+	_readUint16 = (_type == kResourceTypeDOS) ? READ_LE_UINT16 : READ_BE_UINT16;
+	_readUint32 = (_type == kResourceTypeDOS) ? READ_LE_UINT32 : READ_BE_UINT32;
 	_memBuf = (uint8_t *)malloc(320 * 224 + 1024);
 	if (!_memBuf) {
 		error("Unable to allocate temporary memory buffer");
@@ -1201,7 +1201,7 @@ int Resource::getBankDataSize(uint16_t num) {
 		}
 		size = len * 32;
 		break;
-	case kResourceTypePC:
+	case kResourceTypeDOS:
 		size = (len & 0x7FFF) * 32;
 		break;
 	}
@@ -1220,7 +1220,7 @@ uint8_t *Resource::findBankData(uint16_t num) {
 uint8_t *Resource::loadBankData(uint16_t num) {
 	const uint8_t *ptr = _mbk + num * 6;
 	int dataOffset = READ_BE_UINT32(ptr);
-	if (_type == kResourceTypePC) {
+	if (_type == kResourceTypeDOS) {
 		// first byte of the data buffer corresponds
 		// to the total count of entries
 		dataOffset &= 0xFFFF;

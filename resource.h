@@ -149,7 +149,7 @@ struct Resource {
 	void init();
 	void fini();
 
-	bool isPC()    const { return _type == kResourceTypePC; }
+	bool isDOS()   const { return _type == kResourceTypeDOS; }
 	bool isAmiga() const { return _type == kResourceTypeAmiga; }
 
 	void clearLevelRes();

@@ -63,7 +63,7 @@ enum Language {
 
 enum ResourceType {
 	kResourceTypeAmiga,
-	kResourceTypePC
+	kResourceTypeDOS
 };
 
 struct Options {

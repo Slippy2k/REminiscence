@@ -965,7 +965,7 @@ void Cutscene::load(uint16_t cutName) {
 		}
 		_res->load(name, Resource::OT_CMP);
 		break;
-	case kResourceTypePC:
+	case kResourceTypeDOS:
 		_res->load(name, Resource::OT_CMD);
 		_res->load(name, Resource::OT_POL);
 		_res->load_CINE();

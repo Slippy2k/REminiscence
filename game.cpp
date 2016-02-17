@@ -35,7 +35,7 @@ void Game::run() {
 	case kResourceTypeAmiga:
 		_res.load("FONT8", Resource::OT_FNT, "SPR");
 		break;
-	case kResourceTypePC:
+	case kResourceTypeDOS:
 		_res.load("FB_TXT", Resource::OT_FNT);
 		_res._hasSeqData = _fs->exists("INTRO.SEQ");
 		break;
@@ -59,7 +59,7 @@ void Game::run() {
 		_res.load("ICON", Resource::OT_ICN, "SPR");
 		_res.load("PERSO", Resource::OT_SPM);
 		break;
-	case kResourceTypePC:
+	case kResourceTypeDOS:
 		_res.load("GLOBAL", Resource::OT_ICN);
 		_res.load("GLOBAL", Resource::OT_SPC);
 		_res.load("PERSO", Resource::OT_SPR);
@@ -74,7 +74,7 @@ void Game::run() {
 	}
 
 	while (!_stub->_pi.quit) {
-		if (_res.isPC()) {
+		if (_res.isDOS()) {
 			_mix.playMusic(1);
 			_menu.handleTitleScreen();
 			if (_menu._selectedOption == Menu::MENU_OPTION_ITEM_QUIT) {
@@ -322,7 +322,7 @@ void Game::playCutscene(int id) {
 			_mix.playMusic(Cutscene::_musicTable[_cut._id]);
 		}
 		_cut.play();
-		if (id == 0xD && !_cut._interrupted && _res.isPC()) {
+		if (id == 0xD && !_cut._interrupted && _res.isDOS()) {
 			_cut._id = 0x4A;
 			_cut.play();
 		}
@@ -850,7 +850,7 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16_t dx, int16_t dy) {
 			w = ((dataPtr[2] >> 7) + 1) * 16;
 			h = dataPtr[2] & 0x7F;
 			break;
-		case kResourceTypePC:
+		case kResourceTypeDOS:
 			w = dataPtr[2];
 			h = dataPtr[3];
 			dataPtr += 4;
@@ -924,7 +924,7 @@ void Game::drawAnimBuffer(uint8_t stateNum, AnimBufferState *state) {
 					_vid.AMIGA_decodeSpm(state->dataPtr, _res._memBuf);
 					drawCharacter(_res._memBuf, state->x, state->y, state->h, state->w, pge->flags);
 					break;
-				case kResourceTypePC:
+				case kResourceTypeDOS:
 					if (!(state->dataPtr[-2] & 0x80)) {
 						decodeCharacterFrame(state->dataPtr, _res._memBuf);
 						drawCharacter(_res._memBuf, state->x, state->y, state->h, state->w, pge->flags);
@@ -962,7 +962,7 @@ void Game::drawObject(const uint8_t *dataPtr, int16_t x, int16_t y, uint8_t flag
 		count = dataPtr[8];
 		dataPtr += 9;
 		break;
-	case kResourceTypePC:
+	case kResourceTypeDOS:
 		count = dataPtr[5];
 		dataPtr += 6;
 		break;
@@ -997,7 +997,7 @@ void Game::drawObjectFrame(const uint8_t *bankDataPtr, const uint8_t *dataPtr, i
 	case kResourceTypeAmiga:
 		_vid.AMIGA_decodeSpc(src, sprite_w, sprite_h, _res._memBuf);
 		break;
-	case kResourceTypePC:
+	case kResourceTypeDOS:
 		_vid.PC_decodeSpc(src, sprite_w, sprite_h, _res._memBuf);
 		break;
 	}
@@ -1279,7 +1279,7 @@ void Game::loadLevelMap() {
 		}
 		_vid.AMIGA_decodeLev(_currentLevel, _currentRoom);
 		break;
-	case kResourceTypePC:
+	case kResourceTypeDOS:
 		if (_res._map) {
 			_vid.PC_decodeMap(_currentLevel, _currentRoom);
 		} else if (_res._lev) {
@@ -1347,7 +1347,7 @@ void Game::loadLevelData() {
 			_res.load(lvl->nameAmiga, Resource::OT_SGD);
 		}
 		break;
-	case kResourceTypePC:
+	case kResourceTypeDOS:
 		_res.load(lvl->name, Resource::OT_MBK);
 		_res.load(lvl->name, Resource::OT_CT);
 		_res.load(lvl->name, Resource::OT_PAL);
@@ -1423,7 +1423,7 @@ void Game::drawIcon(uint8_t iconNum, int16_t x, int16_t y, uint8_t colMask) {
 			_vid.AMIGA_decodeIcn(_res._icn, iconNum, buf);
 		}
 		break;
-	case kResourceTypePC:
+	case kResourceTypeDOS:
 		_vid.PC_decodeIcn(_res._icn, iconNum, buf);
 		break;
 	}
