@@ -28,6 +28,7 @@ static int detectVersion(FileSystem *fs) {
 		const char *name;
 	} table[] = {
 		{ "DEMO_UK.ABA", kResourceTypeDOS, "DOS (Demo)" },
+		{ "INTRO.SEQ", kResourceTypeDOS, "DOS CD" },
 		{ "LEVEL1.MAP", kResourceTypeDOS, "DOS" },
 		{ "LEVEL1.LEV", kResourceTypeAmiga, "Amiga" },
 		{ "DEMO.LEV", kResourceTypeAmiga, "Amiga (Demo)" },
