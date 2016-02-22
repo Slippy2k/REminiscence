@@ -5,14 +5,16 @@ VERSION = '0.3.0'
 SDL_TARBALL = [ 'REminiscence-%s-sdl-win32.zip',
 	(
 		'../README',
+		'../rs.cfg',
 		'../rs.exe'
 	)
 ]
 
 SRC_TARBALL = [ 'REminiscence-%s.tar.bz2',
 	(
-		'../Makefile',
 		'../README',
+		'../rs.cfg',
+		'../Makefile',
 		'../collision.cpp',
 		'../cutscene.cpp',
 		'../cutscene.h',
@@ -39,6 +41,8 @@ SRC_TARBALL = [ 'REminiscence-%s.tar.bz2',
 		'../piege.cpp',
 		'../resource.cpp',
 		'../resource.h',
+		'../resource_aba.cpp',
+		'../resource_aba.h',
 		'../scaler.cpp',
 		'../scaler.h',
 		'../seq_player.cpp',
