@@ -19,7 +19,10 @@ static const char *USAGE =
 	"Usage: %s [OPTIONS]...\n"
 	"  --datapath=PATH   Path to data files (default 'DATA')\n"
 	"  --savepath=PATH   Path to save files (default '.')\n"
-	"  --levelnum=NUM    Starting level (default '0')";
+	"  --levelnum=NUM    Start level (default '0')\n"
+	"  --fullscreen      Start fullscreen\n"
+	"  --scaler=INDEX    Graphics scaler\n"
+;
 
 static int detectVersion(FileSystem *fs) {
 	static const struct {
@@ -139,7 +142,7 @@ int main(int argc, char *argv[]) {
 			{ "savepath",   required_argument, 0, 2 },
 			{ "levelnum",   required_argument, 0, 3 },
 			{ "fullscreen", no_argument,       0, 4 },
-			{ "scaler",     required_argument, 0, 6 },
+			{ "scaler",     required_argument, 0, 5 },
 			{ 0, 0, 0, 0 }
 		};
 		int index;
@@ -161,9 +164,6 @@ int main(int argc, char *argv[]) {
 			fullscreen = true;
 			break;
 		case 5:
-			fullscreen = false;
-			break;
-		case 6:
 			scaler = atoi(optarg);
 			if (scaler < 0 || scaler >= NUM_SCALERS) {
 				scaler = DEFAULT_SCALER;
