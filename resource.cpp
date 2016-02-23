@@ -70,6 +70,7 @@ void Resource::clearLevelRes() {
 	free(_lev); _lev = 0;
 	_levNum = -1;
 	free(_sgd); _sgd = 0;
+	free(_bnq); _bnq = 0;
 	free(_ani); _ani = 0;
 	free_OBJ();
 }
@@ -513,6 +514,10 @@ void Resource::load(const char *objName, int objType, const char *ext) {
 		snprintf(_entryName, sizeof(_entryName), "%s.SGD", objName);
 		loadStub = &Resource::load_SGD;
 		break;
+	case OT_BNQ:
+		snprintf(_entryName, sizeof(_entryName), "%s.BNQ", objName);
+		loadStub = &Resource::load_BNQ;
+		break;
 	case OT_SPM:
 		snprintf(_entryName, sizeof(_entryName), "%s.SPM", objName);
 		loadStub = &Resource::load_SPM;
@@ -533,22 +538,6 @@ void Resource::load(const char *objName, int objType, const char *ext) {
 		}
 	} else {
 		if (_aba) {
-			if (objType == OT_MAP) { // PC demo comes with .SGD and .LEV instead of .MAP
-				warning("Loading .LEV and .SGD data files");
-				load(objName, OT_LEV);
-				snprintf(_entryName, sizeof(_entryName), "%s.SGD", objName);
-				File f;
-				if (f.open(_entryName, "rb", _fs)) {
-					const uint32_t size = f.size();
-					_sgd = (uint8_t *)malloc(size);
-					if (!_sgd) {
-						error("Failed to allocate SGD buffer");
-					}
-					f.read(_sgd, size);
-					return;
-				}
-				// fall-through
-			}
 			uint32_t size;
 			uint8_t *dat = _aba->loadEntry(_entryName, &size);
 			if (dat) {
@@ -601,6 +590,9 @@ void Resource::load(const char *objName, int objType, const char *ext) {
 					break;
 				case OT_POL:
 					_pol = dat;
+					break;
+				case OT_BNQ:
+					_bnq = dat;
 					break;
 				default:
 					error("Cannot load '%s' type %d", _entryName, objType);
@@ -1132,6 +1124,15 @@ void Resource::load_LEV(File *f) {
 
 void Resource::load_SGD(File *f) {
 	const int len = f->size();
+	if (_type == kResourceTypeDOS) {
+		_sgd = (uint8_t *)malloc(len);
+		if (!_sgd) {
+			error("Unable to allocate SGD buffer");
+		} else {
+			f->read(_sgd, len);
+		}
+		return;
+	}
 	f->seek(len - 4);
 	int size = f->readUint32BE();
 	f->seek(0);
@@ -1148,6 +1149,16 @@ void Resource::load_SGD(File *f) {
 		error("Bad CRC for SGD data");
 	}
 	free(tmp);
+}
+
+void Resource::load_BNQ(File *f) {
+	const int len = f->size();
+	_bnq = (uint8_t *)malloc(len);
+	if (!_bnq) {
+		error("Unable to allocate BNQ buffer");
+	} else {
+		f->read(_bnq, len);
+	}
 }
 
 void Resource::load_SPM(File *f) {

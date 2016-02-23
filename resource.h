@@ -83,11 +83,13 @@ struct Resource {
 		OT_SPL,
 		OT_LEV,
 		OT_SGD,
+		OT_BNQ,
 		OT_SPM
 	};
 
 	enum {
 		NUM_SFXS = 66,
+		NUM_BANK_BUFFERS = 128,
 		NUM_SPRITES = 1287
 	};
 
@@ -124,6 +126,7 @@ struct Resource {
 	uint8_t *_lev;
 	int _levNum;
 	uint8_t *_sgd;
+	uint8_t *_bnq;
 	uint16_t _numObjectNodes;
 	ObjectNode *_objectNodesMap[255];
 	uint8_t *_memBuf;
@@ -140,7 +143,7 @@ struct Resource {
 	uint8_t *_bankData;
 	uint8_t *_bankDataHead;
 	uint8_t *_bankDataTail;
-	BankSlot _bankBuffers[50];
+	BankSlot _bankBuffers[NUM_BANK_BUFFERS];
 	int _bankBuffersCount;
 
 	Resource(FileSystem *fs, ResourceType type, Language lang);
@@ -188,6 +191,7 @@ struct Resource {
 	void load_SPL(File *pf);
 	void load_LEV(File *pf);
 	void load_SGD(File *pf);
+	void load_BNQ(File *pf);
 	void load_SPM(File *f);
 	const uint8_t *getAniData(int num) const {
 		const int offset = _readUint16(_ani + 2 + num * 2);

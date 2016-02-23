@@ -176,7 +176,7 @@ void Video::PC_decodeLev(int level, int room) {
 	_mapPalSlot4 = READ_BE_UINT16(tmp + 8);
 	const int offset10 = READ_BE_UINT16(tmp + 10); // sgd
 	const int offset12 = READ_BE_UINT16(tmp + 12); // tileMap
-	const int offset14 = READ_BE_UINT16(tmp + 14); // mbk
+	const int offset14 = READ_BE_UINT16(tmp + 14); // bnq
 	assert(offset14 - offset12 == (256 / 8) * (224 / 8) * sizeof(uint16_t));
 	const uint32_t size = READ_BE_UINT32(_res->_lev + offset - 4);
 	warning("Video::PC_decodeLev(%d) size=%d flags=%d,%d offsets=%d,%d,%d unimplemented", room, size, tmp[0], tmp[1], offset10, offset12, offset14);
