@@ -1235,7 +1235,7 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 		if (_res.isAmiga()) {
 			_res.load(_monsterNames[1][_curMonsterNum], Resource::OT_SPM);
 			static const uint8_t tab[4] = { 0, 8, 0, 8 };
-			const int offset = _vid._mapPalSlot2 * 16 + tab[_curMonsterNum];
+			const int offset = _vid._mapPalSlot3 * 16 + tab[_curMonsterNum];
 			for (int i = 0; i < 8; ++i) {
 				_vid.setPaletteColorBE(0x50 + i, offset + i);
 			}
