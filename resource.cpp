@@ -1206,19 +1206,23 @@ void Resource::clearBankData() {
 
 int Resource::getBankDataSize(uint16_t num) {
 	int len = READ_BE_UINT16(_mbk + num * 6 + 4);
-	int size = 0;
 	switch (_type) {
 	case kResourceTypeAmiga:
 		if (len & 0x8000) {
 			len = -(int16_t)len;
 		}
-		size = len * 32;
 		break;
 	case kResourceTypeDOS:
-		size = (len & 0x7FFF) * 32;
+		if (len & 0x8000) {
+			if (_mbk == _bnq) { // demo .bnq use signed int
+				len = -(int16_t)len;
+				break;
+			}
+			len &= 0x7FFF;
+		}
 		break;
 	}
-	return size;
+	return len * 32;
 }
 
 uint8_t *Resource::findBankData(uint16_t num) {
