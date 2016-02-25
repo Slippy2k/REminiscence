@@ -1130,6 +1130,8 @@ void Resource::load_SGD(File *f) {
 			error("Unable to allocate SGD buffer");
 		} else {
 			f->read(_sgd, len);
+			// first byte == number of entries, clear to fix up 32 bits offset
+			_sgd[0] = 0;
 		}
 		return;
 	}
