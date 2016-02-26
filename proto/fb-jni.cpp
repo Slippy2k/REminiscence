@@ -12,7 +12,7 @@
 #include "stub.h"
 
 static const char *gFbSoName = "libfb.so";
-static const char *gFbSoSym = "g_stub";
+static const char *gFbSoSym = "GameStub_create";
 
 static void *g_dlFbSo;
 static GameStub *g_stub;
@@ -37,13 +37,15 @@ static int loadFbLib() {
 		__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "Unable to open '%s'", gFbSoName);
 		return 1;
 	}
-	g_stub = (struct GameStub *)dlsym(g_dlFbSo, gFbSoSym);
-	if (!g_stub) {
+	void *proc = (struct GameStub *)dlsym(g_dlFbSo, gFbSoSym);
+	if (!proc) {
 		__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "Unable to lookup symbol '%s'", gFbSoSym);
 		dlclose(g_dlFbSo);
 		g_dlFbSo = 0;
 		return 1;
 	}
+	typedef GameStub *(*createProc)();
+	g_stub = ((createProc)proc)();
 	return 0;
 }
 
@@ -60,9 +62,9 @@ static const int kHz = 30;
 JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_drawFrame(JNIEnv *env, jclass c, jint w, jint h) {
 	if (g_stub) {
 		const int t = getTimeMs() - g_timeStamp;
-		g_timeStamp = getTimeMs();
 		if (t >= 1000 / kHz) {
 			g_stub->doTick();
+			g_timeStamp = getTimeMs();
 		}
 		g_stub->drawGL(w, h);
 	}
