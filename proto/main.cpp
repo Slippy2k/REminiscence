@@ -108,14 +108,6 @@ static void rescaleWindowDim(int &w, int &h, int type) {
 static void queueKeyInput(GameStub *stub, int keyCode, bool pressed) {
 	int key = 0;
 	switch (keyCode) {
-#ifdef USE_GLES
-	case 82: // back
-		key = kKeyCodeQuit;
-		break;
-	case 84: // search
-		key = kKeyCodeBackspace;
-		break;
-#else
 	case SDL_SCANCODE_LEFT:
 		key = kKeyCodeLeft;
 		break;
@@ -141,7 +133,6 @@ static void queueKeyInput(GameStub *stub, int keyCode, bool pressed) {
 	case SDL_SCANCODE_BACKSPACE:
 		key = kKeyCodeBackspace;
 		break;
-#endif
 	default:
 		return;
 	}
