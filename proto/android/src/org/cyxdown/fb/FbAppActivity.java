@@ -55,21 +55,21 @@ public class FbAppActivity extends Activity {
 			case MotionEvent.ACTION_MOVE:
 				for (i = 0; i < event.getPointerCount(); ++i) {
 					id = event.getPointerId(i);
-					queueTouchEvent(id, (int)event.getX(id), (int)event.getY(id), 1);
+					queueTouchEvent(id, (int)event.getX(i), (int)event.getY(i), 1);
 				}
 				break;
 			case MotionEvent.ACTION_CANCEL:
 				queueTouchEvent(0, (int)event.getX(), (int)event.getY(), 0);
 				break;
 			case MotionEvent.ACTION_POINTER_DOWN:
-				i = (action & MotionEvent.ACTION_POINTER_ID_MASK) >> MotionEvent.ACTION_POINTER_ID_SHIFT;
+				i = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
 				id = event.getPointerId(i);
-				queueTouchEvent(id, (int)event.getX(id), (int)event.getY(id), 1);
+				queueTouchEvent(id, (int)event.getX(i), (int)event.getY(i), 1);
 				break;
 			case MotionEvent.ACTION_POINTER_UP:
-				i = (action & MotionEvent.ACTION_POINTER_ID_MASK) >> MotionEvent.ACTION_POINTER_ID_SHIFT;
+				i = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
 				id = event.getPointerId(i);
-				queueTouchEvent(id, (int)event.getX(id), (int)event.getY(id), 0);
+				queueTouchEvent(id, (int)event.getX(i), (int)event.getY(i), 0);
 				break;
 			}
 			return true;
