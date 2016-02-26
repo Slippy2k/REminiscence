@@ -120,6 +120,14 @@ struct Main {
 			}
 			_game.drawHotspots();
 		}
+		if (_game._pi.quit) {
+			_game._pi.quit = false;
+			_nextState = kStateMenu;
+		}
+	}
+
+	void drawFrame(int w, int h) {
+		_texCache.prepareFrameDraw(w, h);
 		if (_game._paletteChanged) {
 			_texCache.updatePalette(_game._palette);
 		}
@@ -129,14 +137,6 @@ struct Main {
 		for (int i = 0; i < _game._gfxImagesCount; ++i) {
 			_texCache.createTextureGfxImage(_resData, &_game._gfxImagesList[i]);
 		}
-		if (_game._pi.quit) {
-			_game._pi.quit = false;
-			_nextState = kStateMenu;
-		}
-	}
-
-	void drawFrame(int w, int h) {
-		_texCache.prepareFrameDraw(w, h);
 		_texCache.draw((_state == kStateMenu), w, h);
 		for (int i = 0; i < _game._gfxTextsCount; ++i) {
 			const GfxText *gt = &_game._gfxTextsList[i];
