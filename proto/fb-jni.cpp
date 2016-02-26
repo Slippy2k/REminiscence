@@ -7,6 +7,7 @@
 #include <sys/param.h>
 #include <sys/time.h>
 #include <jni.h>
+#include <android/keycodes.h>
 #include <android/log.h>
 #include <dlfcn.h>
 #include "stub.h"
@@ -97,7 +98,40 @@ JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_saveGame(JNIEnv *env, jclass c)
 JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_queueKeyEvent(JNIEnv *env, jclass c, jint keycode, jint pressed) {
 	if (g_stub) {
 //		__android_log_print(ANDROID_LOG_INFO, LOG_TAG, "keyEvent %d pressed %d", keycode, pressed);
-		g_stub->queueKeyInput(keycode, pressed);
+		int key = -1;
+		switch (keycode) {
+		case AKEYCODE_DPAD_LEFT:
+			key = kKeyCodeLeft;
+			break;
+		case AKEYCODE_DPAD_RIGHT:
+			key = kKeyCodeRight;
+			break;
+		case AKEYCODE_DPAD_UP:
+			key = kKeyCodeUp;
+			break;
+		case AKEYCODE_DPAD_DOWN:
+			key = kKeyCodeDown;
+			break;
+		case AKEYCODE_SHIFT_LEFT:
+		case AKEYCODE_SHIFT_RIGHT:
+			key = kKeyCodeShift;
+			break;
+		case AKEYCODE_SPACE:
+			key = kKeyCodeSpace;
+			break;
+		case AKEYCODE_DPAD_CENTER:
+			key = kKeyCodeReturn;
+			break;
+		case AKEYCODE_DEL:
+			key = kKeyCodeBackspace;
+			break;
+//		case AKEYCODE_ESCAPE:
+//			key = kKeyCodeQuit;
+//			break;
+		}
+		if (key != -1) {
+			g_stub->queueKeyInput(keycode, pressed);
+		}
 	}
 }
 

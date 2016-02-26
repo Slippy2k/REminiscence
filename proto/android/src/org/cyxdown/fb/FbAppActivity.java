@@ -14,7 +14,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 public class FbAppActivity extends Activity {
-	
+
 	class FbGLSurfaceView extends GLSurfaceView {
 		FbGLSurfaceView(Context context) {
 			super(context);
@@ -22,11 +22,11 @@ public class FbAppActivity extends Activity {
 			setFocusable(true);
 			setFocusableInTouchMode(true);
 		}
-		
+
 		public boolean onKeyDown(int keyCode, KeyEvent event) {
 			int pressed = 0;
 			final int action = event.getAction();
-	    	switch (action & MotionEvent.ACTION_MASK) {
+			switch (action & MotionEvent.ACTION_MASK) {
 			case MotionEvent.ACTION_DOWN:
 			case MotionEvent.ACTION_MOVE:
 				pressed = 1;
@@ -34,14 +34,23 @@ public class FbAppActivity extends Activity {
 			case MotionEvent.ACTION_UP:
 				pressed = 0;
 				break;
-	    	}
-	    	switch (keyCode) {
-	    	case KeyEvent.KEYCODE_SEARCH:
+			}
+			switch (keyCode) {
+			case KeyEvent.KEYCODE_DPAD_LEFT:
+			case KeyEvent.KEYCODE_DPAD_RIGHT:
+			case KeyEvent.KEYCODE_DPAD_UP:
+			case KeyEvent.KEYCODE_DPAD_DOWN:
+			case KeyEvent.KEYCODE_DPAD_CENTER:
+			case KeyEvent.KEYCODE_SHIFT_LEFT:
+			case KeyEvent.KEYCODE_SHIFT_RIGHT:
+			case KeyEvent.KEYCODE_SPACE:
+			case KeyEvent.KEYCODE_DEL:
+//			case KeyEvent.KEYCODE_ESCAPE:
 				return queueKeyEvent(keyCode, pressed);
 			}
 			return false;
 		}
-		
+
 		public boolean onTouchEvent(MotionEvent event) {
 			int i, id;
 			final int action = event.getAction();
