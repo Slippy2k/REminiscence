@@ -2,8 +2,10 @@
 #define LOG_TAG "FbJni"
 
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/param.h>
+#include <sys/time.h>
 #include <jni.h>
 #include <android/log.h>
 #include <dlfcn.h>
@@ -13,9 +15,10 @@ static const char *gFbSoName = "libfb.so";
 static const char *gFbSoSym = "g_stub";
 
 static void *g_dlFbSo;
-static Stub *g_stub;
+static GameStub *g_stub;
 static char *g_libDir;
 static char *g_saveDir;
+static uint32_t g_timeStamp;
 
 extern "C" {
 
@@ -34,7 +37,7 @@ static int loadFbLib() {
 		__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "Unable to open '%s'", gFbSoName);
 		return 1;
 	}
-	g_stub = (struct Stub *)dlsym(g_dlFbSo, gFbSoSym);
+	g_stub = (struct GameStub *)dlsym(g_dlFbSo, gFbSoSym);
 	if (!g_stub) {
 		__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "Unable to lookup symbol '%s'", gFbSoSym);
 		dlclose(g_dlFbSo);
@@ -44,9 +47,23 @@ static int loadFbLib() {
 	return 0;
 }
 
+static uint32_t getTimeMs() {
+	struct timeval tv;
+	if (gettimeofday(&tv, 0) == 0) {
+		return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+	}
+	return 0;
+}
+
+static const int kHz = 30;
+
 JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_drawFrame(JNIEnv *env, jclass c, jint w, jint h) {
 	if (g_stub) {
-		g_stub->doTick();
+		const int t = getTimeMs() - g_timeStamp;
+		g_timeStamp = getTimeMs();
+		if (t >= 1000 / kHz) {
+			g_stub->doTick();
+		}
 		g_stub->drawGL(w, h);
 	}
 }
@@ -58,6 +75,7 @@ JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_initGame(JNIEnv *env, jclass c,
 		g_stub->init(dataPath, g_saveDir, 0);
 		env->ReleaseStringUTFChars(jpath, dataPath);
 		g_stub->initGL(w, h);
+		g_timeStamp = getTimeMs();
 	}
 }
 
@@ -76,7 +94,7 @@ JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_saveGame(JNIEnv *env, jclass c)
 
 JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_queueKeyEvent(JNIEnv *env, jclass c, jint keycode, jint pressed) {
 	if (g_stub) {
-		__android_log_print(ANDROID_LOG_INFO, LOG_TAG, "keyEvent %d pressed %d", keycode, pressed);
+//		__android_log_print(ANDROID_LOG_INFO, LOG_TAG, "keyEvent %d pressed %d", keycode, pressed);
 		g_stub->queueKeyInput(keycode, pressed);
 	}
 }
