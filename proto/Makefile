@@ -1,5 +1,5 @@
 
-SDL_CFLAGS = `sdl2-config --cflags`
+SDL_CFLAGS = `sdl2-config --cflags` -DUSE_SDL_MIXER
 SDL_LIBS   = `sdl2-config --libs` -lSDL2_mixer
 
 GL_LIBS = -lGL

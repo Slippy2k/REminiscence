@@ -1,9 +1,11 @@
 
-#include <SDL.h>
-#include <SDL_mixer.h>
 #include "file.h"
 #include "mixer.h"
 #include "util.h"
+
+#ifdef USE_SDL_MIXER
+#include <SDL.h>
+#include <SDL_mixer.h>
 
 struct Mixer_impl {
 
@@ -199,6 +201,30 @@ struct Mixer_impl {
 		return MIX_MAX_VOLUME * 3 / 4 * volume / 255;
 	}
 };
+#else
+struct Mixer_impl {
+	void init() {
+	}
+	void quit() {
+	}
+	void update() {
+	}
+	int playSoundRaw(const uint8_t *data, uint32_t len, int freq, uint8_t volume) {
+	}
+	int playSoundWav(const uint8_t *data, uint8_t volume) {
+	}
+	void stopSound(int id) {
+	}
+	bool isPlayingSound(int id) {
+	}
+	void playMusic(const char *path) {
+	}
+	void stopMusic() {
+	}
+	void stopAll() {
+	}
+};
+#endif
 
 Mixer::Mixer() {
 }

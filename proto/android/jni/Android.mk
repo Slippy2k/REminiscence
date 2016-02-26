@@ -3,7 +3,7 @@ LOCAL_PATH := $(call my-dir)
 RS_PATH := ../..
 
 include $(CLEAR_VARS)
-SRC := collision.cpp decode.cpp file.cpp game.cpp piege.cpp resource_data.cpp resource_mac.cpp saveload.cpp scaler.cpp staticres.cpp stub.cpp util.cpp
+SRC := collision.cpp decode.cpp file.cpp game.cpp input.cpp mixer.cpp piege.cpp render.cpp resource_data.cpp resource_mac.cpp saveload.cpp scaler.cpp staticres.cpp stub.cpp util.cpp
 LOCAL_MODULE := libfb
 LOCAL_SRC_FILES := $(foreach S,$(SRC),$(RS_PATH)/$(S))
 LOCAL_CFLAGS := -DUSE_GLES -I$(RS_PATH)
