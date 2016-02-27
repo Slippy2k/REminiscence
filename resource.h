@@ -89,7 +89,7 @@ struct Resource {
 
 	enum {
 		NUM_SFXS = 66,
-		NUM_BANK_BUFFERS = 128,
+		NUM_BANK_BUFFERS = 50,
 		NUM_SPRITES = 1287
 	};
 
