@@ -30,6 +30,7 @@ struct SystemStub_SDL : SystemStub {
 	bool _fadeOnUpdateScreen;
 	void (*_audioCbProc)(void *, int8_t *, int);
 	void *_audioCbData;
+	int _screenshot;
 
 	virtual ~SystemStub_SDL() {}
 	virtual void init(const char *title, int w, int h, int scaler, bool fullscreen);
@@ -80,6 +81,7 @@ void SystemStub_SDL::init(const char *title, int w, int h, int scaler, bool full
 	if (SDL_NumJoysticks() > 0) {
 		_joystick = SDL_JoystickOpen(0);
 	}
+	_screenshot = 1;
 }
 
 void SystemStub_SDL::destroy() {
@@ -424,6 +426,12 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 					if (_currentScaler > 0) {
 						switchGfxMode(_fullscreen, s);
 					}
+				} else if (ev.key.keysym.sym == SDLK_s) {
+					char name[32];
+					snprintf(name, sizeof(name), "screenshot-%03d.bmp", _screenshot);
+					SDL_SaveBMP(_screenSurface, name);
+					++_screenshot;
+					debug(DBG_INFO, "Written '%s'", name);
 				}
 				break;
 			} else if (ev.key.keysym.mod & KMOD_CTRL) {
