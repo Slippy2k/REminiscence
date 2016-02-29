@@ -1352,7 +1352,7 @@ void Game::loadLevelData() {
 		_res.load(lvl->name, Resource::OT_CT);
 		_res.load(lvl->name, Resource::OT_PAL);
 		_res.load(lvl->name, Resource::OT_RP);
-		if (_res._aba) { // PC demo has .SGD and .LEV instead of .MAP
+		if (_res._aba) { // PC demo has .BNQ/.LEV/(.SGD) instead of .MAP
 			if (_currentLevel == 0) {
 				_res.load(lvl->name, Resource::OT_SGD);
 			}
@@ -1369,6 +1369,9 @@ void Game::loadLevelData() {
 	}
 
 	_cut._id = lvl->cutscene_id;
+	if (_res._aba && _currentLevel == 5) { // PC demo does not include TELEPORT.*
+		_cut._id = 0xFFFF;
+	}
 
 	_curMonsterNum = 0xFFFF;
 	_curMonsterFrame = 0;
