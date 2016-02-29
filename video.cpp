@@ -474,21 +474,26 @@ static void AMIGA_drawTile(uint8_t *dst, int pitch, const uint8_t *src, int pal,
 	}
 }
 
-static void PC_drawTile(uint8_t *dst, const uint8_t *src, const bool xflip, const bool yflip, int colorKey) {
+static void PC_drawTile(uint8_t *dst, const uint8_t *src, int mask, const bool xflip, const bool yflip, int colorKey) {
 	int pitch = Video::GAMESCREEN_W;
 	if (yflip) {
 		dst += 7 * pitch;
 		pitch = -pitch;
 	}
+	int inc = 1;
+	if (xflip) {
+		dst += 7;
+		inc = -inc;
+	}
 	for (int y = 0; y < 8; ++y) {
 		for (int i = 0; i < 8; i += 2) {
 			int color = *src >> 4;
 			if (color != colorKey) {
-				dst[xflip ? (7 - i) : i] = color;
+				dst[inc * i] = mask | color;
 			}
 			color = *src & 15;
 			if (color != colorKey) {
-				dst[xflip ? (7 - i - 1) : i + 1] = color;
+				dst[inc * (i + 1)] = mask | color;
 			}
 			++src;
 		}
@@ -507,15 +512,15 @@ static void decodeLevHelper(uint8_t *dst, const uint8_t *src, int offset10, int 
 					const uint8_t *a2 = a5 + d0 * 32;
 					const bool yflip = (d3 & (1 << 12)) != 0;
 					const bool xflip = (d3 & (1 << 11)) != 0;
-					if (isPC) {
-						PC_drawTile(dst + y * 256 + x, a2, xflip, yflip, -1);
-						continue;
-					}
 					int mask = 0;
 					if ((d3 < (1 << 15)) == 0) {
 						mask = 0x80;
 					}
-					AMIGA_drawTile(dst + y * 256 + x, 256, a2, mask, xflip, yflip, -1);
+					if (isPC) {
+						PC_drawTile(dst + y * 256 + x, a2, mask, xflip, yflip, -1);
+					} else {
+						AMIGA_drawTile(dst + y * 256 + x, 256, a2, mask, xflip, yflip, -1);
+					}
 				}
 			}
 		}
@@ -533,17 +538,17 @@ static void decodeLevHelper(uint8_t *dst, const uint8_t *src, int offset10, int 
 					const uint8_t *a2 = a5 + d0 * 32;
 					const bool yflip = (d3 & (1 << 12)) != 0;
 					const bool xflip = (d3 & (1 << 11)) != 0;
-					if (isPC) {
-						PC_drawTile(dst + y * 256 + x, a2, xflip, yflip, 0);
-						continue;
-					}
 					int mask = 0;
 					if ((d3 & 0x6000) != 0 && sgdBuf) {
 						mask = 0x10;
 					} else if ((d3 < (1 << 15)) == 0) {
 						mask = 0x80;
 					}
-					AMIGA_drawTile(dst + y * 256 + x, 256, a2, mask, xflip, yflip, 0);
+					if (isPC) {
+						PC_drawTile(dst + y * 256 + x, a2, mask, xflip, yflip, 0);
+					} else {
+						AMIGA_drawTile(dst + y * 256 + x, 256, a2, mask, xflip, yflip, 0);
+					}
 				}
 			}
 		}
