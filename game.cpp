@@ -1353,7 +1353,9 @@ void Game::loadLevelData() {
 		_res.load(lvl->name, Resource::OT_PAL);
 		_res.load(lvl->name, Resource::OT_RP);
 		if (_res._aba) { // PC demo has .SGD and .LEV instead of .MAP
-			_res.load(lvl->name, Resource::OT_SGD);
+			if (_currentLevel == 0) {
+				_res.load(lvl->name, Resource::OT_SGD);
+			}
 			_res.load(lvl->name, Resource::OT_LEV);
 			_res.load(lvl->name, Resource::OT_BNQ);
 		} else {
