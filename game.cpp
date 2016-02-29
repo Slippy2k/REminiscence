@@ -21,8 +21,8 @@ Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, Re
 	_inp_demo = 0;
 	_inp_record = false;
 	_inp_replay = false;
-	_skillLevel = 1;
-	_currentLevel = level;
+	_skillLevel = _menu._skill = 1;
+	_currentLevel = _menu._level = level;
 }
 
 void Game::run() {
