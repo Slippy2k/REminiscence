@@ -4,6 +4,7 @@
 #include "resource_data.h"
 #include "scaler.h"
 
+static const int kShowFps = false;
 static const int _scalerFactor = 2;
 static void (*_scalerProc)(uint16_t *, int, const uint16_t *, int, int, int) = scale2x;
 
@@ -412,7 +413,7 @@ void TextureCache::prepareFrameDraw(int w, int h) {
 
 void TextureCache::endFrameDraw() {
 	++_frameCounter;
-	if ((_frameCounter & 31) == 0) {
+	if (kShowFps && (_frameCounter & 31) == 0) {
 		struct timeval t1;
 		gettimeofday(&t1, 0);
 		const int msecs = (t1.tv_sec - _t0.tv_sec) * 1000 + (t1.tv_usec - _t0.tv_usec) / 1000;
