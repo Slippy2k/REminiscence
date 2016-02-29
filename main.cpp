@@ -89,6 +89,7 @@ static void initOptions() {
 		{ "play_disabled_cutscenes", &g_options.play_disabled_cutscenes },
 		{ "enable_password_menu", &g_options.enable_password_menu },
 		{ "fade_out_palette", &g_options.fade_out_palette },
+		{ "use_tiledata", &g_options.use_tiledata },
 		{ 0, 0 }
 	};
 	static const char *filename = "rs.cfg";

@@ -1352,7 +1352,7 @@ void Game::loadLevelData() {
 		_res.load(lvl->name, Resource::OT_CT);
 		_res.load(lvl->name, Resource::OT_PAL);
 		_res.load(lvl->name, Resource::OT_RP);
-		if (_res._aba) { // PC demo has .BNQ/.LEV/(.SGD) instead of .MAP
+		if (_res._aba || g_options.use_tiledata) { // use .BNQ/.LEV/(.SGD) instead of .MAP (PC demo)
 			if (_currentLevel == 0) {
 				_res.load(lvl->name, Resource::OT_SGD);
 			}
