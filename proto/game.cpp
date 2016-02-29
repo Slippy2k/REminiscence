@@ -294,8 +294,9 @@ void Game::doStoryTexts() {
 	if (_voiceSound != 0 && !_mix->isPlayingSound(_voiceSound)) {
 		nextText = true;
 	}
-	if (_pi.backspace) {
+	if (_pi.backspace || _pi.shift) {
 		_pi.backspace = false;
+		_pi.shift = false;
 		nextText = true;
 		if (_voiceSound != 0) {
 			_mix->stopSound(_voiceSound);
