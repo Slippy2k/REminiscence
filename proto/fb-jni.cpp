@@ -130,7 +130,7 @@ JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_queueKeyEvent(JNIEnv *env, jcla
 //			break;
 		}
 		if (key != -1) {
-			g_stub->queueKeyInput(keycode, pressed);
+			g_stub->queueKeyInput(key, pressed);
 		}
 	}
 }

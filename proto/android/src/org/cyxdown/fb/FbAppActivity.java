@@ -23,32 +23,14 @@ public class FbAppActivity extends Activity {
 			setFocusableInTouchMode(true);
 		}
 
+		@Override
 		public boolean onKeyDown(int keyCode, KeyEvent event) {
-			int pressed = 0;
-			final int action = event.getAction();
-			switch (action & MotionEvent.ACTION_MASK) {
-			case MotionEvent.ACTION_DOWN:
-			case MotionEvent.ACTION_MOVE:
-				pressed = 1;
-				break;
-			case MotionEvent.ACTION_UP:
-				pressed = 0;
-				break;
-			}
-			switch (keyCode) {
-			case KeyEvent.KEYCODE_DPAD_LEFT:
-			case KeyEvent.KEYCODE_DPAD_RIGHT:
-			case KeyEvent.KEYCODE_DPAD_UP:
-			case KeyEvent.KEYCODE_DPAD_DOWN:
-			case KeyEvent.KEYCODE_DPAD_CENTER:
-			case KeyEvent.KEYCODE_SHIFT_LEFT:
-			case KeyEvent.KEYCODE_SHIFT_RIGHT:
-			case KeyEvent.KEYCODE_SPACE:
-			case KeyEvent.KEYCODE_DEL:
-//			case KeyEvent.KEYCODE_ESCAPE:
-				return queueKeyEvent(keyCode, pressed);
-			}
-			return false;
+			return queueKeyEvent(keyCode, 1);
+		}
+
+		@Override
+		public boolean onKeyUp(int keyCode, KeyEvent event) {
+			return queueKeyEvent(keyCode, 0);
 		}
 
 		public boolean onTouchEvent(MotionEvent event) {
@@ -89,12 +71,24 @@ public class FbAppActivity extends Activity {
 		}
         
 		private boolean queueKeyEvent(final int code, final int pressed) {
-			queueEvent(new Runnable() {
-				public void run() {
-					FbJni.queueKeyEvent(code, pressed);
-				}
-			});
-			return true;
+			switch (code) {
+			case KeyEvent.KEYCODE_DPAD_LEFT:
+			case KeyEvent.KEYCODE_DPAD_RIGHT:
+			case KeyEvent.KEYCODE_DPAD_UP:
+			case KeyEvent.KEYCODE_DPAD_DOWN:
+			case KeyEvent.KEYCODE_DPAD_CENTER:
+			case KeyEvent.KEYCODE_SHIFT_LEFT:
+			case KeyEvent.KEYCODE_SHIFT_RIGHT:
+			case KeyEvent.KEYCODE_SPACE:
+			case KeyEvent.KEYCODE_DEL:
+				queueEvent(new Runnable() {
+					public void run() {
+						FbJni.queueKeyEvent(code, pressed);
+					}
+				});
+				return true;
+			}
+			return false;
 		}
 
 		private boolean queueTouchEvent(final int num, final int x, final int y, final int pressed) {
