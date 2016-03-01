@@ -6,8 +6,8 @@ include $(CLEAR_VARS)
 SRC := collision.cpp decode.cpp file.cpp game.cpp input.cpp mixer.cpp piege.cpp render.cpp resource_data.cpp resource_mac.cpp saveload.cpp scaler.cpp staticres.cpp stub.cpp util.cpp
 LOCAL_MODULE := libfb
 LOCAL_SRC_FILES := $(foreach S,$(SRC),$(RS_PATH)/$(S))
-LOCAL_CFLAGS := -DUSE_GLES -I$(RS_PATH)
-LOCAL_LDLIBS := -lGLESv1_CM -lz
+LOCAL_CFLAGS := -DUSE_GLES -DUSE_OPENSL_ES -I$(RS_PATH)
+LOCAL_LDLIBS := -lGLESv1_CM -lOpenSLES -lz
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)

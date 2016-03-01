@@ -201,27 +201,196 @@ struct Mixer_impl {
 		return MIX_MAX_VOLUME * 3 / 4 * volume / 255;
 	}
 };
-#else
+#endif
+
+#ifdef USE_OPENSL_ES
+#include <SLES/OpenSLES.h>
+#include <SLES/OpenSLES_Android.h>
+
 struct Mixer_impl {
+
+	static const int kMixFreq = 22050;
+	static const int kMixBufSize = 4096;
+	static const int kMixChannels = 8;
+
+	SLObjectItf _engineObject;
+	SLEngineItf _engineEngine;
+	SLObjectItf _outputMixObject;
+	SLObjectItf _bqPlayerObject;
+	SLPlayItf _bqPlayerPlay;
+	SLAndroidSimpleBufferQueueItf _bqPlayerBufferQueue;
+	int16_t _mixBuf[kMixBufSize];
+	struct {
+		const uint8_t *data;
+		int len;
+		float offset, step;
+	} _channels[kMixChannels];
+
 	void init() {
+		SLresult ret;
+
+		// engine
+		ret = slCreateEngine(&_engineObject, 0, 0, 0, 0, 0);
+		if (ret != SL_RESULT_SUCCESS) {
+			warning("slCreateEngine() failed, ret=0x%x", ret);
+			return;
+		}
+		ret = (*_engineObject)->Realize(_engineObject, SL_BOOLEAN_FALSE);
+		if (ret != SL_RESULT_SUCCESS) {
+			warning("SLObjectItf::Realize() failed, ret=0x%x", ret);
+			return;
+		}
+		ret = (*_engineObject)->GetInterface(_engineObject, SL_IID_ENGINE, &_engineEngine);
+		if (ret != SL_RESULT_SUCCESS) {
+			warning("SLObjectItf::GetInterface(SL_IID_ENGINE) failed, ret=0x%x", ret);
+			return;
+		}
+
+		// buffer queue player
+		SLDataLocator_AndroidSimpleBufferQueue loc_bufq = { SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2 };
+		SLDataFormat_PCM format_pcm;
+		format_pcm.formatType = SL_DATAFORMAT_PCM;
+		format_pcm.numChannels = 1;
+		assert(kMixFreq == 22050);
+		format_pcm.samplesPerSec = SL_SAMPLINGRATE_22_05;
+		format_pcm.bitsPerSample = SL_PCMSAMPLEFORMAT_FIXED_16;
+		format_pcm.containerSize = SL_PCMSAMPLEFORMAT_FIXED_16;
+		format_pcm.channelMask = SL_SPEAKER_FRONT_CENTER,
+		format_pcm.endianness = SL_BYTEORDER_LITTLEENDIAN;
+
+		SLDataSource src = { &loc_bufq, &format_pcm };
+		SLDataLocator_OutputMix loc_outmix = { SL_DATALOCATOR_OUTPUTMIX, _outputMixObject };
+		SLDataSink snk = {&loc_outmix, NULL};
+		const SLInterfaceID ids[2] = { SL_IID_BUFFERQUEUE, SL_IID_VOLUME };
+		const SLboolean req[2] = { SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE };
+		ret = (*_engineEngine)->CreateAudioPlayer(_engineEngine, &_bqPlayerObject, &src, &snk, 2, ids, req);
+		if (ret != SL_RESULT_SUCCESS) {
+			warning("SLEngineItf::CreateAudioPlayer() failed, ret=0x%x", ret);
+			return;
+		}
+		ret = (*_bqPlayerObject)->Realize(_bqPlayerObject, SL_BOOLEAN_FALSE);
+		if (ret != SL_RESULT_SUCCESS) {
+			warning("SLObjectItf::Realize() failed, ret=0x%x", ret);
+			return;
+		}
+		ret = (*_bqPlayerObject)->GetInterface(_bqPlayerObject, SL_IID_PLAY, &_bqPlayerPlay);
+		if (ret != SL_RESULT_SUCCESS) {
+			warning("SLObjectItf::GetInterface(SL_IID_PLAY) failed, ret=0x%x", ret);
+			return;
+		}
+		ret = (*_bqPlayerObject)->GetInterface(_bqPlayerObject, SL_IID_BUFFERQUEUE, &_bqPlayerBufferQueue);
+		if (ret != SL_RESULT_SUCCESS) {
+			warning("SLObjectItf::GetInterface(SL_IID_BUFFERQUEUE) failed, ret=0x%x", ret);
+			return;
+		}
+		ret = (*_bqPlayerBufferQueue)->RegisterCallback(_bqPlayerBufferQueue, bqPlayerCallback, this);
+		if (ret != SL_RESULT_SUCCESS) {
+			warning("SLAndroidSimpleBufferQueueItf::RegisterCallback() failed, ret=0x%x", ret);
+			return;
+		}
+
+		memset(_mixBuf, 0, sizeof(_mixBuf));
+		memset(_channels, 0, sizeof(_channels));
 	}
 	void quit() {
+		if (_bqPlayerObject) {
+			(*_bqPlayerObject)->Destroy(_bqPlayerObject);
+			_bqPlayerObject = 0;
+			_bqPlayerPlay = 0;
+			_bqPlayerBufferQueue = 0;
+		}
+		if (_outputMixObject) {
+			(*_outputMixObject)->Destroy(_outputMixObject);
+			_outputMixObject = 0;
+		}
+		if (_engineObject) {
+			(*_engineObject)->Destroy(_engineObject);
+			_engineObject = 0;
+			_engineEngine = 0;
+		}
 	}
 	void update() {
 	}
+	int findChannel() const {
+		for (int i = 0; i < kMixChannels; ++i) {
+			if (!_channels[i].data) {
+				return i;
+			}
+		}
+		return -1;
+	}
 	int playSoundRaw(const uint8_t *data, uint32_t len, int freq, uint8_t volume) {
+		const int i = findChannel();
+		if (i >= 0) {
+			_channels[i].data = data;
+			_channels[i].len = len;
+			_channels[i].offset = 0.f;
+			_channels[i].step = freq / (float)kMixFreq;
+		}
+		return i;
 	}
 	int playSoundWav(const uint8_t *data, uint8_t volume) {
+		const int i = findChannel();
+		if (i >= 0) {
+			const uint32_t size = READ_LE_UINT32(data + 4) + 8;
+			if (memcmp(data + 8, "WAVEfmt ", 8) == 0 && READ_LE_UINT32(data + 16) == 16) {
+				const uint8_t *fmt = data + 20;
+//				const int format = READ_LE_UINT16(fmt);
+//				const int channels = READ_LE_UINT16(fmt + 2);
+				const int rate = READ_LE_UINT32(fmt + 4);
+//				const int bits = READ_LE_UINT16(fmt + 14);
+				_channels[i].data = data + 44;
+				_channels[i].len = READ_LE_UINT32(data + 40);
+				_channels[i].offset = 0.f;
+				_channels[i].step = rate / (float)kMixFreq;
+			}
+		}
+		return i;
+
 	}
 	void stopSound(int id) {
+		_channels[id].data = 0;
 	}
 	bool isPlayingSound(int id) {
+		return _channels[id].data != 0;
 	}
 	void playMusic(const char *path) {
 	}
 	void stopMusic() {
 	}
 	void stopAll() {
+	}
+	static int16_t clipS16(int sample) {
+		if (sample > 32767) {
+			return 32767;
+		} else if (sample < -32768) {
+			return -32768;
+		}
+		return sample;
+	}
+	void mix() {
+		memset(_mixBuf, 0, sizeof(_mixBuf));
+		for (int i = 0; i < kMixBufSize; ++i) {
+			for (int ch = 0; ch < kMixChannels; ++ch) {
+				if (_channels[ch].data) {
+					const int pos = (int)_channels[ch].offset;
+					if (pos >= _channels[ch].len) {
+						_channels[ch].data = 0;
+						break;
+					}
+					_channels[ch].offset += _channels[ch].step;
+					const int16_t sample = _mixBuf[i] + ((_channels[ch].data[pos] ^ 0x80) << 8); // U8 to S16
+					_mixBuf[i] = clipS16(sample);
+				}
+			}
+		}
+		SLresult ret = (*_bqPlayerBufferQueue)->Enqueue(_bqPlayerBufferQueue, _mixBuf, sizeof(_mixBuf));
+		if (ret != SL_RESULT_SUCCESS) {
+			return;
+		}
+	}
+	static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context) {
+		((Mixer_impl *)context)->mix();
 	}
 };
 #endif
