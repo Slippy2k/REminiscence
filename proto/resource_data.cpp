@@ -434,6 +434,20 @@ uint8_t *ResourceData::getSoundData(int i, int *freq, uint32_t *size) {
 	return p;
 }
 
+const char *ResourceData::getSfxName(int num) const {
+	switch (num) {
+	case 69:
+		num = 68;
+		break;
+	case 71:
+		num = 70;
+		break;
+	}
+	static char name[16];
+	snprintf(name, sizeof(name), "soundfx%d.ogg", num);
+	return name;
+}
+
 uint8_t *ResourceData::getSfxData(int num) {
 	switch (num) {
 	case 69:

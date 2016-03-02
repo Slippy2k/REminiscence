@@ -630,6 +630,8 @@ void Game::playSound(uint8_t num, uint8_t softVol) {
 		if (wav) {
 			_mix->playSoundWav(wav);
 			free(wav);
+		} else {
+			_mix->playMusic(_res.getSfxName(num));
 		}
 	}
 }
