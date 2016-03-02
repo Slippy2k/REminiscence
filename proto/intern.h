@@ -158,10 +158,10 @@ struct PlayerInput {
 		kDirectionRight = 1 << 3
 	};
 	uint8_t dirMask;
-	bool enter;
-	bool space;
-	bool shift;
-	bool backspace;
+	bool enter;     // shoot
+	bool space;     // take gun
+	bool shift;     // talk / run / use
+	bool backspace; // display inventory items
 	bool quit;
 	enum {
 		kTouchNone,
