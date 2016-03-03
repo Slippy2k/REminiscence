@@ -15,6 +15,7 @@ Resource::Resource(FileSystem *fs, ResourceType ver, Language lang) {
 	_fs = fs;
 	_type = ver;
 	_lang = lang;
+	_isDemo = false;
 	_aba = 0;
 	_readUint16 = (_type == kResourceTypeDOS) ? READ_LE_UINT16 : READ_BE_UINT16;
 	_readUint32 = (_type == kResourceTypeDOS) ? READ_LE_UINT32 : READ_BE_UINT32;
@@ -53,9 +54,17 @@ Resource::~Resource() {
 }
 
 void Resource::init() {
-	if (_fs->exists(ResourceAba::FILENAME)) {
-		_aba = new ResourceAba(_fs);
-		_aba->readEntries();
+	switch (_type) {
+	case kResourceTypeAmiga:
+		_isDemo = _fs->exists("demo.lev");
+		break;
+	case kResourceTypeDOS:
+		if (_fs->exists(ResourceAba::FILENAME)) {
+			_aba = new ResourceAba(_fs);
+			_aba->readEntries();
+			_isDemo = true;
+		}
+		break;
 	}
 }
 

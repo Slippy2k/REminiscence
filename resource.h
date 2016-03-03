@@ -100,6 +100,7 @@ struct Resource {
 	FileSystem *_fs;
 	ResourceType _type;
 	Language _lang;
+	bool _isDemo;
 	ResourceAba *_aba;
 	uint16_t (*_readUint16)(const void *);
 	uint32_t (*_readUint32)(const void *);

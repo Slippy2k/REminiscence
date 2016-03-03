@@ -1295,7 +1295,7 @@ void Game::loadLevelData() {
 	const Level *lvl = &_gameLevels[_currentLevel];
 	switch (_res._type) {
 	case kResourceTypeAmiga:
-		if (_fs->exists("demo.lev")) { // demo data files
+		if (_res._isDemo) {
 			_cut._patchedOffsetsTable = Cutscene::_amigaDemoOffsetsTable;
 			static const char *fname1 = "demo";
 			static const char *fname2 = "demof";
@@ -1352,7 +1352,7 @@ void Game::loadLevelData() {
 		_res.load(lvl->name, Resource::OT_CT);
 		_res.load(lvl->name, Resource::OT_PAL);
 		_res.load(lvl->name, Resource::OT_RP);
-		if (_res._aba || g_options.use_tiledata) { // use .BNQ/.LEV/(.SGD) instead of .MAP (PC demo)
+		if (_res._isDemo || g_options.use_tiledata) { // use .BNQ/.LEV/(.SGD) instead of .MAP (PC demo)
 			if (_currentLevel == 0) {
 				_res.load(lvl->name, Resource::OT_SGD);
 			}
@@ -1369,7 +1369,7 @@ void Game::loadLevelData() {
 	}
 
 	_cut._id = lvl->cutscene_id;
-	if (_res._aba && _currentLevel == 5) { // PC demo does not include TELEPORT.*
+	if (_res._isDemo && _currentLevel == 5) { // PC demo does not include TELEPORT.*
 		_cut._id = 0xFFFF;
 	}
 
