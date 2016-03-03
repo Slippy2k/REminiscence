@@ -13,6 +13,33 @@ struct File;
 struct FileSystem;
 struct Mixer;
 
+#ifdef USE_MODPLUG
+
+struct ModPlayer_impl;
+
+struct ModPlayer {
+
+	static const int8_t _sineWaveTable[];
+	static const uint16_t _periodTable[];
+	static const char *_modulesFiles[][2];
+	static const int _modulesFilesCount;
+
+	bool _playing;
+	Mixer *_mix;
+        FileSystem *_fs;
+	ModPlayer_impl *_impl;
+
+        ModPlayer(Mixer *mixer, FileSystem *fs);
+	~ModPlayer();
+
+	void play(int num);
+	void stop();
+
+	static bool mixCallback(void *param, int8_t *buf, int len);
+};
+
+#else
+
 struct ModPlayer {
 	enum {
 		NUM_SAMPLES = 31,
@@ -107,5 +134,6 @@ struct ModPlayer {
 
 	static bool mixCallback(void *param, int8_t *buf, int len);
 };
+#endif
 
 #endif // MOD_PLAYER_H__

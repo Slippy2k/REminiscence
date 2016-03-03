@@ -9,6 +9,98 @@
 #include "mod_player.h"
 #include "util.h"
 
+#ifdef USE_MODPLUG
+
+#include <libmodplug/modplug.h>
+
+struct ModPlayer_impl {
+
+	ModPlugFile *_mf;
+	ModPlug_Settings _settings;
+
+	ModPlayer_impl()
+		: _mf(0) {
+	}
+
+	void init(const int rate) {
+		memset(&_settings, 0, sizeof(_settings));
+		ModPlug_GetSettings(&_settings);
+		_settings.mFlags = MODPLUG_ENABLE_OVERSAMPLING | MODPLUG_ENABLE_NOISE_REDUCTION;
+		_settings.mChannels = 1;
+		_settings.mBits = 8;
+		_settings.mFrequency = rate;
+		_settings.mResamplingMode = MODPLUG_RESAMPLE_FIR;
+		ModPlug_SetSettings(&_settings);
+	}
+
+	bool load(File *f) {
+		const uint32_t size = f->size();
+		uint8_t *data = (uint8_t *)malloc(size);
+		if (data) {
+			f->read(data, size);
+			_mf = ModPlug_Load(data, size);
+		}
+		return _mf != 0;
+	}
+
+	void unload() {
+		if (_mf) {
+			ModPlug_Unload(_mf);
+			_mf = 0;
+		}
+	}
+
+	bool mix(int8_t *buf, int len) {
+		memset(buf, 0, len);
+		if (_mf) {
+			const int count = ModPlug_Read(_mf, buf, len);
+			for (int i = 0; i < count; ++i) {
+				buf[i] ^= 0x80;
+			}
+			return count > 0;
+		}
+		return false;
+	}
+};
+
+ModPlayer::ModPlayer(Mixer *mixer, FileSystem *fs)
+	: _playing(false), _mix(mixer), _fs(fs) {
+	_impl = new ModPlayer_impl;
+}
+
+ModPlayer::~ModPlayer() {
+	delete _impl;
+}
+
+void ModPlayer::play(int num) {
+	if (num < _modulesFilesCount) {
+		File f;
+		for (uint8_t i = 0; i < ARRAYSIZE(_modulesFiles[num]); ++i) {
+			if (f.open(_modulesFiles[num][i], "rb", _fs)) {
+				_impl->init(_mix->getSampleRate());
+				if (_impl->load(&f)) {
+					_mix->setPremixHook(mixCallback, _impl);
+					_playing = true;
+				}
+				return;
+			}
+		}
+	}
+}
+
+void ModPlayer::stop() {
+	if (_playing) {
+		_mix->setPremixHook(0, 0);
+		_impl->unload();
+		_playing = true;
+	}
+}
+
+bool ModPlayer::mixCallback(void *param, int8_t *buf, int len) {
+	return ((ModPlayer_impl *)param)->mix(buf, len);
+}
+
+#else
 
 ModPlayer::ModPlayer(Mixer *mixer, FileSystem *fs)
 	: _playing(false), _mix(mixer), _fs(fs) {
@@ -510,3 +602,5 @@ bool ModPlayer::mix(int8_t *buf, int len) {
 bool ModPlayer::mixCallback(void *param, int8_t *buf, int len) {
 	return ((ModPlayer *)param)->mix(buf, len);
 }
+
+#endif
