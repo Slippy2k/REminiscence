@@ -17,6 +17,7 @@ struct ModPlayer_impl {
 
 	ModPlugFile *_mf;
 	ModPlug_Settings _settings;
+	bool _repeatIntro;
 
 	ModPlayer_impl()
 		: _mf(0) {
@@ -53,6 +54,11 @@ struct ModPlayer_impl {
 	bool mix(int8_t *buf, int len) {
 		memset(buf, 0, len);
 		if (_mf) {
+			const int order = ModPlug_GetCurrentOrder(_mf);
+			if (order == 3 && _repeatIntro) {
+				ModPlug_SeekOrder(_mf, 1);
+				_repeatIntro = false;
+			}
 			const int count = ModPlug_Read(_mf, buf, len);
 			for (int i = 0; i < count; ++i) {
 				buf[i] ^= 0x80;
@@ -79,6 +85,7 @@ void ModPlayer::play(int num) {
 			if (f.open(_modulesFiles[num][i], "rb", _fs)) {
 				_impl->init(_mix->getSampleRate());
 				if (_impl->load(&f)) {
+					_impl->_repeatIntro = (num == 0) && !_isAmiga;
 					_mix->setPremixHook(mixCallback, _impl);
 					_playing = true;
 				}
