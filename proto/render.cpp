@@ -33,11 +33,7 @@ TextureCache::TextureCache() {
 	}
 	memset(&_gfxImagesQueue, 0, sizeof(_gfxImagesQueue));
 	_gfxImagesCount = 0;
-	if (_scalerFactor != 1) {
-		const int w = _npotTex ? kW * _scalerFactor : roundPowerOfTwo(kW * _scalerFactor);
-		const int h = _npotTex ? kH * _scalerFactor : roundPowerOfTwo(kH * _scalerFactor);
-		_texScaleBuf = (uint16_t *)malloc(w * h * sizeof(uint16_t));
-	}
+	_texScaleBuf = 0;
 	gettimeofday(&_t0, 0);
 	_frameCounter = 0;
 	_framesPerSec = 0;
@@ -57,6 +53,11 @@ void TextureCache::init() {
 	const char *exts = (const char *)glGetString(GL_EXTENSIONS);
 	if (hasExt(exts, "GL_ARB_texture_non_power_of_two")) {
 		_npotTex = true;
+	}
+	if (_scalerFactor != 1) {
+		const int w = _npotTex ? kW * _scalerFactor : roundPowerOfTwo(kW * _scalerFactor);
+		const int h = _npotTex ? kH * _scalerFactor : roundPowerOfTwo(kH * _scalerFactor);
+		_texScaleBuf = (uint16_t *)malloc(w * h * sizeof(uint16_t));
 	}
 }
 

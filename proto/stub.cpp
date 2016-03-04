@@ -45,6 +45,8 @@ struct Main {
 		_resData.loadFontData();
 		_resData.loadPersoData();
 		_texCache.createTextureFont(_resData);
+		_game._paletteChanged = false;
+		_game._backgroundChanged = false;
 		return true;
 	}
 
