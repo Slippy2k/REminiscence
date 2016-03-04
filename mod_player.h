@@ -24,6 +24,7 @@ struct ModPlayer {
 	static const char *_modulesFiles[][2];
 	static const int _modulesFilesCount;
 
+	bool _isAmiga;
 	bool _playing;
 	Mixer *_mix;
         FileSystem *_fs;
@@ -99,6 +100,7 @@ struct ModPlayer {
 	static const char *_modulesFiles[][2];
 	static const int _modulesFilesCount;
 
+	bool _isAmiga;
 	ModuleInfo _modInfo;
 	uint8_t _currentPatternOrder;
 	uint8_t _currentPatternPos;
@@ -110,7 +112,7 @@ struct ModPlayer {
 	int _patternLoopCount;
 	int _samplesLeft;
 	uint8_t _songNum;
-	bool _introSongHack;
+	bool _repeatIntro;
 	bool _playing;
 	Track _tracks[NUM_TRACKS];
 	Mixer *_mix;

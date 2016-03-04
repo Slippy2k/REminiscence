@@ -49,6 +49,7 @@ void Game::run() {
 	}
 
 	_mix.init();
+	_mix._mod._isAmiga = _res.isAmiga();
 
 	playCutscene(0x40);
 	playCutscene(0x0D);

@@ -198,7 +198,7 @@ void ModPlayer::play(uint8_t num) {
 			_patternLoopCount = -1;
 			_samplesLeft = 0;
 			_songNum = num;
-			_introSongHack = false;
+			_repeatIntro = false;
 			memset(_tracks, 0, sizeof(_tracks));
 			_mix->setPremixHook(mixCallback, this);
 			_playing = true;
@@ -518,9 +518,9 @@ void ModPlayer::handleTick() {
 			// On the amiga version, the introduction cutscene is shorter than the PC version ;
 			// so the music module doesn't synchronize at all with the PC datafiles, here we
 			// add a hack to let the music play longer
-			if (_songNum == 0 && _currentPatternOrder == 3 && !_introSongHack) {
+			if (!_isAmiga && _songNum == 0 && _currentPatternOrder == 3 && !_repeatIntro) {
 				_currentPatternOrder = 1;
-				_introSongHack = true;
+				_repeatIntro = true;
 //				warning("Introduction module synchronization hack");
 			}
 		}
