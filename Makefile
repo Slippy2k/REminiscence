@@ -6,7 +6,7 @@ MODPLUG_LIBS = -lmodplug
 ZLIB_LIBS = -lz
 
 CXX := clang++
-CXXFLAGS := -Wall -MMD $(SDL_CFLAGS) -DUSE_ZLIB -DUSE_MODPLUG
+CXXFLAGS := -Wall -MMD $(SDL_CFLAGS) -DUSE_ZLIB # -DUSE_MODPLUG
 
 SRCS = collision.cpp cutscene.cpp file.cpp fs.cpp game.cpp graphics.cpp main.cpp menu.cpp \
 	mixer.cpp mod_player.cpp ogg_player.cpp piege.cpp resource.cpp resource_aba.cpp \
