@@ -7,6 +7,7 @@
 #endif
 #include "game.h"
 #include "input.h"
+#include "mixer.h"
 #include "render.h"
 #include "stub.h"
 
@@ -19,6 +20,7 @@ struct Main {
 
 	ResourceData _resData;
 	Game _game;
+	Mixer _mix;
 	TextureCache _texCache;
 	PadInput _padInput[2];
 	int _state, _nextState;
@@ -45,9 +47,15 @@ struct Main {
 		_resData.loadFontData();
 		_resData.loadPersoData();
 		_texCache.createTextureFont(_resData);
+		_mix.init();
+		_game._mix = &_mix;
 		_game._paletteChanged = false;
 		_game._backgroundChanged = false;
 		return true;
+	}
+
+	void quit() {
+		_mix.quit();
 	}
 
 	void save() {
@@ -226,6 +234,7 @@ struct GameStub_Flashback: GameStub {
 	}
 
 	virtual void quit() {
+		_m->quit();
 		delete _m;
 		_m = 0;
 	}
