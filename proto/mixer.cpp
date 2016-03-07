@@ -204,8 +204,20 @@ struct Mixer_impl {
 #endif
 
 #ifdef USE_OPENSL_ES
+#include <pthread.h>
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
+
+static pthread_mutex_t _mutex = PTHREAD_MUTEX_INITIALIZER;
+
+struct MixerLock {
+	MixerLock() {
+		pthread_mutex_lock(&_mutex);
+	}
+	~MixerLock() {
+		pthread_mutex_unlock(&_mutex);
+	}
+};
 
 struct Mixer_impl {
 
@@ -227,6 +239,7 @@ struct Mixer_impl {
 	} _channels[kMixChannels];
 
 	void init() {
+		MixerLock ml;
 		SLresult ret;
 
 		// engine
@@ -293,6 +306,7 @@ struct Mixer_impl {
 		memset(_channels, 0, sizeof(_channels));
 	}
 	void quit() {
+		MixerLock ml;
 		if (_bqPlayerObject) {
 			(*_bqPlayerObject)->Destroy(_bqPlayerObject);
 			_bqPlayerObject = 0;
@@ -320,6 +334,7 @@ struct Mixer_impl {
 		return -1;
 	}
 	int playSoundRaw(const uint8_t *data, uint32_t len, int freq, uint8_t volume) {
+		MixerLock ml;
 		const int i = findChannel();
 		if (i >= 0) {
 			_channels[i].data = data;
@@ -330,6 +345,7 @@ struct Mixer_impl {
 		return i;
 	}
 	int playSoundWav(const uint8_t *data, uint8_t volume) {
+		MixerLock ml;
 		const int i = findChannel();
 		if (i >= 0) {
 			const uint32_t size = READ_LE_UINT32(data + 4) + 8;
@@ -349,9 +365,11 @@ struct Mixer_impl {
 
 	}
 	void stopSound(int id) {
+		MixerLock ml;
 		_channels[id].data = 0;
 	}
 	bool isPlayingSound(int id) {
+		MixerLock ml;
 		return _channels[id].data != 0;
 	}
 	void playMusic(const char *path) {
@@ -369,6 +387,7 @@ struct Mixer_impl {
 		return sample;
 	}
 	void mix() {
+		MixerLock ml;
 		memset(_mixBuf, 0, sizeof(_mixBuf));
 		for (int i = 0; i < kMixBufSize; ++i) {
 			for (int ch = 0; ch < kMixChannels; ++ch) {
