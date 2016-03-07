@@ -5,7 +5,7 @@
 #include "scaler.h"
 
 static const int kShowFps = false;
-static const int _scalerFactor = 2;
+static const int _scalerFactor = 1;
 static void (*_scalerProc)(uint16_t *, int, const uint16_t *, int, int, int) = scale2x;
 
 static int roundPowerOfTwo(int x) {
@@ -120,6 +120,7 @@ void TextureCache::createTextureFont(ResourceData &res) {
 			res.decodeImageData(res._fnt, i, &buf);
 			buf.x += 16;
 		}
+		glBindTexture(GL_TEXTURE_2D, _font.texId);
 		const uint16_t *texData = rescaleTexture(&buf, texW, texH);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texW, texH, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, texData);
 		free(buf.ptr);
