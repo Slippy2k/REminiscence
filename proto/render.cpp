@@ -8,6 +8,8 @@ static const int kShowFps = false;
 static const int kScaleFactor = 1;
 static void (*_scalerProc)(uint16_t *, int, const uint16_t *, int, int, int) = scale2x;
 
+static GLuint kVoidTexId = (GLuint)-1;
+
 static int roundPowerOfTwo(int x) {
 	if ((x & (x - 1)) == 0) {
 		return x;
@@ -22,14 +24,14 @@ static int roundPowerOfTwo(int x) {
 
 TextureCache::TextureCache() {
 	memset(&_title, 0, sizeof(_title));
-	_title.texId = -1;
+	_title.texId = kVoidTexId;
 	memset(&_background, 0, sizeof(_background));
-	_background.texId = -1;
+	_background.texId = kVoidTexId;
 	memset(&_font, 0, sizeof(_font));
-	_font.texId = -1;
+	_font.texId = kVoidTexId;
 	memset(&_texturesList, 0, sizeof(_texturesList));
-	for (int i = 0; i < ARRAYSIZE(_texturesList); ++i) {
-		_texturesList[i].texId = -1;
+	for (size_t i = 0; i < ARRAYSIZE(_texturesList); ++i) {
+		_texturesList[i].texId = kVoidTexId;
 	}
 	memset(&_gfxImagesQueue, 0, sizeof(_gfxImagesQueue));
 	_gfxImagesCount = 0;
@@ -95,7 +97,7 @@ void TextureCache::createTextureFont(ResourceData &res) {
 	const int h = 16 * kScaleFactor;
 	const int texW = _npotTex ? w : roundPowerOfTwo(w);
 	const int texH = _npotTex ? h : roundPowerOfTwo(h);
-	if (_font.texId == -1) {
+	if (_font.texId == kVoidTexId) {
 		glGenTextures(1, &_font.texId);
 		glBindTexture(GL_TEXTURE_2D, _font.texId);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -138,7 +140,7 @@ void TextureCache::createTextureTitle(ResourceData &res, int num) {
 	const int h = kH * kScaleFactor;
 	const int texW = _npotTex ? w : roundPowerOfTwo(w);
 	const int texH = _npotTex ? h : roundPowerOfTwo(h);
-	if (_title.texId == -1) {
+	if (_title.texId == kVoidTexId) {
 		glGenTextures(1, &_title.texId);
 		glBindTexture(GL_TEXTURE_2D, _title.texId);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -179,7 +181,7 @@ void TextureCache::createTextureBackground(ResourceData &res, int level, int roo
 	const int h = kH * kScaleFactor;
 	const int texW = _npotTex ? w : roundPowerOfTwo(w);
 	const int texH = _npotTex ? h : roundPowerOfTwo(h);
-	if (_background.texId == -1) {
+	if (_background.texId == kVoidTexId) {
 		glGenTextures(1, &_background.texId);
 		glBindTexture(GL_TEXTURE_2D, _background.texId);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -225,8 +227,8 @@ void TextureCache::createTextureGfxImage(ResourceData &res, const GfxImage *imag
 	const int texW = _npotTex ? w : roundPowerOfTwo(w);
 	const int texH = _npotTex ? h : roundPowerOfTwo(h);
 	int pos = -1;
-	for (int i = 0; i < ARRAYSIZE(_texturesList); ++i) {
-		if (_texturesList[i].texId == -1) {
+	for (size_t i = 0; i < ARRAYSIZE(_texturesList); ++i) {
+		if (_texturesList[i].texId == kVoidTexId) {
 			pos = i;
 		} else if (_texturesList[i].hash.ptr == image->dataPtr && _texturesList[i].hash.num == image->num) {
 			queueGfxImageDraw(i, image);
@@ -237,7 +239,7 @@ void TextureCache::createTextureGfxImage(ResourceData &res, const GfxImage *imag
 		struct timeval t0;
 		gettimeofday(&t0, 0);
 		int max = 0;
-		for (int i = 0; i < ARRAYSIZE(_texturesList); ++i) {
+		for (size_t i = 0; i < ARRAYSIZE(_texturesList); ++i) {
 			if (_texturesList[i].refCount == 0) {
 				const int d = (t0.tv_sec - _texturesList[i].t0.tv_sec) * 1000 + (t0.tv_usec - _texturesList[i].t0.tv_usec) / 1000;
 				if (i == 0 || d > max) {
@@ -252,7 +254,7 @@ void TextureCache::createTextureGfxImage(ResourceData &res, const GfxImage *imag
 		}
 		glDeleteTextures(1, &_texturesList[pos].texId);
 		memset(&_texturesList[pos], 0, sizeof(Texture));
-		_texturesList[pos].texId = -1;
+		_texturesList[pos].texId = kVoidTexId;
 	}
 	if (_texturesList[pos].texId == -1) {
 		glGenTextures(1, &_texturesList[pos].texId);
@@ -333,7 +335,7 @@ static void emitQuadTex(int x1, int y1, int x2, int y2, GLfloat u1, GLfloat v1, 
 }
 
 static void drawBackground(GLuint texId, GLfloat u, GLfloat v) {
-	if (texId != -1) {
+	if (texId != kVoidTexId) {
 		glBindTexture(GL_TEXTURE_2D, texId);
 		emitQuadTex(0, 0, kW, kH, 0, 0, u, v);
 	}
