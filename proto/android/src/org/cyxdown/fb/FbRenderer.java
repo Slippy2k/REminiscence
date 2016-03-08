@@ -12,10 +12,6 @@ public class FbRenderer implements GLSurfaceView.Renderer {
 	private int m_width = 0;
 	private int m_height = 0;
 	
-	public FbRenderer() {
-		super();
-	}
-
 	public void onDrawFrame(GL10 gl) {
 		FbJni.drawFrame(m_width, m_height);
 	}

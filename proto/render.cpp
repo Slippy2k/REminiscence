@@ -5,7 +5,7 @@
 #include "scaler.h"
 
 static const int kShowFps = false;
-static const int _scalerFactor = 1;
+static const int kScaleFactor = 1;
 static void (*_scalerProc)(uint16_t *, int, const uint16_t *, int, int, int) = scale2x;
 
 static int roundPowerOfTwo(int x) {
@@ -54,9 +54,9 @@ void TextureCache::init() {
 	if (hasExt(exts, "GL_ARB_texture_non_power_of_two")) {
 		_npotTex = true;
 	}
-	if (_scalerFactor != 1) {
-		const int w = _npotTex ? kW * _scalerFactor : roundPowerOfTwo(kW * _scalerFactor);
-		const int h = _npotTex ? kH * _scalerFactor : roundPowerOfTwo(kH * _scalerFactor);
+	if (kScaleFactor != 1) {
+		const int w = _npotTex ? kW * kScaleFactor : roundPowerOfTwo(kW * kScaleFactor);
+		const int h = _npotTex ? kH * kScaleFactor : roundPowerOfTwo(kH * kScaleFactor);
 		_texScaleBuf = (uint16_t *)malloc(w * h * sizeof(uint16_t));
 	}
 }
@@ -69,7 +69,7 @@ void TextureCache::updatePalette(Color *clut) {
 }
 
 uint16_t *TextureCache::rescaleTexture(DecodeBuffer *buf, int w, int h) {
-	if (_scalerFactor == 1) {
+	if (kScaleFactor == 1) {
 		return (uint16_t *)buf->ptr;
 	} else {
 		_scalerProc(_texScaleBuf, w, (const uint16_t *)buf->ptr, buf->pitch, buf->w, buf->h);
@@ -91,8 +91,8 @@ static void convertTextureFont(DecodeBuffer *buf, int x, int y, int w, int h, ui
 
 void TextureCache::createTextureFont(ResourceData &res) {
 	_font.charsCount = 105;
-	const int w = _font.charsCount * 16 * _scalerFactor;
-	const int h = 16 * _scalerFactor;
+	const int w = _font.charsCount * 16 * kScaleFactor;
+	const int h = 16 * kScaleFactor;
 	const int texW = _npotTex ? w : roundPowerOfTwo(w);
 	const int texH = _npotTex ? h : roundPowerOfTwo(h);
 	if (_font.texId == -1) {
@@ -106,7 +106,7 @@ void TextureCache::createTextureFont(ResourceData &res) {
 	}
 	DecodeBuffer buf;
 	memset(&buf, 0, sizeof(buf));
-	if (_scalerFactor == 1) {
+	if (kScaleFactor == 1) {
 		buf.w = buf.pitch = texW;
 		buf.h = texH;
 	} else {
@@ -134,8 +134,8 @@ static void convertTextureTitle(DecodeBuffer *buf, int x, int y, int w, int h, u
 }
 
 void TextureCache::createTextureTitle(ResourceData &res, int num) {
-	const int w = kW * _scalerFactor;
-	const int h = kH * _scalerFactor;
+	const int w = kW * kScaleFactor;
+	const int h = kH * kScaleFactor;
 	const int texW = _npotTex ? w : roundPowerOfTwo(w);
 	const int texH = _npotTex ? h : roundPowerOfTwo(h);
 	if (_title.texId == -1) {
@@ -149,7 +149,7 @@ void TextureCache::createTextureTitle(ResourceData &res, int num) {
 	}
 	DecodeBuffer buf;
 	memset(&buf, 0, sizeof(buf));
-	if (_scalerFactor == 1) {
+	if (kScaleFactor == 1) {
 		buf.w = buf.pitch = texW;
 		buf.h = texH;
 	} else {
@@ -175,8 +175,8 @@ static void convertTextureBackground(DecodeBuffer *buf, int x, int y, int w, int
 }
 
 void TextureCache::createTextureBackground(ResourceData &res, int level, int room) {
-	const int w = kW * _scalerFactor;
-	const int h = kH * _scalerFactor;
+	const int w = kW * kScaleFactor;
+	const int h = kH * kScaleFactor;
 	const int texW = _npotTex ? w : roundPowerOfTwo(w);
 	const int texH = _npotTex ? h : roundPowerOfTwo(h);
 	if (_background.texId == -1) {
@@ -191,7 +191,7 @@ void TextureCache::createTextureBackground(ResourceData &res, int level, int roo
 	if (level != _background.level || room != _background.room) {
 		DecodeBuffer buf;
 		memset(&buf, 0, sizeof(buf));
-		if (_scalerFactor == 1) {
+		if (kScaleFactor == 1) {
 			buf.w = buf.pitch = texW;
 			buf.h = texH;
 		} else {
@@ -220,8 +220,8 @@ static void convertTextureImage(DecodeBuffer *buf, int x, int y, int w, int h, u
 }
 
 void TextureCache::createTextureGfxImage(ResourceData &res, const GfxImage *image) {
-	const int w = image->w * _scalerFactor;
-	const int h = image->h * _scalerFactor;
+	const int w = image->w * kScaleFactor;
+	const int h = image->h * kScaleFactor;
 	const int texW = _npotTex ? w : roundPowerOfTwo(w);
 	const int texH = _npotTex ? h : roundPowerOfTwo(h);
 	int pos = -1;
@@ -265,7 +265,7 @@ void TextureCache::createTextureGfxImage(ResourceData &res, const GfxImage *imag
 	_texturesList[pos].v = h / (GLfloat)texH;
 	DecodeBuffer buf;
 	memset(&buf, 0, sizeof(buf));
-	if (_scalerFactor == 1) {
+	if (kScaleFactor == 1) {
 		buf.w = buf.pitch = texW;
 		buf.h = texH;
 	} else {
