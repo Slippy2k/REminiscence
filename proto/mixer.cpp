@@ -225,20 +225,27 @@ struct Mixer_impl {
 	static const int kMixBufSize = 4096;
 	static const int kMixChannels = 8;
 
+	struct Channel {
+		const uint8_t *data;
+		int len;
+		float offset, step;
+	};
+
+	int16_t _mixBuf[kMixBufSize];
+	Channel _channels[kMixChannels];
+
 	SLObjectItf _engineObject;
 	SLEngineItf _engineEngine;
 	SLObjectItf _outputMixObject;
 	SLObjectItf _bqPlayerObject;
 	SLPlayItf _bqPlayerPlay;
+	SLVolumeItf _bqPlayerVolume;
 	SLAndroidSimpleBufferQueueItf _bqPlayerBufferQueue;
-	int16_t _mixBuf[kMixBufSize];
-	struct {
-		const uint8_t *data;
-		int len;
-		float offset, step;
-	} _channels[kMixChannels];
 
 	void init() {
+		memset(_mixBuf, 0, sizeof(_mixBuf));
+		memset(_channels, 0, sizeof(_channels));
+
 		MixerLock ml;
 		SLresult ret;
 
@@ -260,20 +267,32 @@ struct Mixer_impl {
 		}
 
 		// buffer queue player
-		SLDataLocator_AndroidSimpleBufferQueue loc_bufq = { SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2 };
+		SLDataLocator_AndroidSimpleBufferQueue loc_bufq;
+		loc_bufq.locatorType = SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE;
+		loc_bufq.numBuffers  = 2;
+
 		SLDataFormat_PCM format_pcm;
-		format_pcm.formatType = SL_DATAFORMAT_PCM;
-		format_pcm.numChannels = 1;
+		format_pcm.formatType    = SL_DATAFORMAT_PCM;
+		format_pcm.numChannels   = 1;
 		assert(kMixFreq == 22050);
 		format_pcm.samplesPerSec = SL_SAMPLINGRATE_22_05;
 		format_pcm.bitsPerSample = SL_PCMSAMPLEFORMAT_FIXED_16;
 		format_pcm.containerSize = SL_PCMSAMPLEFORMAT_FIXED_16;
-		format_pcm.channelMask = SL_SPEAKER_FRONT_CENTER,
-		format_pcm.endianness = SL_BYTEORDER_LITTLEENDIAN;
+		format_pcm.channelMask   = SL_SPEAKER_FRONT_CENTER,
+		format_pcm.endianness    = SL_BYTEORDER_LITTLEENDIAN;
 
-		SLDataSource src = { &loc_bufq, &format_pcm };
-		SLDataLocator_OutputMix loc_outmix = { SL_DATALOCATOR_OUTPUTMIX, _outputMixObject };
-		SLDataSink snk = {&loc_outmix, NULL};
+		SLDataSource src;
+		src.pLocator = &loc_bufq;
+		src.pFormat  = &format_pcm;
+
+		SLDataLocator_OutputMix loc_outmix;
+		loc_outmix.locatorType = SL_DATALOCATOR_OUTPUTMIX;
+		loc_outmix.outputMix   = _outputMixObject;
+
+		SLDataSink snk;
+		snk.pLocator = &loc_outmix;
+		snk.pFormat  = 0;
+
 		const SLInterfaceID ids[2] = { SL_IID_BUFFERQUEUE, SL_IID_VOLUME };
 		const SLboolean req[2] = { SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE };
 		ret = (*_engineEngine)->CreateAudioPlayer(_engineEngine, &_bqPlayerObject, &src, &snk, 2, ids, req);
@@ -296,22 +315,27 @@ struct Mixer_impl {
 			warning("SLObjectItf::GetInterface(SL_IID_BUFFERQUEUE) failed, ret=0x%x", ret);
 			return;
 		}
+		ret = (*_bqPlayerObject)->GetInterface(_bqPlayerObject, SL_IID_VOLUME, &_bqPlayerVolume);
+		if (ret != SL_RESULT_SUCCESS) {
+			warning("SLObjectItf::GetInterface(SL_IID_VOLUME) failed, ret=0x%x", ret);
+			return;
+		}
 		ret = (*_bqPlayerBufferQueue)->RegisterCallback(_bqPlayerBufferQueue, bqPlayerCallback, this);
 		if (ret != SL_RESULT_SUCCESS) {
 			warning("SLAndroidSimpleBufferQueueItf::RegisterCallback() failed, ret=0x%x", ret);
 			return;
 		}
-
-		memset(_mixBuf, 0, sizeof(_mixBuf));
-		memset(_channels, 0, sizeof(_channels));
+		(*_bqPlayerPlay)->SetPlayState(_bqPlayerPlay, SL_PLAYSTATE_PLAYING);
 	}
 	void quit() {
+		stopAll();
 		MixerLock ml;
 		if (_bqPlayerObject) {
 			(*_bqPlayerObject)->Destroy(_bqPlayerObject);
 			_bqPlayerObject = 0;
 			_bqPlayerPlay = 0;
 			_bqPlayerBufferQueue = 0;
+			_bqPlayerVolume = 0;
 		}
 		if (_outputMixObject) {
 			(*_outputMixObject)->Destroy(_outputMixObject);
@@ -377,6 +401,10 @@ struct Mixer_impl {
 	void stopMusic() {
 	}
 	void stopAll() {
+		MixerLock ml;
+		if (_bqPlayerPlay) {
+			(*_bqPlayerPlay)->SetPlayState(_bqPlayerPlay, SL_PLAYSTATE_STOPPED);
+		}
 	}
 	static int16_t clipS16(int sample) {
 		if (sample > 32767) {
