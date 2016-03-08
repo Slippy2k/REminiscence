@@ -1,0 +1,28 @@
+
+SDL_CFLAGS = `sdl2-config --cflags` -DUSE_SDL_MIXER
+SDL_LIBS = `sdl2-config --libs` -lSDL2_mixer
+
+GL_LIBS = -lopengl32
+
+CXX = i686-w64-mingw32-g++
+CXXFLAGS = $(CPPFLAGS) -g -O -Wall -Wno-sign-compare -MMD $(SDL_CFLAGS)
+STRIP = i686-w64-mingw32-strip
+
+SRCS = collision.cpp decode.cpp file.cpp game.cpp input.cpp main.cpp mixer.cpp \
+	piege.cpp render.cpp resource_data.cpp resource_mac.cpp saveload.cpp \
+	scaler.cpp staticres.cpp stub.cpp util.cpp
+OBJS = $(SRCS:.cpp=.o)
+DEPS = $(SRCS:.cpp=.d)
+
+all: fb.exe
+
+fb.exe: $(OBJS)
+	$(CXX) $(LDFLAGS) -o $@ -static-libgcc -static-libstdc++ $^ $(SDL_LIBS) $(GL_LIBS) -lz
+	$(STRIP) $@
+	upx -9 $@
+
+clean:
+	rm -f *.o *.d fb.exe
+
+-include $(DEPS)
+

@@ -8,12 +8,11 @@
 #include <assert.h>
 #include <stdint.h>
 
-#ifndef MAX
+#undef MAX
 #define MAX(x,y) ((x)>(y)?(x):(y))
-#endif
-#ifndef MIN
+#undef MIN
 #define MIN(x,y) ((x)<(y)?(x):(y))
-#endif
+#undef ARRAYSIZE
 #define ARRAYSIZE(a) (sizeof(a)/sizeof(a[0]))
 
 inline uint16_t READ_BE_UINT16(const void *ptr) {

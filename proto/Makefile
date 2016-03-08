@@ -5,7 +5,7 @@ SDL_LIBS   = `sdl2-config --libs` -lSDL2_mixer
 GL_LIBS = -lGL
 
 CXX = g++
-CXXFLAGS += -g -O -Wall -Wuninitialized -Wno-sign-compare -MMD $(SDL_CFLAGS)
+CXXFLAGS = -g -O -Wall -Wno-sign-compare -MMD $(SDL_CFLAGS)
 
 SRCS_LIB = collision.cpp decode.cpp file.cpp game.cpp piege.cpp resource_data.cpp resource_mac.cpp saveload.cpp scaler.cpp staticres.cpp stub.cpp util.cpp
 OBJS_LIB = $(SRCS_LIB:.cpp=.o)
