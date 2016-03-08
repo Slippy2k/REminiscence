@@ -55,6 +55,7 @@ struct Main {
 	}
 
 	void quit() {
+		_texCache.fini();
 		_mix.quit();
 	}
 
@@ -145,7 +146,7 @@ struct Main {
 			_texCache.createTextureBackground(_resData, _game._currentLevel, _game._currentRoom);
 		}
 		for (int i = 0; i < _game._gfxImagesCount; ++i) {
-			_texCache.createTextureGfxImage(_resData, &_game._gfxImagesList[i]);
+			_texCache.createTextureImage(_resData, &_game._gfxImagesList[i]);
 		}
 		_texCache.draw((_state == kStateMenu), w, h);
 		for (int i = 0; i < _game._gfxTextsCount; ++i) {

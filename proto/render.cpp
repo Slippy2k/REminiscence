@@ -30,13 +30,13 @@ TextureCache::TextureCache() {
 	memset(&_font, 0, sizeof(_font));
 	_font.texId = kVoidTexId;
 	memset(&_texturesList, 0, sizeof(_texturesList));
-	for (size_t i = 0; i < ARRAYSIZE(_texturesList); ++i) {
+	for (int i = 0; i < kTexturesListSize; ++i) {
 		_texturesList[i].texId = kVoidTexId;
 	}
-	memset(&_gfxImagesQueue, 0, sizeof(_gfxImagesQueue));
-	_gfxImagesCount = 0;
+	memset(&_imagesList, 0, sizeof(_imagesList));
+	_imagesCount = 0;
 	_texScaleBuf = 0;
-	gettimeofday(&_t0, 0);
+	gettimeofday(&_timestamp, 0);
 	_frameCounter = 0;
 	_framesPerSec = 0;
 	_npotTex = false;
@@ -61,6 +61,33 @@ void TextureCache::init() {
 		const int h = _npotTex ? kH * kScaleFactor : roundPowerOfTwo(kH * kScaleFactor);
 		_texScaleBuf = (uint16_t *)malloc(w * h * sizeof(uint16_t));
 	}
+}
+
+void TextureCache::fini() {
+	for (int i = 0; i < kTexturesListSize; ++i) {
+		if (_texturesList[i].texId != kVoidTexId) {
+			glDeleteTextures(1, &_texturesList[i].texId);
+			memset(&_texturesList[i], 0, sizeof(Texture));
+			_texturesList[i].texId = kVoidTexId;
+		}
+	}
+	if (_title.texId != kVoidTexId) {
+		glDeleteTextures(1, &_title.texId);
+		memset(&_title, 0, sizeof(_title));
+		_title.texId = kVoidTexId;
+	}
+	if (_background.texId != kVoidTexId) {
+		glDeleteTextures(1, &_background.texId);
+		memset(&_background, 0, sizeof(_background));
+		_background.texId = kVoidTexId;
+	}
+	if (_font.texId != kVoidTexId) {
+		glDeleteTextures(1, &_font.texId);
+		memset(&_font, 0, sizeof(_font));
+		_font.texId = kVoidTexId;
+	}
+	memset(_imagesList, 0, sizeof(_imagesList));
+	_imagesCount = 0;
 }
 
 void TextureCache::updatePalette(Color *clut) {
@@ -221,27 +248,27 @@ static void convertTextureImage(DecodeBuffer *buf, int x, int y, int w, int h, u
 	*(uint16_t *)(buf->ptr + offset) = lut[color] | 1;
 }
 
-void TextureCache::createTextureGfxImage(ResourceData &res, const GfxImage *image) {
+void TextureCache::createTextureImage(ResourceData &res, const GfxImage *image) {
 	const int w = image->w * kScaleFactor;
 	const int h = image->h * kScaleFactor;
 	const int texW = _npotTex ? w : roundPowerOfTwo(w);
 	const int texH = _npotTex ? h : roundPowerOfTwo(h);
 	int pos = -1;
-	for (size_t i = 0; i < ARRAYSIZE(_texturesList); ++i) {
+	for (int i = 0; i < kTexturesListSize; ++i) {
 		if (_texturesList[i].texId == kVoidTexId) {
 			pos = i;
 		} else if (_texturesList[i].hash.ptr == image->dataPtr && _texturesList[i].hash.num == image->num) {
-			queueGfxImageDraw(i, image);
+			queueImageDraw(i, image);
 			return;
 		}
 	}
 	if (pos == -1) {
-		struct timeval t0;
-		gettimeofday(&t0, 0);
+		struct timeval timestamp;
+		gettimeofday(&timestamp, 0);
 		int max = 0;
-		for (size_t i = 0; i < ARRAYSIZE(_texturesList); ++i) {
+		for (int i = 0; i < kTexturesListSize; ++i) {
 			if (_texturesList[i].refCount == 0) {
-				const int d = (t0.tv_sec - _texturesList[i].t0.tv_sec) * 1000 + (t0.tv_usec - _texturesList[i].t0.tv_usec) / 1000;
+				const int d = (timestamp.tv_sec - _texturesList[i].timestamp.tv_sec) * 1000 + (timestamp.tv_usec - _texturesList[i].timestamp.tv_usec) / 1000;
 				if (i == 0 || d > max) {
 					pos = i;
 					max = d;
@@ -286,21 +313,21 @@ void TextureCache::createTextureGfxImage(ResourceData &res, const GfxImage *imag
 	}
 	_texturesList[pos].hash.ptr = image->dataPtr;
 	_texturesList[pos].hash.num = image->num;
-	queueGfxImageDraw(pos, image);
+	queueImageDraw(pos, image);
 }
 
-void TextureCache::queueGfxImageDraw(int pos, const GfxImage *image) {
+void TextureCache::queueImageDraw(int pos, const GfxImage *image) {
 	++_texturesList[pos].refCount;
-	gettimeofday(&_texturesList[pos].t0, 0);
-	assert(_gfxImagesCount < ARRAYSIZE(_gfxImagesQueue));
-	_gfxImagesQueue[_gfxImagesCount].x = image->x;
-	_gfxImagesQueue[_gfxImagesCount].y = kH - image->y;
-	_gfxImagesQueue[_gfxImagesCount].x2 = image->x + image->w;
-	_gfxImagesQueue[_gfxImagesCount].y2 = kH - (image->y + image->h);
-	_gfxImagesQueue[_gfxImagesCount].xflip = image->xflip;
-	_gfxImagesQueue[_gfxImagesCount].erase = image->erase;
-	_gfxImagesQueue[_gfxImagesCount].tex = &_texturesList[pos];
-	++_gfxImagesCount;
+	gettimeofday(&_texturesList[pos].timestamp, 0);
+	assert(_imagesCount < kImagesListSize);
+	_imagesList[_imagesCount].x = image->x;
+	_imagesList[_imagesCount].y = kH - image->y;
+	_imagesList[_imagesCount].x2 = image->x + image->w;
+	_imagesList[_imagesCount].y2 = kH - (image->y + image->h);
+	_imagesList[_imagesCount].xflip = image->xflip;
+	_imagesList[_imagesCount].erase = image->erase;
+	_imagesList[_imagesCount].tex = &_texturesList[pos];
+	++_imagesCount;
 }
 
 static void emitQuadTex(int x1, int y1, int x2, int y2, GLfloat u1, GLfloat v1, GLfloat u2, GLfloat v2) {
@@ -352,25 +379,25 @@ void TextureCache::draw(bool menu, int w, int h) {
 		drawBackground(_background.texId, _background.u, _background.v);
 		int i = 0;
 		glAlphaFunc(GL_EQUAL, 1);
-		for (; i < _gfxImagesCount && !_gfxImagesQueue[i].erase; ++i) {
-			drawGfxImage(i);
+		for (; i < _imagesCount && !_imagesList[i].erase; ++i) {
+			drawImage(i);
 		}
 		drawBackground(_background.texId, _background.u, _background.v);
-		for (; i < _gfxImagesCount; ++i) {
-			drawGfxImage(i);
+		for (; i < _imagesCount; ++i) {
+			drawImage(i);
 		}
-		_gfxImagesCount = 0;
+		_imagesCount = 0;
 	}
 }
 
-void TextureCache::drawGfxImage(int i) {
-	Texture *tex = _gfxImagesQueue[i].tex;
+void TextureCache::drawImage(int i) {
+	Texture *tex = _imagesList[i].tex;
 	if (tex) {
 		glBindTexture(GL_TEXTURE_2D, tex->texId);
-		if (_gfxImagesQueue[i].xflip) {
-			emitQuadTex(_gfxImagesQueue[i].x2, _gfxImagesQueue[i].y2, _gfxImagesQueue[i].x, _gfxImagesQueue[i].y, 0, 0, tex->u, tex->v);
+		if (_imagesList[i].xflip) {
+			emitQuadTex(_imagesList[i].x2, _imagesList[i].y2, _imagesList[i].x, _imagesList[i].y, 0, 0, tex->u, tex->v);
 		} else {
-			emitQuadTex(_gfxImagesQueue[i].x, _gfxImagesQueue[i].y2, _gfxImagesQueue[i].x2, _gfxImagesQueue[i].y, 0, 0, tex->u, tex->v);
+			emitQuadTex(_imagesList[i].x, _imagesList[i].y2, _imagesList[i].x2, _imagesList[i].y, 0, 0, tex->u, tex->v);
 		}
 		--tex->refCount;
 	}
@@ -420,8 +447,8 @@ void TextureCache::endFrameDraw() {
 	if (kShowFps && (_frameCounter & 31) == 0) {
 		struct timeval t1;
 		gettimeofday(&t1, 0);
-		const int msecs = (t1.tv_sec - _t0.tv_sec) * 1000 + (t1.tv_usec - _t0.tv_usec) / 1000;
-		_t0 = t1;
+		const int msecs = (t1.tv_sec - _timestamp.tv_sec) * 1000 + (t1.tv_usec - _timestamp.tv_usec) / 1000;
+		_timestamp = t1;
 		if (msecs != 0) {
 //			printf("fps %f\n", 1000. * 32 / msecs);
 			_framesPerSec = (int)(1000. * 32 / msecs);

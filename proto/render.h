@@ -18,7 +18,9 @@ static const int kH = 448;
 
 struct TextureCache {
 
-	// TODO: freeList
+	static const int kTexturesListSize = 128;
+	static const int kImagesListSize = 192;
+
 	struct TextureHash {
 		const void *ptr;
 		int num;
@@ -29,8 +31,8 @@ struct TextureCache {
 		GLuint texId;
 		GLfloat u, v;
 		int refCount;
-		struct timeval t0;
-	} _texturesList[128];
+		struct timeval timestamp;
+	} _texturesList[kTexturesListSize];
 
 	struct {
 		int num;
@@ -57,13 +59,13 @@ struct TextureCache {
 		int x, y, x2, y2;
 		bool xflip;
 		bool erase;
-	} _gfxImagesQueue[192];
-	int _gfxImagesCount;
+	} _imagesList[kImagesListSize];
+	int _imagesCount;
 
 	uint16_t _tex8to565[256];
 	uint16_t _tex8to5551[256];
 	uint16_t *_texScaleBuf;
-	struct timeval _t0;
+	struct timeval _timestamp;
 	int _frameCounter;
 	int _framesPerSec;
 
@@ -72,6 +74,7 @@ struct TextureCache {
 	TextureCache();
 
 	void init();
+	void fini();
 
 	void updatePalette(Color *clut);
 	uint16_t *rescaleTexture(DecodeBuffer *buf, int w, int h);
@@ -79,10 +82,10 @@ struct TextureCache {
 	void createTextureFont(ResourceData &res);
 	void createTextureTitle(ResourceData &res, int num);
 	void createTextureBackground(ResourceData &res, int level, int room);
-	void createTextureGfxImage(ResourceData &res, const GfxImage *image);
-	void queueGfxImageDraw(int pos, const GfxImage *image);
+	void createTextureImage(ResourceData &res, const GfxImage *image);
+	void queueImageDraw(int pos, const GfxImage *image);
 	void draw(bool menu, int w, int h);
-	void drawGfxImage(int i);
+	void drawImage(int i);
 	void drawText(int x, int y, int color, const uint8_t *dataPtr, int len);
 	void prepareFrameDraw(int w, int h);
 	void endFrameDraw();
