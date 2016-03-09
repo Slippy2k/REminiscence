@@ -266,6 +266,18 @@ struct Mixer_impl {
 			return;
 		}
 
+		// output mix
+		ret = (*_engineEngine)->CreateOutputMix(_engineEngine, &_outputMixObject, 0, 0, 0);
+		if (ret != SL_RESULT_SUCCESS) {
+			warning("SLEngineItf::CreateOutputMixi() failed, ret=0x%x", ret);
+			return;
+		}
+		ret = (*_outputMixObject)->Realize(_outputMixObject, SL_BOOLEAN_FALSE);
+		if (ret != SL_RESULT_SUCCESS) {
+			warning("SLObjectItf::Realize() failed, ret=0x%x", ret);
+			return;
+		}
+
 		// buffer queue player
 		SLDataLocator_AndroidSimpleBufferQueue loc_bufq;
 		loc_bufq.locatorType = SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE;
@@ -325,6 +337,8 @@ struct Mixer_impl {
 			warning("SLAndroidSimpleBufferQueueItf::RegisterCallback() failed, ret=0x%x", ret);
 			return;
 		}
+
+		// play
 		(*_bqPlayerPlay)->SetPlayState(_bqPlayerPlay, SL_PLAYSTATE_PLAYING);
 	}
 	void quit() {
