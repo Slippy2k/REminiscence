@@ -20,6 +20,7 @@ static GameStub *g_stub;
 static char *g_libDir;
 static char *g_saveDir;
 static uint32_t g_timeStamp;
+static int g_u, g_v;
 
 extern "C" {
 
@@ -133,6 +134,12 @@ JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_queueKeyEvent(JNIEnv *env, jcla
 			g_stub->queueKeyInput(key, pressed);
 		}
 	}
+}
+
+JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_setDisplayAR(JNIEnv *env, jclass c, jint u, jint v) {
+	__android_log_print(ANDROID_LOG_INFO, LOG_TAG, "AR %d,%d", u, v);
+	g_u = u;
+	g_v = v;
 }
 
 JNIEXPORT void JNICALL Java_org_cyxdown_fb_FbJni_queueTouchEvent(JNIEnv *env, jclass c, jint num, jint x, jint y, jint pressed) {

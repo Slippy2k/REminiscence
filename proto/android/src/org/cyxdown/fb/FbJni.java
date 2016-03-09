@@ -11,6 +11,7 @@ public class FbJni {
 	native static void drawFrame(int width, int height);
 	native static void setLibraryDirectory(String dir);
 	native static void setSaveDirectory(String dir);
+	native static void setDisplayAR(int u, int v);
 	native static void queueKeyEvent(int code, int pressed);
 	native static void queueTouchEvent(int num, int x, int y, int pressed);
 }

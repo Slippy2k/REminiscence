@@ -7,9 +7,9 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Context;
-
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 
@@ -132,6 +132,9 @@ public class FbAppActivity extends Activity {
 		}
 		FbJni.setSaveDirectory(cacheDir);
 		FbJni.setLibraryDirectory(cacheDir.replace("cache", "lib"));
+		DisplayMetrics metrics = new DisplayMetrics();
+		getWindowManager().getDefaultDisplay().getMetrics(metrics);
+		FbJni.setDisplayAR(metrics.widthPixels, metrics.heightPixels);
 		m_surfaceView = new FbGLSurfaceView(this);
 		setContentView(m_surfaceView);
 	}
