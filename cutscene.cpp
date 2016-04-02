@@ -385,6 +385,14 @@ void Cutscene::op_drawStringAtBottom() {
 	debug(DBG_CUT, "Cutscene::op_drawStringAtBottom()");
 	uint16_t strId = fetchNextCmdWord();
 	if (!_creditsSequence) {
+
+		// 'espions' - ignore last call, allows caption to be displayed longer on the screen
+		if (_id == 0x39 && strId == 0xFFFF && (_cmdPtr - _cmdPtrBak) == 0x10) {
+			_frameDelay = 80;
+			setPalette();
+			return;
+		}
+
 		memset(_pageC + 179 * 256, 0xC0, 45 * 256);
 		memset(_page1 + 179 * 256, 0xC0, 45 * 256);
 		memset(_page0 + 179 * 256, 0xC0, 45 * 256);
