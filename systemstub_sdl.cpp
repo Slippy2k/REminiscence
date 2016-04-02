@@ -318,33 +318,19 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 		case SDL_JOYAXISMOTION:
 			switch (ev.jaxis.axis) {
 			case 0:
+				_pi.dirMask &= ~(PlayerInput::DIR_RIGHT | PlayerInput::DIR_LEFT);
 				if (ev.jaxis.value > JOYSTICK_COMMIT_VALUE) {
 					_pi.dirMask |= PlayerInput::DIR_RIGHT;
-					if (_pi.dirMask & PlayerInput::DIR_LEFT) {
-						_pi.dirMask &= ~PlayerInput::DIR_LEFT;
-					}
 				} else if (ev.jaxis.value < -JOYSTICK_COMMIT_VALUE) {
 					_pi.dirMask |= PlayerInput::DIR_LEFT;
-					if (_pi.dirMask & PlayerInput::DIR_RIGHT) {
-						_pi.dirMask &= ~PlayerInput::DIR_RIGHT;
-					}
-				} else {
-					_pi.dirMask &= ~(PlayerInput::DIR_RIGHT | PlayerInput::DIR_LEFT);
 				}
 				break;
 			case 1:
+				_pi.dirMask &= ~(PlayerInput::DIR_UP | PlayerInput::DIR_DOWN);
 				if (ev.jaxis.value > JOYSTICK_COMMIT_VALUE) {
 					_pi.dirMask |= PlayerInput::DIR_DOWN;
-					if (_pi.dirMask & PlayerInput::DIR_UP) {
-						_pi.dirMask &= ~PlayerInput::DIR_UP;
-					}
 				} else if (ev.jaxis.value < -JOYSTICK_COMMIT_VALUE) {
 					_pi.dirMask |= PlayerInput::DIR_UP;
-					if (_pi.dirMask & PlayerInput::DIR_DOWN) {
-						_pi.dirMask &= ~PlayerInput::DIR_DOWN;
-					}
-				} else {
-					_pi.dirMask &= ~(PlayerInput::DIR_UP | PlayerInput::DIR_DOWN);
 				}
 				break;
 			}
