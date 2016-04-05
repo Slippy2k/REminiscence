@@ -313,6 +313,35 @@ static void AMIGA_planar8(uint8_t *dst, int w, int h, const uint8_t *src) {
 	}
 }
 
+static void AMIGA_planar24(uint8_t *dst, int w, int h, const uint8_t *src) {
+	assert(w == 24);
+	for (int y = 0; y < h; ++y) {
+		for (int i = 0; i < 16; ++i) {
+			int color = 0;
+			const int mask = 1 << (15 - i);
+			for (int bit = 0; bit < 4; ++bit) {
+				if (READ_BE_UINT16(src + bit * 2) & mask) {
+					color |= 1 << bit;
+				}
+			}
+			dst[i] = color;
+		}
+		src += 8;
+		for (int i = 0; i < 8; ++i) {
+			int color = 0;
+			const int mask = 1 << (7 - i);
+			for (int bit = 0; bit < 4; ++bit) {
+				if (src[bit] & mask) {
+					color |= 1 << bit;
+				}
+			}
+			dst[16 + i] = color;
+		}
+		src += 4;
+		dst += w;
+	}
+}
+
 static void AMIGA_planar_mask(uint8_t *dst, int x0, int y0, int w, int h, uint8_t *src, uint8_t *mask, int size) {
 	dst += y0 * 256 + x0;
 	for (int y = 0; y < h; ++y) {
@@ -654,6 +683,9 @@ void Video::AMIGA_decodeSpc(const uint8_t *src, int w, int h, uint8_t *dst) {
 	case 16:
 	case 32:
 		AMIGA_planar16(dst, w / 16, h, 4, src);
+		break;
+	case 24:
+		AMIGA_planar24(dst, w, h, src);
 		break;
 	default:
 		warning("AMIGA_decodeSpc w=%d unimplemented", w);
