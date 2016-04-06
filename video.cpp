@@ -851,7 +851,7 @@ void Video::PC_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8
 
 const char *Video::drawString(const char *str, int16_t x, int16_t y, uint8_t col) {
 	debug(DBG_VIDEO, "Video::drawString('%s', %d, %d, 0x%X)", str, x, y, col);
-	drawCharFunc dcf;
+	drawCharFunc dcf = 0;
 	switch (_res->_type) {
 	case kResourceTypeAmiga:
 		dcf = &Video::AMIGA_drawStringChar;

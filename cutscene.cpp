@@ -111,7 +111,7 @@ uint16_t Cutscene::findTextSeparators(const uint8_t *p) {
 
 void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, uint8_t *page, uint8_t n) {
 	debug(DBG_CUT, "Cutscene::drawText(x=%d, y=%d, c=%d)", x, y, color);
-	Video::drawCharFunc dcf;
+	Video::drawCharFunc dcf = 0;
 	switch (_res->_type) {
 	case kResourceTypeAmiga:
 		dcf = &Video::AMIGA_drawStringChar;

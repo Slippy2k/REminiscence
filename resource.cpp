@@ -272,7 +272,7 @@ void Resource::load_SPR_OFF(const char *fileName, uint8_t *sprData) {
 void Resource::load_CINE() {
 	if (_type == kResourceTypeAmiga) {
 		if (_cine_txt == 0) {
-			snprintf(_entryName, sizeof(_entryName), "FRCINE.TXT");
+			snprintf(_entryName, sizeof(_entryName), (_lang == LANG_FR) ? "FRCINE.TXT" : "ENGCINE.TXT");
 			File f;
 			if (f.open(_entryName, "rb", _fs)) {
 				const int len = f.size();
