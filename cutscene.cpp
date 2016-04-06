@@ -136,6 +136,7 @@ void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, 
 		} else if (*p == 0x20) {
 			xx += 8;
 		} else {
+			if (_res->isDOS()) {
 			uint8_t *dst_char = page + 256 * yy + xx;
 			const uint8_t *src = _res->_fnt + (*p - 32) * 32;
 			for (int h = 0; h < 8; ++h) {
@@ -153,6 +154,7 @@ void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, 
 					++dst_char;
 				}
 				dst_char += 256 - 8;
+			}
 			}
 			xx += 8;
 		}
@@ -976,9 +978,9 @@ void Cutscene::load(uint16_t cutName) {
 	case kResourceTypeDOS:
 		_res->load(name, Resource::OT_CMD);
 		_res->load(name, Resource::OT_POL);
-		_res->load_CINE();
 		break;
 	}
+	_res->load_CINE();
 }
 
 void Cutscene::prepare() {

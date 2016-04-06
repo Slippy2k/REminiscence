@@ -270,6 +270,37 @@ void Resource::load_SPR_OFF(const char *fileName, uint8_t *sprData) {
 }
 
 void Resource::load_CINE() {
+	if (_type == kResourceTypeAmiga) {
+		if (_cine_txt == 0) {
+			snprintf(_entryName, sizeof(_entryName), "FRCINE.TXT");
+			File f;
+			if (f.open(_entryName, "rb", _fs)) {
+				const int len = f.size();
+				_cine_txt = (uint8_t *)malloc(len + 1);
+				if (!_cine_txt) {
+					error("Unable to allocate cinematics text data");
+				}
+				f.read(_cine_txt, len);
+				if (f.ioErr()) {
+					error("I/O error when reading '%s'", _entryName);
+				}
+				_cine_txt[len] = 0;
+				uint8_t *p = _cine_txt;
+				for (int i = 0; i < NUM_CUTSCENE_TEXTS; ++i) {
+					_cineStrings[i] = p;
+					uint8_t *sep = (uint8_t *)memchr(p, '\n', &_cine_txt[len] - p);
+					if (!sep) {
+						break;
+					}
+					p = sep + 1;
+				}
+			}
+			if (!_cine_txt) {
+				error("Cannot load '%s'", _entryName);
+			}
+		}
+		return;
+	}
 	const char *baseName = 0;
 	switch (_lang) {
 	case LANG_FR:
