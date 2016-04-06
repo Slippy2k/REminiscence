@@ -111,6 +111,15 @@ uint16_t Cutscene::findTextSeparators(const uint8_t *p) {
 
 void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, uint8_t *page, uint8_t n) {
 	debug(DBG_CUT, "Cutscene::drawText(x=%d, y=%d, c=%d)", x, y, color);
+	Video::drawCharFunc dcf;
+	switch (_res->_type) {
+	case kResourceTypeAmiga:
+		dcf = &Video::AMIGA_drawStringChar;
+		break;
+	case kResourceTypeDOS:
+		dcf = &Video::PC_drawStringChar;
+		break;
+	}
 	uint16_t last_sep = 0;
 	if (n != 0) {
 		last_sep = findTextSeparators(p);
@@ -136,10 +145,8 @@ void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, 
 		} else if (*p == 0x20) {
 			xx += 8;
 		} else {
-			if (_res->isDOS()) {
-				uint8_t *dst = page + 256 * yy + xx;
-				_vid->PC_drawStringChar(dst, 256, _res->_fnt, color, *p);
-			}
+			uint8_t *dst = page + 256 * yy + xx;
+			(_vid->*dcf)(dst, 256, _res->_fnt, color, *p);
 			xx += 8;
 		}
 	}
