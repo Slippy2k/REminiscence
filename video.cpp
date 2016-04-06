@@ -851,13 +851,13 @@ void Video::PC_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8
 
 const char *Video::drawString(const char *str, int16_t x, int16_t y, uint8_t col) {
 	debug(DBG_VIDEO, "Video::drawString('%s', %d, %d, 0x%X)", str, x, y, col);
-	void (Video::*drawCharFunc)(uint8_t *, int, const uint8_t *, uint8_t, uint8_t) = 0;
+	drawCharFunc dcf;
 	switch (_res->_type) {
 	case kResourceTypeAmiga:
-		drawCharFunc = &Video::AMIGA_drawStringChar;
+		dcf = &Video::AMIGA_drawStringChar;
 		break;
 	case kResourceTypeDOS:
-		drawCharFunc = &Video::PC_drawStringChar;
+		dcf = &Video::PC_drawStringChar;
 		break;
 	}
 	int len = 0;
@@ -867,7 +867,7 @@ const char *Video::drawString(const char *str, int16_t x, int16_t y, uint8_t col
 		if (c == 0 || c == 0xB || c == 0xA) {
 			break;
 		}
-		(this->*drawCharFunc)(dst, 256, _res->_fnt, col, c);
+		(this->*dcf)(dst, 256, _res->_fnt, col, c);
 		dst += CHAR_W;
 		++len;
 	}

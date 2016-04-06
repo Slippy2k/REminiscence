@@ -137,24 +137,8 @@ void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, 
 			xx += 8;
 		} else {
 			if (_res->isDOS()) {
-			uint8_t *dst_char = page + 256 * yy + xx;
-			const uint8_t *src = _res->_fnt + (*p - 32) * 32;
-			for (int h = 0; h < 8; ++h) {
-				for (int w = 0; w < 4; ++w) {
-					uint8_t c1 = (*src & 0xF0) >> 4;
-					uint8_t c2 = (*src & 0x0F) >> 0;
-					++src;
-					if (c1 != 0) {
-						*dst_char = (c1 == 0xF) ? color : (0xE0 + c1);
-					}
-					++dst_char;
-					if (c2 != 0) {
-						*dst_char = (c2 == 0xF) ? color : (0xE0 + c2);
-					}
-					++dst_char;
-				}
-				dst_char += 256 - 8;
-			}
+				uint8_t *dst = page + 256 * yy + xx;
+				_vid->PC_drawStringChar(dst, 256, _res->_fnt, color, *p);
 			}
 			xx += 8;
 		}
