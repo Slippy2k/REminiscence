@@ -86,7 +86,7 @@ struct OggDecoder_impl {
 		_channels = vi->channels;
 		return true;
 	}
-	int read(int8_t *dst, int samples) {
+	int read(int16_t *dst, int samples) {
 		int size = samples * _channels * sizeof(int16_t);
 		if (size > _readBufSize) {
 			_readBufSize = size;
@@ -113,12 +113,14 @@ struct OggDecoder_impl {
 				assert((len & 3) == 0);
 				for (int i = 0; i < len / 2; i += 2) {
 					const int16_t s16 = (_readBuf[i] + _readBuf[i + 1]) / 2;
-					Mixer::addclamp(*dst++, (s16 >> 8));
+					*dst = ADDC_S16(*dst, s16);
+					++dst;
 				}
 				break;
 			case 1:
 				for (int i = 0; i < len / 2; ++i) {
-					Mixer::addclamp(*dst++, _readBuf[i] >> 8);
+					*dst = ADDC_S16(*dst, _readBuf[i]);
+					++dst;
 				}
 				break;
 			}
@@ -191,7 +193,7 @@ void OggPlayer::resumeTrack() {
 #endif
 }
 
-bool OggPlayer::mix(int8_t *buf, int len) {
+bool OggPlayer::mix(int16_t *buf, int len) {
 #ifdef USE_TREMOR
 	if (_impl) {
 		return _impl->read(buf, len) != 0;
@@ -200,7 +202,7 @@ bool OggPlayer::mix(int8_t *buf, int len) {
 	return false;
 }
 
-bool OggPlayer::mixCallback(void *param, int8_t *buf, int len) {
+bool OggPlayer::mixCallback(void *param, int16_t *buf, int len) {
 	return ((OggPlayer *)param)->mix(buf, len);
 }
 

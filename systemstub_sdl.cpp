@@ -28,7 +28,7 @@ struct SystemStub_SDL : SystemStub {
 	SDL_Rect _blitRects[MAX_BLIT_RECTS];
 	int _numBlitRects;
 	bool _fadeOnUpdateScreen;
-	void (*_audioCbProc)(void *, int8_t *, int);
+	void (*_audioCbProc)(void *, int16_t *, int);
 	void *_audioCbData;
 	int _screenshot;
 
@@ -492,22 +492,20 @@ uint32_t SystemStub_SDL::getTimeStamp() {
 	return SDL_GetTicks();
 }
 
-static void mixAudioS8ToU8(void *param, uint8_t *buf, int len) {
+static void mixAudioS16(void *param, uint8_t *buf, int len) {
 	SystemStub_SDL *stub = (SystemStub_SDL *)param;
-	stub->_audioCbProc(stub->_audioCbData, (int8_t *)buf, len);
-	for (int i = 0; i < len; ++i) {
-		buf[i] ^= 0x80;
-	}
+	memset(buf, 0, len);
+	stub->_audioCbProc(stub->_audioCbData, (int16_t *)buf, len / 2);
 }
 
 void SystemStub_SDL::startAudio(AudioCallback callback, void *param) {
 	SDL_AudioSpec desired, obtained;
 	memset(&desired, 0, sizeof(desired));
 	desired.freq = SOUND_SAMPLE_RATE;
-	desired.format = AUDIO_U8;
+	desired.format = AUDIO_S16SYS;
 	desired.channels = 1;
 	desired.samples = 2048;
-	desired.callback = mixAudioS8ToU8;
+	desired.callback = mixAudioS16;
 	desired.userdata = this;
 	if (SDL_OpenAudio(&desired, &obtained) == 0) {
 		_audioCbProc = callback;
