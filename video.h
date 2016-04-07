@@ -46,6 +46,7 @@ struct Video {
 	uint8_t *_screenBlocks;
 	bool _fullRefresh;
 	uint8_t _shakeOffset;
+	drawCharFunc _drawChar;
 
 	Video(Resource *res, SystemStub *stub);
 	~Video();

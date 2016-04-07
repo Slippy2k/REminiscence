@@ -25,6 +25,15 @@ Video::Video(Resource *res, SystemStub *stub)
 	_charFrontColor = 0;
 	_charTransparentColor = 0;
 	_charShadowColor = 0;
+	_drawChar = 0;
+	switch (_res->_type) {
+	case kResourceTypeAmiga:
+		_drawChar = &Video::AMIGA_drawStringChar;
+		break;
+	case kResourceTypeDOS:
+		_drawChar = &Video::PC_drawStringChar;
+		break;
+	}
 }
 
 Video::~Video() {
@@ -851,15 +860,7 @@ void Video::PC_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8
 
 const char *Video::drawString(const char *str, int16_t x, int16_t y, uint8_t col) {
 	debug(DBG_VIDEO, "Video::drawString('%s', %d, %d, 0x%X)", str, x, y, col);
-	drawCharFunc dcf = 0;
-	switch (_res->_type) {
-	case kResourceTypeAmiga:
-		dcf = &Video::AMIGA_drawStringChar;
-		break;
-	case kResourceTypeDOS:
-		dcf = &Video::PC_drawStringChar;
-		break;
-	}
+	drawCharFunc dcf = _drawChar;
 	int len = 0;
 	uint8_t *dst = _frontLayer + y * 256 + x;
 	while (1) {
