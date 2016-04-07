@@ -101,12 +101,19 @@ void Mixer::playMusic(int num) {
 			return;
 		}
 	}
+	if (_musicType == MT_OGG && isMusicSfx(num)) { // do not play level action music with background music
+		return;
+	}
 	if (isMusicSfx(num)) { // level action sequence
 		_sfx.play(num);
-		_musicType = MT_SFX;
+		if (_sfx._playing) {
+			_musicType = MT_SFX;
+		}
 	} else { // cutscene
 		_mod.play(num);
-		_musicType = MT_MOD;
+		if (_mod._playing) {
+			_musicType = MT_MOD;
+		}
 	}
 }
 
@@ -119,8 +126,7 @@ void Mixer::stopMusic() {
 		_mod.stop();
 		break;
 	case MT_OGG:
-		_ogg.stopTrack();
-		_musicTrack = -1;
+		_ogg.pauseTrack();
 		break;
 	case MT_SFX:
 		_sfx.stop();
