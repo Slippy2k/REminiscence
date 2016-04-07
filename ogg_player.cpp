@@ -10,6 +10,7 @@
 #include "file.h"
 #include "mixer.h"
 #include "ogg_player.h"
+#include "util.h"
 
 #ifdef USE_TREMOR
 struct VorbisFile: File {
@@ -100,17 +101,19 @@ struct OggDecoder_impl {
 			const int len = ov_read(&_ovf, (char *)_readBuf, size, 0);
 			if (len < 0) {
 				// error in decoder
-				return 0;
+				return count;
 			} else if (len == 0) {
 				// loop
 				ov_raw_seek(&_ovf, 0);
 				continue;
 			}
+			assert((len & 1) == 0);
 			switch (_channels) {
 			case 2:
-				assert((len & 1) == 0);
+				assert((len & 3) == 0);
 				for (int i = 0; i < len / 2; i += 2) {
-					Mixer::addclamp(*dst++, ((_readBuf[i] + _readBuf[i + 1]) / 2) >> 8);
+					const int16_t s16 = (_readBuf[i] + _readBuf[i + 1]) / 2;
+					Mixer::addclamp(*dst++, (s16 >> 8));
 				}
 				break;
 			case 1:
