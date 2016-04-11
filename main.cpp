@@ -19,10 +19,10 @@ static const char *USAGE =
 	"Usage: %s [OPTIONS]...\n"
 	"  --datapath=PATH   Path to data files (default 'DATA')\n"
 	"  --savepath=PATH   Path to save files (default '.')\n"
-	"  --levelnum=NUM    Start level (default '0')\n"
-	"  --fullscreen      Start fullscreen\n"
+	"  --levelnum=NUM    Level to start from (default '0')\n"
+	"  --fullscreen      Fullscreen display\n"
 	"  --scaler=INDEX    Graphics scaler\n"
-	"  --language=FR|EN|DE|SP|IT\n"
+	"  --language=LANG   Language (fr,en,de,sp,it)\n"
 ;
 
 static int detectVersion(FileSystem *fs) {
