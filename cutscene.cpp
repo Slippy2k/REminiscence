@@ -376,8 +376,8 @@ void Cutscene::op_drawStringAtBottom() {
 	if (!_creditsSequence) {
 
 		// 'espions' - ignore last call, allows caption to be displayed longer on the screen
-		if (_id == 0x39 && strId == 0xFFFF && (_cmdPtr - _cmdPtrBak) == 0x10) {
-			_frameDelay = 80;
+		if (_id == 0x39 && strId == 0xFFFF && _res->isDOS() && (_cmdPtr - _cmdPtrBak) == 0x10) {
+			_frameDelay = 100;
 			setPalette();
 			return;
 		}
@@ -391,6 +391,11 @@ void Cutscene::op_drawStringAtBottom() {
 				drawText(0, 129, str, 0xEF, _page1, 1);
 				drawText(0, 129, str, 0xEF, _pageC, 1);
 			}
+		}
+
+		// 'espions' - '... the power which we need' caption is missing in Amiga English (fixed with DOS)
+		if (_id == 0x39 && strId == 0x3A && _res->isAmiga() && _res->_lang == LANG_EN) {
+			op_markCurPos();
 		}
 	}
 }
@@ -836,7 +841,7 @@ void Cutscene::op_drawStringAtPos() {
 				uint8_t color = 0xD0 + (strId >> 0xC);
 				drawText(x, y, str, color, _page1, 2);
 			}
-			// workaround for buggy cutscene script
+			// 'voyage' - cutscene script redraws the string to refresh the screen
 			if (_id == 0x34 && (strId & 0xFFF) == 0x45) {
 				if ((_cmdPtr - _cmdPtrBak) == 0xA) {
 					_stub->copyRect(0, 0, _vid->_w, _vid->_h, _page1, 256);
