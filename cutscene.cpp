@@ -18,13 +18,16 @@ Cutscene::Cutscene(Resource *res, SystemStub *stub, Video *vid)
 }
 
 void Cutscene::sync() {
-	// XXX input handling
-	if (!(_stub->_pi.dbgMask & PlayerInput::DF_FASTMODE)) {
-		int32_t delay = _stub->getTimeStamp() - _tstamp;
-		int32_t pause = _frameDelay * TIMER_SLICE - delay;
-		if (pause > 0) {
-			_stub->sleep(pause);
-		}
+	if (_stub->_pi.quit) {
+		return;
+	}
+	if (_stub->_pi.dbgMask & PlayerInput::DF_FASTMODE) {
+		return;
+	}
+	const int32_t delay = _stub->getTimeStamp() - _tstamp;
+	const int32_t pause = _frameDelay * TIMER_SLICE - delay;
+	if (pause > 0) {
+		_stub->sleep(pause);
 	}
 	_tstamp = _stub->getTimeStamp();
 }
