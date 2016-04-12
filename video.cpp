@@ -159,6 +159,12 @@ void Video::setPaletteSlotLE(int palSlot, const uint8_t *palData) {
 void Video::setTextPalette() {
 	debug(DBG_VIDEO, "Video::setTextPalette()");
 	setPaletteSlotLE(0xE, _textPal);
+	if (_res->isAmiga()) {
+		Color c;
+		c.r = c.g = 0xEE;
+		c.b = 0;
+		_stub->setPaletteEntry(0xE7, &c);
+	}
 }
 
 void Video::setPalette0xF() {
@@ -829,7 +835,7 @@ void Video::AMIGA_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, ui
 	for (int y = 0; y < 8; ++y) {
 		for (int x = 0; x < 8; ++x) {
 			if (src[x] != 0) {
-				dst[x] = 0x1D;
+				dst[x] = color;
 			}
 		}
 		src += 16;
