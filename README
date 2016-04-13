@@ -64,6 +64,10 @@ directory. These paths can be changed using command line switches :
     Usage: rs [OPTIONS]...
     --datapath=PATH   Path to data files (default 'DATA')
     --savepath=PATH   Path to save files (default '.')
+    --levelnum=NUM    Level to start from (default '0')
+    --fullscreen      Fullscreen display
+    --scaler=INDEX    Graphics scaler
+    --language=LANG   Language (fr,en,de,sp,it)
 
 In-game hotkeys :
 
