@@ -394,7 +394,7 @@ void Cutscene::op_drawStringAtBottom() {
 		}
 
 		// 'espions' - '... the power which we need' caption is missing in Amiga English (fixed with DOS)
-		if (_id == 0x39 && strId == 0x3A && _res->isAmiga() && _res->_lang == LANG_EN) {
+		if (_id == 0x39 && strId == 0x3A && _res->isAmiga() && _res->_lang != LANG_FR) {
 			op_markCurPos();
 		}
 	}
