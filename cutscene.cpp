@@ -139,6 +139,8 @@ void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, 
 			}
 		} else if (*p == 0x20) {
 			xx += 8;
+		} else if (*p == 0x9) {
+			// ignore tab
 		} else {
 			uint8_t *dst = page + 256 * yy + xx;
 			(_vid->*dcf)(dst, 256, _res->_fnt, color, *p);
@@ -989,7 +991,7 @@ void Cutscene::prepare() {
 }
 
 void Cutscene::startCredits() {
-	_textCurPtr = _creditsData;
+	_textCurPtr = _res->isAmiga() ? _creditsDataAmiga : _creditsDataDOS;
 	_textBuf[0] = 0xA;
 	_textCurBuf = _textBuf;
 	_creditsSequence = true;

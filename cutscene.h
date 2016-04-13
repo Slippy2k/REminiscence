@@ -28,7 +28,8 @@ struct Cutscene {
 	static const uint8_t _amigaDemoOffsetsTable[];
 	static const uint16_t _cosTable[];
 	static const uint16_t _sinTable[];
-	static const uint8_t _creditsData[];
+	static const uint8_t _creditsDataDOS[];
+	static const uint8_t _creditsDataAmiga[];
 	static const uint16_t _creditsCutSeq[];
 	static const uint8_t _musicTable[];
 	static const uint8_t _protectionShapeData[];
