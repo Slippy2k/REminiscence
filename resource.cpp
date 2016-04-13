@@ -292,6 +292,10 @@ void Resource::load_CINE() {
 	const char *prefix = getCineName(_lang, _type);
 	debug(DBG_RES, "Resource::load_CINE('%s')", prefix);
 	if (_type == kResourceTypeAmiga) {
+		if (_isDemo) {
+			// file not present in demo data files
+			return;
+		}
 		if (_cine_txt == 0) {
 			snprintf(_entryName, sizeof(_entryName), "%sCINE.TXT", prefix);
 			File f;
