@@ -396,11 +396,6 @@ void Cutscene::op_drawStringAtBottom() {
 				drawText(0, 129, str, 0xEF, _pageC, 1);
 			}
 		}
-
-		// 'espions' - '... the power which we need' caption is missing in Amiga English (fixed with DOS)
-		if (_id == 0x39 && strId == 0x3A && _res->isAmiga() && _res->_lang != LANG_FR) {
-			op_markCurPos();
-		}
 	}
 }
 
@@ -970,6 +965,23 @@ void Cutscene::load(uint16_t cutName) {
 			name = "INTRO";
 		}
 		_res->load(name, Resource::OT_CMP);
+		if (_id == 0x39 && _res->_lang != LANG_FR) {
+			//
+			// 'espions' - '... the power which we need' caption is missing in Amiga English.
+			// fixed in DOS version, opcodes order is wrong
+			//
+			// opcode 0 pos 0x323
+			// opcode 6 pos 0x324
+			// str 0x3a
+			//
+			uint8_t *p = _res->_cmd + 0x322;
+			if (memcmp(p, "\x00\x18\x00\x3a", 4) == 0) {
+				p[0] = 0x06 << 2; // op_drawStringAtBottom
+				p[1] = 0x00;
+				p[2] = 0x3a;
+				p[3] = 0x00; // op_markCurPos
+			}
+		}
 		break;
 	case kResourceTypeDOS:
 		_res->load(name, Resource::OT_CMD);
