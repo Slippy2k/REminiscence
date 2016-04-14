@@ -166,11 +166,10 @@ void Cutscene::drawCreditsText() {
 				return;
 			}
 		}
-		if (_creditsTextCounter <= 0) { // XXX
+		if (_creditsTextCounter <= 0) {
 			uint8_t code = *_textCurPtr;
 			if (code == 0xFF) {
 				_textBuf[0] = 0xA;
-//				_cut_status = 0;
 			} else if (code == 0xFE) {
 				++_textCurPtr;
 				code = *_textCurPtr++;
@@ -192,7 +191,7 @@ void Cutscene::drawCreditsText() {
 				++_textCurPtr;
 			}
 		} else {
-			_creditsTextCounter -= 10; // XXX adjust
+			_creditsTextCounter -= 10;
 		}
 		drawText((_creditsTextPosX - 1) * 8, _creditsTextPosY * 8, _textBuf, 0xEF, _page1, 0);
 	}
@@ -261,7 +260,7 @@ void Cutscene::op_waitForSync() {
 			_varText = 0xFF;
 			_frameDelay = 3;
 			if (_textBuf == _textCurBuf) {
-				_creditsTextCounter = 20;
+				_creditsTextCounter = _res->isAmiga() ? 60 : 20;
 			}
 			memcpy(_page1, _page0, _vid->_layerSize);
 			drawCreditsText();
@@ -1009,7 +1008,6 @@ void Cutscene::startCredits() {
 	_textBuf[0] = 0xA;
 	_textCurBuf = _textBuf;
 	_creditsSequence = true;
-//	_cut_status = 1;
 	_varText = 0;
 	_textUnk2 = 0;
 	_creditsTextCounter = 0;
