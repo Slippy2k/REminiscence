@@ -19,7 +19,7 @@ STRIP := i686-w64-mingw32-strip
 all: $(OBJDIR) rs.exe
 
 rs.exe: $(addprefix $(OBJDIR)/, $(OBJS))
-#	$(CXX) -o $@ $^ -static-libgcc -static-libstdc++ $(SDL_LIBS) -lz
+#	$(CXX) -o $@ $^ -static-libgcc -static-libstdc++ $(SDL_LIBS) -static -lvorbisidec -logg -lz
 	$(CXX) -o $@ $^ -static $(SDL_LIBS) -lvorbisidec -logg -lz
 	$(STRIP) $@
 	upx -9 $@

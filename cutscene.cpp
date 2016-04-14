@@ -378,10 +378,12 @@ void Cutscene::op_drawStringAtBottom() {
 	if (!_creditsSequence) {
 
 		// 'espions' - ignore last call, allows caption to be displayed longer on the screen
-		if (_id == 0x39 && strId == 0xFFFF && _res->isDOS() && (_cmdPtr - _cmdPtrBak) == 0x10) {
-			_frameDelay = 100;
-			setPalette();
-			return;
+		if (_id == 0x39 && strId == 0xFFFF) {
+			if ((_res->isDOS() && (_cmdPtr - _cmdPtrBak) == 0x10) || (_res->isAmiga() && (_cmdPtr - _res->_cmd) == 0x9F3)) {
+				_frameDelay = 100;
+				setPalette();
+				return;
+			}
 		}
 
 		memset(_pageC + 179 * 256, 0xC0, 45 * 256);
