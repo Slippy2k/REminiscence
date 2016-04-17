@@ -385,22 +385,23 @@ static void AMIGA_planar_mask(uint8_t *dst, int x0, int y0, int w, int h, uint8_
 }
 
 static void AMIGA_decodeRle(uint8_t *dst, const uint8_t *src) {
-	int code = READ_BE_UINT16(src) & 0x7FFF; src += 2;
-	const uint8_t *end = src + code;
-	do {
-		code = *src++;
+	const int size = READ_BE_UINT16(src) & 0x7FFF; src += 2;
+	for (int i = 0; i < size; ) {
+		int code = src[i++];
 		if ((code & 0x80) == 0) {
 			++code;
-			memcpy(dst, src, code);
-			src += code;
+			if (i + code > size) {
+				code = size - i;
+			}
+			memcpy(dst, &src[i], code);
+			i += code;
 		} else {
 			code = 1 - ((int8_t)code);
-			memset(dst, *src, code);
-			++src;
+			memset(dst, src[i], code);
+			++i;
 		}
 		dst += code;
-	} while (src < end);
-	assert(src == end);
+	}
 }
 
 static void PC_drawTileMask(uint8_t *dst, int x0, int y0, int w, int h, uint8_t *m, uint8_t *p, int size) {
