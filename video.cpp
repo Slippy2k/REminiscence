@@ -660,12 +660,17 @@ void Video::AMIGA_decodeLev(int level, int room) {
 		// done in ::PC_setLevelPalettes
 		return;
 	}
+	// background
 	setPaletteSlotBE(0x0, _mapPalSlot1);
-	for (int i = 1; i < 5; ++i) {
-		setPaletteSlotBE(i, _mapPalSlot3);
-	}
-	setPaletteSlotBE(0x6, _mapPalSlot3);
+	// objects
+	setPaletteSlotBE(0x1, (level == 0 || level == 1) ? _mapPalSlot3 : _mapPalSlot2);
+	setPaletteSlotBE(0x2, _mapPalSlot3);
+	setPaletteSlotBE(0x3, _mapPalSlot3);
+	// conrad
+	setPaletteSlotBE(0x4, _mapPalSlot3);
+	// foreground
 	setPaletteSlotBE(0x8, _mapPalSlot1);
+	// inventory
 	setPaletteSlotBE(0xA, _mapPalSlot3);
 }
 
