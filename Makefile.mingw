@@ -13,14 +13,14 @@ DEPS := $(SRCS:.cpp=.d)
 OBJDIR := obj
 
 CXX := i686-w64-mingw32-g++
-CXXFLAGS := $(CPPFLAGS) -g -O -Wall $(SDL_CFLAGS) -DUSE_TREMOR -DUSE_ZLIB
+CXXFLAGS := $(CPPFLAGS) -g -O -Wall $(SDL_CFLAGS) -DUSE_MODPLUG -DMODPLUG_STATIC -DUSE_ZLIB
 STRIP := i686-w64-mingw32-strip
 
 all: $(OBJDIR) rs.exe
 
 rs.exe: $(addprefix $(OBJDIR)/, $(OBJS))
 #	$(CXX) -o $@ $^ -static-libgcc -static-libstdc++ $(SDL_LIBS) -static -lvorbisidec -logg -lz
-	$(CXX) -o $@ $^ -static $(SDL_LIBS) -lvorbisidec -logg -lz
+	$(CXX) -o $@ $^ -static $(SDL_LIBS) -lmodplug -lz
 	$(STRIP) $@
 	upx -9 $@
 
