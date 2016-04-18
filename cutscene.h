@@ -22,6 +22,11 @@ struct Cutscene {
 		TIMER_SLICE = 15
 	};
 
+	struct Text {
+		int num;
+		const char *str;
+	};
+
 	static const OpcodeStub _opcodeTable[];
 	static const char *_namesTable[];
 	static const uint16_t _offsetsTable[];
@@ -33,6 +38,7 @@ struct Cutscene {
 	static const uint16_t _creditsCutSeq[];
 	static const uint8_t _musicTable[];
 	static const uint8_t _protectionShapeData[];
+	static const Text _frTextsTable[];
 
 	Graphics _gfx;
 	Resource *_res;

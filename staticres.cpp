@@ -807,6 +807,29 @@ const uint8_t Cutscene::_protectionShapeData[] = {
 	0x03, 0xFD, 0x06, 0xFC, 0x00, 0x19
 };
 
+const Cutscene::Text Cutscene::_frTextsTable[] = {
+	{  1, "VOUS RAMASSEZ L'HOLOCUBE" },
+	{  2, "VOUS RAMASSEZ LA CLE" },
+	{  4, "VOUS RAMASSEZ LE PISTOLET" },
+	{  5, "VOTRE BOUCLIER EST RECHARGE" },
+	{ 10, "VOUS RAMASSEZ||LA CARTE DE CREDITS" },
+	{ 14, "LA PILE EST RECHARGEE" },
+	{ 15, "VOUS RAMASSEZ LA PILE" },
+	{ 16, "VOUS RAMASSEZ LE TELEPORTEUR" },
+	{ 18, "VOUS RAMASSEZ LA CARTE ID" },
+	{ 21, "VOUS LUI DONNEZ LE TELEPORTEUR" },
+	{ 32, "LA RECEPTIONNISTE VOUS DONNE||UN PAQUET" },
+	{ 33, "VOUS DONNEZ LE COLIS" },
+	{ 34, "LE GOUVERNEUR VOUS DONNE||LA CARTE DE TRAVAIL" },
+	{ 35, "LE FAUSSAIRE VOUS DONNE||LA FAUSSE CARTE ID" },
+	{ 36, "VOUS RAMASSEZ LE FUSIBLE" },
+	{ 43, "VOUS LUI TENDEZ||VOS PAPIERS" },
+	{ 44, "VOUS LUI DONNEZ L'ARGENT" },
+	{ 49, "IL VOUS DONNE||UNE CEINTURE ANTI-G" },
+	{ 60, "VOUS RAMASSEZ LE TELE RECEPTEUR" },
+	{ -1, 0 }
+};
+
 const Level Game::_gameLevels[] = {
 	{ "level1", "level1", "level1", 0x00, 1, 3 },
 	{ "level2", "level2", "level2", 0x2F, 1, 4 },
