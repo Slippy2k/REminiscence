@@ -92,6 +92,7 @@ struct Options {
 	bool enable_password_menu;
 	bool fade_out_palette;
 	bool use_tiledata;
+	bool use_text_cutscenes;
 };
 
 struct Color {

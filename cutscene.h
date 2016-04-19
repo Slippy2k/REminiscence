@@ -125,7 +125,8 @@ struct Cutscene {
 	void mainLoop(uint16_t offset);
 	void load(uint16_t cutName);
 	void prepare();
-	void startCredits();
+	void playCredits();
+	void playText(const char *str);
 	void play();
 };
 

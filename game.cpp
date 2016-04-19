@@ -332,7 +332,7 @@ void Game::playCutscene(int id) {
 			_cut.play();
 		}
 		if (id == 0x3D) {
-			_cut.startCredits();
+			_cut.playCredits();
 		}
 		_mix.stopMusic();
 	}

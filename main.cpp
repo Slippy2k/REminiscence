@@ -81,6 +81,7 @@ static void initOptions() {
 	g_options.play_disabled_cutscenes = false;
 	g_options.enable_password_menu = false;
 	g_options.fade_out_palette = true;
+	g_options.use_text_cutscenes = false;
 	// read configuration file
 	struct {
 		const char *name;
@@ -91,6 +92,7 @@ static void initOptions() {
 		{ "enable_password_menu", &g_options.enable_password_menu },
 		{ "fade_out_palette", &g_options.fade_out_palette },
 		{ "use_tiledata", &g_options.use_tiledata },
+		{ "use_text_cutscenes", &g_options.use_text_cutscenes },
 		{ 0, 0 }
 	};
 	static const char *filename = "rs.cfg";

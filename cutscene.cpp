@@ -93,7 +93,7 @@ uint16_t Cutscene::findTextSeparators(const uint8_t *p) {
 	uint8_t *q = _textSep;
 	uint16_t ret = 0;
 	uint16_t pos = 0;
-	for (; *p != 0xA; ++p) {
+	for (; *p != 0xA && *p; ++p) {
 		if (*p == 0x7C) {
 			*q++ = pos;
 			if (pos > ret) {
@@ -130,7 +130,7 @@ void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, 
 	if (n != 0) {
 		xx += ((last_sep - *sep++) & 0xFE) * 4;
 	}
-	for (; *p != 0xA; ++p) {
+	for (; *p != 0xA && *p; ++p) {
 		if (*p == 0x7C) {
 			yy += 8;
 			xx = x;
@@ -1003,7 +1003,7 @@ void Cutscene::prepare() {
 	_gfx.setClippingRect(8, 50, 240, 128);
 }
 
-void Cutscene::startCredits() {
+void Cutscene::playCredits() {
 	_textCurPtr = _res->isAmiga() ? _creditsDataAmiga : _creditsDataDOS;
 	_textBuf[0] = 0xA;
 	_textCurBuf = _textBuf;
@@ -1025,6 +1025,37 @@ void Cutscene::startCredits() {
 		mainLoop(cutOff);
 	}
 	_creditsSequence = false;
+}
+
+void Cutscene::playText(const char *str) {
+	Color c;
+	// background
+	c.r = c.g = c.b = 0;
+	_stub->setPaletteEntry(0xC0, &c);
+	// text
+	c.r = c.g = c.b = 255;
+	_stub->setPaletteEntry(0xC1, &c);
+
+	int lines = 0;
+	for (int i = 0; str[i]; ++i) {
+		if (str[i] == '|') {
+			++lines;
+		}
+	}
+	const int y = (128 - lines * 8) / 2;
+	memset(_page1, 0xC0, _vid->_layerSize);
+	drawText(0, y, (const uint8_t *)str, 0xC1, _page1, 1);
+	_stub->copyRect(0, 0, _vid->_w, _vid->_h, _page1, 256);
+	_stub->updateScreen(0);
+
+	while (!_stub->_pi.quit) {
+		_stub->processEvents();
+		if (_stub->_pi.backspace) {
+			_stub->_pi.backspace = false;
+			break;
+		}
+		_stub->sleep(TIMER_SLICE);
+	}
 }
 
 void Cutscene::play() {
@@ -1060,7 +1091,14 @@ void Cutscene::play() {
 				}
 			}
 		}
-		if (cutName != 0xFFFF) {
+		if (g_options.use_text_cutscenes && _res->_lang == LANG_FR) {
+			for (int i = 0; _frTextsTable[i].str; ++i) {
+				if (_id == _frTextsTable[i].num) {
+					playText(_frTextsTable[i].str);
+					break;
+				}
+			}
+		} else if (cutName != 0xFFFF) {
 			load(cutName);
 			mainLoop(cutOff);
 		}
