@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
-VERSION = '0.3.1'
+VERSION = '0.4.0'
 
 SDL_TARBALL = [ 'REminiscence-%s-sdl-win32.zip',
 	(
-		'../README',
+		'../README.txt',
+		'../README-SDL.txt',
+		'../README-modplug.txt',
 		'../rs.cfg',
 		'../rs.exe'
 	)
@@ -12,7 +14,7 @@ SDL_TARBALL = [ 'REminiscence-%s-sdl-win32.zip',
 
 SRC_TARBALL = [ 'REminiscence-%s.tar.bz2',
 	(
-		'../README',
+		'../README.txt',
 		'../rs.cfg',
 		'../Makefile',
 		'../collision.cpp',
