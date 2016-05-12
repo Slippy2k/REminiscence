@@ -18,10 +18,7 @@ Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, in
 	_mix(fs, stub), _res(fs, ver, lang), _seq(stub, &_mix), _vid(&_res, stub),
 	_stub(stub), _fs(fs), _savePath(savePath) {
 	_stateSlot = 1;
-	_inp_demo = 0;
-	_inp_pos = 0;
-	_inp_record = false;
-	_inp_replay = false;
+	_inp_demPos = 0;
 	_skillLevel = _menu._skill = 1;
 	_currentLevel = _menu._level = level;
 	_demoBin = demo;
@@ -92,7 +89,7 @@ void Game::run() {
 		_randSeed = 0;
 		_endLoop = false;
 		_frameTimestamp = _stub->getTimeStamp();
-		while (!_stub->_pi.quit && !_endLoop && _inp_pos < _res._demLen) {
+		while (!_stub->_pi.quit && !_endLoop && _inp_demPos < _res._demLen) {
 			mainLoop();
 		}
 		_stub->_pi.quit = true;
@@ -398,52 +395,6 @@ void Game::inp_handleSpecialKeys() {
 			debug(DBG_INFO, "Current game state slot is %d", _stateSlot);
 		}
 		_stub->_pi.stateSlot = 0;
-	}
-	if (_stub->_pi.inpRecord || _stub->_pi.inpReplay) {
-		bool replay = false;
-		bool record = false;
-		char demoFile[20];
-		makeGameDemoName(demoFile);
-		if (_inp_demo) {
-			_inp_demo->close();
-			delete _inp_demo;
-		}
-		_inp_demo = new File;
-		if (_stub->_pi.inpRecord) {
-			if (_inp_record) {
-				debug(DBG_INFO, "Stop recording input keys");
-			} else {
-				if (_inp_demo->open(demoFile, "zwb", _savePath)) {
-					debug(DBG_INFO, "Recording input keys");
-					static const uint32_t TAG_FBDM = 0x4642444D;
-					_inp_demo->writeUint32BE(TAG_FBDM);
-					_inp_demo->writeUint16BE(0);
-					_inp_demo->writeUint32BE(_randSeed);
-					record = true;
-				} else {
-					warning("Unable to save demo file '%s'", demoFile);
-				}
-			}
-		}
-		if (_stub->_pi.inpReplay) {
-			if (_inp_replay) {
-				debug(DBG_INFO, "Stop replaying input keys");
-			} else {
-				if (_inp_demo->open(demoFile, "zrb", _savePath)) {
-					debug(DBG_INFO, "Replaying input keys");
-					_inp_demo->readUint32BE();
-					_inp_demo->readUint16BE();
-					_randSeed = _inp_demo->readUint32BE();
-					replay = true;
-				} else {
-					warning("Unable to open demo file '%s'", demoFile);
-				}
-			}
-		}
-		_inp_record = record;
-		_inp_replay = replay;
-		_stub->_pi.inpReplay = false;
-		_stub->_pi.inpRecord = false;
 	}
 }
 
@@ -1649,50 +1600,15 @@ void Game::handleInventory() {
 }
 
 void Game::inp_update() {
-	if (_inp_replay && _inp_demo) {
-		uint8_t keymask = _inp_demo->readByte();
-		if (_inp_demo->ioErr()) {
-			_inp_replay = false;
-		} else {
-			_stub->_pi.dirMask = keymask & 0xF;
-			_stub->_pi.enter = (keymask & 0x10) != 0;
-			_stub->_pi.space = (keymask & 0x20) != 0;
-			_stub->_pi.shift = (keymask & 0x40) != 0;
-			_stub->_pi.quit = (keymask & 0x80) != 0;
-		}
-	}
 	_stub->processEvents();
-	if (_inp_record && _inp_demo) {
-		uint8_t keymask = _stub->_pi.dirMask;
-		if (_stub->_pi.enter) {
-			keymask |= 0x10;
-		}
-		if (_stub->_pi.space) {
-			keymask |= 0x20;
-		}
-		if (_stub->_pi.shift) {
-			keymask |= 0x40;
-		}
-		if (_stub->_pi.quit) {
-			keymask |= 0x80;
-		}
-		_inp_demo->writeByte(keymask);
-		if (_inp_demo->ioErr()) {
-			_inp_record = false;
-		}
-	}
-	if (_inp_pos < _res._demLen) {
-		const int keymask = _res._dem[_inp_pos++];
+	if (_inp_demPos < _res._demLen) {
+		const int keymask = _res._dem[_inp_demPos++];
 		_stub->_pi.dirMask = keymask & 0xF;
 		_stub->_pi.enter = (keymask & 0x10) != 0;
 		_stub->_pi.space = (keymask & 0x20) != 0;
 		_stub->_pi.shift = (keymask & 0x40) != 0;
 		_stub->_pi.backspace = (keymask & 0x80) != 0;
 	}
-}
-
-void Game::makeGameDemoName(char *buf) {
-	sprintf(buf, "rs-level%d.demo", _currentLevel + 1);
 }
 
 void Game::makeGameStateName(uint8_t slot, char *buf) {

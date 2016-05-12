@@ -353,10 +353,7 @@ struct Game {
 	// input
 	uint8_t _inp_lastKeysHit;
 	uint8_t _inp_lastKeysHitLeftRight;
-	bool _inp_replay;
-	bool _inp_record;
-	File *_inp_demo;
-	int _inp_pos;
+	int _inp_demPos;
 
 	void inp_handleSpecialKeys();
 	void inp_update();
@@ -366,7 +363,6 @@ struct Game {
 	uint8_t _stateSlot;
 	bool _validSaveState;
 
-	void makeGameDemoName(char *buf);
 	void makeGameStateName(uint8_t slot, char *buf);
 	bool saveGameState(uint8_t slot);
 	bool loadGameState(uint8_t slot);

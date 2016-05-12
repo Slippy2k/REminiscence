@@ -83,8 +83,6 @@ In-game hotkeys :
     Ctrl S          save game state
     Ctrl L          load game state
     Ctrl + and -    change game state slot
-    Ctrl R          toggle input keys record
-    Ctrl P          toggle input keys replay
 
 Debug hotkeys :
 
