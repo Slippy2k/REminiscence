@@ -1687,6 +1687,7 @@ void Game::inp_update() {
 		_stub->_pi.enter = (keymask & 0x10) != 0;
 		_stub->_pi.space = (keymask & 0x20) != 0;
 		_stub->_pi.shift = (keymask & 0x40) != 0;
+		_stub->_pi.backspace = (keymask & 0x80) != 0;
 	}
 }
 
