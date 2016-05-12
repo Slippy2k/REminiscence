@@ -13,20 +13,32 @@
 #include "unpack.h"
 #include "util.h"
 
-Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang)
+Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, int demo, ResourceType ver, Language lang)
 	: _cut(&_res, stub, &_vid), _menu(&_res, stub, &_vid),
 	_mix(fs, stub), _res(fs, ver, lang), _seq(stub, &_mix), _vid(&_res, stub),
 	_stub(stub), _fs(fs), _savePath(savePath) {
 	_stateSlot = 1;
 	_inp_demo = 0;
+	_inp_pos = 0;
 	_inp_record = false;
 	_inp_replay = false;
 	_skillLevel = _menu._skill = 1;
 	_currentLevel = _menu._level = level;
+	_demoBin = demo;
 }
 
 void Game::run() {
 	_randSeed = time(0);
+
+	if (_demoBin != -1) {
+		if (_demoBin >= ARRAYSIZE(_demoInputs)) {
+			return;
+		}
+		_res.load_DEM(_demoInputs[_demoBin].name);
+		if (_res._demLen == 0) {
+			return;
+		}
+	}
 
 	_res.init();
 	_res.load_TEXT();
@@ -51,8 +63,10 @@ void Game::run() {
 	_mix.init();
 	_mix._mod._isAmiga = _res.isAmiga();
 
-	playCutscene(0x40);
-	playCutscene(0x0D);
+	if (_demoBin == -1) {
+		playCutscene(0x40);
+		playCutscene(0x0D);
+	}
 
 	switch (_res._type) {
 	case kResourceTypeAmiga:
@@ -67,6 +81,21 @@ void Game::run() {
 		_res.load_SPR_OFF("PERSO", _res._spr1);
 		_res.load_FIB("GLOBAL");
 		break;
+	}
+
+	if (_demoBin != -1) {
+		_currentLevel = _demoInputs[_demoBin].level;
+		_vid._unkPalSlot1 = 0;
+		_vid._unkPalSlot2 = 0;
+		loadLevelData();
+		resetGameState();
+		_randSeed = 0;
+		_endLoop = false;
+		_frameTimestamp = _stub->getTimeStamp();
+		while (!_stub->_pi.quit && !_endLoop && _inp_pos < _res._demLen) {
+			mainLoop();
+		}
+		_stub->_pi.quit = true;
 	}
 
 	while (!_stub->_pi.quit) {
@@ -1112,7 +1141,6 @@ void Game::decodeCharacterFrame(const uint8_t *dataPtr, uint8_t *dstPtr) {
 
 void Game::drawCharacter(const uint8_t *dataPtr, int16_t pos_x, int16_t pos_y, uint8_t a, uint8_t b, uint8_t flags) {
 	debug(DBG_GAME, "Game::drawCharacter(0x%X, %d, %d, 0x%X, 0x%X, 0x%X)", dataPtr, pos_x, pos_y, a, b, flags);
-
 	bool var16 = false; // sprite_mirror_y
 	if (b & 0x40) {
 		b &= 0xBF;
@@ -1397,6 +1425,13 @@ void Game::loadLevelData() {
 		pge_loadForCurrentLevel(n);
 	}
 
+	if (_demoBin != -1) {
+		_cut._id = -1;
+		_pgeLive[0].room_location = _demoInputs[_demoBin].room;
+		_pgeLive[0].pos_x = _demoInputs[_demoBin].x;
+		_pgeLive[0].pos_y = _demoInputs[_demoBin].y;
+	}
+
 	for (uint16_t i = 0; i < _res._pgeNum; ++i) {
 		if (_res._pgeInit[i].skill <= _skillLevel) {
 			LivePGE *pge = &_pgeLive[i];
@@ -1645,6 +1680,13 @@ void Game::inp_update() {
 		if (_inp_demo->ioErr()) {
 			_inp_record = false;
 		}
+	}
+	if (_inp_pos < _res._demLen) {
+		const int keymask = _res._dem[_inp_pos++];
+		_stub->_pi.dirMask = keymask & 0xF;
+		_stub->_pi.enter = (keymask & 0x10) != 0;
+		_stub->_pi.space = (keymask & 0x20) != 0;
+		_stub->_pi.shift = (keymask & 0x40) != 0;
 	}
 }
 

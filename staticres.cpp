@@ -830,6 +830,12 @@ const Cutscene::Text Cutscene::_frTextsTable[] = {
 	{ -1, 0 }
 };
 
+const Demo Game::_demoInputs[] = {
+	{ "demo1.bin",  0, 0x33, 0x60, 0x46 },
+	{ "demo2.bin" , 3, 0x02, 0xC0, 0x8E },
+	{ "demo51.bin", 5, 0x00, 0x60, 0xD6 }
+};
+
 const Level Game::_gameLevels[] = {
 	{ "level1", "level1", "level1", 0x00, 1, 3 },
 	{ "level2", "level2", "level2", 0x2F, 1, 4 },
