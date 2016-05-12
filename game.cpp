@@ -28,10 +28,11 @@ void Game::run() {
 	_randSeed = time(0);
 
 	if (_demoBin != -1) {
-		if (_demoBin >= ARRAYSIZE(_demoInputs)) {
-			return;
+		if (_demoBin < ARRAYSIZE(_demoInputs)) {
+			const char *fn = _demoInputs[_demoBin].name;
+			debug(DBG_INFO, "Loading inputs from '%s'", fn);
+			_res.load_DEM(fn);
 		}
-		_res.load_DEM(_demoInputs[_demoBin].name);
 		if (_res._demLen == 0) {
 			return;
 		}
@@ -80,41 +81,31 @@ void Game::run() {
 		break;
 	}
 
-	if (_demoBin != -1) {
-		_currentLevel = _demoInputs[_demoBin].level;
-		_vid._unkPalSlot1 = 0;
-		_vid._unkPalSlot2 = 0;
-		loadLevelData();
-		resetGameState();
-		_randSeed = 0;
-		_endLoop = false;
-		_frameTimestamp = _stub->getTimeStamp();
-		while (!_stub->_pi.quit && !_endLoop && _inp_demPos < _res._demLen) {
-			mainLoop();
-		}
-		_stub->_pi.quit = true;
-	}
-
 	while (!_stub->_pi.quit) {
-		switch (_res._type) {
-		case kResourceTypeDOS:
-			_mix.playMusic(1);
-			_menu.handleTitleScreen();
-			if (_menu._selectedOption == Menu::MENU_OPTION_ITEM_QUIT || _stub->_pi.quit) {
-				_stub->_pi.quit = true;
+		if (_demoBin != -1) {
+			_currentLevel = _demoInputs[_demoBin].level;
+			_randSeed = 0;
+		} else {
+			switch (_res._type) {
+			case kResourceTypeDOS:
+				_mix.playMusic(1);
+				_menu.handleTitleScreen();
+				if (_menu._selectedOption == Menu::MENU_OPTION_ITEM_QUIT || _stub->_pi.quit) {
+					_stub->_pi.quit = true;
+					break;
+				}
+				_skillLevel = _menu._skill;
+				_currentLevel = _menu._level;
+				_mix.stopMusic();
+				break;
+			case kResourceTypeAmiga:
+				displayTitleScreenAmiga();
+				_stub->setScreenSize(Video::GAMESCREEN_W, Video::GAMESCREEN_H);
 				break;
 			}
-			_skillLevel = _menu._skill;
-			_currentLevel = _menu._level;
-			_mix.stopMusic();
-			break;
-		case kResourceTypeAmiga:
-			displayTitleScreenAmiga();
-			_stub->setScreenSize(Video::GAMESCREEN_W, Video::GAMESCREEN_H);
-			break;
-		}
-		if (_stub->_pi.quit) {
-			break;
+			if (_stub->_pi.quit) {
+				break;
+			}
 		}
 		if (_currentLevel == 7) {
 			_vid.fadeOut();
@@ -133,6 +124,10 @@ void Game::run() {
 			_frameTimestamp = _stub->getTimeStamp();
 			while (!_stub->_pi.quit && !_endLoop) {
 				mainLoop();
+				if (_demoBin != -1 && _inp_demPos >= _res._demLen) {
+					debug(DBG_INFO, "End of demo");
+					_stub->_pi.quit = true;
+				}
 			}
 		}
 	}
