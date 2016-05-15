@@ -223,13 +223,16 @@ void SystemStub_SDL::copyRect(int x, int y, int w, int h, const uint8_t *buf, in
 }
 
 void SystemStub_SDL::fadeScreen() {
-	const int fadeScreenBufferSize = _screenH * _screenW * sizeof(uint16_t);
+	const int bufferSize = _screenH * _screenW * sizeof(uint16_t);
 	if (!_fadeScreenBuffer) {
-		_fadeScreenBuffer = (uint16_t *)malloc(fadeScreenBufferSize);
-		assert(_fadeScreenBuffer);
+		_fadeScreenBuffer = (uint16_t *)malloc(bufferSize);
+		if (!_fadeScreenBuffer) {
+			warning("SystemStub_SDL::fadeScreen() Unable to allocate buffer size %d", bufferSize);
+			return;
+		}
 	}
 	_fadeOnUpdateScreen = true;
-	memcpy(_fadeScreenBuffer, _screenBuffer + _screenW + 1, fadeScreenBufferSize);
+	memcpy(_fadeScreenBuffer, _screenBuffer + _screenW + 1, bufferSize);
 }
 
 static uint16_t blendPixel16(uint16_t colorSrc, uint16_t colorDst, uint32_t mask, int step) {
@@ -241,9 +244,23 @@ static uint16_t blendPixel16(uint16_t colorSrc, uint16_t colorDst, uint32_t mask
 
 void SystemStub_SDL::updateScreen(int shakeOffset) {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	// _fadeOnUpdateScreen
 	SDL_UpdateTexture(_texture, 0, _screenBuffer + _screenW + 1, _screenW * sizeof(uint16_t));
 	SDL_RenderClear(_renderer);
+	if (_fadeOnUpdateScreen) {
+		SDL_SetRenderDrawBlendMode(_renderer, SDL_BLENDMODE_BLEND);
+		SDL_Rect r;
+		r.x = r.y = 0;
+		SDL_GetRendererOutputSize(_renderer, &r.w, &r.h);
+		for (int i = 1; i <= 16; ++i) {
+			SDL_SetRenderDrawColor(_renderer, 0, 0, 0, 256 - i * 16);
+			SDL_RenderCopy(_renderer, _texture, 0, 0);
+			SDL_RenderFillRect(_renderer, &r);
+			SDL_RenderPresent(_renderer);
+			SDL_Delay(30);
+		}
+		_fadeOnUpdateScreen = false;
+		return;
+	}
 	if (shakeOffset != 0) {
 		SDL_Rect r;
 		r.x = 0;
