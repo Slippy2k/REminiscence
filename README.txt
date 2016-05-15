@@ -23,8 +23,6 @@ Data Files:
 -----------
 
 You will need the original files of the PC (DOS or CD) or Amiga release.
-If you have a version distributed by SSI, you'll have to rename the files
-and drop the 'ssi' suffix (ie. logosssi.cmd -> logos.cmd).
 
 To hear background music during polygonal cutscenes with the PC version,
 you'll need to copy the .mod files of the Amiga version :

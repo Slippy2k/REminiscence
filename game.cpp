@@ -44,10 +44,16 @@ void Game::run() {
 	switch (_res._type) {
 	case kResourceTypeAmiga:
 		_res.load("FONT8", Resource::OT_FNT, "SPR");
+		if (_res._isDemo) {
+			_cut._patchedOffsetsTable = Cutscene::_amigaDemoOffsetsTable;
+		}
 		break;
 	case kResourceTypeDOS:
 		_res.load("FB_TXT", Resource::OT_FNT);
 		_res._hasSeqData = _fs->exists("INTRO.SEQ");
+		if (_fs->exists("logosssi.cmd")) {
+			_cut._patchedOffsetsTable = Cutscene::_ssiOffsetsTable;
+		}
 		break;
 	}
 
@@ -1276,7 +1282,6 @@ void Game::loadLevelData() {
 	switch (_res._type) {
 	case kResourceTypeAmiga:
 		if (_res._isDemo) {
-			_cut._patchedOffsetsTable = Cutscene::_amigaDemoOffsetsTable;
 			static const char *fname1 = "demo";
 			static const char *fname2 = "demof";
 			_res.load(fname1, Resource::OT_MBK);
