@@ -302,9 +302,6 @@ int Game::col_detectHitCallback6(LivePGE *pge, int16_t dy, int16_t unk1, int16_t
 }
 
 int Game::col_detectHitCallback2(LivePGE *pge1, LivePGE *pge2, int16_t unk1, int16_t unk2) {
-	if (_demoBin == 0 && _currentRoom == 51 && pge1 == &_pgeLive[0] && pge2 == &_pgeLive[51]) {
-		return 0;
-	}
 	if (pge1 != pge2 && (pge1->flags & 4)) {
 		if (pge1->init_PGE->object_type == unk2) {
 			if ((pge1->flags & 1) == (pge2->flags & 1)) {
