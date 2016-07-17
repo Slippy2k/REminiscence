@@ -1452,7 +1452,7 @@ void Game::playSound(uint8_t sfxId, uint8_t softVol) {
 
 uint16_t Game::getRandomNumber() {
 	uint32_t n = _randSeed * 2;
-	if (_randSeed > n) {
+	if (((int32_t)_randSeed) >= 0) {
 		n ^= 0x1D872B41;
 	}
 	_randSeed = n;
