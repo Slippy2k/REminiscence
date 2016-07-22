@@ -1378,9 +1378,13 @@ void Game::loadLevelData() {
 
 	if (_demoBin != -1) {
 		_cut._id = -1;
-		_pgeLive[0].room_location = _demoInputs[_demoBin].room;
-		_pgeLive[0].pos_x = _demoInputs[_demoBin].x;
-		_pgeLive[0].pos_y = _demoInputs[_demoBin].y;
+		if (_demoInputs[_demoBin].room != 255) {
+			_pgeLive[0].room_location = _demoInputs[_demoBin].room;
+			_pgeLive[0].pos_x = _demoInputs[_demoBin].x;
+			_pgeLive[0].pos_y = _demoInputs[_demoBin].y;
+		} else {
+			_inp_demPos = 1;
+		}
 	}
 
 	for (uint16_t i = 0; i < _res._pgeNum; ++i) {

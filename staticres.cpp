@@ -838,8 +838,8 @@ const Cutscene::Text Cutscene::_frTextsTable[] = {
 
 const Demo Game::_demoInputs[] = {
 	{ "demo1.bin",  0, 0x33, 0x60, 0x46 },
-	{ "demo2.bin" , 3, 0x02, 0xC0, 0x8E },
-	{ "demo51.bin", 5, 0x00, 0x60, 0xD6 }
+	{ "demo51.bin", 5, 0x00, 0x60, 0xD6 },
+	{ "demo3.bin" , 2, 0xFF, 0x00, 0x00 }
 };
 
 const Level Game::_gameLevels[] = {
