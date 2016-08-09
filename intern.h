@@ -13,18 +13,14 @@
 #include <cassert>
 #include <stdint.h>
 
-#ifndef ABS
+#undef ABS
 #define ABS(x) ((x)<0?-(x):(x))
-#endif
-#ifndef MAX
+#undef MAX
 #define MAX(x,y) ((x)>(y)?(x):(y))
-#endif
-#ifndef MIN
+#undef MIN
 #define MIN(x,y) ((x)<(y)?(x):(y))
-#endif
-#ifndef ARRAYSIZE
-#define ARRAYSIZE(a) (sizeof(a)/sizeof(a[0]))
-#endif
+#undef ARRAYSIZE
+#define ARRAYSIZE(a) (int)(sizeof(a)/sizeof(a[0]))
 
 inline uint16_t READ_BE_UINT16(const void *ptr) {
 	const uint8_t *b = (const uint8_t *)ptr;
