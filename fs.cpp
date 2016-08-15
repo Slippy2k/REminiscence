@@ -12,6 +12,9 @@
 #include <sys/stat.h>
 #include <sys/param.h>
 #endif
+#ifdef USE_RWOPS
+#include <SDL_rwops.h>
+#endif
 #include "fs.h"
 #include "util.h"
 
@@ -150,6 +153,13 @@ char *FileSystem::findPath(const char *filename) const {
 }
 
 bool FileSystem::exists(const char *filename) const {
+#ifdef USE_RWOPS
+	SDL_RWops *rw = SDL_RWFromFile(filename, "rb");
+	if (rw) {
+		SDL_RWclose(rw);
+		return true;
+	}
+#endif
 	char *path = findPath(filename);
 	if (path) {
 		free(path);
