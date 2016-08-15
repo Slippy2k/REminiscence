@@ -91,6 +91,8 @@ void Game::run() {
 		if (_demoBin != -1) {
 			_currentLevel = _demoInputs[_demoBin].level;
 			_randSeed = 0;
+		} else if (_res._isDemo) {
+			// do not present title screen and menus
 		} else {
 			switch (_res._type) {
 			case kResourceTypeDOS:
@@ -243,6 +245,9 @@ void Game::mainLoop() {
 		}
 	}
 	if (oldLevel != _currentLevel) {
+		if (_res._isDemo) {
+			_currentLevel = oldLevel;
+		}
 		changeLevel();
 		_pge_opTempVar1 = 0;
 		return;
