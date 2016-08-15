@@ -4,6 +4,7 @@
  * Copyright (C) 2005-2015 Gregory Montoir (cyx@users.sourceforge.net)
  */
 
+#include <SDL.h>
 #include <ctype.h>
 #include <getopt.h>
 #include <sys/stat.h>
@@ -126,7 +127,6 @@ static void initOptions() {
 
 static const int DEFAULT_SCALER = SCALER_SCALE_3X;
 
-#undef main
 int main(int argc, char *argv[]) {
 	const char *dataPath = "DATA";
 	const char *savePath = ".";
