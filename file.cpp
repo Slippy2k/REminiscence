@@ -138,6 +138,21 @@ struct AssetFile: File_impl {
 	bool open(const char *path, const char *mode) {
 		_ioErr = false;
 		_rw = SDL_RWFromFile(path, "rb");
+		if (!_rw) {
+			// try uppercase
+			char fixedPath[MAXPATHLEN];
+			{
+				int i = 0;
+				for (; path[i] && i < MAXPATHLEN - 1; ++i) {
+					fixedPath[i] = path[i];
+					if (fixedPath[i] >= 'a' && fixedPath[i] <= 'z') {
+						fixedPath[i] += 'A' - 'a';
+					}
+				}
+				fixedPath[i] = 0;
+			}
+			_rw = SDL_RWFromFile(fixedPath, "rb");
+		}
 		return _rw != 0;
 	}
 	void close() {
