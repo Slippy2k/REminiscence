@@ -25,7 +25,7 @@ void debug(uint16_t cm, const char *msg, ...) {
 		va_start(va, msg);
 		vsprintf(buf, msg, va);
 		va_end(va);
-		printf("%s\n", buf);
+		fprintf(stdout, "%s\n", buf);
 		fflush(stdout);
 #ifdef __ANDROID__
 		__android_log_print(ANDROID_LOG_INFO, LOG_TAG, "%s", buf);

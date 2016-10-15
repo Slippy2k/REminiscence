@@ -12,6 +12,7 @@
 #include "zlib.h"
 #endif
 #ifdef USE_RWOPS
+#include <SDL_filesystem.h>
 #include <SDL_rwops.h>
 #endif
 
@@ -206,16 +207,28 @@ bool File::open(const char *filename, const char *mode, FileSystem *fs) {
 		_impl = 0;
 	}
 	assert(mode[0] != 'z');
-#ifdef USE_RWOPS
-	_impl = new AssetFile;
-	return _impl->open(filename, mode);
-#else
 	_impl = new StdioFile;
 	char *path = fs->findPath(filename);
 	if (path) {
 		debug(DBG_FILE, "Open file name '%s' mode '%s' path '%s'", filename, mode, path);
 		bool ret = _impl->open(path, mode);
 		free(path);
+		return ret;
+	}
+#ifdef USE_RWOPS
+	if (mode[0] == 'r') {
+		_impl = new AssetFile;
+		return _impl->open(filename, mode);
+	} else if (mode[0] == 'w') {
+		bool ret = false;
+		char *prefPath = SDL_GetPrefPath("org.cyxdown", "fb");
+		if (prefPath) {
+			char path[MAXPATHLEN];
+			snprintf(path, sizeof(path), "%s/%s", prefPath, filename);
+			_impl = new StdioFile;
+			ret = _impl->open(path, mode);
+			SDL_free(prefPath);
+		}
 		return ret;
 	}
 #endif

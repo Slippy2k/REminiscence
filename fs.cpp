@@ -50,17 +50,25 @@ struct FileSystem_impl {
 		debug(DBG_FILE, "Found %d files and %d directories", _filesCount, _dirsCount);
 	}
 
-	char *findPath(const char *name) const {
+	int findPathIndex(const char *name) const {
 		for (int i = 0; i < _filesCount; ++i) {
 			if (strcasecmp(_filesList[i].name, name) == 0) {
-				const char *dir = _dirsList[_filesList[i].dir];
-				const int len = strlen(dir) + 1 + strlen(_filesList[i].name) + 1;
-				char *p = (char *)malloc(len);
-				if (p) {
-					snprintf(p, len, "%s/%s", dir, _filesList[i].name);
-				}
-				return p;
+				return i;
 			}
+		}
+		return -1;
+	}
+
+	char *getPath(const char *name) const {
+		const int i = findPathIndex(name);
+		if (i >= 0) {
+			const char *dir = _dirsList[_filesList[i].dir];
+			const int len = strlen(dir) + 1 + strlen(_filesList[i].name) + 1;
+			char *p = (char *)malloc(len);
+			if (p) {
+				snprintf(p, len, "%s/%s", dir, _filesList[i].name);
+			}
+			return p;
 		}
 		return 0;
 	}
@@ -149,10 +157,13 @@ FileSystem::~FileSystem() {
 }
 
 char *FileSystem::findPath(const char *filename) const {
-	return _impl->findPath(filename);
+	return _impl->getPath(filename);
 }
 
 bool FileSystem::exists(const char *filename) const {
+	if (_impl->findPathIndex(filename) >= 0) {
+		return true;
+	}
 #ifdef USE_RWOPS
 	SDL_RWops *rw = SDL_RWFromFile(filename, "rb");
 	if (rw) {
@@ -160,9 +171,5 @@ bool FileSystem::exists(const char *filename) const {
 		return true;
 	}
 #endif
-	char *path = findPath(filename);
-	if (path) {
-		free(path);
-	}
-	return path != 0;
+	return false;
 }
