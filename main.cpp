@@ -20,7 +20,7 @@ static const char *USAGE =
 	"Usage: %s [OPTIONS]...\n"
 	"  --datapath=PATH   Path to data files (default 'DATA')\n"
 	"  --savepath=PATH   Path to save files (default '.')\n"
-	"  --levelnum=NUM    Level to start from (default '0')\n"
+	"  --levelnum=NUM    Start to level, bypass introduction\n"
 	"  --fullscreen      Fullscreen display\n"
 	"  --scaler=INDEX    Graphics scaler\n"
 	"  --language=LANG   Language (fr,en,de,sp,it)\n"
@@ -37,7 +37,7 @@ static int detectVersion(FileSystem *fs) {
 		{ "LEVEL1.MAP", kResourceTypeDOS, "DOS" },
 		{ "LEVEL1.LEV", kResourceTypeAmiga, "Amiga" },
 		{ "DEMO.LEV", kResourceTypeAmiga, "Amiga (Demo)" },
-		{ 0, -1 }
+		{ 0, -1, 0 }
 	};
 	for (int i = 0; table[i].filename; ++i) {
 		File f;
