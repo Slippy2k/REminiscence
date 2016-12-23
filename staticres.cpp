@@ -836,6 +836,29 @@ const Cutscene::Text Cutscene::_frTextsTable[] = {
 	{ -1, 0 }
 };
 
+const Cutscene::Text Cutscene::_enTextsTable[] = {
+	{  1, "YOU PICK UP THE HOLOCUBE" },
+	{  2, "YOU PICK UP THE KEY" },
+	{  3, "YOU PICK UP THE GUN" },
+	{  5, "YOUR SHIELD IS RECHARGED" },
+	{ 10, "YOU PICK UP THE CREDIT CARD" },
+	{ 14, "THE CARTRIDGE IS RECHARGED" },
+	{ 15, "YOU PICK UP THE CARTRIDGE" },
+	{ 16, "YOU PICK UP THE TELEPORTER" },
+	{ 18, "YOU PICK UP THE I.D. CARD" },
+	{ 21, "YOU GIVE HIM THE TELEPORTER" },
+	{ 32, "THE RECEPTIONIST GIVES YOU||A PACKAGE" },
+	{ 33, "YOU GIVE THE PARCEL" },
+	{ 34, "THE GOVERNOR GIVES YOU||A WORKING PERMIT" },
+	{ 35, "THE FORGER GIVES YOU||A FAKE I.D. CARD" },
+	{ 36, "YOU PICK UP THE FUSE" },
+	{ 43, "YOU GIVE HIM||YOUR PAPERS" },
+	{ 44, "YOU GIVE HIM MONEY" },
+	{ 49, "HE GIVES YOU||AN ANTI-G BELT" },
+	{ 60, "YOU PICK UP THE TELE RECEPTER" },
+	{ -1, 0}
+};
+
 const Demo Game::_demoInputs[] = {
 	{ "demo1.bin",  0, 0x33, 0x60, 0x46 },
 	{ "demo51.bin", 5, 0x00, 0x60, 0xD6 },
