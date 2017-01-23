@@ -1,6 +1,11 @@
 
-SDL_CFLAGS = `sdl-config --cflags`
-SDL_LIBS = `sdl-config --static-libs`
+SDL_CFLAGS := `sdl2-config --cflags`
+SDL_LIBS   := `sdl2-config --libs`
+
+CXX   := i686-w64-mingw32-g++
+STRIP := i686-w64-mingw32-strip
+
+CXXFLAGS += -g -O -Wall $(SDL_CFLAGS) -DUSE_MODPLUG -DMODPLUG_STATIC -DUSE_ZLIB
 
 SRCS := collision.cpp cutscene.cpp file.cpp fs.cpp game.cpp graphics.cpp main.cpp menu.cpp \
 	mixer.cpp mod_player.cpp ogg_player.cpp piege.cpp resource.cpp resource_aba.cpp \
@@ -12,15 +17,10 @@ DEPS := $(SRCS:.cpp=.d)
 
 OBJDIR := obj
 
-CXX := i686-w64-mingw32-g++
-CXXFLAGS := $(CPPFLAGS) -g -O -Wall $(SDL_CFLAGS) -DUSE_MODPLUG -DMODPLUG_STATIC -DUSE_ZLIB
-STRIP := i686-w64-mingw32-strip
-
 all: $(OBJDIR) rs.exe
 
 rs.exe: $(addprefix $(OBJDIR)/, $(OBJS))
-#	$(CXX) -o $@ $^ -static-libgcc -static-libstdc++ $(SDL_LIBS) -static -lvorbisidec -logg -lz
-	$(CXX) -o $@ $^ -static $(SDL_LIBS) -lmodplug -lz
+	$(CXX) $(LDFLAGS) -o $@ $^ -static-libgcc -static-libstdc++ $(SDL_LIBS) -Wl,-Bstatic -lmodplug -lz
 	$(STRIP) $@
 	upx -9 $@
 
