@@ -19,6 +19,7 @@ struct SystemStub_SDL : SystemStub {
 	SDL_Window *_window;
 	SDL_Renderer *_renderer;
 	SDL_Texture *_texture;
+	int _texW, _texH;
 	SDL_GameController *_controller;
 #else
 	SDL_Surface *_surface;
@@ -244,7 +245,16 @@ static uint16_t blendPixel16(uint16_t colorSrc, uint16_t colorDst, uint32_t mask
 
 void SystemStub_SDL::updateScreen(int shakeOffset) {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	SDL_UpdateTexture(_texture, 0, _screenBuffer + _screenW + 1, _screenW * sizeof(uint16_t));
+	if (_texW != _screenW || _texH != _screenH) {
+		void *dst = 0;
+		int pitch = 0;
+		if (SDL_LockTexture(_texture, 0, &dst, &pitch) == 0) {
+			(*_scalers[_scaler].proc)((uint16_t *)dst, pitch, _screenBuffer + _screenW + 1, _screenW, _screenW, _screenH);
+			SDL_UnlockTexture(_texture);
+		}
+	} else {
+		SDL_UpdateTexture(_texture, 0, _screenBuffer + _screenW + 1, _screenW * sizeof(uint16_t));
+	}
 	SDL_RenderClear(_renderer);
 	if (_fadeOnUpdateScreen) {
 		SDL_SetRenderDrawBlendMode(_renderer, SDL_BLENDMODE_BLEND);
@@ -690,9 +700,13 @@ void SystemStub_SDL::prepareGraphics() {
 	case SCALER_SCALE_3X:
 	case SCALER_SCALE_4X:
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+		_texW = _screenW * _scalers[_scaler].factor;
+		_texH = _screenH * _scalers[_scaler].factor;
 		break;
 	default:
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0"); // nearest pixel sampling
+		_texW = _screenW;
+		_texH = _screenH;
 		break;
 	}
 	const int windowW = _screenW * _scalers[_scaler].factor;
@@ -705,7 +719,7 @@ void SystemStub_SDL::prepareGraphics() {
 	_renderer = SDL_CreateRenderer(_window, -1, SDL_RENDERER_ACCELERATED);
 	SDL_RenderSetLogicalSize(_renderer, windowW, windowH);
         static const uint32_t kPixelFormat = SDL_PIXELFORMAT_RGB565;
-	_texture = SDL_CreateTexture(_renderer, kPixelFormat, SDL_TEXTUREACCESS_STREAMING, _screenW, _screenH);
+	_texture = SDL_CreateTexture(_renderer, kPixelFormat, SDL_TEXTUREACCESS_STREAMING, _texW, _texH);
 	_fmt = SDL_AllocFormat(kPixelFormat);
 #else
 	SDL_WM_SetCaption(_caption, NULL);
