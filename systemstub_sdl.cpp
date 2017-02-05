@@ -126,10 +126,7 @@ void SystemStub_SDL::setScreenSize(int w, int h) {
 	if (_screenW == w && _screenH == h) {
 		return;
 	}
-	free(_screenBuffer);
-	_screenBuffer = 0;
-	free(_fadeScreenBuffer);
-	_fadeScreenBuffer = 0;
+	cleanupGraphics();
 	// allocate some extra bytes for the scaling routines
 	const int screenBufferSize = (w + 2) * (h + 2) * sizeof(uint16_t);
 	_screenBuffer = (uint16_t *)calloc(1, screenBufferSize);
