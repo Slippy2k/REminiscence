@@ -66,7 +66,6 @@ Debug hotkeys :
     Ctrl F          toggle fast mode
     Ctrl I          Conrad 'infinite' life
     Ctrl B          toggle display of updated dirty blocks
-    Ctrl M          mirror mode (right - left swapped)
 
 
 Credits:

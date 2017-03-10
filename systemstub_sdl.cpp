@@ -188,7 +188,7 @@ void SystemStub_SDL::copyRect(int x, int y, int w, int h, const uint8_t *buf, in
 		}
 		SDL_Rect *br = &_blitRects[_numBlitRects];
 
-		br->x = _pi.mirrorMode ? _screenW - (x + w) : x;
+		br->x = x;
 		br->y = y;
 		br->w = w;
 		br->h = h;
@@ -197,22 +197,12 @@ void SystemStub_SDL::copyRect(int x, int y, int w, int h, const uint8_t *buf, in
 		uint16_t *p = _screenBuffer + (br->y + 1) * _screenW + (br->x + 1);
 		buf += y * pitch + x;
 
-		if (_pi.mirrorMode) {
-			while (h--) {
-				for (int i = 0; i < w; ++i) {
-					p[i] = _pal[buf[w - 1 - i]];
-				}
-				p += _screenW;
-				buf += pitch;
+		while (h--) {
+			for (int i = 0; i < w; ++i) {
+				p[i] = _pal[buf[i]];
 			}
-		} else {
-			while (h--) {
-				for (int i = 0; i < w; ++i) {
-					p[i] = _pal[buf[i]];
-				}
-				p += _screenW;
-				buf += pitch;
-			}
+			p += _screenW;
+			buf += pitch;
 		}
 		if (_pi.dbgMask & PlayerInput::DF_DBLOCKS) {
 			drawRect(br, 0xE7, _screenBuffer + _screenW + 1, _screenW * 2);
@@ -589,9 +579,6 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 					_pi.dbgMask ^= PlayerInput::DF_DBLOCKS;
 				} else if (ev.key.keysym.sym == SDLK_i) {
 					_pi.dbgMask ^= PlayerInput::DF_SETLIFE;
-				} else if (ev.key.keysym.sym == SDLK_m) {
-					_pi.mirrorMode = !_pi.mirrorMode;
-					flipGraphics();
 				} else if (ev.key.keysym.sym == SDLK_s) {
 					_pi.save = true;
 				} else if (ev.key.keysym.sym == SDLK_l) {
