@@ -89,6 +89,7 @@ struct Options {
 	bool fade_out_palette;
 	bool use_tiledata;
 	bool use_text_cutscenes;
+	bool use_seq_cutscenes;
 };
 
 struct Color {

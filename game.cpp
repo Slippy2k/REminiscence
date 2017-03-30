@@ -50,7 +50,9 @@ void Game::run() {
 		break;
 	case kResourceTypeDOS:
 		_res.load("FB_TXT", Resource::OT_FNT);
-		_res._hasSeqData = _fs->exists("INTRO.SEQ");
+		if (g_options.use_seq_cutscenes) {
+			_res._hasSeqData = _fs->exists("INTRO.SEQ");
+		}
 		if (_fs->exists("logosssi.cmd")) {
 			_cut._patchedOffsetsTable = Cutscene::_ssiOffsetsTable;
 		}
