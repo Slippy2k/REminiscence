@@ -558,8 +558,8 @@ static void decodeLevHelper(uint8_t *dst, const uint8_t *src, int offset10, int 
 					const bool yflip = (d3 & (1 << 12)) != 0;
 					const bool xflip = (d3 & (1 << 11)) != 0;
 					int mask = 0;
-					if ((d3 < (1 << 15)) == 0) {
-						mask = 0x80;
+					if ((d3 & 0x8000) != 0) {
+						mask = 0x80 + ((d3 >> 6) & 0x10);
 					}
 					if (isPC) {
 						PC_drawTile(dst + y * 256 + x, a2, mask, xflip, yflip, -1);
@@ -586,8 +586,8 @@ static void decodeLevHelper(uint8_t *dst, const uint8_t *src, int offset10, int 
 					int mask = 0;
 					if ((d3 & 0x6000) != 0 && sgdBuf) {
 						mask = 0x10;
-					} else if ((d3 < (1 << 15)) == 0) {
-						mask = 0x80;
+					} else if ((d3 & 0x8000) != 0) {
+						mask = 0x80 + ((d3 >> 6) & 0x10);
 					}
 					if (isPC) {
 						PC_drawTile(dst + y * 256 + x, a2, mask, xflip, yflip, 0);
@@ -663,13 +663,14 @@ void Video::AMIGA_decodeLev(int level, int room) {
 	// background
 	setPaletteSlotBE(0x0, _mapPalSlot1);
 	// objects
-	setPaletteSlotBE(0x1, (level == 0 || level == 1) ? _mapPalSlot3 : _mapPalSlot2);
+	setPaletteSlotBE(0x1, (level == 0) ? _mapPalSlot3 : _mapPalSlot2);
 	setPaletteSlotBE(0x2, _mapPalSlot3);
 	setPaletteSlotBE(0x3, _mapPalSlot3);
 	// conrad
 	setPaletteSlotBE(0x4, _mapPalSlot3);
 	// foreground
 	setPaletteSlotBE(0x8, _mapPalSlot1);
+	setPaletteSlotBE(0x9, (level == 0) ? _mapPalSlot1 : _mapPalSlot3);
 	// inventory
 	setPaletteSlotBE(0xA, _mapPalSlot3);
 }
