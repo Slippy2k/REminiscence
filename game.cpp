@@ -1513,16 +1513,30 @@ void Game::handleInventory() {
 			int icon_h = 5;
 			int icon_y = 140;
 			int icon_num = 31;
+			static const int icon_spr_w = 16;
+			static const int icon_spr_h = 16;
 			do {
 				int icon_x = 56;
 				int icon_w = 9;
 				do {
 					drawIcon(icon_num, icon_x, icon_y, 0xF);
 					++icon_num;
-					icon_x += 16;
+					icon_x += icon_spr_w;
 				} while (--icon_w);
-				icon_y += 16;
+				icon_y += icon_spr_h;
 			} while (--icon_h);
+			if (_res._type == kResourceTypeAmiga) {
+				// draw outline rectangle
+				static const uint8_t outline_color = 0xE7;
+				uint8_t *p = _vid._frontLayer + 140 * Video::GAMESCREEN_W + 56;
+				memset(p + 1, outline_color, 9 * icon_spr_w - 2);
+				p += Video::GAMESCREEN_W;
+				for (int y = 1; y < 5 * icon_spr_h - 1; ++y) {
+					p[0] = p[9 * icon_spr_w - 1] = outline_color;
+					p += Video::GAMESCREEN_W;
+				}
+				memset(p + 1, outline_color, 9 * icon_spr_w - 2);
+			}
 
 			if (!display_score) {
 				int icon_x_pos = 72;
