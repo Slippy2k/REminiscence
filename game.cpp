@@ -96,9 +96,9 @@ void Game::run() {
 		} else if (_res._isDemo) {
 			// do not present title screen and menus
 		} else {
+			_mix.playMusic(1);
 			switch (_res._type) {
 			case kResourceTypeDOS:
-				_mix.playMusic(1);
 				_menu.handleTitleScreen();
 				if (_menu._selectedOption == Menu::MENU_OPTION_ITEM_QUIT || _stub->_pi.quit) {
 					_stub->_pi.quit = true;
