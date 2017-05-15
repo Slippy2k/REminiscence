@@ -688,7 +688,11 @@ void Game::printLevelCode() {
 		--_printLevelCodeCounter;
 		if (_printLevelCodeCounter != 0) {
 			char buf[32];
-			snprintf(buf, sizeof(buf), "CODE: %s", _menu._passwords[_currentLevel][_skillLevel]);
+			const char *code = Menu::_passwords[_currentLevel][_skillLevel];
+			if (_res.isAmiga() && _res._lang == LANG_FR) {
+				code = Menu::_passwordsFrAmiga[_skillLevel * 7 + _currentLevel];
+			}
+			snprintf(buf, sizeof(buf), "CODE: %s", code);
 			_vid.drawString(buf, (_vid._w - strlen(buf) * 8) / 2, 16, 0xE7);
 		}
 	}
