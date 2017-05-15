@@ -804,11 +804,8 @@ void Video::PC_drawChar(uint8_t c, int16_t y, int16_t x) {
 	const uint8_t *src = _res->_fnt + (c - 32) * 32;
 	uint8_t *dst = _frontLayer + x + 256 * y;
 	for (int h = 0; h < 8; ++h) {
-		for (int i = 0; i < 4; ++i) {
-			uint8_t c1 = (*src & 0xF0) >> 4;
-			uint8_t c2 = (*src & 0x0F) >> 0;
-			++src;
-
+		for (int i = 0; i < 4; ++i, ++src) {
+			const uint8_t c1 = *src >> 4;
 			if (c1 != 0) {
 				if (c1 != 2) {
 					*dst = _charFrontColor;
@@ -819,7 +816,7 @@ void Video::PC_drawChar(uint8_t c, int16_t y, int16_t x) {
 				*dst = _charTransparentColor;
 			}
 			++dst;
-
+			const uint8_t c2 = *src & 15;
 			if (c2 != 0) {
 				if (c2 != 2) {
 					*dst = _charFrontColor;

@@ -605,7 +605,9 @@ bool Game::handleContinueAbort() {
 bool Game::handleProtectionScreen() {
 	bool valid = true;
 	_cut.prepare();
-	_cut.copyPalette(_protectionPal, 0);
+	const int palOffset = _res.isAmiga() ? 32 : 0;
+	_cut.copyPalette(_protectionPal + palOffset, 0);
+
 	_cut.updatePalette();
 	_cut._gfx.setClippingRect(64, 48, 128, 128);
 
@@ -629,10 +631,10 @@ bool Game::handleProtectionScreen() {
 	do {
 		codeText[len] = '\0';
 		memcpy(_vid._frontLayer, _vid._tempLayer, _vid._layerSize);
-		_menu.drawString("PROTECTION", 2, 11, 5);
+		_vid.drawString("PROTECTION", 11 * 8, 2 * 8, _menu._charVar2);
 		char buf[20];
 		snprintf(buf, sizeof(buf), "CODE %d :  %s", codeNum + 1, codeText);
-		_menu.drawString(buf, 23, 8, 5);
+		_vid.drawString(buf, 8 * 8, 23 * 8, _menu._charVar2);
 		_vid.updateScreen();
 		_stub->sleep(50);
 		_stub->processEvents();

@@ -33,7 +33,7 @@ void Cutscene::sync() {
 }
 
 void Cutscene::copyPalette(const uint8_t *pal, uint16_t num) {
-	uint8_t *dst = (uint8_t *)_palBuf;
+	uint8_t *dst = _palBuf;
 	if (num != 0) {
 		dst += 0x20;
 	}
