@@ -152,11 +152,10 @@ void Game::displayTitleScreenAmiga() {
 	_res.load_CMP_menu(FILENAME, _res._memBuf);
 	static const int kW = 320;
 	static const int kH = 224;
-	uint8_t *buf = (uint8_t *)malloc(kW * kH);
+	uint8_t *buf = (uint8_t *)calloc(kW * kH, 1);
 	if (!buf) {
 		error("Failed to allocate screen buffer w=%d h=%d", kW, kH);
 	}
-	_vid.AMIGA_decodeCmp(_res._memBuf + 6, buf);
 	static const int kAmigaColors[] = {
 		0x000, 0x123, 0x012, 0x134, 0x433, 0x453, 0x046, 0x245,
 		0x751, 0x455, 0x665, 0x268, 0x961, 0x478, 0x677, 0x786,
@@ -170,7 +169,14 @@ void Game::displayTitleScreenAmiga() {
 	_stub->setScreenSize(kW, kH);
 	_stub->copyRect(0, 0, kW, kH, buf, kW);
 	_stub->updateScreen(0);
+	_vid.AMIGA_decodeCmp(_res._memBuf + 6, buf);
 	free(buf);
+	for (int h = 0; h < kH / 2; h += 2) {
+		const int y = kH / 2 - h;
+		_stub->copyRect(0, y, kW, h * 2, buf, kW);
+		_stub->updateScreen(0);
+		_stub->sleep(30);
+	}
 	while (1) {
 		_stub->processEvents();
 		if (_stub->_pi.quit) {
