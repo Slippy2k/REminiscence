@@ -136,8 +136,9 @@ struct GzipFile : File_impl {
 struct AssetFile: File_impl {
 	SDL_RWops *_rw;
 	AssetFile() : _rw(0) {}
-	bool open(const char *path, const char *mode) {
-		_ioErr = false;
+	bool prefixedOpen(const char *prefix, const char *name) {
+		char path[MAXPATHLEN];
+		snprintf(path, sizeof(path), "%s%s", prefix, name);
 		_rw = SDL_RWFromFile(path, "rb");
 		if (!_rw) {
 			// try uppercase
@@ -146,6 +147,9 @@ struct AssetFile: File_impl {
 				int i = 0;
 				for (; path[i] && i < MAXPATHLEN - 1; ++i) {
 					fixedPath[i] = path[i];
+					if (i < strlen(prefix)) {
+						continue;
+					}
 					if (fixedPath[i] >= 'a' && fixedPath[i] <= 'z') {
 						fixedPath[i] += 'A' - 'a';
 					}
@@ -155,6 +159,10 @@ struct AssetFile: File_impl {
 			_rw = SDL_RWFromFile(fixedPath, "rb");
 		}
 		return _rw != 0;
+	}
+	bool open(const char *path, const char *mode) {
+		_ioErr = false;
+		return prefixedOpen("", path) || prefixedOpen("/sdcard/flashback/", path);
 	}
 	void close() {
 		if (_rw) {
