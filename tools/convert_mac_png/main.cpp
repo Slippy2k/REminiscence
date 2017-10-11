@@ -2,9 +2,24 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <getopt.h>
 #include <png.h>
 #include "resource.h"
 #include "decode.h"
+extern "C" {
+#include "scalebit.h"
+}
+
+struct Scaler {
+	const char *name;
+	int scale;
+} _scalers[] = {
+	{ "scale2x", 2 },
+	{ "scale3x", 3 },
+	{ "scale4x", 4 },
+	{ 0, 0 }
+};
 
 struct Color {
 	int r, g, b;
@@ -17,7 +32,7 @@ enum {
 static Color _clut[kClutSize];
 static int _clutSize;
 
-static bool _upscaleImageData2x = true;
+static int _upscaleImageData = 1;
 static uint8_t *_upscaleImageDataBuf;
 
 static void readClut(const uint8_t *ptr) {
@@ -61,56 +76,16 @@ static uint8_t *decodeResourceData(ResourceMac &res, const char *name, bool deco
 	return data;
 }
 
-static void scale2x(uint8_t *dst, int dstPitch, const uint8_t *src, int srcPitch, int w, int h) {
-	const int dstPitch2 = dstPitch * 2;
-	while (h--) {
-		uint8_t *p = dst;
-		uint8_t D = *(src - 1);
-		uint8_t E = *(src);
-		for (int i = 0; i < w; ++i, p += 2) {
-			uint8_t B = *(src + i - srcPitch);
-			uint8_t F = *(src + i + 1);
-			uint8_t H = *(src + i + srcPitch);
-			if (B != H && D != F) {
-				*(p) = D == B ? D : E;
-				*(p + 1) = B == F ? F : E;
-				*(p + dstPitch) = D == H ? D : E;
-				*(p + dstPitch + 1) = H == F ? F : E;
-			} else {
-				*(p) = E;
-				*(p + 1) = E;
-				*(p + dstPitch) = E;
-				*(p + dstPitch + 1) = E;
-			}
-			D = E;
-			E = F;
-		}
-		dst += dstPitch2;
-		src += srcPitch;
-	}
-}
-
 static void writePngImageData(const char *filePath, const uint8_t *imageData, Color *imageClut, int w, int h) {
-	if (_upscaleImageData2x) {
-		_upscaleImageDataBuf = (uint8_t *)malloc((w * 2) * (h * 2));
+	if (_upscaleImageData != 1) {
+		const int scaledW = w * _upscaleImageData;
+		const int scaledH = h * _upscaleImageData;
+		_upscaleImageDataBuf = (uint8_t *)malloc(scaledW * scaledH);
 		if (_upscaleImageDataBuf) {
-			uint8_t *imageDataDup = (uint8_t *)malloc((w + 2) * (h + 2));
-			if (imageDataDup) {
-				const int srcPitch = w + 2;
-				memcpy(imageDataDup, imageData, w);
-				for (int y = 0; y < h; ++y) {
-					const int yOffset = (y + 1) * srcPitch;
-					imageDataDup[yOffset] = imageData[y * w];
-					memcpy(imageDataDup + yOffset + 1, imageData + y * w, w);
-					imageDataDup[yOffset + w + 1] = imageData[y * w + w - 1];
-				}
-				memcpy(imageDataDup + (h + 1) * srcPitch, imageData + (h - 1) * w, w);
-				scale2x(_upscaleImageDataBuf, w * 2, imageDataDup + srcPitch + 1, srcPitch, w, h);
-				free(imageDataDup);
-			}
+			scale(_upscaleImageData, _upscaleImageDataBuf, scaledW, imageData, w, 1, w, h);
 			imageData = _upscaleImageDataBuf;
-			w *= 2;
-			h *= 2;
+			w = scaledW;
+			h = scaledH;
 		}
 	}
 	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -272,7 +247,7 @@ static void decodeImageData(const char *name, const uint8_t *ptr) {
 		}
 		char path[128];
 		if (count != 1) {
-			snprintf(path, sizeof(path), "DUMP/%s-%d.png", name, i);
+			snprintf(path, sizeof(path), "DUMP/%s-%03d.png", name, i);
 		} else {
 			snprintf(path, sizeof(path), "DUMP/%s.png", name);
 		}
@@ -390,8 +365,29 @@ static void checkCutsceneData(ResourceMac &res) {
 }
 
 int main(int argc, char *argv[]) {
-	if (argc > 1) {
-		ResourceMac res(argv[1]);
+	while (1) {
+		static struct option options[] = {
+			{ "scaler", required_argument, 0, 's' },
+			{ 0, 0, 0, 0 }
+		};
+		int index;
+		const int c = getopt_long(argc, argv, "", options, &index);
+		if (c == -1) {
+			break;
+		}
+		switch (c) {
+		case 's':
+			for (int i = 0; _scalers[i].name; ++i) {
+				if (strcmp(_scalers[i].name, optarg) == 0) {
+					_upscaleImageData = _scalers[i].scale;
+					break;
+				}
+			}
+			break;
+		}
+	}
+	if (optind < argc) {
+		ResourceMac res(argv[optind]);
 		// decodeSoundData(res);
 		checkAmigaData(res);
 		checkCutsceneData(res);
@@ -408,7 +404,7 @@ int main(int argc, char *argv[]) {
 		}
 		for (int level = 1; level <= 5; ++level) {
 			for (int i = 0; i <= 64; ++i) {
-				snprintf(name, sizeof(name), "Level %d Room %d", level, i);
+				snprintf(name, sizeof(name), "Level %d Room %02d", level, i);
 				uint8_t *ptr = decodeResourceData(res, name, true);
 				if (ptr) {
 					decodeImageData(name, ptr);
