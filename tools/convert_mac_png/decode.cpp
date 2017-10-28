@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "file.h"
+#include "decode.h"
 
 uint8_t *decodeLzss(File &f) {
 	const uint32_t decodedSize = f.readUint32BE();
@@ -137,3 +138,112 @@ void decodeC211(const uint8_t *a3, uint8_t *a0, int pitch, int h) {
 	}
 }
 
+static int decodeLinePICT(const uint8_t *src, int size, int bytesPerPixel, uint8_t *dst) {
+	int totalBytes = 0;
+	int offset = 0;
+	while (offset < size) {
+		const int code = src[offset]; ++offset;
+		if (code & 0x80) {
+			const int len = (code ^ 0xFF) + 2;
+			memset(dst, src[offset], len); ++offset;
+			totalBytes += len;
+		} else {
+			const int len = code + 1;
+			memcpy(dst, src, len); offset += len;
+			totalBytes += len;
+		}
+	}
+	assert((size - offset) == 0);
+	return totalBytes;
+}
+
+uint8_t *decodePICT(const uint8_t *src, int size, int *pW, int *pH, int *pBpp) {
+	uint8_t *buf = 0;
+	int offset = 0;
+	const uint16_t fileSize = READ_BE_UINT16(src + offset); offset += 2;
+	const int rectTop = READ_BE_UINT16(src + offset); offset += 2;
+	const int rectLeft = READ_BE_UINT16(src + offset); offset += 2;
+	const int rectBottom = READ_BE_UINT16(src + offset); offset += 2;
+	const int rectRight = READ_BE_UINT16(src + offset); offset += 2;
+	for (int i = 0; offset < size; ++i) {
+		offset = (offset + 1) & ~1; // opcodes are word aligned
+		const uint16_t opcode = READ_BE_UINT16(src + offset); offset += 2;
+		switch (opcode) {
+		case 0x0011: // version operator
+			assert(i == 0);
+			{
+				int versionNumber = READ_BE_UINT16(src + offset); offset += 2;
+				assert(versionNumber == 0x2FF);
+			}
+			break;
+		case 0x0C00: // pict v2.0 header
+			assert(i == 1);
+			{
+				int top = READ_BE_UINT16(src + offset + 12);
+				int left = READ_BE_UINT16(src + offset + 14);
+				int bottom = READ_BE_UINT16(src + offset + 16);
+				int right = READ_BE_UINT16(src + offset + 18);
+				offset += 24;
+				fprintf(stdout, "PICT rect %d,%d,%d,%d\n", left, top, right, bottom);
+			}
+			break;
+		case 0x0001: // clip
+			{
+				int size = READ_BE_UINT16(src + offset);
+				offset += size;
+			}
+			break;
+		case 0x009A: // direct_bits
+			{
+				uint32_t addr = READ_BE_UINT32(src + offset); offset += 4;
+				int rowBytes = READ_BE_UINT16(src + offset) & 0x3FFF; offset += 2;
+				int top = READ_BE_UINT16(src + offset); offset += 2;
+				int left = READ_BE_UINT16(src + offset); offset += 2;
+				int bottom = READ_BE_UINT16(src + offset); offset += 2;
+				int right = READ_BE_UINT16(src + offset); offset += 2;
+				offset += 2; // pmVersion
+				int packType = READ_BE_UINT16(src + offset); offset += 2;
+				offset += 4; // packSize
+				offset += 8; // hRes, vRes
+				int pixelType = READ_BE_UINT16(src + offset); offset += 2;
+				int pixelSize = READ_BE_UINT16(src + offset); offset += 2;
+				int cmpCount = READ_BE_UINT16(src + offset); offset += 2;
+				int cmpSize = READ_BE_UINT16(src + offset); offset += 2;
+				offset += 4 * 3; // planeBytes, pmTable, pmReserved
+
+				int srcTop = READ_BE_UINT16(src + offset); offset += 2;
+				int srcLeft = READ_BE_UINT16(src + offset); offset += 2;
+				int srcBottom = READ_BE_UINT16(src + offset); offset += 2;
+				int srcRight = READ_BE_UINT16(src + offset); offset += 2;
+
+				int dstTop = READ_BE_UINT16(src + offset); offset += 2;
+				int dstLeft = READ_BE_UINT16(src + offset); offset += 2;
+				int dstBottom = READ_BE_UINT16(src + offset); offset += 2;
+				int dstRight = READ_BE_UINT16(src + offset); offset += 2;
+
+				int mode = READ_BE_UINT16(src + offset); offset += 2;
+
+				assert(packType == 4);
+
+				int totalBytesCount = 0;
+				int bufRowBytes = (right - left) * cmpCount;
+				buf = (uint8_t *)malloc((bottom - top) * bufRowBytes);
+				for (int y = 0; y < (bottom - top); ++y) {
+					const int bytesCount = READ_BE_UINT16(src + offset); offset += 2;
+					totalBytesCount += decodeLinePICT(src + offset, bytesCount, cmpCount, buf + y * bufRowBytes);
+					offset += bytesCount;
+				}
+				*pW = right - left;
+				*pH = bottom - top;
+				*pBpp = cmpCount;
+			}
+			break;
+		case 0x00FF: // end picture
+			break;
+		default:
+			fprintf(stderr, "Unhandled opcode 0x%x\n", opcode);
+			return 0;
+		}
+	}
+	return buf;
+}

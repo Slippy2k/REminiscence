@@ -104,6 +104,10 @@ static void writePngImageData(const char *filePath, const uint8_t *imageData, Co
 	png_bytep *row_pointers = (png_bytep *)malloc(sizeof(png_bytep) * h);
 	for (int y = 0; y < h; ++y) {
 		row_pointers[y] = (png_bytep)malloc(w * 3);
+		if (!imageClut) {
+			memcpy(row_pointers[y], imageData + y * w * 3, w * 3);
+			continue;
+		}
 		int xOffset = 0;
 		for (int x = 0; x < w; ++x) {
 			const uint8_t color = imageData[y * w + x];
@@ -364,10 +368,34 @@ static void checkCutsceneData(ResourceMac &res) {
 	}
 }
 
+static void decodePictureData(ResourceMac &res) {
+	const unsigned char id[4] = { 'P','I','C','T' };
+	const int type = res.findTypeById(id);
+	assert(res._types[type].count == 1);
+	const ResourceEntry *entry = &res._entries[type][0];
+	res._f.seek(res._dataOffset + res._entries[type][0].dataOffset);
+	const uint32_t dataSize = res._f.readUint32BE();
+	uint8_t *data = (uint8_t *)malloc(dataSize);
+	res._f.read(data, dataSize);
+	int w, h, bpp;
+	uint8_t *buf = decodePICT(data, dataSize, &w, &h, &bpp);
+	if (buf) {
+		writePngImageData("Pict0.png", buf, 0, w, h);
+		free(buf);
+	}
+	free(data);
+}
+
 int main(int argc, char *argv[]) {
+	bool decodeSound = false;
+	bool decodePicture = false;
+	bool checkData = false;
 	while (1) {
 		static struct option options[] = {
-			{ "scaler", required_argument, 0, 's' },
+			{ "scaler",      required_argument, 0, 1 },
+			{ "decode_snd",  no_argument, 0, 2 },
+			{ "decode_pict", no_argument, 0, 3 },
+			{ "check_data",  no_argument, 0, 4 },
 			{ 0, 0, 0, 0 }
 		};
 		int index;
@@ -376,7 +404,7 @@ int main(int argc, char *argv[]) {
 			break;
 		}
 		switch (c) {
-		case 's':
+		case 1:
 			for (int i = 0; _scalers[i].name; ++i) {
 				if (strcmp(_scalers[i].name, optarg) == 0) {
 					_upscaleImageData = _scalers[i].scale;
@@ -384,13 +412,32 @@ int main(int argc, char *argv[]) {
 				}
 			}
 			break;
+		case 2:
+			decodeSound = true;
+			break;
+		case 3:
+			decodePicture = true;
+			break;
+		case 4:
+			checkData = true;
+			break;
 		}
 	}
 	if (optind < argc) {
 		ResourceMac res(argv[optind]);
-		// decodeSoundData(res);
-		checkAmigaData(res);
-		checkCutsceneData(res);
+		if (decodeSound) {
+			decodeSoundData(res);
+			return 0;
+		}
+		if (decodePicture) {
+			decodePictureData(res);
+			return 0;
+		}
+		if (checkData) {
+			checkAmigaData(res);
+			checkCutsceneData(res);
+			return 0;
+		}
 		uint8_t *ptr = decodeResourceData(res, "Flashback colors", false);
 		readClut(ptr);
 		free(ptr);
