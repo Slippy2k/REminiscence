@@ -517,37 +517,6 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 		break;
 #endif
 		case SDL_KEYUP:
-			switch (ev.key.keysym.sym) {
-			case SDLK_LEFT:
-				_pi.dirMask &= ~PlayerInput::DIR_LEFT;
-				break;
-			case SDLK_RIGHT:
-				_pi.dirMask &= ~PlayerInput::DIR_RIGHT;
-				break;
-			case SDLK_UP:
-				_pi.dirMask &= ~PlayerInput::DIR_UP;
-				break;
-			case SDLK_DOWN:
-				_pi.dirMask &= ~PlayerInput::DIR_DOWN;
-				break;
-			case SDLK_SPACE:
-				_pi.space = false;
-				break;
-			case SDLK_RSHIFT:
-			case SDLK_LSHIFT:
-				_pi.shift = false;
-				break;
-			case SDLK_RETURN:
-				_pi.enter = false;
-				break;
-			case SDLK_ESCAPE:
-				_pi.escape = false;
-				break;
-			default:
-				break;
-			}
-			break;
-		case SDL_KEYDOWN:
 			if (ev.key.keysym.mod & KMOD_ALT) {
 				if (ev.key.keysym.sym == SDLK_RETURN) {
 					changeGraphics(!_fullscreen, _scaler);
@@ -590,6 +559,40 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 				}
 			}
 			_pi.lastChar = ev.key.keysym.sym;
+			switch (ev.key.keysym.sym) {
+			case SDLK_LEFT:
+				_pi.dirMask &= ~PlayerInput::DIR_LEFT;
+				break;
+			case SDLK_RIGHT:
+				_pi.dirMask &= ~PlayerInput::DIR_RIGHT;
+				break;
+			case SDLK_UP:
+				_pi.dirMask &= ~PlayerInput::DIR_UP;
+				break;
+			case SDLK_DOWN:
+				_pi.dirMask &= ~PlayerInput::DIR_DOWN;
+				break;
+			case SDLK_SPACE:
+				_pi.space = false;
+				break;
+			case SDLK_RSHIFT:
+			case SDLK_LSHIFT:
+				_pi.shift = false;
+				break;
+			case SDLK_RETURN:
+				_pi.enter = false;
+				break;
+			case SDLK_ESCAPE:
+				_pi.escape = false;
+				break;
+			default:
+				break;
+			}
+			break;
+		case SDL_KEYDOWN:
+			if (ev.key.keysym.mod & (KMOD_ALT | KMOD_CTRL)) {
+                                break;
+			}
 			switch (ev.key.keysym.sym) {
 			case SDLK_LEFT:
 				_pi.dirMask |= PlayerInput::DIR_LEFT;
