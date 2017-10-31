@@ -62,7 +62,6 @@ struct SystemStub_SDL : SystemStub {
 	void prepareGraphics();
 	void cleanupGraphics();
 	void changeGraphics(bool fullscreen, uint8_t scaler);
-	void flipGraphics();
 	void forceGraphicsRedraw();
 	void drawRect(SDL_Rect *rect, uint8_t color, uint16_t *dst, uint16_t dstPitch);
 };
@@ -650,21 +649,6 @@ void SystemStub_SDL::changeGraphics(bool fullscreen, uint8_t scaler) {
 	_fullscreen = fullscreen;
 	_scaler = scaler;
 	prepareGraphics();
-	forceGraphicsRedraw();
-}
-
-void SystemStub_SDL::flipGraphics() {
-	uint16_t scanline[256];
-	assert(_screenW <= 256);
-	uint16_t *p = _screenBuffer + _screenW + 1;
-	for (int y = 0; y < _screenH; ++y) {
-		p += _screenW;
-		for (int x = 0; x < _screenW; ++x) {
-			scanline[x] = *--p;
-		}
-		memcpy(p, scanline, _screenW * sizeof(uint16_t));
-		p += _screenW;
-	}
 	forceGraphicsRedraw();
 }
 
