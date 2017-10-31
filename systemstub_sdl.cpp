@@ -16,6 +16,8 @@ static const char *kIconBmp = "icon.bmp";
 static const int kJoystickIndex = 0;
 static const int kJoystickCommitValue = 3200;
 
+static const uint32_t kPixelFormat = SDL_PIXELFORMAT_RGB888;
+
 struct SystemStub_SDL : SystemStub {
 	SDL_Window *_window;
 	SDL_Renderer *_renderer;
@@ -24,11 +26,11 @@ struct SystemStub_SDL : SystemStub {
 	SDL_GameController *_controller;
 	SDL_PixelFormat *_fmt;
 	const char *_caption;
-	uint16_t *_screenBuffer;
+	uint32_t *_screenBuffer;
 	bool _fullscreen;
 	int _scaler;
 	uint8_t _overscanColor;
-	uint16_t _pal[256];
+	uint32_t _pal[256];
 	int _screenW, _screenH;
 	SDL_Joystick *_joystick;
 	SDL_Rect _blitRects[200];
@@ -63,7 +65,7 @@ struct SystemStub_SDL : SystemStub {
 	void cleanupGraphics();
 	void changeGraphics(bool fullscreen, uint8_t scaler);
 	void forceGraphicsRedraw();
-	void drawRect(SDL_Rect *rect, uint8_t color, uint16_t *dst, uint16_t dstPitch);
+	void drawRect(SDL_Rect *rect, uint8_t color);
 };
 
 SystemStub *SystemStub_SDL_create() {
@@ -114,9 +116,8 @@ void SystemStub_SDL::setScreenSize(int w, int h) {
 		return;
 	}
 	cleanupGraphics();
-	// allocate some extra bytes for the scaling routines
-	const int screenBufferSize = (w + 2) * (h + 2) * sizeof(uint16_t);
-	_screenBuffer = (uint16_t *)calloc(1, screenBufferSize);
+	const int screenBufferSize = w * h * sizeof(uint32_t);
+	_screenBuffer = (uint32_t *)calloc(1, screenBufferSize);
 	if (!_screenBuffer) {
 		error("SystemStub_SDL::setScreenSize() Unable to allocate offscreen buffer, w=%d, h=%d", w, h);
 	}
@@ -181,7 +182,7 @@ void SystemStub_SDL::copyRect(int x, int y, int w, int h, const uint8_t *buf, in
 		br->h = h;
 		++_numBlitRects;
 
-		uint16_t *p = _screenBuffer + (br->y + 1) * _screenW + (br->x + 1);
+		uint32_t *p = _screenBuffer + br->y * _screenW + br->x;
 		buf += y * pitch + x;
 
 		while (h--) {
@@ -192,7 +193,7 @@ void SystemStub_SDL::copyRect(int x, int y, int w, int h, const uint8_t *buf, in
 			buf += pitch;
 		}
 		if (_pi.dbgMask & PlayerInput::DF_DBLOCKS) {
-			drawRect(br, 0xE7, _screenBuffer + _screenW + 1, _screenW * 2);
+			drawRect(br, 0xE7);
 		}
 	}
 }
@@ -202,16 +203,7 @@ void SystemStub_SDL::fadeScreen() {
 }
 
 void SystemStub_SDL::updateScreen(int shakeOffset) {
-	if (_texW != _screenW || _texH != _screenH) {
-		void *dst = 0;
-		int pitch = 0;
-		if (SDL_LockTexture(_texture, 0, &dst, &pitch) == 0) {
-			(*_scalers[_scaler].proc)((uint16_t *)dst, pitch, _screenBuffer + _screenW + 1, _screenW, _screenW, _screenH);
-			SDL_UnlockTexture(_texture);
-		}
-	} else {
-		SDL_UpdateTexture(_texture, 0, _screenBuffer + _screenW + 1, _screenW * sizeof(uint16_t));
-	}
+	SDL_UpdateTexture(_texture, 0, _screenBuffer, _screenW * sizeof(uint32_t));
 	SDL_RenderClear(_renderer);
 	if (_fadeOnUpdateScreen) {
 		SDL_SetRenderDrawBlendMode(_renderer, SDL_BLENDMODE_BLEND);
@@ -585,8 +577,8 @@ void SystemStub_SDL::prepareGraphics() {
 	case SCALER_SCALE_3X:
 	case SCALER_SCALE_4X:
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
-		_texW = _screenW * _scalers[_scaler].factor;
-		_texH = _screenH * _scalers[_scaler].factor;
+		_texW = _screenW; // * _scalers[_scaler].factor;
+		_texH = _screenH; // * _scalers[_scaler].factor;
 		break;
 	default:
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0"); // nearest pixel sampling
@@ -608,7 +600,6 @@ void SystemStub_SDL::prepareGraphics() {
 	}
 	_renderer = SDL_CreateRenderer(_window, -1, SDL_RENDERER_ACCELERATED);
 	SDL_RenderSetLogicalSize(_renderer, windowW, windowH);
-        static const uint32_t kPixelFormat = SDL_PIXELFORMAT_RGB565;
 	_texture = SDL_CreateTexture(_renderer, kPixelFormat, SDL_TEXTUREACCESS_STREAMING, _texW, _texH);
 	_fmt = SDL_AllocFormat(kPixelFormat);
 	forceGraphicsRedraw();
@@ -660,17 +651,16 @@ void SystemStub_SDL::forceGraphicsRedraw() {
 	_blitRects[0].h = _screenH;
 }
 
-void SystemStub_SDL::drawRect(SDL_Rect *rect, uint8_t color, uint16_t *dst, uint16_t dstPitch) {
-	dstPitch >>= 1;
+void SystemStub_SDL::drawRect(SDL_Rect *rect, uint8_t color) {
 	int x1 = rect->x;
 	int y1 = rect->y;
 	int x2 = rect->x + rect->w - 1;
 	int y2 = rect->y + rect->h - 1;
 	assert(x1 >= 0 && x2 < _screenW && y1 >= 0 && y2 < _screenH);
 	for (int i = x1; i <= x2; ++i) {
-		*(dst + y1 * dstPitch + i) = *(dst + y2 * dstPitch + i) = _pal[color];
+		*(_screenBuffer + y1 * _screenW + i) = *(_screenBuffer + y2 * _screenW + i) = _pal[color];
 	}
 	for (int j = y1; j <= y2; ++j) {
-		*(dst + j * dstPitch + x1) = *(dst + j * dstPitch + x2) = _pal[color];
+		*(_screenBuffer + j * _screenW + x1) = *(_screenBuffer + j * _screenW + x2) = _pal[color];
 	}
 }
