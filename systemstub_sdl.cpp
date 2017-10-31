@@ -11,6 +11,8 @@
 
 static const int kAudioHz = 22050;
 
+static const char *kIconBmp = "icon.bmp";
+
 static const int kJoystickIndex = 0;
 static const int kJoystickCommitValue = 3200;
 
@@ -600,6 +602,11 @@ void SystemStub_SDL::prepareGraphics() {
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	}
 	_window = SDL_CreateWindow(_caption, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowW, windowH, flags);
+	SDL_Surface *icon = SDL_LoadBMP(kIconBmp);
+	if (icon) {
+		SDL_SetWindowIcon(_window, icon);
+		SDL_FreeSurface(icon);
+	}
 	_renderer = SDL_CreateRenderer(_window, -1, SDL_RENDERER_ACCELERATED);
 	SDL_RenderSetLogicalSize(_renderer, windowW, windowH);
         static const uint32_t kPixelFormat = SDL_PIXELFORMAT_RGB565;
