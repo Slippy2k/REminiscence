@@ -25,7 +25,7 @@ struct File_impl {
 	virtual uint32_t size() = 0;
 	virtual void seek(int32_t off) = 0;
 	virtual uint32_t read(void *ptr, uint32_t len) = 0;
-	virtual uint32_t write(void *ptr, uint32_t len) = 0;
+	virtual uint32_t write(const void *ptr, uint32_t len) = 0;
 };
 
 struct StdioFile : File_impl {
@@ -67,7 +67,7 @@ struct StdioFile : File_impl {
 		}
 		return 0;
 	}
-	uint32_t write(void *ptr, uint32_t len) {
+	uint32_t write(const void *ptr, uint32_t len) {
 		if (_fp) {
 			uint32_t r = fwrite(ptr, 1, len, _fp);
 			if (r != len) {
@@ -119,7 +119,7 @@ struct GzipFile : File_impl {
 		}
 		return 0;
 	}
-	uint32_t write(void *ptr, uint32_t len) {
+	uint32_t write(const void *ptr, uint32_t len) {
 		if (_fp) {
 			uint32_t r = gzwrite(_fp, ptr, len);
 			if (r != len) {
@@ -190,7 +190,7 @@ struct AssetFile: File_impl {
 		}
 		return 0;
 	}
-	uint32_t write(void *ptr, uint32_t len) {
+	uint32_t write(const void *ptr, uint32_t len) {
 		_ioErr = true;
 		return 0;
 	}
@@ -316,7 +316,7 @@ uint32_t File::readUint32BE() {
 	return (hi << 16) | lo;
 }
 
-uint32_t File::write(void *ptr, uint32_t len) {
+uint32_t File::write(const void *ptr, uint32_t len) {
 	return _impl->write(ptr, len);
 }
 
