@@ -411,42 +411,62 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 		break;
 	case SDL_KEYUP:
 		if (ev.key.keysym.mod & KMOD_ALT) {
-			if (ev.key.keysym.sym == SDLK_RETURN) {
+			switch (ev.key.keysym.sym) {
+			case SDLK_RETURN:
 				changeGraphics(!_fullscreen, _scaler);
-			} else if (ev.key.keysym.sym == SDLK_KP_PLUS || ev.key.keysym.sym == SDLK_PAGEUP) {
-				uint8_t s = _scaler + 1;
-				if (s < NUM_SCALERS) {
-					changeGraphics(_fullscreen, s);
+				break;
+			case SDLK_KP_PLUS:
+			case SDLK_PAGEUP:
+				if (_scaler < NUM_SCALERS - 1) {
+					changeGraphics(_fullscreen, _scaler + 1);
 				}
-			} else if (ev.key.keysym.sym == SDLK_KP_MINUS || ev.key.keysym.sym == SDLK_PAGEDOWN) {
-				int8_t s = _scaler - 1;
+				break;
+			case SDLK_KP_MINUS:
+			case SDLK_PAGEDOWN:
 				if (_scaler > 0) {
-					changeGraphics(_fullscreen, s);
+					changeGraphics(_fullscreen, _scaler - 1);
 				}
-			} else if (ev.key.keysym.sym == SDLK_s) {
-				char name[32];
-				snprintf(name, sizeof(name), "screenshot-%03d.tga", _screenshot);
-				saveTGA(name, (const uint8_t *)_screenBuffer, _screenW, _screenH);
-				++_screenshot;
-				debug(DBG_INFO, "Written '%s'", name);
+				break;
+			case SDLK_s: {
+					char name[32];
+					snprintf(name, sizeof(name), "screenshot-%03d.tga", _screenshot);
+					saveTGA(name, (const uint8_t *)_screenBuffer, _screenW, _screenH);
+					++_screenshot;
+					debug(DBG_INFO, "Written '%s'", name);
+				}
+				break;
+			case SDLK_x:
+				_pi.quit = true;
+				break;
 			}
 			break;
 		} else if (ev.key.keysym.mod & KMOD_CTRL) {
-			if (ev.key.keysym.sym == SDLK_f) {
+			switch (ev.key.keysym.sym) {
+			case SDLK_f:
 				_pi.dbgMask ^= PlayerInput::DF_FASTMODE;
-			} else if (ev.key.keysym.sym == SDLK_b) {
+				break;
+			case SDLK_b:
 				_pi.dbgMask ^= PlayerInput::DF_DBLOCKS;
-			} else if (ev.key.keysym.sym == SDLK_i) {
+				break;
+			case SDLK_i:
 				_pi.dbgMask ^= PlayerInput::DF_SETLIFE;
-			} else if (ev.key.keysym.sym == SDLK_s) {
+				break;
+			case SDLK_s:
 				_pi.save = true;
-			} else if (ev.key.keysym.sym == SDLK_l) {
+				break;
+			case SDLK_l:
 				_pi.load = true;
-			} else if (ev.key.keysym.sym == SDLK_KP_PLUS || ev.key.keysym.sym == SDLK_PAGEUP) {
+				break;
+			case SDLK_KP_PLUS:
+			case SDLK_PAGEUP:
 				_pi.stateSlot = 1;
-			} else if (ev.key.keysym.sym == SDLK_KP_MINUS || ev.key.keysym.sym == SDLK_PAGEDOWN) {
+				break;
+			case SDLK_KP_MINUS:
+			case SDLK_PAGEDOWN:
 				_pi.stateSlot = -1;
+				break;
 			}
+			break;
 		}
 		_pi.lastChar = ev.key.keysym.sym;
 		switch (ev.key.keysym.sym) {
