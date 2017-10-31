@@ -56,7 +56,7 @@ In-game hotkeys :
     Backspace       display the inventory
     Alt Enter       toggle windowed/fullscreen mode
     Alt + and -     change video scaler
-    Alt S           write screenshot as .bmp
+    Alt S           write screenshot as .tga
     Ctrl S          save game state
     Ctrl L          load game state
     Ctrl + and -    change game state slot

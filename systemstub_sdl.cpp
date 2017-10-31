@@ -6,6 +6,7 @@
 
 #include <SDL.h>
 #include "scaler.h"
+#include "screenshot.h"
 #include "systemstub.h"
 #include "util.h"
 
@@ -30,7 +31,7 @@ struct SystemStub_SDL : SystemStub {
 	bool _fullscreen;
 	int _scaler;
 	uint8_t _overscanColor;
-	uint32_t _pal[256];
+	uint32_t _rgbPalette[256];
 	int _screenW, _screenH;
 	SDL_Joystick *_joystick;
 	SDL_Rect _blitRects[200];
@@ -81,7 +82,7 @@ void SystemStub_SDL::init(const char *title, int w, int h, int scaler, bool full
 	_fadeOnUpdateScreen = false;
 	_fullscreen = fullscreen;
 	_scaler = scaler;
-	memset(_pal, 0, sizeof(_pal));
+	memset(_rgbPalette, 0, sizeof(_rgbPalette));
 	_screenW = _screenH = 0;
 	setScreenSize(w, h);
 	_joystick = 0;
@@ -132,16 +133,16 @@ void SystemStub_SDL::setPalette(const uint8_t *pal, int n) {
 		uint8_t r = pal[i * 3 + 0];
 		uint8_t g = pal[i * 3 + 1];
 		uint8_t b = pal[i * 3 + 2];
-		_pal[i] = SDL_MapRGB(_fmt, r, g, b);
+		_rgbPalette[i] = SDL_MapRGB(_fmt, r, g, b);
 	}
 }
 
 void SystemStub_SDL::setPaletteEntry(int i, const Color *c) {
-	_pal[i] = SDL_MapRGB(_fmt, c->r, c->g, c->b);
+	_rgbPalette[i] = SDL_MapRGB(_fmt, c->r, c->g, c->b);
 }
 
 void SystemStub_SDL::getPaletteEntry(int i, Color *c) {
-	SDL_GetRGB(_pal[i], _fmt, &c->r, &c->g, &c->b);
+	SDL_GetRGB(_rgbPalette[i], _fmt, &c->r, &c->g, &c->b);
 }
 
 void SystemStub_SDL::setOverscanColor(int i) {
@@ -187,7 +188,7 @@ void SystemStub_SDL::copyRect(int x, int y, int w, int h, const uint8_t *buf, in
 
 		while (h--) {
 			for (int i = 0; i < w; ++i) {
-				p[i] = _pal[buf[i]];
+				p[i] = _rgbPalette[buf[i]];
 			}
 			p += _screenW;
 			buf += pitch;
@@ -423,13 +424,11 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 					changeGraphics(_fullscreen, s);
 				}
 			} else if (ev.key.keysym.sym == SDLK_s) {
-/*
 				char name[32];
-				snprintf(name, sizeof(name), "screenshot-%03d.bmp", _screenshot);
-				SDL_SaveBMP(_surface, name);
+				snprintf(name, sizeof(name), "screenshot-%03d.tga", _screenshot);
+				saveTGA(name, (const uint8_t *)_screenBuffer, _screenW, _screenH);
 				++_screenshot;
 				debug(DBG_INFO, "Written '%s'", name);
-*/
 			}
 			break;
 		} else if (ev.key.keysym.mod & KMOD_CTRL) {
@@ -658,9 +657,9 @@ void SystemStub_SDL::drawRect(SDL_Rect *rect, uint8_t color) {
 	int y2 = rect->y + rect->h - 1;
 	assert(x1 >= 0 && x2 < _screenW && y1 >= 0 && y2 < _screenH);
 	for (int i = x1; i <= x2; ++i) {
-		*(_screenBuffer + y1 * _screenW + i) = *(_screenBuffer + y2 * _screenW + i) = _pal[color];
+		*(_screenBuffer + y1 * _screenW + i) = *(_screenBuffer + y2 * _screenW + i) = _rgbPalette[color];
 	}
 	for (int j = y1; j <= y2; ++j) {
-		*(_screenBuffer + j * _screenW + x1) = *(_screenBuffer + j * _screenW + x2) = _pal[color];
+		*(_screenBuffer + j * _screenW + x1) = *(_screenBuffer + j * _screenW + x2) = _rgbPalette[color];
 	}
 }
