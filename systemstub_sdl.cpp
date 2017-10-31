@@ -23,7 +23,6 @@ struct SystemStub_SDL : SystemStub {
 	SDL_PixelFormat *_fmt;
 	const char *_caption;
 	uint16_t *_screenBuffer;
-	uint16_t *_fadeScreenBuffer;
 	bool _fullscreen;
 	int _scaler;
 	uint8_t _overscanColor;
@@ -76,7 +75,6 @@ void SystemStub_SDL::init(const char *title, int w, int h, int scaler, bool full
 	_caption = title;
 	memset(&_pi, 0, sizeof(_pi));
 	_screenBuffer = 0;
-	_fadeScreenBuffer = 0;
 	_fadeOnUpdateScreen = false;
 	_fullscreen = fullscreen;
 	_scaler = scaler;
@@ -199,16 +197,7 @@ void SystemStub_SDL::copyRect(int x, int y, int w, int h, const uint8_t *buf, in
 }
 
 void SystemStub_SDL::fadeScreen() {
-	const int bufferSize = _screenH * _screenW * sizeof(uint16_t);
-	if (!_fadeScreenBuffer) {
-		_fadeScreenBuffer = (uint16_t *)malloc(bufferSize);
-		if (!_fadeScreenBuffer) {
-			warning("SystemStub_SDL::fadeScreen() Unable to allocate buffer size %d", bufferSize);
-			return;
-		}
-	}
 	_fadeOnUpdateScreen = true;
-	memcpy(_fadeScreenBuffer, _screenBuffer + _screenW + 1, bufferSize);
 }
 
 void SystemStub_SDL::updateScreen(int shakeOffset) {
@@ -624,10 +613,6 @@ void SystemStub_SDL::cleanupGraphics() {
 		free(_screenBuffer);
 		_screenBuffer = 0;
 	}
-	if (_fadeScreenBuffer) {
-		free(_fadeScreenBuffer);
-		_fadeScreenBuffer = 0;
-	}
 	if (_window) {
 		SDL_DestroyWindow(_window);
 		_window = 0;
@@ -643,10 +628,6 @@ void SystemStub_SDL::cleanupGraphics() {
 }
 
 void SystemStub_SDL::changeGraphics(bool fullscreen, uint8_t scaler) {
-	if (_fadeScreenBuffer) {
-		free(_fadeScreenBuffer);
-		_fadeScreenBuffer = 0;
-	}
 	if (_window) {
 		SDL_DestroyWindow(_window);
 		_window = 0;
