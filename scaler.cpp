@@ -5,6 +5,7 @@
  */
 
 #include "scaler.h"
+#include "dynlib.h"
 #include "util.h"
 
 static void scale2x(uint32_t *dst, int dstPitch, const uint32_t *src, int srcPitch, int w, int h) {
@@ -127,3 +128,17 @@ const Scaler _internalScaler = {
 	2, 4,
 	scaleNx,
 };
+
+static DynLib *dynLib;
+
+static const char *kSoSym = "getScaler";
+
+const Scaler *findScaler(const char *name) {
+	dynLib = new DynLib(name);
+	void *symbol = dynLib->getSymbol(kSoSym);
+	if (symbol) {
+		typedef const Scaler *(*GetScalerProc)();
+		return ((GetScalerProc)symbol)();
+	}
+	return 0;
+}

@@ -127,7 +127,7 @@ static void initOptions() {
 	}
 }
 
-static void parseScaler(const char *name, ScalerParameters *scalerParameters) {
+static void parseScaler(char *name, ScalerParameters *scalerParameters) {
 	struct {
 		const char *name;
 		int type;
@@ -137,12 +137,27 @@ static void parseScaler(const char *name, ScalerParameters *scalerParameters) {
 		{ "scale", kScalerTypeInternal },
 		{ 0, -1 }
 	};
-	const char *sep = strchr(name, '@');
-	const int len = sep ? sep - name : strlen(name);
+	bool found = false;
+	char *sep = strchr(name, '@');
+	if (sep) {
+		*sep = 0;
+	}
 	for (int i = 0; scalers[i].name; ++i) {
-		if (strncmp(scalers[i].name, name, len) == 0) {
+		if (strcmp(scalers[i].name, name) == 0) {
 			scalerParameters->type = (ScalerType)scalers[i].type;
+			found = true;
 			break;
+		}
+	}
+	if (!found) {
+		char libname[32];
+		snprintf(libname, sizeof(libname), "scaler_%s", name);
+		const Scaler *scaler = findScaler(libname);
+		if (scaler) {
+			scalerParameters->type = kScalerTypeExternal;
+			scalerParameters->scaler = scaler;
+		} else {
+			warning("Scaler '%s' not found, using default", libname);
 		}
 	}
 	if (sep) {

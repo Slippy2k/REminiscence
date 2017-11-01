@@ -29,4 +29,6 @@ struct Scaler {
 
 extern const Scaler _internalScaler;
 
+const Scaler *findScaler(const char *name);
+
 #endif // SCALER_H__
