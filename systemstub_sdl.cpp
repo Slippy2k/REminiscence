@@ -19,6 +19,14 @@ static const int kJoystickCommitValue = 3200;
 
 static const uint32_t kPixelFormat = SDL_PIXELFORMAT_RGB888;
 
+ScalerParameters ScalerParameters::defaults() {
+	ScalerParameters params;
+	params.type = kScalerTypeInternal;
+	params.scaler = &_internalScaler;
+	params.factor = _internalScaler.factorMin + (_internalScaler.factorMax - _internalScaler.factorMin) / 2;
+	return params;
+}
+
 struct SystemStub_SDL : SystemStub {
 	SDL_Window *_window;
 	SDL_Renderer *_renderer;
@@ -29,7 +37,6 @@ struct SystemStub_SDL : SystemStub {
 	const char *_caption;
 	uint32_t *_screenBuffer;
 	bool _fullscreen;
-	int _scaler;
 	uint8_t _overscanColor;
 	uint32_t _rgbPalette[256];
 	int _screenW, _screenH;
@@ -40,9 +47,12 @@ struct SystemStub_SDL : SystemStub {
 	void (*_audioCbProc)(void *, int16_t *, int);
 	void *_audioCbData;
 	int _screenshot;
+	ScalerType _scalerType;
+	const Scaler *_scaler;
+	int _scaleFactor;
 
 	virtual ~SystemStub_SDL() {}
-	virtual void init(const char *title, int w, int h, int scaler, bool fullscreen);
+	virtual void init(const char *title, int w, int h, bool fullscreen, ScalerParameters *scalerParameters);
 	virtual void destroy();
 	virtual void setScreenSize(int w, int h);
 	virtual void setPalette(const uint8_t *pal, int n);
@@ -64,7 +74,7 @@ struct SystemStub_SDL : SystemStub {
 	void processEvent(const SDL_Event &ev, bool &paused);
 	void prepareGraphics();
 	void cleanupGraphics();
-	void changeGraphics(bool fullscreen, uint8_t scaler);
+	void changeGraphics(bool fullscreen, int scaleFactor);
 	void forceGraphicsRedraw();
 	void drawRect(SDL_Rect *rect, uint8_t color);
 };
@@ -73,7 +83,7 @@ SystemStub *SystemStub_SDL_create() {
 	return new SystemStub_SDL();
 }
 
-void SystemStub_SDL::init(const char *title, int w, int h, int scaler, bool fullscreen) {
+void SystemStub_SDL::init(const char *title, int w, int h, bool fullscreen, ScalerParameters *scalerParameters) {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
 	SDL_ShowCursor(SDL_DISABLE);
 	_caption = title;
@@ -81,7 +91,9 @@ void SystemStub_SDL::init(const char *title, int w, int h, int scaler, bool full
 	_screenBuffer = 0;
 	_fadeOnUpdateScreen = false;
 	_fullscreen = fullscreen;
-	_scaler = scaler;
+	_scalerType = scalerParameters->type;
+	_scaler = scalerParameters->scaler;
+	_scaleFactor = scalerParameters->factor;
 	memset(_rgbPalette, 0, sizeof(_rgbPalette));
 	_screenW = _screenH = 0;
 	setScreenSize(w, h);
@@ -204,7 +216,17 @@ void SystemStub_SDL::fadeScreen() {
 }
 
 void SystemStub_SDL::updateScreen(int shakeOffset) {
-	SDL_UpdateTexture(_texture, 0, _screenBuffer, _screenW * sizeof(uint32_t));
+	if (_texW != _screenW || _texH != _screenH) {
+		void *dst = 0;
+		int pitch = 0;
+		if (SDL_LockTexture(_texture, 0, &dst, &pitch) == 0) {
+			assert((pitch & 3) == 0);
+			_scaler->scale(_scaleFactor, (uint32_t *)dst, pitch / sizeof(uint32_t), _screenBuffer, _screenW, _screenW, _screenH);
+			SDL_UnlockTexture(_texture);
+		}
+	} else {
+		SDL_UpdateTexture(_texture, 0, _screenBuffer, _screenW * sizeof(uint32_t));
+	}
 	SDL_RenderClear(_renderer);
 	if (_fadeOnUpdateScreen) {
 		SDL_SetRenderDrawBlendMode(_renderer, SDL_BLENDMODE_BLEND);
@@ -224,7 +246,7 @@ void SystemStub_SDL::updateScreen(int shakeOffset) {
 	if (shakeOffset != 0) {
 		SDL_Rect r;
 		r.x = 0;
-		r.y = shakeOffset * _scalers[_scaler].factor;
+		r.y = shakeOffset * _scaleFactor;
 		SDL_GetRendererOutputSize(_renderer, &r.w, &r.h);
 		r.h -= r.y;
 		SDL_RenderCopy(_renderer, _texture, 0, &r);
@@ -413,19 +435,15 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 		if (ev.key.keysym.mod & KMOD_ALT) {
 			switch (ev.key.keysym.sym) {
 			case SDLK_RETURN:
-				changeGraphics(!_fullscreen, _scaler);
+				changeGraphics(!_fullscreen, _scaleFactor);
 				break;
 			case SDLK_KP_PLUS:
 			case SDLK_PAGEUP:
-				if (_scaler < NUM_SCALERS - 1) {
-					changeGraphics(_fullscreen, _scaler + 1);
-				}
+				changeGraphics(_fullscreen, _scaleFactor + 1);
 				break;
 			case SDLK_KP_MINUS:
 			case SDLK_PAGEDOWN:
-				if (_scaler > 0) {
-					changeGraphics(_fullscreen, _scaler - 1);
-				}
+				changeGraphics(_fullscreen, _scaleFactor - 1);
 				break;
 			case SDLK_s: {
 					char name[32];
@@ -591,22 +609,24 @@ void SystemStub_SDL::unlockAudio() {
 }
 
 void SystemStub_SDL::prepareGraphics() {
-	switch (_scaler) {
-	case SCALER_SCALE_2X:
-	case SCALER_SCALE_3X:
-	case SCALER_SCALE_4X:
-		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
-		_texW = _screenW; // * _scalers[_scaler].factor;
-		_texH = _screenH; // * _scalers[_scaler].factor;
-		break;
-	default:
+	_texW = _screenW;
+	_texH = _screenH;
+	switch (_scalerType) {
+	case kScalerTypePoint:
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0"); // nearest pixel sampling
-		_texW = _screenW;
-		_texH = _screenH;
+		break;
+	case kScalerTypeLinear:
+		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+		break;
+	case kScalerTypeInternal:
+	case kScalerTypeExternal:
+		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+		_texW *= _scaleFactor;
+		_texH *= _scaleFactor;
 		break;
 	}
-	const int windowW = _screenW * _scalers[_scaler].factor;
-	const int windowH = _screenH * _scalers[_scaler].factor;
+	const int windowW = _screenW * _scaleFactor;
+	const int windowH = _screenH * _scaleFactor;
 	int flags = 0;
 	if (_fullscreen) {
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -643,7 +663,7 @@ void SystemStub_SDL::cleanupGraphics() {
 	}
 }
 
-void SystemStub_SDL::changeGraphics(bool fullscreen, uint8_t scaler) {
+void SystemStub_SDL::changeGraphics(bool fullscreen, int scaleFactor) {
 	if (_window) {
 		SDL_DestroyWindow(_window);
 		_window = 0;
@@ -657,7 +677,9 @@ void SystemStub_SDL::changeGraphics(bool fullscreen, uint8_t scaler) {
 		_fmt = 0;
 	}
 	_fullscreen = fullscreen;
-	_scaler = scaler;
+	if (scaleFactor >= _scaler->factorMin && scaleFactor <= _scaler->factorMax) {
+		_scaleFactor = scaleFactor;
+	}
 	prepareGraphics();
 	forceGraphicsRedraw();
 }
