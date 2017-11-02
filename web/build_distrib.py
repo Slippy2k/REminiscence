@@ -7,6 +7,9 @@ SDL_TARBALL = [ 'REminiscence-%s-sdl2-win32.zip',
 		'../README.txt',
 		'../README-SDL.txt',
 		'../README-modplug.txt',
+		'../scalers/scaler_epx.dll',
+		'../scalers/scaler_hqx.dll',
+		'../scalers/scaler_xbrz.dll',
 		'../rs.cfg',
 		'../rs.exe'
 	)
@@ -82,7 +85,7 @@ def build_zip_tarball(file_name, file_list):
 	file_path = os.path.join(DST_DIR, file_name)
 	zf = zipfile.ZipFile(file_path, 'w', zipfile.ZIP_DEFLATED)
 	for entry_path in file_list:
-		entry_name = os.path.split(entry_path)[1]
+		entry_name = os.path.split(entry_path)[-1]
 		zf.write(entry_path, entry_name)
 	zf.close()
 
