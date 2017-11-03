@@ -241,6 +241,7 @@ void SystemStub_SDL::updateScreen(int shakeOffset) {
 			SDL_Delay(30);
 		}
 		_fadeOnUpdateScreen = false;
+		SDL_SetRenderDrawBlendMode(_renderer, SDL_BLENDMODE_NONE);
 		return;
 	}
 	if (shakeOffset != 0) {
