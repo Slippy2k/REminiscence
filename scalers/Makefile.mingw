@@ -1,0 +1,32 @@
+
+CC    := i686-w64-mingw32-gcc
+CXX   := i686-w64-mingw32-g++
+STRIP := i686-w64-mingw32-strip
+
+all: scaler_epx.dll scaler_hqx.dll scaler_xbrz.dll
+
+CPPFLAGS += -Iscale2x-4.0/ -Ihqx/include/
+
+OBJS_SCALER_EPX := scaler_epx.o scale2x-4.0/scale2x.o scale2x-4.0/scale3x.o scale2x-4.0/scalebit.o
+
+scaler_epx.dll: $(OBJS_SCALER_EPX)
+	$(CXX) $(LDFLAGS) -shared -o $@ $^ -static-libgcc -static-libstdc++
+	$(STRIP) $@
+	upx -9 $@
+
+OBJS_SCALER_HQX := scaler_hqx.o hqx/source/HQx.o hqx/source/HQ2x.o hqx/source/HQ3x.o
+
+scaler_hqx.dll: $(OBJS_SCALER_HQX)
+	$(CXX) $(LDFLAGS) -shared -o $@ $^ -static-libgcc -static-libstdc++
+	$(STRIP) $@
+	upx -9 $@
+
+OBJS_SCALER_XBRZ := scaler_xbrz.o xbrz/xbrz.o
+
+scaler_xbrz.dll: $(OBJS_SCALER_XBRZ)
+	$(CXX) $(LDFLAGS) -shared -o $@ $^ -static-libgcc -static-libstdc++
+	$(STRIP) $@
+	upx -9 $@
+
+clean:
+	rm -f $(OBJS_SCALER_EPX) $(OBJS_SCALER_HQX) $(OBJS_SCALER_XBRZ) *.dll
