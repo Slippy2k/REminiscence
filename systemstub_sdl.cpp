@@ -165,12 +165,6 @@ void SystemStub_SDL::copyRect(int x, int y, int w, int h, const uint8_t *buf, in
 	if (_numBlitRects >= (int)ARRAYSIZE(_blitRects)) {
 		warning("SystemStub_SDL::copyRect() Too many blit rects, you may experience graphical glitches");
 	} else {
-		// extend the dirty region by 1 pixel for scalers accessing 'outer' pixels
-		--x;
-		--y;
-		w += 2;
-		h += 2;
-
 		if (x < 0) {
 			x = 0;
 		} else if (x >= _screenW) {
@@ -678,7 +672,11 @@ void SystemStub_SDL::changeGraphics(bool fullscreen, int scaleFactor) {
 		_fmt = 0;
 	}
 	_fullscreen = fullscreen;
-	if (scaleFactor >= _scaler->factorMin && scaleFactor <= _scaler->factorMax) {
+	if (scaleFactor < _scaler->factorMin) {
+		_scaleFactor = _scaler->factorMin;
+	} else if (scaleFactor > _scaler->factorMax) {
+		_scaleFactor = _scaler->factorMax;
+	} else {
 		_scaleFactor = scaleFactor;
 	}
 	prepareGraphics();
