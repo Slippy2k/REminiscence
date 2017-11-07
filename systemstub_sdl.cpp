@@ -41,8 +41,6 @@ struct SystemStub_SDL : SystemStub {
 	uint32_t _rgbPalette[256];
 	int _screenW, _screenH;
 	SDL_Joystick *_joystick;
-	SDL_Rect _blitRects[200];
-	int _numBlitRects;
 	bool _fadeOnUpdateScreen;
 	void (*_audioCbProc)(void *, int16_t *, int);
 	void *_audioCbData;
@@ -75,8 +73,7 @@ struct SystemStub_SDL : SystemStub {
 	void prepareGraphics();
 	void cleanupGraphics();
 	void changeGraphics(bool fullscreen, int scaleFactor);
-	void forceGraphicsRedraw();
-	void drawRect(SDL_Rect *rect, uint8_t color);
+	void drawRect(int x, int y, int w, int h, uint8_t color);
 };
 
 SystemStub *SystemStub_SDL_create() {
@@ -162,46 +159,36 @@ void SystemStub_SDL::setOverscanColor(int i) {
 }
 
 void SystemStub_SDL::copyRect(int x, int y, int w, int h, const uint8_t *buf, int pitch) {
-	if (_numBlitRects >= (int)ARRAYSIZE(_blitRects)) {
-		warning("SystemStub_SDL::copyRect() Too many blit rects, you may experience graphical glitches");
-	} else {
-		if (x < 0) {
-			x = 0;
-		} else if (x >= _screenW) {
-			return;
-		}
-		if (y < 0) {
-			y = 0;
-		} else if (y >= _screenH) {
-			return;
-		}
-		if (x + w > _screenW) {
-			w = _screenW - x;
-		}
-		if (y + h > _screenH) {
-			h = _screenH - y;
-		}
-		SDL_Rect *br = &_blitRects[_numBlitRects];
+	if (x < 0) {
+		x = 0;
+	} else if (x >= _screenW) {
+		return;
+	}
+	if (y < 0) {
+		y = 0;
+	} else if (y >= _screenH) {
+		return;
+	}
+	if (x + w > _screenW) {
+		w = _screenW - x;
+	}
+	if (y + h > _screenH) {
+		h = _screenH - y;
+	}
 
-		br->x = x;
-		br->y = y;
-		br->w = w;
-		br->h = h;
-		++_numBlitRects;
+	uint32_t *p = _screenBuffer + y * _screenW + x;
+	buf += y * pitch + x;
 
-		uint32_t *p = _screenBuffer + br->y * _screenW + br->x;
-		buf += y * pitch + x;
+	for (int j = 0; j < h; ++j) {
+		for (int i = 0; i < w; ++i) {
+			p[i] = _rgbPalette[buf[i]];
+		}
+		p += _screenW;
+		buf += pitch;
+	}
 
-		while (h--) {
-			for (int i = 0; i < w; ++i) {
-				p[i] = _rgbPalette[buf[i]];
-			}
-			p += _screenW;
-			buf += pitch;
-		}
-		if (_pi.dbgMask & PlayerInput::DF_DBLOCKS) {
-			drawRect(br, 0xE7);
-		}
+	if (_pi.dbgMask & PlayerInput::DF_DBLOCKS) {
+		drawRect(x, y, w, h, 0xE7);
 	}
 }
 
@@ -249,7 +236,6 @@ void SystemStub_SDL::updateScreen(int shakeOffset) {
 		SDL_RenderCopy(_renderer, _texture, 0, 0);
 	}
 	SDL_RenderPresent(_renderer);
-	_numBlitRects = 0;
 }
 
 void SystemStub_SDL::processEvents() {
@@ -514,7 +500,7 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 		break;
 	case SDL_KEYDOWN:
 		if (ev.key.keysym.mod & (KMOD_ALT | KMOD_CTRL)) {
-                               break;
+			break;
 		}
 		switch (ev.key.keysym.sym) {
 		case SDLK_LEFT:
@@ -636,7 +622,6 @@ void SystemStub_SDL::prepareGraphics() {
 	SDL_RenderSetLogicalSize(_renderer, windowW, windowH);
 	_texture = SDL_CreateTexture(_renderer, kPixelFormat, SDL_TEXTUREACCESS_STREAMING, _texW, _texH);
 	_fmt = SDL_AllocFormat(kPixelFormat);
-	forceGraphicsRedraw();
 }
 
 void SystemStub_SDL::cleanupGraphics() {
@@ -680,22 +665,13 @@ void SystemStub_SDL::changeGraphics(bool fullscreen, int scaleFactor) {
 		_scaleFactor = scaleFactor;
 	}
 	prepareGraphics();
-	forceGraphicsRedraw();
 }
 
-void SystemStub_SDL::forceGraphicsRedraw() {
-	_numBlitRects = 1;
-	_blitRects[0].x = 0;
-	_blitRects[0].y = 0;
-	_blitRects[0].w = _screenW;
-	_blitRects[0].h = _screenH;
-}
-
-void SystemStub_SDL::drawRect(SDL_Rect *rect, uint8_t color) {
-	int x1 = rect->x;
-	int y1 = rect->y;
-	int x2 = rect->x + rect->w - 1;
-	int y2 = rect->y + rect->h - 1;
+void SystemStub_SDL::drawRect(int x, int y, int w, int h, uint8_t color) {
+	const int x1 = x;
+	const int y1 = y;
+	const int x2 = x + w - 1;
+	const int y2 = y + h - 1;
 	assert(x1 >= 0 && x2 < _screenW && y1 >= 0 && y2 < _screenH);
 	for (int i = x1; i <= x2; ++i) {
 		*(_screenBuffer + y1 * _screenW + i) = *(_screenBuffer + y2 * _screenW + i) = _rgbPalette[color];
