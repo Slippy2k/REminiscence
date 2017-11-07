@@ -153,11 +153,13 @@ static void parseScaler(char *name, ScalerParameters *scalerParameters) {
 		char libname[32];
 		snprintf(libname, sizeof(libname), "scaler_%s", name);
 		const Scaler *scaler = findScaler(libname);
-		if (scaler) {
+		if (!scaler) {
+			warning("Scaler '%s' not found, using default", libname);
+		} else if (scaler->tag != SCALER_TAG) {
+			warning("Unexpected tag %d for scaler '%s'", scaler->tag, libname);
+		} else {
 			scalerParameters->type = kScalerTypeExternal;
 			scalerParameters->scaler = scaler;
-		} else {
-			warning("Scaler '%s' not found, using default", libname);
 		}
 	}
 	if (sep) {
