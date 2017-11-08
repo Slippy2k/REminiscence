@@ -644,6 +644,18 @@ void SystemStub_SDL::cleanupGraphics() {
 }
 
 void SystemStub_SDL::changeGraphics(bool fullscreen, int scaleFactor) {
+	int factor = scaleFactor;
+	if (factor < _scaler->factorMin) {
+		factor = _scaler->factorMin;
+	} else if (factor > _scaler->factorMax) {
+		factor = _scaler->factorMax;
+	}
+	if (fullscreen == _fullscreen && factor == _scaleFactor) {
+		// no change
+		return;
+	}
+	_fullscreen = fullscreen;
+	_scaleFactor = factor;
 	if (_window) {
 		SDL_DestroyWindow(_window);
 		_window = 0;
@@ -655,14 +667,6 @@ void SystemStub_SDL::changeGraphics(bool fullscreen, int scaleFactor) {
 	if (_fmt) {
 		SDL_FreeFormat(_fmt);
 		_fmt = 0;
-	}
-	_fullscreen = fullscreen;
-	if (scaleFactor < _scaler->factorMin) {
-		_scaleFactor = _scaler->factorMin;
-	} else if (scaleFactor > _scaler->factorMax) {
-		_scaleFactor = _scaler->factorMax;
-	} else {
-		_scaleFactor = scaleFactor;
 	}
 	prepareGraphics();
 }
