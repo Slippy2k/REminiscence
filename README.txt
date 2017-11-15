@@ -47,6 +47,11 @@ directory. These paths can be changed using command line switches :
     --scaler=NAME@X   Graphics scaler (default 'scale@3')
     --language=LANG   Language (fr,en,de,sp,it)
 
+The scaler option specifies the algorithm used to smoothen the image in
+addition to a scaling factor. External scalers are also supported, the
+suffix shall be used as the name. Eg. If you have scaler_xbrz.dll, you can
+pass '--scaler xbrz@2' to use that algorithm with a window size 512x448.
+
 In-game hotkeys :
 
     Arrow Keys      move Conrad
