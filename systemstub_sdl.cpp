@@ -556,7 +556,7 @@ static void mixAudioS16(void *param, uint8_t *buf, int len) {
 }
 
 void SystemStub_SDL::startAudio(AudioCallback callback, void *param) {
-	SDL_AudioSpec desired, obtained;
+	SDL_AudioSpec desired;
 	memset(&desired, 0, sizeof(desired));
 	desired.freq = kAudioHz;
 	desired.format = AUDIO_S16SYS;
@@ -564,7 +564,7 @@ void SystemStub_SDL::startAudio(AudioCallback callback, void *param) {
 	desired.samples = 2048;
 	desired.callback = mixAudioS16;
 	desired.userdata = this;
-	if (SDL_OpenAudio(&desired, &obtained) == 0) {
+	if (SDL_OpenAudio(&desired, 0) == 0) {
 		_audioCbProc = callback;
 		_audioCbData = param;
 		SDL_PauseAudio(0);
