@@ -629,13 +629,13 @@ void SystemStub_SDL::cleanupGraphics() {
 		free(_screenBuffer);
 		_screenBuffer = 0;
 	}
-	if (_window) {
-		SDL_DestroyWindow(_window);
-		_window = 0;
-	}
 	if (_renderer) {
 		SDL_DestroyRenderer(_renderer);
 		_renderer = 0;
+	}
+	if (_window) {
+		SDL_DestroyWindow(_window);
+		_window = 0;
 	}
 	if (_fmt) {
 		SDL_FreeFormat(_fmt);
@@ -656,13 +656,13 @@ void SystemStub_SDL::changeGraphics(bool fullscreen, int scaleFactor) {
 	}
 	_fullscreen = fullscreen;
 	_scaleFactor = factor;
-	if (_window) {
-		SDL_DestroyWindow(_window);
-		_window = 0;
-	}
 	if (_renderer) {
 		SDL_DestroyRenderer(_renderer);
 		_renderer = 0;
+	}
+	if (_window) {
+		SDL_DestroyWindow(_window);
+		_window = 0;
 	}
 	if (_fmt) {
 		SDL_FreeFormat(_fmt);
