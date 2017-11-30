@@ -139,9 +139,7 @@ struct Resource {
 	uint8_t *_cineStrings[NUM_CUTSCENE_TEXTS];
 	uint8_t *_cine_off;
 	uint8_t *_cine_txt;
-	char **_extTextsTable;
 	const char **_textsTable;
-	uint8_t *_extStringsTable;
 	const uint8_t *_stringsTable;
 	uint8_t *_bankData;
 	uint8_t *_bankDataHead;
