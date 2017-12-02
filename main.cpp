@@ -23,7 +23,7 @@ static const char *USAGE =
 	"  --levelnum=NUM    Start to level, bypass introduction\n"
 	"  --fullscreen      Fullscreen display\n"
 	"  --scaler=NAME@X   Graphics scaler (default 'scale@3')\n"
-	"  --language=LANG   Language (fr,en,de,sp,it)\n"
+	"  --language=LANG   Language (fr,en,de,sp,it,jp)\n"
 ;
 
 static int detectVersion(FileSystem *fs) {
@@ -224,6 +224,7 @@ int main(int argc, char *argv[]) {
 					{ LANG_DE, "DE" },
 					{ LANG_SP, "SP" },
 					{ LANG_IT, "IT" },
+					{ LANG_JP, "JP" },
 					{ -1, 0 }
 				};
 				for (int i = 0; languages[i].str; ++i) {

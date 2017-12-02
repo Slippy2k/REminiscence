@@ -399,6 +399,9 @@ void Resource::load_TEXT() {
 	case LANG_IT:
 		_stringsTable = LocaleData::_stringsTableIT;
 		break;
+	case LANG_JP:
+		_stringsTable = LocaleData::_stringsTableJP;
+		break;
 	}
 	// Load menu strings
 	_textsTable = 0;
@@ -417,6 +420,9 @@ void Resource::load_TEXT() {
 		break;
 	case LANG_IT:
 		_textsTable = LocaleData::_textsTableIT;
+		break;
+	case LANG_JP:
+		_textsTable = LocaleData::_textsTableEN;
 		break;
 	}
 }

@@ -28,6 +28,7 @@ struct Video {
 	static const uint8_t _conradPal2[];
 	static const uint8_t _textPal[];
 	static const uint8_t _palSlot0xF[];
+	static const uint8_t _font8Jp[];
 
 	Resource *_res;
 	SystemStub *_stub;

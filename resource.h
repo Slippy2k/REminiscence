@@ -46,11 +46,21 @@ struct LocaleData {
 	static const char *_textsTableDE[];
 	static const char *_textsTableSP[];
 	static const char *_textsTableIT[];
+
 	static const uint8_t _stringsTableFR[];
 	static const uint8_t _stringsTableEN[];
 	static const uint8_t _stringsTableDE[];
 	static const uint8_t _stringsTableSP[];
 	static const uint8_t _stringsTableIT[];
+	static const uint8_t _stringsTableJP[];
+
+	static const uint8_t _level1TbnJP[];
+	static const uint8_t _level2TbnJP[];
+	static const uint8_t _level3TbnJP[];
+	static const uint8_t _level41TbnJP[];
+	static const uint8_t _level42TbnJP[];
+	static const uint8_t _level51TbnJP[];
+	static const uint8_t _level52TbnJP[];
 };
 
 struct Resource {
@@ -201,7 +211,36 @@ struct Resource {
 		const int offset = _readUint16(_ani + 2 + num * 2);
 		return _ani + 2 + offset;
 	}
-	const uint8_t *getTextString(int num) {
+	const uint8_t *getTextString(int level, int num) {
+		if (_lang == LANG_JP) {
+			const uint8_t *p = 0;
+			switch (level) {
+			case 0:
+				p = LocaleData::_level1TbnJP;
+				break;
+			case 1:
+				p = LocaleData::_level2TbnJP;
+				break;
+			case 2:
+				p = LocaleData::_level3TbnJP;
+				break;
+			case 3:
+				p = LocaleData::_level41TbnJP;
+				break;
+			case 4:
+				p = LocaleData::_level42TbnJP;
+				break;
+			case 5:
+				p = LocaleData::_level51TbnJP;
+				break;
+			case 6:
+				p = LocaleData::_level52TbnJP;
+				break;
+			default:
+				return 0;
+			}
+			return p + READ_LE_UINT16(p + num * 2);
+		}
 		return _tbn + _readUint16(_tbn + num * 2);
 	}
 	const uint8_t *getGameString(int num) {
