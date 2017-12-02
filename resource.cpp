@@ -426,6 +426,24 @@ void Resource::free_TEXT() {
 	_textsTable = 0;
 }
 
+static const char *getTextBin(Language lang, ResourceType type) {
+	// FB PC-CD version has language specific files
+	// .TBN is used as fallback if open fails
+	switch (lang) {
+	case LANG_FR:
+		return "TBF";
+	case LANG_DE:
+		return "TBG";
+	case LANG_SP:
+		return "TBS";
+	case LANG_IT:
+		return "TBI";
+	case LANG_EN:
+	default:
+		return "TBN";
+	}
+}
+
 void Resource::load(const char *objName, int objType, const char *ext) {
 	debug(DBG_RES, "Resource::load('%s', %d)", objName, objType);
 	LoadStub loadStub = 0;
@@ -487,7 +505,10 @@ void Resource::load(const char *objName, int objType, const char *ext) {
 		loadStub = &Resource::load_ANI;
 		break;
 	case OT_TBN:
-		snprintf(_entryName, sizeof(_entryName), "%s.TBN", objName);
+		snprintf(_entryName, sizeof(_entryName), "%s.%s", objName, getTextBin(_lang, _type));
+		if (!_fs->exists(_entryName)) {
+			snprintf(_entryName, sizeof(_entryName), "%s.TBN", objName);
+		}
 		loadStub = &Resource::load_TBN;
 		break;
 	case OT_CMD:
