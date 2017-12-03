@@ -740,23 +740,48 @@ void Game::drawLevelTexts() {
 	_saveStateCompleted = false;
 }
 
+static int getLineLength(const uint8_t *str) {
+	int len = 0;
+	while (*str && *str != 0xB && *str != 0xA) {
+		++str;
+		++len;
+	}
+	return len;
+}
+
 void Game::drawStoryTexts() {
 	if (_textToDisplay != 0xFFFF) {
-		uint16_t text_col_mask = 0xE8;
+		uint8_t textColor = 0xE8;
 		const uint8_t *str = _res.getGameString(_textToDisplay);
 		memcpy(_vid._tempLayer, _vid._frontLayer, _vid._layerSize);
 		int textSpeechSegment = 0;
 		while (!_stub->_pi.quit) {
 			drawIcon(_currentInventoryIconNum, 80, 8, 0xA);
 			if (*str == 0xFF) {
-				text_col_mask = READ_LE_UINT16(str + 1);
-				str += 3;
+				if (_res._lang == LANG_JP) {
+					switch (str[1]) {
+					case 0:
+						textColor = 0xE9;
+						break;
+					case 1:
+						textColor = 0xEB;
+						break;
+					default:
+						warning("Unhandled JP color code 0x%x", str[1]);
+						break;
+					}
+					str += 2;
+				} else {
+					textColor = str[1];
+					// str[2] is an unused color (possibly the shadow)
+					str += 3;
+				}
 			}
-			int16_t text_y_pos = 26;
+			int yPos = 26;
 			while (1) {
-				uint16_t len = getLineLength(str);
-				str = (const uint8_t *)_vid.drawString((const char *)str, (176 - len * 8) / 2, text_y_pos, text_col_mask);
-				text_y_pos += 8;
+				const int len = getLineLength(str);
+				str = (const uint8_t *)_vid.drawString((const char *)str, (176 - len * 8) / 2, yPos, textColor);
+				yPos += 8;
 				if (*str == 0 || *str == 0xB) {
 					break;
 				}
@@ -1493,15 +1518,6 @@ void Game::changeLevel() {
 	_vid.setPalette0xF();
 	_vid.setTextPalette();
 	_vid.fullRefresh();
-}
-
-uint16_t Game::getLineLength(const uint8_t *str) const {
-	uint16_t len = 0;
-	while (*str && *str != 0xB && *str != 0xA) {
-		++str;
-		++len;
-	}
-	return len;
 }
 
 void Game::handleInventory() {
