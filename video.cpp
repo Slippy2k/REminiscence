@@ -797,9 +797,9 @@ void Video::drawSpriteSub6(const uint8_t *src, uint8_t *dst, int pitch, int h, i
 	}
 }
 
-void Video::PC_drawChar(uint8_t c, int16_t y, int16_t x) {
+void Video::PC_drawChar(uint8_t c, int16_t y, int16_t x, bool forceDefaultFont) {
 	debug(DBG_VIDEO, "Video::PC_drawChar(0x%X, %d, %d)", c, y, x);
-	const uint8_t *fnt = (_res->_lang == LANG_JP) ? _font8Jp : _res->_fnt;
+	const uint8_t *fnt = (_res->_lang == LANG_JP && !forceDefaultFont) ? _font8Jp : _res->_fnt;
 	y *= 8;
 	x *= 8;
 	const uint8_t *src = fnt + (c - 32) * 32;
