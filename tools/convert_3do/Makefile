@@ -1,5 +1,5 @@
 
-convert_3do: cinepak.o fileio.o tga.o main.o
+convert_3do: cinepak.o tga.o main.o
 	$(CXX) -o $@ $^
 
 clean:

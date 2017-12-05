@@ -2,8 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "fileio.h"
 #include "tga.h"
+
+static void fileWriteUint16LE(FILE *fp, int n) {
+	fputc(n & 255, fp);
+	fputc((n >> 8) & 255, fp);
+}
 
 #define kTgaImageTypeUncompressedColorMapImage 1
 #define kTgaImageTypeUncompressedTrueColorImage 2
