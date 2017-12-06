@@ -61,6 +61,9 @@ struct LocaleData {
 	static const uint8_t _level42TbnJP[];
 	static const uint8_t _level51TbnJP[];
 	static const uint8_t _level52TbnJP[];
+
+	static const uint8_t _cineBinJP[];
+	static const uint8_t _cineTxtJP[];
 };
 
 struct Resource {
@@ -247,6 +250,10 @@ struct Resource {
 		return _stringsTable + READ_LE_UINT16(_stringsTable + num * 2);
 	}
 	const uint8_t *getCineString(int num) {
+		if (_lang == LANG_JP) {
+			const int offset = READ_BE_UINT16(LocaleData::_cineBinJP + num * 2);
+			return LocaleData::_cineTxtJP + offset;
+		}
 		if (_cine_off) {
 			const int offset = READ_BE_UINT16(_cine_off + num * 2);
 			return _cine_txt + offset;
