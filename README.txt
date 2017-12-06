@@ -45,7 +45,7 @@ directory. These paths can be changed using command line switches :
     --levelnum=NUM    Level to start from (default '0')
     --fullscreen      Fullscreen display
     --scaler=NAME@X   Graphics scaler (default 'scale@3')
-    --language=LANG   Language (fr,en,de,sp,it)
+    --language=LANG   Language (fr,en,de,sp,it,jp)
 
 The scaler option specifies the algorithm used to smoothen the image in
 addition to a scaling factor. External scalers are also supported, the
