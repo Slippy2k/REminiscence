@@ -29,8 +29,11 @@ static void dump(FILE *fp, uint32_t off1, uint32_t off2, const char *name, bool 
 			i = 0;
 		}
 		lastByte = fgetc(fp);
-		printf("0x%02X, ", lastByte);
+		printf("0x%02X,", lastByte);
 		++i;
+		if (i != 16) {
+			printf(" ");
+		}
 	}
 	if (!isModule) {
 		if (i == 16) {
@@ -51,7 +54,7 @@ struct Module {
 } MODULES[] = {
 	/* module data */
 	{ "SfxPlayer::_musicData68_69", 0xC30E, 0xC30E + 4 * 15 + 34 + 6 * 0x1B, true },
-//	{ "SfxPlayer::_musicDataUnk",   0xC40E, 0xC40E + 4 * 15 + 34 + 6 * 0x25, true },
+	{ "SfxPlayer::_musicDataUnk",   0xC40E, 0xC40E + 4 * 15 + 34 + 6 * 0x25, true },
 	{ "SfxPlayer::_musicData70_71", 0xC54A, 0xC54A + 4 * 15 + 34 + 6 * 0x12, true },
 	{ "SfxPlayer::_musicData72",    0xC614, 0xC614 + 4 * 15 + 34 + 6 * 0x4F, true },
 	{ "SfxPlayer::_musicData73",    0xC84C, 0xC84C + 4 * 15 + 34 + 6 * 0x41, true },

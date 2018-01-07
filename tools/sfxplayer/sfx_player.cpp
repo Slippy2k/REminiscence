@@ -109,9 +109,9 @@ void SfxPlayer::loadModule(const int num) {
 	case 75:
 		_mod = &_module75;
 		break;
-//	case 99:
-//		_mod = &_moduleUnk;
-//		break;
+	case 99:
+		_mod = &_moduleUnk;
+		break;
 	default:
 		fprintf(stderr, "Unknown module number %d\n", num);
 		break;	
@@ -377,7 +377,7 @@ const SfxPlayer::Module SfxPlayer::_moduleUnk = {
 		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
 		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
 	},
-//	_musicDataUnk
+	_musicDataUnk
 };
 const SfxPlayer::Module SfxPlayer::_module70_71 = {
 	{
