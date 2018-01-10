@@ -4,7 +4,11 @@
 #include <cassert>
 #include "intern.h"
 
-static uint32_t read_u32(FILE *fp) {
+static uint16_t READ_BE_UINT16(const uint8_t *p) {
+	return (p[0] << 8) | p[1];
+}
+
+static uint32_t fileReadUint32BE(FILE *fp) {
 	uint8_t a = fgetc(fp);
 	uint8_t b = fgetc(fp);
 	uint8_t c = fgetc(fp);
@@ -12,12 +16,12 @@ static uint32_t read_u32(FILE *fp) {
 	return (d << 24) | (c << 16) | (b << 8) | a;
 }
 
-static void dump(FILE *fp, uint32_t off1, uint32_t off2, const char *name, bool isModule) {
+static void dumpHex(FILE *fp, uint32_t off1, uint32_t off2, const char *name, bool isModule) {
 	fseek(fp, off1, SEEK_SET);
 	if (isModule) {
 		// skip samples
 		for (int s = 0; s < 15; ++s) {
-			read_u32(fp);
+			fileReadUint32BE(fp);
 		}
 	}
 	uint8_t lastByte = 0;
@@ -46,6 +50,25 @@ static void dump(FILE *fp, uint32_t off1, uint32_t off2, const char *name, bool 
 	printf("// sizeof() = %d\n", int(off2 - off1));
 }
 
+static void dumpRaw(FILE *fp, uint32_t offset, uint32_t endOffset, int sampleNumber) {
+	char name[64];
+	snprintf(name, sizeof(name), "sample%d.raw", sampleNumber);
+	FILE *out = fopen(name, "wb");
+	if (out) {
+		fseek(fp, offset, SEEK_SET);
+		uint8_t header[8];
+		const int count = fread(header, 1, sizeof(header), fp);
+		const int len = READ_BE_UINT16(header);
+		const int volume = READ_BE_UINT16(header + 2);
+		const int loopOffset = READ_BE_UINT16(header + 4);
+		const int loopLen = READ_BE_UINT16(header + 6);
+		while (ftell(fp) < endOffset) {
+			fputc(fgetc(fp), out);
+		}
+		fclose(out);
+	}
+}
+
 struct Module {
 	const char *name;
 	uint32_t offs_start;
@@ -71,12 +94,21 @@ struct Module {
 	{ "SfxPlayer::_musicDataSample8", 0x23B06, 0x23B06 + 8 + 0x0002, false },
 };
 
+static const int MODULES_COUNT = sizeof(MODULES) / sizeof(MODULES[0]);
+
 #undef main
 int main(int argc, char* argv[]) {
 	FILE *fp = fopen("flashback", "rb");
 	if (fp) {
-		for (size_t i = 0; i < sizeof(MODULES)/sizeof(MODULES[0]); ++i) {
-			dump(fp, MODULES[i].offs_start, MODULES[i].offs_end, MODULES[i].name, MODULES[i].module);
+		for (size_t i = 0; i < MODULES_COUNT; ++i) {
+			dumpHex(fp, MODULES[i].offs_start, MODULES[i].offs_end, MODULES[i].name, MODULES[i].module);
+		}
+		int sampleNumber = 0;
+		for (size_t i = 0; i < MODULES_COUNT; ++i) {
+			if (!MODULES[i].module) {
+				dumpRaw(fp, MODULES[i].offs_start, MODULES[i].offs_end, sampleNumber);
+				++sampleNumber;
+			}
 		}
 		fclose(fp);
 	}

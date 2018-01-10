@@ -119,9 +119,13 @@ void SfxPlayer::loadModule(const int num) {
 	_curOrder = 0;
 	_numOrders = READ_BE_UINT16(_mod->moduleData);
 	_orderDelay = 0;
-	_modData = _mod->moduleData + 0x22;
+	_modData = _mod->moduleData + 0x22; // 2 (_numOrders) + 2 (_orderDelay) + 15 * sizeof(uint16_t) (sample_period)
 	for (int i = 0; i < 5; ++i) {
-		printf("instrument %d period=%d\n", i, (int16_t)READ_BE_UINT16(_mod->moduleData + 4 + i * 2));
+		const int16_t period = (int16_t)READ_BE_UINT16(_mod->moduleData + 4 + i * 2);
+		printf("sample %d period %d\n", i, period);
+		if (period >= 0 && period < 40) {
+			printf("periodLut %d\n", _periodTable[period]);
+		}
 	}
 }
 
@@ -188,16 +192,18 @@ void SfxPlayer::handleTick() {
 				sampleData = _mod->sampleData[b];
 			}
 			b = *_modData++;
-			if (b != 0) {
+			if (b != 0) { // arpeggio
 				int16_t per = period + (b - 1);
 				if (per >= 0 && per < 40) {
 					per = _periodTable[per];
 				} else {
-					fprintf(stdout, "per=%d period=%d b=%d\n", per, period, b);
+					fprintf(stdout, "Out of bounds per=%d period=%d b=%d\n", per, period, b);
 					if (per == -3) {
 						per = 0xA0;
-					} else {
+					} else if (per == 40 || per == 74) {
 						per = 0x71;
+					} else {
+						assert(0);
 					}
 				}
 				playSample(ch, sampleData, per);
@@ -367,7 +373,7 @@ const SfxPlayer::Module SfxPlayer::_module68_69 = {
 	{
 		_musicDataSample1, _musicDataSample8, _musicDataSample3, _musicDataSample4, _musicDataSample8,
 		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
-		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,	_musicDataSample8
+		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8
 	},
 	_musicData68_69
 };

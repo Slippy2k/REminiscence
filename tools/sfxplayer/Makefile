@@ -2,8 +2,7 @@
 SDL_CFLAGS = `sdl-config --cflags`
 SDL_LIBS = `sdl-config --libs`
 
-CXX = g++
-CXXFLAGS := -g -O -Wall $(SDL_CFLAGS)
+CXXFLAGS += -g -O -Wall -Wno-unused-variable $(SDL_CFLAGS)
 
 SRCS_SFXPLY = low_pass.cpp sfx_player.cpp
 OBJS_SFXPLY = $(SRCS_SFXPLY:.cpp=.o)
