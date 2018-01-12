@@ -149,7 +149,7 @@ void Game::run() {
 
 void Game::displayTitleScreenAmiga() {
 	static const char *FILENAME = "present.cmp";
-	_res.load_CMP_menu(FILENAME, _res._memBuf);
+	_res.load_CMP_menu(FILENAME, _res._scratchBuffer);
 	static const int kW = 320;
 	static const int kH = 224;
 	uint8_t *buf = (uint8_t *)calloc(kW * kH, 1);
@@ -169,7 +169,7 @@ void Game::displayTitleScreenAmiga() {
 	_stub->setScreenSize(kW, kH);
 	_stub->copyRect(0, 0, kW, kH, buf, kW);
 	_stub->updateScreen(0);
-	_vid.AMIGA_decodeCmp(_res._memBuf + 6, buf);
+	_vid.AMIGA_decodeCmp(_res._scratchBuffer + 6, buf);
 	free(buf);
 	for (int h = 0; h < kH / 2; h += 2) {
 		const int y = kH / 2 - h;
@@ -382,7 +382,7 @@ void Game::playCutscene(int id) {
 bool Game::playCutsceneSeq(const char *name) {
 	File f;
 	if (f.open(name, "rb", _fs)) {
-		_seq.setBackBuffer(_res._memBuf);
+		_seq.setBackBuffer(_res._scratchBuffer);
 		_seq.play(&f);
 		_vid.fullRefresh();
 		return true;
@@ -967,13 +967,13 @@ void Game::drawAnimBuffer(uint8_t stateNum, AnimBufferState *state) {
 				}
 				switch (_res._type) {
 				case kResourceTypeAmiga:
-					_vid.AMIGA_decodeSpm(state->dataPtr, _res._memBuf);
-					drawCharacter(_res._memBuf, state->x, state->y, state->h, state->w, pge->flags);
+					_vid.AMIGA_decodeSpm(state->dataPtr, _res._scratchBuffer);
+					drawCharacter(_res._scratchBuffer, state->x, state->y, state->h, state->w, pge->flags);
 					break;
 				case kResourceTypeDOS:
 					if (!(state->dataPtr[-2] & 0x80)) {
-						decodeCharacterFrame(state->dataPtr, _res._memBuf);
-						drawCharacter(_res._memBuf, state->x, state->y, state->h, state->w, pge->flags);
+						decodeCharacterFrame(state->dataPtr, _res._scratchBuffer);
+						drawCharacter(_res._scratchBuffer, state->x, state->y, state->h, state->w, pge->flags);
 					} else {
 						drawCharacter(state->dataPtr, state->x, state->y, state->h, state->w, pge->flags);
 					}
@@ -1041,14 +1041,14 @@ void Game::drawObjectFrame(const uint8_t *bankDataPtr, const uint8_t *dataPtr, i
 
 	switch (_res._type) {
 	case kResourceTypeAmiga:
-		_vid.AMIGA_decodeSpc(src, sprite_w, sprite_h, _res._memBuf);
+		_vid.AMIGA_decodeSpc(src, sprite_w, sprite_h, _res._scratchBuffer);
 		break;
 	case kResourceTypeDOS:
-		_vid.PC_decodeSpc(src, sprite_w, sprite_h, _res._memBuf);
+		_vid.PC_decodeSpc(src, sprite_w, sprite_h, _res._scratchBuffer);
 		break;
 	}
 
-	src = _res._memBuf;
+	src = _res._scratchBuffer;
 	bool sprite_mirror_x = false;
 	int16_t sprite_clipped_w;
 	if (sprite_x >= 0) {

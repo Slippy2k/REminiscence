@@ -231,8 +231,8 @@ void Video::PC_decodeMap(int level, int room) {
 	if (packed) {
 		for (int i = 0; i < 4; ++i) {
 			const int sz = READ_LE_UINT16(p); p += 2;
-			PC_decodeMapPlane(sz, p, _res->_memBuf); p += sz;
-			memcpy(_frontLayer + i * kPlaneSize, _res->_memBuf, kPlaneSize);
+			PC_decodeMapPlane(sz, p, _res->_scratchBuffer); p += sz;
+			memcpy(_frontLayer + i * kPlaneSize, _res->_scratchBuffer, kPlaneSize);
 		}
 	} else {
 		for (int i = 0; i < 4; ++i) {
@@ -601,7 +601,7 @@ static void decodeLevHelper(uint8_t *dst, const uint8_t *src, int offset10, int 
 }
 
 void Video::AMIGA_decodeLev(int level, int room) {
-	uint8_t *tmp = _res->_memBuf;
+	uint8_t *tmp = _res->_scratchBuffer;
 	const int offset = READ_BE_UINT32(_res->_lev + room * 4);
 	if (!delphine_unpack(tmp, _res->_lev, offset)) {
 		error("Bad CRC for level %d room %d", level, room);
@@ -835,8 +835,8 @@ void Video::PC_drawChar(uint8_t c, int16_t y, int16_t x, bool forceDefaultFont) 
 
 void Video::AMIGA_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8_t color, uint8_t chr) {
 	assert(chr >= 32);
-	AMIGA_decodeIcn(src, chr - 32, _res->_memBuf);
-	src = _res->_memBuf;
+	AMIGA_decodeIcn(src, chr - 32, _res->_scratchBuffer);
+	src = _res->_scratchBuffer;
 	for (int y = 0; y < 8; ++y) {
 		for (int x = 0; x < 8; ++x) {
 			if (src[x] != 0) {
