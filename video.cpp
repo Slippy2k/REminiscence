@@ -188,7 +188,7 @@ void Video::PC_decodeLev(int level, int room) {
 	_res->clearBankData();
 }
 
-static void PC_decodeMapHelper(int sz, const uint8_t *src, uint8_t *dst) {
+static void PC_decodeMapPlane(int sz, const uint8_t *src, uint8_t *dst) {
 	const uint8_t *end = src + sz;
 	while (src < end) {
 		int16_t code = (int8_t)*src++;
@@ -212,6 +212,7 @@ void Video::PC_decodeMap(int level, int room) {
 	if (off == 0) {
 		error("Invalid room %d", room);
 	}
+	// int size = READ_LE_UINT16(_res->_map + room * 6 + 4);
 	bool packed = true;
 	if (off < 0) {
 		off = -off;
@@ -226,19 +227,18 @@ void Video::PC_decodeMap(int level, int room) {
 		// workaround for wrong palette colors (fire)
 		_mapPalSlot4 = 5;
 	}
+	static const int kPlaneSize = 256 * 224 / 4;
 	if (packed) {
-		uint8_t *vid = _frontLayer;
 		for (int i = 0; i < 4; ++i) {
 			const int sz = READ_LE_UINT16(p); p += 2;
-			PC_decodeMapHelper(sz, p, _res->_memBuf); p += sz;
-			memcpy(vid, _res->_memBuf, 256 * 56);
-			vid += 256 * 56;
+			PC_decodeMapPlane(sz, p, _res->_memBuf); p += sz;
+			memcpy(_frontLayer + i * kPlaneSize, _res->_memBuf, kPlaneSize);
 		}
 	} else {
 		for (int i = 0; i < 4; ++i) {
 			for (int y = 0; y < 224; ++y) {
 				for (int x = 0; x < 64; ++x) {
-					_frontLayer[i + x * 4 + 256 * y] = p[256 * 56 * i + x + 64 * y];
+					_frontLayer[i + x * 4 + 256 * y] = p[kPlaneSize * i + x + 64 * y];
 				}
 			}
 		}
