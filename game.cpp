@@ -261,7 +261,7 @@ void Game::mainLoop() {
 		return;
 	}
 	if (_loadMap) {
-		if (_currentRoom == 0xFF) {
+		if (_currentRoom == 0xFF || !hasLevelMap(_currentLevel, _pgeLive[0].room_location)) {
 			_cut._id = 6;
 			_deathCutsceneCounter = 1;
 		} else {
@@ -1292,6 +1292,15 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 		}
 	}
 	return 0xFFFF;
+}
+
+bool Game::hasLevelMap(int level, int room) const {
+	if (_res._map) {
+		return READ_LE_UINT32(_res._map + room * 6) != 0;
+	} else if (_res._lev) {
+		return READ_BE_UINT32(_res._lev + room * 4) != 0;
+	}
+	return false;
 }
 
 void Game::loadLevelMap() {

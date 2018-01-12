@@ -96,6 +96,7 @@ struct Game {
 	void updateTiming();
 	void playCutscene(int id = -1);
 	bool playCutsceneSeq(const char *name);
+	bool hasLevelMap(int level, int room) const;
 	void loadLevelMap();
 	void loadLevelData();
 	void drawIcon(uint8_t iconNum, int16_t x, int16_t y, uint8_t colMask);
