@@ -309,7 +309,7 @@ void Menu::handleTitleScreen() {
 	_charVar4 = 0;
 	_charVar5 = 0;
 
-	static const int MAX_MENU_ITEMS = 5;
+	static const int MAX_MENU_ITEMS = 6;
 	Item menuItems[MAX_MENU_ITEMS];
 	int menuItemsCount = 0;
 
@@ -330,6 +330,9 @@ void Menu::handleTitleScreen() {
 	}
 	menuItems[menuItemsCount].str = LocaleData::LI_10_INFO;
 	menuItems[menuItemsCount].opt = MENU_OPTION_ITEM_INFO;
+	++menuItemsCount;
+	menuItems[menuItemsCount].str = LocaleData::LI_23_DEMO;
+	menuItems[menuItemsCount].opt = MENU_OPTION_ITEM_DEMO;
 	++menuItemsCount;
 	menuItems[menuItemsCount].str = LocaleData::LI_11_QUIT;
 	menuItems[menuItemsCount].opt = MENU_OPTION_ITEM_QUIT;
@@ -405,6 +408,9 @@ void Menu::handleTitleScreen() {
 			case MENU_OPTION_ITEM_INFO:
 				_currentScreen = SCREEN_INFO;
 				handleInfoScreen();
+				break;
+			case MENU_OPTION_ITEM_DEMO:
+				quitLoop = true;
 				break;
 			case MENU_OPTION_ITEM_QUIT:
 				quitLoop = true;

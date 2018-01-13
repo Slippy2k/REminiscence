@@ -13,7 +13,7 @@
 #include "unpack.h"
 #include "util.h"
 
-Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, int demo, ResourceType ver, Language lang)
+Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang)
 	: _cut(&_res, stub, &_vid), _menu(&_res, stub, &_vid),
 	_mix(fs, stub), _res(fs, ver, lang), _seq(stub, &_mix), _vid(&_res, stub),
 	_stub(stub), _fs(fs), _savePath(savePath) {
@@ -21,22 +21,11 @@ Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, in
 	_inp_demPos = 0;
 	_skillLevel = _menu._skill = 1;
 	_currentLevel = _menu._level = level;
-	_demoBin = demo;
+	_demoBin = -1;
 }
 
 void Game::run() {
 	_randSeed = time(0);
-
-	if (_demoBin != -1) {
-		if (_demoBin < ARRAYSIZE(_demoInputs)) {
-			const char *fn = _demoInputs[_demoBin].name;
-			debug(DBG_INFO, "Loading inputs from '%s'", fn);
-			_res.load_DEM(fn);
-		}
-		if (_res._demLen == 0) {
-			return;
-		}
-	}
 
 	_res.init();
 	_res.load_TEXT();
@@ -69,10 +58,8 @@ void Game::run() {
 	_mix.init();
 	_mix._mod._isAmiga = _res.isAmiga();
 
-	if (_demoBin == -1) {
-		playCutscene(0x40);
-		playCutscene(0x0D);
-	}
+	playCutscene(0x40);
+	playCutscene(0x0D);
 
 	switch (_res._type) {
 	case kResourceTypeAmiga:
@@ -90,10 +77,7 @@ void Game::run() {
 	}
 
 	while (!_stub->_pi.quit) {
-		if (_demoBin != -1) {
-			_currentLevel = _demoInputs[_demoBin].level;
-			_randSeed = 0;
-		} else if (_res._isDemo) {
+		if (_res._isDemo) {
 			// do not present title screen and menus
 		} else {
 			_mix.playMusic(1);
@@ -104,6 +88,21 @@ void Game::run() {
 					_stub->_pi.quit = true;
 					break;
 				}
+				if (_menu._selectedOption == Menu::MENU_OPTION_ITEM_DEMO) {
+					_demoBin = (_demoBin + 1) % ARRAYSIZE(_demoInputs);
+					const char *fn = _demoInputs[_demoBin].name;
+					debug(DBG_DEMO, "Loading inputs from '%s'", fn);
+					_res.load_DEM(fn);
+					if (_res._demLen == 0) {
+						continue;
+					}
+					_skillLevel = 1;
+					_currentLevel = _demoInputs[_demoBin].level;
+					_randSeed = 0;
+					_mix.stopMusic();
+					break;
+				}
+				_demoBin = -1;
 				_skillLevel = _menu._skill;
 				_currentLevel = _menu._level;
 				_mix.stopMusic();
@@ -135,10 +134,17 @@ void Game::run() {
 			while (!_stub->_pi.quit && !_endLoop) {
 				mainLoop();
 				if (_demoBin != -1 && _inp_demPos >= _res._demLen) {
-					debug(DBG_INFO, "End of demo");
-					_stub->_pi.quit = true;
+					debug(DBG_DEMO, "End of demo");
+					// exit level
+					_demoBin = -1;
+					_endLoop = true;
 				}
 			}
+			// flush inputs
+			_stub->_pi.dirMask = 0;
+			_stub->_pi.enter = false;
+			_stub->_pi.space = false;
+			_stub->_pi.shift = false;
 		}
 	}
 
@@ -288,7 +294,7 @@ void Game::mainLoop() {
 	}
 	if (_stub->_pi.escape) {
 		_stub->_pi.escape = false;
-		if (handleConfigPanel()) {
+		if (_demoBin != -1 || handleConfigPanel()) {
 			_endLoop = true;
 			return;
 		}
@@ -1450,6 +1456,7 @@ void Game::loadLevelData() {
 			_pgeLive[0].room_location = _demoInputs[_demoBin].room;
 			_pgeLive[0].pos_x = _demoInputs[_demoBin].x;
 			_pgeLive[0].pos_y = _demoInputs[_demoBin].y;
+			_inp_demPos = 0;
 		} else {
 			_inp_demPos = 1;
 		}
@@ -1678,7 +1685,7 @@ void Game::handleInventory() {
 
 void Game::inp_update() {
 	_stub->processEvents();
-	if (_inp_demPos < _res._demLen) {
+	if (_demoBin != -1 && _inp_demPos < _res._demLen) {
 		const int keymask = _res._dem[_inp_demPos++];
 		_stub->_pi.dirMask = keymask & 0xF;
 		_stub->_pi.enter = (keymask & 0x10) != 0;
