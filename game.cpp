@@ -19,7 +19,7 @@ Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, Re
 	_stub(stub), _fs(fs), _savePath(savePath) {
 	_stateSlot = 1;
 	_inp_demPos = 0;
-	_skillLevel = _menu._skill = 1;
+	_skillLevel = _menu._skill = kSkillNormal;
 	_currentLevel = _menu._level = level;
 	_demoBin = -1;
 }
@@ -96,7 +96,7 @@ void Game::run() {
 					if (_res._demLen == 0) {
 						continue;
 					}
-					_skillLevel = 1;
+					_skillLevel = kSkillNormal;
 					_currentLevel = _demoInputs[_demoBin].level;
 					_randSeed = 0;
 					_mix.stopMusic();

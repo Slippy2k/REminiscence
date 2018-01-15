@@ -83,6 +83,12 @@ enum ResourceType {
 	kResourceTypeDOS
 };
 
+enum Skill {
+	kSkillEasy = 0,
+	kSkillNormal,
+	kSkillExpert,
+};
+
 struct Options {
 	bool bypass_protection;
 	bool play_disabled_cutscenes;
