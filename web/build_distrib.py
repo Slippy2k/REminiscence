@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-VERSION = '0.3.6'
+VERSION = '0.3.7'
 
 SDL_TARBALL = [ 'REminiscence-%s-sdl2-win32.zip',
 	(
