@@ -117,31 +117,31 @@ uint16_t Cutscene::findTextSeparators(const uint8_t *p) {
 	return ret;
 }
 
-void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, uint8_t *page, uint8_t n) {
-	debug(DBG_CUT, "Cutscene::drawText(x=%d, y=%d, c=%d)", x, y, color);
+void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, uint8_t *page, int textJustify) {
+	debug(DBG_CUT, "Cutscene::drawText(x=%d, y=%d, c=%d, justify=%d)", x, y, color, textJustify);
 	Video::drawCharFunc dcf = _vid->_drawChar;
 	const uint8_t *fnt = (_res->_lang == LANG_JP) ? Video::_font8Jp : _res->_fnt;
 	uint16_t last_sep = 0;
-	if (n != 0) {
+	if (textJustify != kTextJustifyLeft) {
 		last_sep = findTextSeparators(p);
-		if (n != 2) {
-			last_sep = 30;
+		if (textJustify != kTextJustifyCenter) {
+			last_sep = (_res->_lang == LANG_JP) ? 20 : 30;
 		}
 	}
 	const uint8_t *sep = _textSep;
 	y += 50;
-	x += 8;
+	x += (_res->_lang == LANG_JP) ? 0 : 8;
 	int16_t yy = y;
 	int16_t xx = x;
-	if (n != 0) {
-		xx += ((last_sep - *sep++) & 0xFE) * 4;
+	if (textJustify != kTextJustifyLeft) {
+		xx += ((last_sep - *sep++) / 2) * 8;
 	}
 	for (; *p != 0xA && *p; ++p) {
 		if (isNewLineChar(*p, _res)) {
 			yy += 8;
 			xx = x;
-			if (n != 0) {
-				xx += ((last_sep - *sep++) & 0xFE) * 4;
+			if (textJustify != kTextJustifyLeft) {
+				xx += ((last_sep - *sep++) / 2) * 8;
 			}
 		} else if (*p == 0x20) {
 			xx += 8;
@@ -199,7 +199,7 @@ void Cutscene::drawCreditsText() {
 		} else {
 			_creditsTextCounter -= 10;
 		}
-		drawText((_creditsTextPosX - 1) * 8, _creditsTextPosY * 8, _textBuf, 0xEF, _page1, 0);
+		drawText((_creditsTextPosX - 1) * 8, _creditsTextPosY * 8, _textBuf, 0xEF, _page1, kTextJustifyLeft);
 	}
 }
 
@@ -397,8 +397,8 @@ void Cutscene::op_drawStringAtBottom() {
 		if (strId != 0xFFFF) {
 			const uint8_t *str = _res->getCineString(strId);
 			if (str) {
-				drawText(0, 129, str, 0xEF, _page1, 1);
-				drawText(0, 129, str, 0xEF, _pageC, 1);
+				drawText(0, 129, str, 0xEF, _page1, kTextJustifyAlign);
+				drawText(0, 129, str, 0xEF, _pageC, kTextJustifyAlign);
 			}
 		}
 	}
@@ -843,7 +843,7 @@ void Cutscene::op_drawStringAtPos() {
 			const uint8_t *str = _res->getCineString(strId & 0xFFF);
 			if (str) {
 				uint8_t color = 0xD0 + (strId >> 0xC);
-				drawText(x, y, str, color, _page1, 2);
+				drawText(x, y, str, color, _page1, kTextJustifyCenter);
 			}
 			// 'voyage' - cutscene script redraws the string to refresh the screen
 			if (_id == 0x34 && (strId & 0xFFF) == 0x45) {
@@ -1050,7 +1050,7 @@ void Cutscene::playText(const char *str) {
 	}
 	const int y = (128 - lines * 8) / 2;
 	memset(_page1, 0xC0, _vid->_layerSize);
-	drawText(0, y, (const uint8_t *)str, 0xC1, _page1, 1);
+	drawText(0, y, (const uint8_t *)str, 0xC1, _page1, kTextJustifyAlign);
 	_stub->copyRect(0, 0, _vid->_w, _vid->_h, _page1, 256);
 	_stub->updateScreen(0);
 
