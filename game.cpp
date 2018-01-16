@@ -1460,6 +1460,7 @@ void Game::loadLevelData() {
 		} else {
 			_inp_demPos = 1;
 		}
+		_printLevelCodeCounter = 0;
 	}
 
 	for (uint16_t i = 0; i < _res._pgeNum; ++i) {
