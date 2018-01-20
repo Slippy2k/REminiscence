@@ -28,6 +28,11 @@ struct Cutscene {
 		kTextJustifyCenter = 2,
 	};
 
+	struct SetShape {
+		uint16_t offset;
+		uint16_t size;
+	};
+
 	struct Text {
 		int num;
 		const char *str;
@@ -47,6 +52,7 @@ struct Cutscene {
 	static const uint8_t _protectionShapeData[];
 	static const Text _frTextsTable[];
 	static const Text _enTextsTable[];
+	static const uint8_t _caillouSetData[];
 
 	Graphics _gfx;
 	Resource *_res;
@@ -136,6 +142,9 @@ struct Cutscene {
 	void playCredits();
 	void playText(const char *str);
 	void play();
+
+	void drawSetShape(const uint8_t *p, uint16_t offset, int x, int y, uint8_t *paletteLut);
+	void playSet(const uint8_t *p, int offset);
 };
 
 #endif // CUTSCENE_H__

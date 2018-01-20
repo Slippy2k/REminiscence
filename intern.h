@@ -97,6 +97,7 @@ struct Options {
 	bool use_tiledata;
 	bool use_text_cutscenes;
 	bool use_seq_cutscenes;
+	bool play_stone_cutscene;
 };
 
 struct Color {

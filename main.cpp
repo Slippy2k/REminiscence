@@ -96,6 +96,7 @@ static void initOptions() {
 		{ "use_tiledata", &g_options.use_tiledata },
 		{ "use_text_cutscenes", &g_options.use_text_cutscenes },
 		{ "use_seq_cutscenes", &g_options.use_seq_cutscenes },
+		{ "play_stone_cutscene", &g_options.play_stone_cutscene },
 		{ 0, 0 }
 	};
 	static const char *filename = "rs.cfg";
