@@ -35,6 +35,7 @@ static int detectVersion(FileSystem *fs) {
 		{ "DEMO_UK.ABA", kResourceTypeDOS, "DOS (Demo)" },
 		{ "INTRO.SEQ", kResourceTypeDOS, "DOS CD" },
 		{ "LEVEL1.MAP", kResourceTypeDOS, "DOS" },
+		{ "LEVEL1.BNQ", kResourceTypeDOS, "DOS (Demo)" },
 		{ "LEVEL1.LEV", kResourceTypeAmiga, "Amiga" },
 		{ "DEMO.LEV", kResourceTypeAmiga, "Amiga (Demo)" },
 		{ 0, -1, 0 }

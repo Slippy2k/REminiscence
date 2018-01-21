@@ -961,7 +961,7 @@ void Cutscene::mainLoop(uint16_t offset) {
 	}
 }
 
-void Cutscene::load(uint16_t cutName) {
+bool Cutscene::load(uint16_t cutName) {
 	assert(cutName != 0xFFFF);
 	const char *name = _namesTable[cutName & 0xFF];
 	switch (_res->_type) {
@@ -994,6 +994,19 @@ void Cutscene::load(uint16_t cutName) {
 		break;
 	}
 	_res->load_CINE();
+	return _res->_cmd && _res->_pol;
+}
+
+void Cutscene::unload() {
+	switch (_res->_type) {
+	case kResourceTypeAmiga:
+		_res->unload(Resource::OT_CMP);
+		break;
+	case kResourceTypeDOS:
+		_res->unload(Resource::OT_CMD);
+		_res->unload(Resource::OT_POL);
+		break;
+	}
 }
 
 void Cutscene::prepare() {
@@ -1027,8 +1040,10 @@ void Cutscene::playCredits() {
 		prepare();
 		uint16_t cutName = _offsetsTable[cut_id * 2 + 0];
 		uint16_t cutOff  = _offsetsTable[cut_id * 2 + 1];
-		load(cutName);
-		mainLoop(cutOff);
+		if (load(cutName)) {
+			mainLoop(cutOff);
+			unload();
+		}
 	}
 	_creditsSequence = false;
 }
@@ -1106,8 +1121,10 @@ void Cutscene::play() {
 				}
 			}
 		} else if (cutName != 0xFFFF) {
-			load(cutName);
-			mainLoop(cutOff);
+			if (load(cutName)) {
+				mainLoop(cutOff);
+				unload();
+			}
 		} else if (_id == 8 && g_options.play_stone_cutscene) {
 			playSet(_caillouSetData, 0x5E4);
 		}

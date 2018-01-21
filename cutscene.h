@@ -137,7 +137,8 @@ struct Cutscene {
 	uint8_t fetchNextCmdByte();
 	uint16_t fetchNextCmdWord();
 	void mainLoop(uint16_t offset);
-	void load(uint16_t cutName);
+	bool load(uint16_t cutName);
+	void unload();
 	void prepare();
 	void playCredits();
 	void playText(const char *str);
