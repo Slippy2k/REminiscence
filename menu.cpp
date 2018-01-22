@@ -328,17 +328,19 @@ void Menu::handleTitleScreen() {
 	menuItems[menuItemsCount].str = LocaleData::LI_07_START;
 	menuItems[menuItemsCount].opt = MENU_OPTION_ITEM_START;
 	++menuItemsCount;
-	if (g_options.enable_password_menu) {
-		menuItems[menuItemsCount].str = LocaleData::LI_08_SKILL;
-		menuItems[menuItemsCount].opt = MENU_OPTION_ITEM_SKILL;
-		++menuItemsCount;
-		menuItems[menuItemsCount].str = LocaleData::LI_09_PASSWORD;
-		menuItems[menuItemsCount].opt = MENU_OPTION_ITEM_PASSWORD;
-		++menuItemsCount;
-	} else {
-		menuItems[menuItemsCount].str = LocaleData::LI_06_LEVEL;
-		menuItems[menuItemsCount].opt = MENU_OPTION_ITEM_LEVEL;
-		++menuItemsCount;
+	if (!_res->_isDemo) {
+		if (g_options.enable_password_menu) {
+			menuItems[menuItemsCount].str = LocaleData::LI_08_SKILL;
+			menuItems[menuItemsCount].opt = MENU_OPTION_ITEM_SKILL;
+			++menuItemsCount;
+			menuItems[menuItemsCount].str = LocaleData::LI_09_PASSWORD;
+			menuItems[menuItemsCount].opt = MENU_OPTION_ITEM_PASSWORD;
+			++menuItemsCount;
+		} else {
+			menuItems[menuItemsCount].str = LocaleData::LI_06_LEVEL;
+			menuItems[menuItemsCount].opt = MENU_OPTION_ITEM_LEVEL;
+			++menuItemsCount;
+		}
 	}
 	menuItems[menuItemsCount].str = LocaleData::LI_10_INFO;
 	menuItems[menuItemsCount].opt = MENU_OPTION_ITEM_INFO;

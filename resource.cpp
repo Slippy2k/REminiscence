@@ -63,7 +63,8 @@ void Resource::init() {
 			_aba = new ResourceAba(_fs);
 			_aba->readEntries();
 			_isDemo = true;
-		} else if (!_fs->exists("LEVEL1.MAP")) { // fbdemofr (no cutscenes)
+		}
+		if (!fileExists("LEVEL1.MAP")) { // fbdemofr (no cutscenes)
 			_isDemo = true;
 		}
 		break;
@@ -71,6 +72,15 @@ void Resource::init() {
 }
 
 void Resource::fini() {
+}
+
+bool Resource::fileExists(const char *filename) {
+	if (_fs->exists(filename)) {
+		return true;
+	} else if (_aba) {
+		return _aba->findEntry(filename) != 0;
+	}
+	return false;
 }
 
 void Resource::clearLevelRes() {
@@ -95,6 +105,12 @@ void Resource::load_DEM(const char *filename) {
 		_dem = (uint8_t *)malloc(_demLen);
 		if (_dem) {
 			f.read(_dem, _demLen);
+		}
+	} else if (_aba) {
+		uint32_t size;
+		_dem = _aba->loadEntry(filename, &size);
+		if (_dem) {
+			_demLen = size;
 		}
 	}
 }

@@ -172,6 +172,8 @@ struct Resource {
 	bool isDOS()   const { return _type == kResourceTypeDOS; }
 	bool isAmiga() const { return _type == kResourceTypeAmiga; }
 
+	bool fileExists(const char *filename);
+
 	void clearLevelRes();
 	void load_DEM(const char *filename);
 	void load_FIB(const char *fileName);

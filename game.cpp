@@ -76,10 +76,9 @@ void Game::run() {
 		break;
 	}
 
+	bool presentMenu = (_res._type == kResourceTypeAmiga) || (_res._type == kResourceTypeDOS && _res.fileExists("MENU1.MAP"));
 	while (!_stub->_pi.quit) {
-		if (_res._isDemo) {
-			// do not present title screen and menus
-		} else {
+		if (presentMenu) {
 			_mix.playMusic(1);
 			switch (_res._type) {
 			case kResourceTypeDOS:
