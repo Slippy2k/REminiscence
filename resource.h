@@ -218,7 +218,7 @@ struct Resource {
 		const int offset = _readUint16(_ani + 2 + num * 2);
 		return _ani + 2 + offset;
 	}
-	const uint8_t *getTextString(int level, int num) {
+	const uint8_t *getTextString(int level, int num) const {
 		if (_lang == LANG_JP) {
 			const uint8_t *p = 0;
 			switch (level) {
@@ -250,10 +250,10 @@ struct Resource {
 		}
 		return _tbn + _readUint16(_tbn + num * 2);
 	}
-	const uint8_t *getGameString(int num) {
+	const uint8_t *getGameString(int num) const {
 		return _stringsTable + READ_LE_UINT16(_stringsTable + num * 2);
 	}
-	const uint8_t *getCineString(int num) {
+	const uint8_t *getCineString(int num) const {
 		if (_lang == LANG_JP) {
 			const int offset = READ_BE_UINT16(LocaleData::_cineBinJP + num * 2);
 			return LocaleData::_cineTxtJP + offset;
@@ -264,7 +264,7 @@ struct Resource {
 		}
 		return (num >= 0 && num < NUM_CUTSCENE_TEXTS) ? _cineStrings[num] : 0;
 	}
-	const char *getMenuString(int num) {
+	const char *getMenuString(int num) const {
 		return (num >= 0 && num < LocaleData::LI_NUM) ? _textsTable[num] : "";
 	}
 	void clearBankData();
