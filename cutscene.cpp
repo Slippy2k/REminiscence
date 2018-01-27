@@ -1087,19 +1087,25 @@ void Cutscene::play() {
 		prepare();
 		uint16_t cutName = _offsetsTable[_id * 2 + 0];
 		uint16_t cutOff  = _offsetsTable[_id * 2 + 1];
-		if (cutName == 0xFFFF && g_options.play_disabled_cutscenes) {
+		if (cutName == 0xFFFF) {
 			switch (_id) {
 			case 19:
-				cutName = 31; // SERRURE
+				if (g_options.play_serrure_cutscene) {
+					cutName = 31; // SERRURE
+				}
 				break;
 			case 22:
 			case 23:
 			case 24:
-				cutName = 12; // ASC
+				if (g_options.play_asc_cutscene) {
+					cutName = 12; // ASC
+				}
 				break;
 			case 30:
 			case 31:
-				cutName = 14; // METRO
+				if (g_options.play_metro_cutscene) {
+					cutName = 14; // METRO
+				}
 				break;
 			}
 		}
@@ -1125,7 +1131,7 @@ void Cutscene::play() {
 				mainLoop(cutOff);
 				unload();
 			}
-		} else if (_id == 8 && g_options.play_stone_cutscene) {
+		} else if (_id == 8 && g_options.play_caillou_cutscene) {
 			playSet(_caillouSetData, 0x5E4);
 		}
 		_vid->fullRefresh();
