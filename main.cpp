@@ -38,6 +38,7 @@ static int detectVersion(FileSystem *fs) {
 		{ "LEVEL1.BNQ", kResourceTypeDOS, "DOS (Demo)" },
 		{ "LEVEL1.LEV", kResourceTypeAmiga, "Amiga" },
 		{ "DEMO.LEV", kResourceTypeAmiga, "Amiga (Demo)" },
+		{ "FLASHBACK.BIN", kResourceTypeMac, "Macintosh" },
 		{ 0, -1, 0 }
 	};
 	for (int i = 0; table[i].filename; ++i) {
@@ -256,7 +257,7 @@ int main(int argc, char *argv[]) {
 	const Language language = (forcedLanguage == -1) ? detectLanguage(&fs) : (Language)forcedLanguage;
 	SystemStub *stub = SystemStub_SDL_create();
 	Game *g = new Game(stub, &fs, savePath, levelNum, (ResourceType)version, language);
-	stub->init(g_caption, Video::GAMESCREEN_W, Video::GAMESCREEN_H, fullscreen, &scalerParameters);
+	stub->init(g_caption, g->_vid._w, g->_vid._h, fullscreen, &scalerParameters);
 	g->run();
 	delete g;
 	stub->destroy();

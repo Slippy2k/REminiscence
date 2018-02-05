@@ -80,7 +80,8 @@ enum Language {
 
 enum ResourceType {
 	kResourceTypeAmiga,
-	kResourceTypeDOS
+	kResourceTypeDOS,
+	kResourceTypeMac,
 };
 
 enum Skill {

@@ -35,6 +35,7 @@ struct Video {
 
 	int _w, _h;
 	int _layerSize;
+	int _layerScale; // 1 for Amiga/PC, 2 for Macintosh
 	uint8_t *_frontLayer;
 	uint8_t *_backLayer;
 	uint8_t *_tempLayer;
@@ -81,8 +82,13 @@ struct Video {
 	void PC_drawChar(uint8_t c, int16_t y, int16_t x, bool forceDefaultFont = false);
 	void PC_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8_t color, uint8_t chr);
 	void AMIGA_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8_t color, uint8_t chr);
+	void MAC_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8_t color, uint8_t chr);
 	const char *drawString(const char *str, int16_t x, int16_t y, uint8_t col);
 	static Color AMIGA_convertColor(const uint16_t color, bool bgr = false);
+	void MAC_decodeMap(int level, int room);
+	void MAC_markBlockAsDirty(int x, int y, int w, int h);
+	static void MAC_drawBuffer(DecodeBuffer *buf, int src_x, int src_y, int src_w, int src_h, uint8_t color);
+	static void MAC_drawBufferMask(DecodeBuffer *buf, int src_x, int src_y, int src_w, int src_h, uint8_t color);
 };
 
 #endif // VIDEO_H__

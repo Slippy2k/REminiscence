@@ -4,6 +4,7 @@
  * Copyright (C) 2005-2018 Gregory Montoir (cyx@users.sourceforge.net)
  */
 
+#include "decode_mac.h"
 #include "file.h"
 #include "fs.h"
 #include "resource.h"
@@ -17,6 +18,7 @@ Resource::Resource(FileSystem *fs, ResourceType ver, Language lang) {
 	_lang = lang;
 	_isDemo = false;
 	_aba = 0;
+	_mac = 0;
 	_readUint16 = (_type == kResourceTypeDOS) ? READ_LE_UINT16 : READ_BE_UINT16;
 	_readUint32 = (_type == kResourceTypeDOS) ? READ_LE_UINT32 : READ_BE_UINT32;
 	_scratchBuffer = (uint8_t *)malloc(320 * 224 + 1024);
@@ -67,6 +69,10 @@ void Resource::init() {
 		if (!fileExists("LEVEL1.MAP")) { // fbdemofr (no cutscenes)
 			_isDemo = true;
 		}
+		break;
+	case kResourceTypeMac:
+		_mac = new ResourceMac(ResourceMac::FILENAME, _fs);
+		_mac->loadMap();
 		break;
 	}
 }
@@ -909,6 +915,10 @@ void Resource::decodeOBJ(const uint8_t *tmp, int size) {
 	uint32_t offsets[256];
 	int tmpOffset = 0;
 	_numObjectNodes = 230;
+	if (_type == kResourceTypeMac) {
+		_numObjectNodes = _readUint16(tmp);
+		tmpOffset += 2;
+	}
 	for (int i = 0; i < _numObjectNodes; ++i) {
 		offsets[i] = _readUint32(tmp + tmpOffset); tmpOffset += 4;
 	}
@@ -1308,6 +1318,9 @@ int Resource::getBankDataSize(uint16_t num) {
 			len &= 0x7FFF;
 		}
 		break;
+	case kResourceTypeMac:
+		assert(0); // different graphics format
+		break;
 	}
 	return len * 32;
 }
@@ -1353,3 +1366,248 @@ uint8_t *Resource::loadBankData(uint16_t num) {
 	return bankData;
 }
 
+uint8_t *Resource::decodeResourceMacData(const char *name, bool decompressLzss) {
+	_resourceMacDataSize = 0;
+	uint8_t *data = 0;
+	const ResourceMacEntry *entry = _mac->findEntry(name);
+	if (entry) {
+		_mac->_f.seek(_mac->_dataOffset + entry->dataOffset);
+		_resourceMacDataSize = _mac->_f.readUint32BE();
+		if (decompressLzss) {
+			data = decodeLzss(_mac->_f, _resourceMacDataSize);
+		} else {
+			data = (uint8_t *)malloc(_resourceMacDataSize);
+			if (data) {
+				_mac->_f.read(data, _resourceMacDataSize);
+			}
+		}
+	} else {
+		error("Resource '%s' not found", name);
+	}
+	return data;
+}
+
+void Resource::MAC_decodeImageData(const uint8_t *ptr, int i, DecodeBuffer *dst) {
+	const uint8_t *basePtr = ptr;
+	const uint16_t sig = READ_BE_UINT16(ptr); ptr += 2;
+	assert(sig == 0xC211 || sig == 0xC103);
+	const int count = READ_BE_UINT16(ptr); ptr += 2;
+	assert(i < count);
+	ptr += 4;
+	const uint32_t offset = READ_BE_UINT32(ptr + i * 4);
+	if (offset != 0) {
+		ptr = basePtr + offset;
+		const int w = READ_BE_UINT16(ptr); ptr += 2;
+		const int h = READ_BE_UINT16(ptr); ptr += 2;
+		switch (sig) {
+		case 0xC211:
+			decodeC211(ptr + 4, w, h, dst);
+			break;
+		case 0xC103:
+			decodeC103(ptr, w, h, dst);
+			break;
+		}
+	}
+}
+
+void Resource::MAC_decodeDataCLUT(const uint8_t *ptr) {
+	ptr += 6; // seed+flags
+	_clutSize = READ_BE_UINT16(ptr); ptr += 2;
+	assert(_clutSize < kClutSize);
+	for (int i = 0; i < _clutSize; ++i) {
+		const int index = READ_BE_UINT16(ptr); ptr += 2;
+		assert(i == index);
+		// ignore lower bits
+		_clut[i].r = ptr[0]; ptr += 2;
+		_clut[i].g = ptr[0]; ptr += 2;
+		_clut[i].b = ptr[0]; ptr += 2;
+	}
+}
+
+void Resource::MAC_loadClutData() {
+	uint8_t *ptr = decodeResourceMacData("Flashback colors", false);
+	if (ptr) {
+		MAC_decodeDataCLUT(ptr);
+		free(ptr);
+	}
+}
+
+void Resource::MAC_loadFontData() {
+	_fnt = decodeResourceMacData("Font", true);
+}
+
+void Resource::MAC_loadIconData() {
+	_icn = decodeResourceMacData("Icons", true);
+}
+
+void Resource::MAC_loadPersoData() {
+	_perso = decodeResourceMacData("Person", true);
+}
+
+void Resource::MAC_loadMonsterData(const char *name, Color *clut) {
+	static const struct {
+		const char *id;
+		const char *name;
+		int index;
+	} data[] = {
+		{ "junky", "Junky", 0x32 },
+		{ "mercenai", "Mercenary", 0x34 },
+		{ "replican", "Replicant", 0x35 },
+		{ "glue", "Alien", 0x36 },
+		{ 0, 0, 0 }
+	};
+	free(_monster);
+	_monster = 0;
+	for (int i = 0; data[i].id; ++i) {
+		if (strcmp(data[i].id, name) == 0) {
+			_monster = decodeResourceMacData(data[i].name, true);
+			assert(_monster);
+			MAC_copyClut16(clut, 5, data[i].index);
+			break;
+		}
+	}
+}
+
+void Resource::MAC_loadTitleImage(int i, DecodeBuffer *buf) {
+	char name[64];
+	snprintf(name, sizeof(name), "Title %d", i);
+	uint8_t *ptr = decodeResourceMacData(name, (i == 6));
+	if (ptr) {
+		MAC_decodeImageData(ptr, 0, buf);
+		free(ptr);
+	}
+}
+
+void Resource::MAC_unloadLevelData() {
+	free(_ani);
+	_ani = 0;
+	ObjectNode *prevNode = 0;
+	for (int i = 0; i < _numObjectNodes; ++i) {
+		if (prevNode != _objectNodesMap[i]) {
+			free(_objectNodesMap[i]);
+			prevNode = _objectNodesMap[i];
+		}
+	}
+	_numObjectNodes = 0;
+	free(_tbn);
+	_tbn = 0;
+	free(_str);
+	_str = 0;
+}
+
+static const int _macLevelColorOffsets[] = { 24, 28, 36, 40, 44 }; // red palette: 32
+static const char *_macLevelNumbers[] = { "1", "2", "3", "4-1", "4-2", "5-1", "5-2" };
+
+void Resource::MAC_loadLevelData(int level) {
+	char name[64];
+	// .PGE
+	snprintf(name, sizeof(name), "Level %s objects", _macLevelNumbers[level]);
+	uint8_t *ptr = decodeResourceMacData(name, true);
+	if (ptr) {
+		decodePGE(ptr, _resourceMacDataSize);
+		free(ptr);
+	} else {
+		error("Failed to load '%s'", name);
+	}
+	// .ANI
+	snprintf(name, sizeof(name), "Level %s sequences", _macLevelNumbers[level]);
+	_ani = decodeResourceMacData(name, true);
+	if (_ani) {
+		assert(READ_BE_UINT16(_ani) == 0x48D);
+	} else {
+		error("Failed to load '%s'", name);
+	}
+	// .OBJ
+	snprintf(name, sizeof(name), "Level %s conditions", _macLevelNumbers[level]);
+	ptr = decodeResourceMacData(name, true);
+	if (ptr) {
+		assert(READ_BE_UINT16(ptr) == 0xE6);
+		decodeOBJ(ptr, _resourceMacDataSize);
+		free(ptr);
+	} else {
+		error("Failed to load '%s'", name);
+	}
+	// .CT
+	snprintf(name, sizeof(name), "Level %c map", _macLevelNumbers[level][0]);
+	ptr = decodeResourceMacData(name, true);
+	if (ptr) {
+		assert(_resourceMacDataSize == 0x1D00);
+		memcpy(_ctData, ptr, _resourceMacDataSize);
+		free(ptr);
+	} else {
+		error("Failed to load '%s'", name);
+	}
+	// .SPC
+	snprintf(name, sizeof(name), "Objects %c", _macLevelNumbers[level][0]);
+	_spc = decodeResourceMacData(name, true);
+	// .TBN
+	snprintf(name, sizeof(name), "Level %s names", _macLevelNumbers[level]);
+	_tbn = decodeResourceMacData(name, false);
+
+	_str = decodeResourceMacData("Flashback strings", false);
+}
+
+void Resource::MAC_loadLevelRoom(int level, int i, DecodeBuffer *dst) {
+	char name[64];
+	snprintf(name, sizeof(name), "Level %c Room %d", _macLevelNumbers[level][0], i);
+	uint8_t *ptr = decodeResourceMacData(name, true);
+	if (ptr) {
+		MAC_decodeImageData(ptr, 0, dst);
+		free(ptr);
+	}
+}
+
+void Resource::MAC_clearClut16(Color *clut, uint8_t dest) {
+        memset(&clut[dest * 16], 0, 16 * sizeof(Color));
+}
+
+void Resource::MAC_copyClut16(Color *clut, uint8_t dest, uint8_t src) {
+	memcpy(&clut[dest * 16], &_clut[src * 16], 16 * sizeof(Color));
+}
+
+void Resource::MAC_setupRoomClut(int level, int room, Color *clut) {
+	const int num = _macLevelNumbers[level][0] - '1';
+	int offset = _macLevelColorOffsets[num];
+	if (level == 1) {
+		switch (room) {
+		case 27:
+		case 28:
+		case 29:
+		case 30:
+		case 35:
+		case 36:
+		case 37:
+		case 45:
+		case 46:
+			offset = 32;
+			break;
+		}
+	}
+	for (int i = 0; i < 4; ++i) {
+		MAC_copyClut16(clut, i, offset + i);
+		MAC_copyClut16(clut, 8 + i, offset + i);
+	}
+	MAC_copyClut16(clut, 4, 0x30);
+	// 5 is monster palette
+	MAC_clearClut16(clut, 6);
+	MAC_copyClut16(clut, 0xA, _macLevelColorOffsets[0] + 2);
+	MAC_copyClut16(clut, 0xC, 0x37);
+	MAC_copyClut16(clut, 0xD, 0x38);
+}
+
+const uint8_t *Resource::MAC_getImageData(const uint8_t *ptr, int i) {
+	const uint8_t *basePtr = ptr;
+	const uint16_t sig = READ_BE_UINT16(ptr); ptr += 2;
+	assert(sig == 0xC211);
+	const int count = READ_BE_UINT16(ptr); ptr += 2;
+	assert(i < count);
+	ptr += 4;
+	const uint32_t offset = READ_BE_UINT32(ptr + i * 4);
+	return (offset != 0) ? basePtr + offset : 0;
+}
+
+bool Resource::MAC_hasLevelMap(int level, int room) const {
+	char name[64];
+	snprintf(name, sizeof(name), "Level %c Room %d", _macLevelNumbers[level][0], room);
+	return _mac->findEntry(name) != 0;
+}

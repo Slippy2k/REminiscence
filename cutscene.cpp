@@ -57,7 +57,7 @@ void Cutscene::setPalette() {
 	sync();
 	updatePalette();
 	SWAP(_page0, _page1);
-	_stub->copyRect(0, 0, _vid->_w, _vid->_h, _page0, 256);
+	_stub->copyRect(0, 0, _vid->_w, _vid->_h, _page0, _vid->_w);
 	_stub->updateScreen(0);
 }
 
@@ -1066,7 +1066,7 @@ void Cutscene::playText(const char *str) {
 	const int y = (128 - lines * 8) / 2;
 	memset(_page1, 0xC0, _vid->_layerSize);
 	drawText(0, y, (const uint8_t *)str, 0xC1, _page1, kTextJustifyAlign);
-	_stub->copyRect(0, 0, _vid->_w, _vid->_h, _page1, 256);
+	_stub->copyRect(0, 0, _vid->_w, _vid->_h, _page1, _vid->_w);
 	_stub->updateScreen(0);
 
 	while (!_stub->_pi.quit) {
@@ -1268,7 +1268,7 @@ void Cutscene::playSet(const uint8_t *p, int offset) {
 			_stub->setPaletteEntry(0xC0 + j, &c);
 		}
 
-		_stub->copyRect(0, 0, _vid->_w, _vid->_h, _page1, 256);
+		_stub->copyRect(0, 0, _vid->_w, _vid->_h, _page1, _vid->_w);
 		_stub->updateScreen(0);
 		const int diff = 6 * TIMER_SLICE - (_stub->getTimeStamp() - timestamp);
 		_stub->sleep((diff < 16) ? 16 : diff);

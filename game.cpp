@@ -4,7 +4,8 @@
  * Copyright (C) 2005-2018 Gregory Montoir (cyx@users.sourceforge.net)
  */
 
-#include <ctime>
+#include <time.h>
+#include "decode_mac.h"
 #include "file.h"
 #include "fs.h"
 #include "game.h"
@@ -46,6 +47,10 @@ void Game::run() {
 			_cut._patchedOffsetsTable = Cutscene::_ssiOffsetsTable;
 		}
 		break;
+	case kResourceTypeMac:
+		_res.MAC_loadClutData();
+		_res.MAC_loadFontData();
+		break;
 	}
 
 	if (!g_options.bypass_protection) {
@@ -73,6 +78,10 @@ void Game::run() {
 		_res.load("PERSO", Resource::OT_SPR);
 		_res.load_SPR_OFF("PERSO", _res._spr1);
 		_res.load_FIB("GLOBAL");
+		break;
+	case kResourceTypeMac:
+		_res.MAC_loadIconData();
+		_res.MAC_loadPersoData();
 		break;
 	}
 
@@ -109,6 +118,9 @@ void Game::run() {
 			case kResourceTypeAmiga:
 				displayTitleScreenAmiga();
 				_stub->setScreenSize(Video::GAMESCREEN_W, Video::GAMESCREEN_H);
+				break;
+			case kResourceTypeMac:
+				// TODO:
 				break;
 			}
 			if (_stub->_pi.quit) {
@@ -317,6 +329,11 @@ void Game::playCutscene(int id) {
 		_cut._id = id;
 	}
 	if (_cut._id != 0xFFFF) {
+		if (_res._type == kResourceTypeMac) {
+			warning("Unhandled cutscene %d playback", _cut._id);
+			_cut._id = 0xFFFF;
+			return;
+		}
 		_mix.stopMusic();
 		if (_res._hasSeqData) {
 			int num = 0;
@@ -433,7 +450,7 @@ void Game::showFinalScore() {
 	strcpy(buf, _menu._passwords[7][_skillLevel]);
 	_vid.drawString(buf, (256 - strlen(buf) * 8) / 2, 16, 0xE7);
 	while (!_stub->_pi.quit) {
-		_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._frontLayer, 256);
+		_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._frontLayer, _vid._w);
 		_stub->updateScreen(0);
 		_stub->processEvents();
 		if (_stub->_pi.enter) {
@@ -598,7 +615,7 @@ bool Game::handleContinueAbort() {
 			_stub->_pi.enter = false;
 			return (current_color == 0);
 		}
-		_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._frontLayer, 256);
+		_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._frontLayer, _vid._w);
 		_stub->updateScreen(0);
 		static const int COLOR_STEP = 8;
 		static const int COLOR_MIN = 16;
@@ -641,7 +658,7 @@ bool Game::handleProtectionScreen() {
 	int shapeNum = getRandomNumber() % 30;
 	for (int16_t zoom = 2000; zoom != 0; zoom -= 100) {
 		_cut.drawProtectionShape(shapeNum, zoom);
-		_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._tempLayer, 256);
+		_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._tempLayer, _vid._w);
 		_stub->updateScreen(0);
 		_stub->sleep(30);
 	}
@@ -743,8 +760,8 @@ void Game::drawLevelTexts() {
 			uint8_t icon_num = obj - 1;
 			drawIcon(icon_num, 80, 8, 0xA);
 			uint8_t txt_num = pge->init_PGE->text_num;
-			const char *str = (const char *)_res.getTextString(_currentLevel, txt_num);
-			_vid.drawString(str, (176 - strlen(str) * 8) / 2, 26, 0xE6);
+			const uint8_t *str = _res.getTextString(_currentLevel, txt_num);
+			drawString(str, 176, 26, 0xE6, true);
 			if (icon_num == 2) {
 				printSaveStateCompleted();
 				return;
@@ -831,6 +848,21 @@ void Game::drawStoryTexts() {
 	}
 }
 
+void Game::drawString(const uint8_t *p, int x, int y, uint8_t color, bool hcenter) {
+	const char *str = (const char *)p;
+	int len = 0;
+	if (_res._type == kResourceTypeMac) {
+		len = *p;
+		++str;
+	} else {
+		len = strlen(str);
+	}
+	if (hcenter) {
+		x = (x - len * 8) / 2;
+	}
+	_vid.drawString(str, x, y, color);
+}
+
 void Game::prepareAnims() {
 	if (!(_currentRoom & 0x80) && _currentRoom < 0x40) {
 		int8_t pge_room;
@@ -888,13 +920,22 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16_t dx, int16_t dy) {
 		if (pge->index != 0 && loadMonsterSprites(pge) == 0) {
 			return;
 		}
-		assert(pge->anim_number < 1287);
-		const uint8_t *dataPtr = _res._sprData[pge->anim_number];
-		if (dataPtr == 0) {
-			return;
+		const uint8_t *dataPtr = 0;
+		int8_t dw = 0, dh = 0;
+		switch (_res._type) {
+		case kResourceTypeAmiga:
+		case kResourceTypeDOS:
+			assert(pge->anim_number < 1287);
+			dataPtr = _res._sprData[pge->anim_number];
+			if (dataPtr == 0) {
+				return;
+			}
+			dw = (int8_t)dataPtr[0];
+			dh = (int8_t)dataPtr[1];
+			break;
+		case kResourceTypeMac:
+			break;
 		}
-		const int8_t dw = (int8_t)dataPtr[0];
-		const int8_t dh = (int8_t)dataPtr[1];
 		uint8_t w = 0, h = 0;
 		switch (_res._type) {
 		case kResourceTypeAmiga:
@@ -906,8 +947,10 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16_t dx, int16_t dy) {
 			h = dataPtr[3];
 			dataPtr += 4;
 			break;
+		case kResourceTypeMac:
+			break;
 		}
-		const int16_t ypos = dy + pge->pos_y - dh + 2;
+		int16_t ypos = dy + pge->pos_y - dh + 2;
 		int16_t xpos = dx + pge->pos_x - dw;
 		if (pge->flags & 2) {
 			xpos = dw + dx + pge->pos_x;
@@ -931,8 +974,16 @@ void Game::prepareAnimsHelper(LivePGE *pge, int16_t dx, int16_t dy) {
 			_animBuffers.addState(0, xpos, ypos, dataPtr, pge, w, h);
 		}
 	} else {
-		assert(pge->anim_number < _res._numSpc);
-		const uint8_t *dataPtr = _res._spc + READ_BE_UINT16(_res._spc + pge->anim_number * 2);
+		const uint8_t *dataPtr = 0;
+		switch (_res._type) {
+		case kResourceTypeAmiga:
+		case kResourceTypeDOS:
+			assert(pge->anim_number < _res._numSpc);
+			dataPtr = _res._spc + READ_BE_UINT16(_res._spc + pge->anim_number * 2);
+			break;
+		case kResourceTypeMac:
+			break;
+		}
 		const int16_t xpos = dx + pge->pos_x + 8;
 		const int16_t ypos = dy + pge->pos_y + 2;
 		if (pge->init_PGE->object_type == 11) {
@@ -983,12 +1034,75 @@ void Game::drawAnimBuffer(uint8_t stateNum, AnimBufferState *state) {
 						drawCharacter(state->dataPtr, state->x, state->y, state->h, state->w, pge->flags);
 					}
 					break;
+				case kResourceTypeMac:
+					drawPiege(state);
+					break;
 				}
 			} else {
-				drawObject(state->dataPtr, state->x, state->y, pge->flags);
+				drawPiege(state);
 			}
 			--state;
 		} while (--numAnims != 0);
+	}
+}
+
+static void fixOffsetDecodeBuffer(DecodeBuffer *buf, const uint8_t *dataPtr) {
+	if (buf->xflip) {
+		buf->x += (int16_t)READ_BE_UINT16(dataPtr + 4) - READ_BE_UINT16(dataPtr) - 1;
+	} else {
+		buf->x -= (int16_t)READ_BE_UINT16(dataPtr + 4);
+	}
+	buf->y -= (int16_t)READ_BE_UINT16(dataPtr + 6);
+}
+
+void Game::drawPiege(AnimBufferState *state) {
+	LivePGE *pge = state->pge;
+	switch (_res._type) {
+	case kResourceTypeAmiga:
+	case kResourceTypeDOS:
+		drawObject(state->dataPtr, state->x, state->y, pge->flags);
+		break;
+	case kResourceTypeMac: {
+			DecodeBuffer buf;
+			memset(&buf, 0, sizeof(buf));
+			buf.xflip = (pge->flags & 2);
+			buf.ptr = _vid._frontLayer;
+			buf.w = buf.pitch = _vid._w;
+			buf.h = _vid._h;
+			buf.x = state->x * _vid._layerScale;
+			buf.y = state->y * _vid._layerScale;
+			buf.setPixel = _eraseBackground ? Video::MAC_drawBuffer : Video::MAC_drawBufferMask;
+			if (pge->flags & 8) {
+				const uint8_t *dataPtr = _res.MAC_getImageData(_res._spc, pge->anim_number);
+				if (dataPtr) {
+					fixOffsetDecodeBuffer(&buf, dataPtr);
+					_res.MAC_decodeImageData(_res._spc, pge->anim_number, &buf);
+					_vid.MAC_markBlockAsDirty(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2));
+				}
+			} else {
+				if (pge->index == 0) {
+					if (pge->anim_number == 0x386) {
+						return;
+					}
+					const int frame = _res.MAC_getPersoFrame(pge->anim_number);
+					const uint8_t *dataPtr = _res.MAC_getImageData(_res._perso, frame);
+					if (dataPtr) {
+						fixOffsetDecodeBuffer(&buf, dataPtr);
+						_res.MAC_decodeImageData(_res._perso, frame, &buf);
+						_vid.MAC_markBlockAsDirty(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2));
+					}
+			} else {
+				const int frame = _res.MAC_getMonsterFrame(pge->anim_number);
+				const uint8_t *dataPtr = _res.MAC_getImageData(_res._monster, frame);
+				if (dataPtr) {
+					fixOffsetDecodeBuffer(&buf, dataPtr);
+					_res.MAC_decodeImageData(_res._monster, frame, &buf);
+					_vid.MAC_markBlockAsDirty(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2));
+				}
+			}
+			}
+		}
+		break;
 	}
 }
 
@@ -1016,6 +1130,9 @@ void Game::drawObject(const uint8_t *dataPtr, int16_t x, int16_t y, uint8_t flag
 	case kResourceTypeDOS:
 		count = dataPtr[5];
 		dataPtr += 6;
+		break;
+	case kResourceTypeMac:
+		assert(0); // different graphics format
 		break;
 	}
 	for (int i = 0; i < count; ++i) {
@@ -1050,6 +1167,9 @@ void Game::drawObjectFrame(const uint8_t *bankDataPtr, const uint8_t *dataPtr, i
 		break;
 	case kResourceTypeDOS:
 		_vid.PC_decodeSpc(src, sprite_w, sprite_h, _res._scratchBuffer);
+		break;
+	case kResourceTypeMac:
+		assert(0); // different graphics format
 		break;
 	}
 
@@ -1282,24 +1402,42 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 	_curMonsterFrame = mList[0];
 	if (_curMonsterNum != mList[1]) {
 		_curMonsterNum = mList[1];
-		if (_res.isAmiga()) {
-			_res.load(_monsterNames[1][_curMonsterNum], Resource::OT_SPM);
-			static const uint8_t tab[4] = { 0, 8, 0, 8 };
-			const int offset = _vid._mapPalSlot3 * 16 + tab[_curMonsterNum];
-			for (int i = 0; i < 8; ++i) {
-				_vid.setPaletteColorBE(0x50 + i, offset + i);
+		switch (_res._type) {
+		case kResourceTypeAmiga: {
+				_res.load(_monsterNames[1][_curMonsterNum], Resource::OT_SPM);
+				static const uint8_t tab[4] = { 0, 8, 0, 8 };
+				const int offset = _vid._mapPalSlot3 * 16 + tab[_curMonsterNum];
+				for (int i = 0; i < 8; ++i) {
+					_vid.setPaletteColorBE(0x50 + i, offset + i);
+				}
 			}
-		} else {
-			const char *name = _monsterNames[0][_curMonsterNum];
-			_res.load(name, Resource::OT_SPRM);
-			_res.load_SPR_OFF(name, _res._sprm);
-			_vid.setPaletteSlotLE(5, _monsterPals[_curMonsterNum]);
+			break;
+		case kResourceTypeDOS: {
+				const char *name = _monsterNames[0][_curMonsterNum];
+				_res.load(name, Resource::OT_SPRM);
+				_res.load_SPR_OFF(name, _res._sprm);
+				_vid.setPaletteSlotLE(5, _monsterPals[_curMonsterNum]);
+			}
+			break;
+		case kResourceTypeMac: {
+				Color palette[256];
+				_res.MAC_loadMonsterData(_monsterNames[1][_curMonsterNum], palette);
+				static const int kMonsterPalette = 5;
+				for (int i = 0; i < 16; ++i) {
+					const int color = kMonsterPalette * 16 + i;
+					_stub->setPaletteEntry(color, &palette[color]);
+				}
+			}
+			break;
 		}
 	}
 	return 0xFFFF;
 }
 
 bool Game::hasLevelMap(int level, int room) const {
+	if (_res._type == kResourceTypeMac) {
+		return _res.MAC_hasLevelMap(level, room);
+	}
 	if (_res._map) {
 		return READ_LE_UINT32(_res._map + room * 6) != 0;
 	} else if (_res._lev) {
@@ -1345,6 +1483,29 @@ void Game::loadLevelMap() {
 			_vid.PC_decodeLev(_currentLevel, _currentRoom);
 		}
 		_vid.PC_setLevelPalettes();
+		break;
+	case kResourceTypeMac:
+		{
+			DecodeBuffer buf;
+			memset(&buf, 0, sizeof(buf));
+			buf.ptr = _vid._frontLayer;
+			buf.w = buf.pitch = _vid._w;
+			buf.h = _vid._h;
+			buf.setPixel = Video::MAC_drawBuffer;
+			_res.MAC_loadLevelRoom(_currentLevel, _currentRoom, &buf);
+			memcpy(_vid._backLayer, _vid._frontLayer, _vid._layerSize);
+			Color roomPalette[256];
+			_res.MAC_setupRoomClut(_currentLevel, _currentRoom, roomPalette);
+			for (int j = 0; j < 16; ++j) {
+				if (j == 5 || j == 7 || j == 14 || j == 15) {
+					continue;
+				}
+				for (int i = 0; i < 16; ++i) {
+					const int color = j * 16 + i;
+					_stub->setPaletteEntry(color, &roomPalette[color]);
+				}
+			}
+		}
 		break;
 	}
 }
@@ -1423,6 +1584,10 @@ void Game::loadLevelData() {
 		_res.load(lvl->name2, Resource::OT_OBJ);
 		_res.load(lvl->name2, Resource::OT_ANI);
 		_res.load(lvl->name2, Resource::OT_TBN);
+		break;
+	case kResourceTypeMac:
+		_res.MAC_unloadLevelData();
+		_res.MAC_loadLevelData(_currentLevel);
 		break;
 	}
 
@@ -1508,8 +1673,22 @@ void Game::drawIcon(uint8_t iconNum, int16_t x, int16_t y, uint8_t colMask) {
 	case kResourceTypeDOS:
 		_vid.PC_decodeIcn(_res._icn, iconNum, buf);
 		break;
+	case kResourceTypeMac: {
+			const uint8_t *dataPtr = _res.MAC_getImageData(_res._icn, iconNum);
+			DecodeBuffer buf;
+			memset(&buf, 0, sizeof(buf));
+			buf.ptr = _vid._frontLayer;
+			buf.w = buf.pitch = _vid._w;
+			buf.h = _vid._h;
+			buf.x = x * _vid._layerScale;
+			buf.y = y * _vid._layerScale;
+			buf.setPixel = Video::MAC_drawBuffer;
+			_res.MAC_decodeImageData(_res._icn, iconNum, &buf);
+			_vid.MAC_markBlockAsDirty(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2));
+		}
+		return;
 	}
-	_vid.drawSpriteSub1(buf, _vid._frontLayer + x + y * 256, 16, 16, 16, colMask << 4);
+	_vid.drawSpriteSub1(buf, _vid._frontLayer + x + y * _vid._w, 16, 16, 16, colMask << 4);
 	_vid.markBlockAsDirty(x, y, 16, 16);
 }
 

@@ -4,6 +4,7 @@
  * Copyright (C) 2005-2018 Gregory Montoir (cyx@users.sourceforge.net)
  */
 
+#include "decode_mac.h"
 #include "resource.h"
 #include "systemstub.h"
 #include "unpack.h"
@@ -12,8 +13,9 @@
 
 Video::Video(Resource *res, SystemStub *stub)
 	: _res(res), _stub(stub) {
-	_w = GAMESCREEN_W;
-	_h = GAMESCREEN_H;
+	_layerScale = (_res->_type == kResourceTypeMac) ? 2 : 1; // Macintosh version is 512x448
+	_w = GAMESCREEN_W * _layerScale;
+	_h = GAMESCREEN_H * _layerScale;
 	_layerSize = _w * _h;
 	_frontLayer = (uint8_t *)calloc(1, _layerSize);
 	_backLayer = (uint8_t *)calloc(1,_layerSize);
@@ -32,6 +34,9 @@ Video::Video(Resource *res, SystemStub *stub)
 		break;
 	case kResourceTypeDOS:
 		_drawChar = &Video::PC_drawStringChar;
+		break;
+	case kResourceTypeMac:
+		_drawChar = &Video::MAC_drawStringChar;
 		break;
 	}
 }
@@ -63,7 +68,7 @@ void Video::updateScreen() {
 	debug(DBG_VIDEO, "Video::updateScreen()");
 //	_fullRefresh = true;
 	if (_fullRefresh) {
-		_stub->copyRect(0, 0, _w, _h, _frontLayer, 256);
+		_stub->copyRect(0, 0, _w, _h, _frontLayer, _w);
 		_stub->updateScreen(_shakeOffset);
 		_fullRefresh = false;
 	} else {
@@ -78,14 +83,14 @@ void Video::updateScreen() {
 					++nh;
 				} else if (nh != 0) {
 					int16_t x = (i - nh) * SCREENBLOCK_W;
-					_stub->copyRect(x, j * SCREENBLOCK_H, nh * SCREENBLOCK_W, SCREENBLOCK_H, _frontLayer, 256);
+					_stub->copyRect(x, j * SCREENBLOCK_H, nh * SCREENBLOCK_W, SCREENBLOCK_H, _frontLayer, _w);
 					nh = 0;
 					++count;
 				}
 			}
 			if (nh != 0) {
 				int16_t x = (i - nh) * SCREENBLOCK_W;
-				_stub->copyRect(x, j * SCREENBLOCK_H, nh * SCREENBLOCK_W, SCREENBLOCK_H, _frontLayer, 256);
+				_stub->copyRect(x, j * SCREENBLOCK_H, nh * SCREENBLOCK_W, SCREENBLOCK_H, _frontLayer, _w);
 				++count;
 			}
 			p += _w / SCREENBLOCK_W;
@@ -869,6 +874,10 @@ void Video::PC_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8
 	}
 }
 
+void Video::MAC_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8_t color, uint8_t chr) {
+	// TODO
+}
+
 const char *Video::drawString(const char *str, int16_t x, int16_t y, uint8_t col) {
 	debug(DBG_VIDEO, "Video::drawString('%s', %d, %d, 0x%X)", str, x, y, col);
 	const uint8_t *fnt = (_res->_lang == LANG_JP) ? _font8Jp : _res->_fnt;
@@ -900,4 +909,55 @@ Color Video::AMIGA_convertColor(const uint16_t color, bool bgr) { // 4bits to 8b
 	c.g = (g << 4) | g;
 	c.b = (b << 4) | b;
 	return c;
+}
+
+void Video::MAC_decodeMap(int level, int room) {
+}
+
+void Video::MAC_markBlockAsDirty(int x, int y, int w, int h) {
+	if (x < 0) {
+		w += x;
+		x = 0;
+	}
+	if (x + w > _w) {
+		w = _w - x;
+	}
+	if (w <= 0) {
+		return;
+	}
+	if (y < 0) {
+		h += y;
+		y = 0;
+	}
+	if (y + h > _h) {
+		h = _h - y;
+	}
+	if (h <= 0) {
+		return;
+	}
+	markBlockAsDirty(x, y, w, h);
+}
+
+void Video::MAC_drawBuffer(DecodeBuffer *buf, int src_x, int src_y, int src_w, int src_h, uint8_t color) {
+	const int y = buf->y + src_y;
+	if (y >= 0 && y < buf->h) {
+		const int x = buf->xflip ? (buf->x + (src_w - 1 - src_x)) : (buf->x + src_x);
+		if (x >= 0 && x < buf->w) {
+			const int offset = y * buf->pitch + x;
+			buf->ptr[offset] = color;
+		}
+	}
+}
+
+void Video::MAC_drawBufferMask(DecodeBuffer *buf, int src_x, int src_y, int src_w, int src_h, uint8_t color) {
+	const int y = buf->y + src_y;
+	if (y >= 0 && y < buf->h) {
+		const int x = buf->xflip ? (buf->x + (src_w - 1 - src_x)) : (buf->x + src_x);
+		if (x >= 0 && x < buf->w) {
+			const int offset = y * buf->pitch + x;
+			if ((buf->ptr[offset] & 0x80) == 0) {
+				buf->ptr[offset] = color;
+			}
+		}
+	}
 }
