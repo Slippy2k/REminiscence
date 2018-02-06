@@ -838,7 +838,8 @@ void Video::PC_drawChar(uint8_t c, int16_t y, int16_t x, bool forceDefaultFont) 
 	}
 }
 
-void Video::AMIGA_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8_t color, uint8_t chr) {
+void Video::AMIGA_drawStringChar(uint8_t *dst, int pitch, int x, int y, const uint8_t *src, uint8_t color, uint8_t chr) {
+	dst += y * pitch + x;
 	assert(chr >= 32);
 	AMIGA_decodeIcn(src, chr - 32, _res->_scratchBuffer);
 	src = _res->_scratchBuffer;
@@ -853,7 +854,8 @@ void Video::AMIGA_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, ui
 	}
 }
 
-void Video::PC_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8_t color, uint8_t chr) {
+void Video::PC_drawStringChar(uint8_t *dst, int pitch, int x, int y, const uint8_t *src, uint8_t color, uint8_t chr) {
+	dst += y * pitch + x;
 	assert(chr >= 32);
 	src += (chr - 32) * 8 * 4;
 	for (int y = 0; y < 8; ++y) {
@@ -874,8 +876,17 @@ void Video::PC_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8
 	}
 }
 
-void Video::MAC_drawStringChar(uint8_t *dst, int pitch, const uint8_t *src, uint8_t color, uint8_t chr) {
-	// TODO
+void Video::MAC_drawStringChar(uint8_t *dst, int pitch, int x, int y, const uint8_t *src, uint8_t color, uint8_t chr) {
+	DecodeBuffer buf;
+	memset(&buf, 0, sizeof(buf));
+	buf.ptr = _frontLayer;
+	buf.w = buf.pitch = _w;
+	buf.h = _h;
+	buf.x = x * _layerScale;
+	buf.y = y * _layerScale;
+	buf.setPixel = Video::MAC_drawBuffer;
+	assert(chr >= 32);
+	_res->MAC_decodeImageData(_res->_fnt, chr - 32, &buf);
 }
 
 const char *Video::drawString(const char *str, int16_t x, int16_t y, uint8_t col) {
@@ -883,17 +894,15 @@ const char *Video::drawString(const char *str, int16_t x, int16_t y, uint8_t col
 	const uint8_t *fnt = (_res->_lang == LANG_JP) ? _font8Jp : _res->_fnt;
 	drawCharFunc dcf = _drawChar;
 	int len = 0;
-	uint8_t *dst = _frontLayer + y * 256 + x;
 	while (1) {
 		const uint8_t c = *str++;
 		if (c == 0 || c == 0xB || c == 0xA) {
 			break;
 		}
-		(this->*dcf)(dst, 256, fnt, col, c);
-		dst += CHAR_W;
+		(this->*dcf)(_frontLayer, _w, x + len * CHAR_W, y, fnt, col, c);
 		++len;
 	}
-	markBlockAsDirty(x, y, len * 8, 8);
+	markBlockAsDirty(x, y, len * CHAR_W, CHAR_H);
 	return str - 1;
 }
 

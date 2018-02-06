@@ -446,9 +446,9 @@ void Game::showFinalScore() {
 	playCutscene(0x49);
 	char buf[50];
 	snprintf(buf, sizeof(buf), "SCORE %08u", _score);
-	_vid.drawString(buf, (256 - strlen(buf) * 8) / 2, 40, 0xE5);
+	_vid.drawString(buf, (Video::GAMESCREEN_W - strlen(buf) * Video::CHAR_W) / 2, 40, 0xE5);
 	strcpy(buf, _menu._passwords[7][_skillLevel]);
-	_vid.drawString(buf, (256 - strlen(buf) * 8) / 2, 16, 0xE7);
+	_vid.drawString(buf, (Video::GAMESCREEN_W - strlen(buf) * Video::CHAR_W) / 2, 16, 0xE7);
 	while (!_stub->_pi.quit) {
 		_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._frontLayer, _vid._w);
 		_stub->updateScreen(0);
@@ -586,15 +586,15 @@ bool Game::handleContinueAbort() {
 	while (timeout >= 0 && !_stub->_pi.quit) {
 		const char *str;
 		str = _res.getMenuString(LocaleData::LI_01_CONTINUE_OR_ABORT);
-		_vid.drawString(str, (256 - strlen(str) * 8) / 2, 64, 0xE3);
+		_vid.drawString(str, (Video::GAMESCREEN_W - strlen(str) * Video::CHAR_W) / 2, 64, 0xE3);
 		str = _res.getMenuString(LocaleData::LI_02_TIME);
 		char buf[50];
 		snprintf(buf, sizeof(buf), "%s : %d", str, timeout / 10);
 		_vid.drawString(buf, 96, 88, 0xE3);
 		str = _res.getMenuString(LocaleData::LI_03_CONTINUE);
-		_vid.drawString(str, (256 - strlen(str) * 8) / 2, 104, colors[0]);
+		_vid.drawString(str, (Video::GAMESCREEN_W - strlen(str) * Video::CHAR_W) / 2, 104, colors[0]);
 		str = _res.getMenuString(LocaleData::LI_04_ABORT);
-		_vid.drawString(str, (256 - strlen(str) * 8) / 2, 112, colors[1]);
+		_vid.drawString(str, (Video::GAMESCREEN_W - strlen(str) * Video::CHAR_W) / 2, 112, colors[1]);
 		snprintf(buf, sizeof(buf), "SCORE  %08u", _score);
 		_vid.drawString(buf, 64, 154, 0xE3);
 		if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
@@ -670,10 +670,10 @@ bool Game::handleProtectionScreen() {
 	do {
 		codeText[len] = '\0';
 		memcpy(_vid._frontLayer, _vid._tempLayer, _vid._layerSize);
-		_vid.drawString("PROTECTION", 11 * 8, 2 * 8, _menu._charVar2);
+		_vid.drawString("PROTECTION", 11 * Video::CHAR_W, 2 * Video::CHAR_H, _menu._charVar2);
 		char buf[20];
 		snprintf(buf, sizeof(buf), "CODE %d :  %s", codeNum + 1, codeText);
-		_vid.drawString(buf, 8 * 8, 23 * 8, _menu._charVar2);
+		_vid.drawString(buf, 8 * Video::CHAR_W, 23 * Video::CHAR_H, _menu._charVar2);
 		_vid.updateScreen();
 		_stub->sleep(50);
 		_stub->processEvents();
@@ -736,7 +736,7 @@ void Game::printLevelCode() {
 				}
 			}
 			snprintf(buf, sizeof(buf), "CODE: %s", code);
-			_vid.drawString(buf, (_vid._w - strlen(buf) * 8) / 2, 16, 0xE7);
+			_vid.drawString(buf, (Video::GAMESCREEN_W - strlen(buf) * Video::CHAR_W) / 2, 16, 0xE7);
 		}
 	}
 }
@@ -744,7 +744,7 @@ void Game::printLevelCode() {
 void Game::printSaveStateCompleted() {
 	if (_saveStateCompleted) {
 		const char *str = _res.getMenuString(LocaleData::LI_05_COMPLETED);
-		_vid.drawString(str, (176 - strlen(str) * 8) / 2, 34, 0xE6);
+		_vid.drawString(str, (176 - strlen(str) * Video::CHAR_W) / 2, 34, 0xE6);
 	}
 }
 
@@ -784,6 +784,11 @@ static int getLineLength(const uint8_t *str) {
 
 void Game::drawStoryTexts() {
 	if (_textToDisplay != 0xFFFF) {
+		if (_res._type == kResourceTypeMac) {
+			warning("Unhandled textToDisplay %d", _textToDisplay);
+			_textToDisplay = 0xFFFF;
+			return;
+		}
 		uint8_t textColor = 0xE8;
 		const uint8_t *str = _res.getGameString(_textToDisplay);
 		memcpy(_vid._tempLayer, _vid._frontLayer, _vid._layerSize);
@@ -813,7 +818,7 @@ void Game::drawStoryTexts() {
 			int yPos = 26;
 			while (1) {
 				const int len = getLineLength(str);
-				str = (const uint8_t *)_vid.drawString((const char *)str, (176 - len * 8) / 2, yPos, textColor);
+				str = (const uint8_t *)_vid.drawString((const char *)str, (176 - len * Video::CHAR_W) / 2, yPos, textColor);
 				yPos += 8;
 				if (*str == 0 || *str == 0xB) {
 					break;
@@ -858,7 +863,7 @@ void Game::drawString(const uint8_t *p, int x, int y, uint8_t color, bool hcente
 		len = strlen(str);
 	}
 	if (hcenter) {
-		x = (x - len * 8) / 2;
+		x = (x - len * Video::CHAR_W) / 2;
 	}
 	_vid.drawString(str, x, y, color);
 }
@@ -1079,18 +1084,17 @@ void Game::drawPiege(AnimBufferState *state) {
 					_res.MAC_decodeImageData(_res._spc, pge->anim_number, &buf);
 					_vid.MAC_markBlockAsDirty(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2));
 				}
-			} else {
-				if (pge->index == 0) {
-					if (pge->anim_number == 0x386) {
-						return;
-					}
-					const int frame = _res.MAC_getPersoFrame(pge->anim_number);
-					const uint8_t *dataPtr = _res.MAC_getImageData(_res._perso, frame);
-					if (dataPtr) {
-						fixOffsetDecodeBuffer(&buf, dataPtr);
-						_res.MAC_decodeImageData(_res._perso, frame, &buf);
-						_vid.MAC_markBlockAsDirty(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2));
-					}
+			} else if (pge->index == 0) {
+				if (pge->anim_number == 0x386) {
+					return;
+				}
+				const int frame = _res.MAC_getPersoFrame(pge->anim_number);
+				const uint8_t *dataPtr = _res.MAC_getImageData(_res._perso, frame);
+				if (dataPtr) {
+					fixOffsetDecodeBuffer(&buf, dataPtr);
+					_res.MAC_decodeImageData(_res._perso, frame, &buf);
+					_vid.MAC_markBlockAsDirty(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2));
+				}
 			} else {
 				const int frame = _res.MAC_getMonsterFrame(pge->anim_number);
 				const uint8_t *dataPtr = _res.MAC_getImageData(_res._monster, frame);
@@ -1099,7 +1103,6 @@ void Game::drawPiege(AnimBufferState *state) {
 					_res.MAC_decodeImageData(_res._monster, frame, &buf);
 					_vid.MAC_markBlockAsDirty(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2));
 				}
-			}
 			}
 		}
 		break;
@@ -1789,11 +1792,11 @@ void Game::handleInventory() {
 						selected_pge = items[item_it].live_pge;
 						uint8_t txt_num = items[item_it].init_pge->text_num;
 						const char *str = (const char *)_res.getTextString(_currentLevel, txt_num);
-						_vid.drawString(str, (256 - strlen(str) * 8) / 2, 189, 0xED);
+						_vid.drawString(str, (Video::GAMESCREEN_W - strlen(str) * Video::CHAR_W) / 2, 189, 0xED);
 						if (items[item_it].init_pge->init_flags & 4) {
 							char buf[10];
 							snprintf(buf, sizeof(buf), "%d", selected_pge->life);
-							_vid.drawString(buf, (256 - strlen(buf) * 8) / 2, 197, 0xED);
+							_vid.drawString(buf, (Video::GAMESCREEN_W - strlen(buf) * Video::CHAR_W) / 2, 197, 0xED);
 						}
 					}
 					icon_x_pos += 32;
@@ -1807,9 +1810,9 @@ void Game::handleInventory() {
 			} else {
 				char buf[50];
 				snprintf(buf, sizeof(buf), "SCORE %08u", _score);
-				_vid.drawString(buf, (114 - strlen(buf) * 8) / 2 + 72, 158, 0xE5);
+				_vid.drawString(buf, (114 - strlen(buf) * Video::CHAR_W) / 2 + 72, 158, 0xE5);
 				snprintf(buf, sizeof(buf), "%s:%s", _res.getMenuString(LocaleData::LI_06_LEVEL), _res.getMenuString(LocaleData::LI_13_EASY + _skillLevel));
-				_vid.drawString(buf, (114 - strlen(buf) * 8) / 2 + 72, 166, 0xE5);
+				_vid.drawString(buf, (114 - strlen(buf) * Video::CHAR_W) / 2 + 72, 166, 0xE5);
 			}
 
 			_vid.updateScreen();
