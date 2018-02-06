@@ -216,7 +216,7 @@ bool Menu::handlePasswordScreen() {
 			password[len] = '\0';
 			for (int level = 0; level < 8; ++level) {
 				for (int skill = 0; skill < 3; ++skill) {
-					if (strcmp(_passwords[level][skill], password) == 0) {
+					if (strcmp(getLevelPassword(level, skill), password) == 0) {
 						_level = level;
 						_skill = skill;
 						return true;
@@ -436,4 +436,24 @@ void Menu::handleTitleScreen() {
 			break;
 		}
 	}
+}
+
+const char *Menu::getLevelPassword(int level, int skill) const {
+	switch (_res->_type) {
+	case kResourceTypeAmiga:
+		if (level < 7) {
+			if (_res->_lang == LANG_FR) {
+				return _passwordsFrAmiga[skill * 7 + level];
+			} else {
+				return _passwordsEnAmiga[skill * 7 + level];
+			}
+		}
+		break;
+	case kResourceTypeMac:
+		return _passwordsMac[skill * 8 + level];
+	case kResourceTypeDOS:
+		// default
+		break;
+	}
+	return _passwordsDOS[skill * 8 + level];
 }

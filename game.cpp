@@ -447,8 +447,8 @@ void Game::showFinalScore() {
 	char buf[50];
 	snprintf(buf, sizeof(buf), "SCORE %08u", _score);
 	_vid.drawString(buf, (Video::GAMESCREEN_W - strlen(buf) * Video::CHAR_W) / 2, 40, 0xE5);
-	strcpy(buf, _menu._passwords[7][_skillLevel]);
-	_vid.drawString(buf, (Video::GAMESCREEN_W - strlen(buf) * Video::CHAR_W) / 2, 16, 0xE7);
+	const char *str = _menu.getLevelPassword(7, _skillLevel);
+	_vid.drawString(str, (Video::GAMESCREEN_W - strlen(str) * Video::CHAR_W) / 2, 16, 0xE7);
 	while (!_stub->_pi.quit) {
 		_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._frontLayer, _vid._w);
 		_stub->updateScreen(0);
@@ -727,15 +727,7 @@ void Game::printLevelCode() {
 		--_printLevelCodeCounter;
 		if (_printLevelCodeCounter != 0) {
 			char buf[32];
-			const char *code = Menu::_passwords[_currentLevel][_skillLevel];
-			if (_res.isAmiga()) {
-				if (_res._lang == LANG_FR) {
-					code = Menu::_passwordsFrAmiga[_skillLevel * 7 + _currentLevel];
-				} else {
-					code = Menu::_passwordsEnAmiga[_skillLevel * 7 + _currentLevel];
-				}
-			}
-			snprintf(buf, sizeof(buf), "CODE: %s", code);
+			snprintf(buf, sizeof(buf), "CODE: %s", _menu.getLevelPassword(_currentLevel, _skillLevel));
 			_vid.drawString(buf, (Video::GAMESCREEN_W - strlen(buf) * Video::CHAR_W) / 2, 16, 0xE7);
 		}
 	}
