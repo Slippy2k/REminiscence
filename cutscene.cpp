@@ -148,8 +148,7 @@ void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, 
 		} else if (*p == 0x9) {
 			// ignore tab
 		} else {
-			uint8_t *dst = page + 256 * yy + xx;
-			(_vid->*dcf)(dst, 256, xx, yy, fnt, color, *p);
+			(_vid->*dcf)(page, 256, xx, yy, fnt, color, *p);
 			xx += 8;
 		}
 	}
