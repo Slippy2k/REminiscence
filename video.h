@@ -84,6 +84,7 @@ struct Video {
 	void AMIGA_drawStringChar(uint8_t *dst, int pitch, int x, int y, const uint8_t *src, uint8_t color, uint8_t chr);
 	void MAC_drawStringChar(uint8_t *dst, int pitch, int x, int y, const uint8_t *src, uint8_t color, uint8_t chr);
 	const char *drawString(const char *str, int16_t x, int16_t y, uint8_t col);
+	void drawStringLen(const char *str, int len, int x, int y, uint8_t color);
 	static Color AMIGA_convertColor(const uint16_t color, bool bgr = false);
 	void MAC_decodeMap(int level, int room);
 	void MAC_markBlockAsDirty(int x, int y, int w, int h);

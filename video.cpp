@@ -892,18 +892,25 @@ void Video::MAC_drawStringChar(uint8_t *dst, int pitch, int x, int y, const uint
 const char *Video::drawString(const char *str, int16_t x, int16_t y, uint8_t col) {
 	debug(DBG_VIDEO, "Video::drawString('%s', %d, %d, 0x%X)", str, x, y, col);
 	const uint8_t *fnt = (_res->_lang == LANG_JP) ? _font8Jp : _res->_fnt;
-	drawCharFunc dcf = _drawChar;
 	int len = 0;
 	while (1) {
 		const uint8_t c = *str++;
 		if (c == 0 || c == 0xB || c == 0xA) {
 			break;
 		}
-		(this->*dcf)(_frontLayer, _w, x + len * CHAR_W, y, fnt, col, c);
+		(this->*_drawChar)(_frontLayer, _w, x + len * CHAR_W, y, fnt, col, c);
 		++len;
 	}
 	markBlockAsDirty(x, y, len * CHAR_W, CHAR_H);
 	return str - 1;
+}
+
+void Video::drawStringLen(const char *str, int len, int x, int y, uint8_t color) {
+	const uint8_t *fnt = (_res->_lang == LANG_JP) ? _font8Jp : _res->_fnt;
+	for (int i = 0; i < len; ++i) {
+		(this->*_drawChar)(_frontLayer, _w, x + i * CHAR_W, y, fnt, color, str[i]);
+	}
+	markBlockAsDirty(x, y, len * CHAR_W, CHAR_H);
 }
 
 Color Video::AMIGA_convertColor(const uint16_t color, bool bgr) { // 4bits to 8bits

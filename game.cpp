@@ -857,7 +857,7 @@ void Game::drawString(const uint8_t *p, int x, int y, uint8_t color, bool hcente
 	if (hcenter) {
 		x = (x - len * Video::CHAR_W) / 2;
 	}
-	_vid.drawString(str, x, y, color);
+	_vid.drawStringLen(str, len, x, y, color);
 }
 
 void Game::prepareAnims() {
@@ -1668,7 +1668,19 @@ void Game::drawIcon(uint8_t iconNum, int16_t x, int16_t y, uint8_t colMask) {
 	case kResourceTypeDOS:
 		_vid.PC_decodeIcn(_res._icn, iconNum, buf);
 		break;
-	case kResourceTypeMac: {
+	case kResourceTypeMac:
+		switch (iconNum) {
+		case 76: // cursor
+			iconNum = 32;
+			break;
+		case 77: // up
+			iconNum = 33;
+			break;
+		case 78: // down
+			iconNum = 34;
+			break;
+		}
+		{
 			const uint8_t *dataPtr = _res.MAC_getImageData(_res._icn, iconNum);
 			DecodeBuffer buf;
 			memset(&buf, 0, sizeof(buf));
@@ -1742,35 +1754,43 @@ void Game::handleInventory() {
 		int current_line = 0;
 		bool display_score = false;
 		while (!_stub->_pi.backspace && !_stub->_pi.quit) {
-			// draw inventory background
-			int icon_h = 5;
-			int icon_y = 140;
-			int icon_num = 31;
 			static const int icon_spr_w = 16;
 			static const int icon_spr_h = 16;
-			do {
-				int icon_x = 56;
-				int icon_w = 9;
-				do {
-					drawIcon(icon_num, icon_x, icon_y, 0xF);
-					++icon_num;
-					icon_x += icon_spr_w;
-				} while (--icon_w);
-				icon_y += icon_spr_h;
-			} while (--icon_h);
-			if (_res._type == kResourceTypeAmiga) {
-				// draw outline rectangle
-				static const uint8_t outline_color = 0xE7;
-				uint8_t *p = _vid._frontLayer + 140 * Video::GAMESCREEN_W + 56;
-				memset(p + 1, outline_color, 9 * icon_spr_w - 2);
-				p += Video::GAMESCREEN_W;
-				for (int y = 1; y < 5 * icon_spr_h - 1; ++y) {
-					p[0] = p[9 * icon_spr_w - 1] = outline_color;
-					p += Video::GAMESCREEN_W;
+			switch (_res._type) {
+			case kResourceTypeAmiga:
+			case kResourceTypeDOS: {
+					// draw inventory background
+					int icon_h = 5;
+					int icon_y = 140;
+					int icon_num = 31;
+					do {
+						int icon_x = 56;
+						int icon_w = 9;
+						do {
+							drawIcon(icon_num, icon_x, icon_y, 0xF);
+							++icon_num;
+							icon_x += icon_spr_w;
+						} while (--icon_w);
+						icon_y += icon_spr_h;
+					} while (--icon_h);
 				}
-				memset(p + 1, outline_color, 9 * icon_spr_w - 2);
+				if (_res._type == kResourceTypeAmiga) {
+					// draw outline rectangle
+					static const uint8_t outline_color = 0xE7;
+					uint8_t *p = _vid._frontLayer + 140 * Video::GAMESCREEN_W + 56;
+					memset(p + 1, outline_color, 9 * icon_spr_w - 2);
+					p += Video::GAMESCREEN_W;
+					for (int y = 1; y < 5 * icon_spr_h - 1; ++y) {
+						p[0] = p[9 * icon_spr_w - 1] = outline_color;
+						p += Video::GAMESCREEN_W;
+					}
+					memset(p + 1, outline_color, 9 * icon_spr_w - 2);
+				}
+				break;
+			case kResourceTypeMac:
+				drawIcon(31, 56, 140, 0xF);
+				break;
 			}
-
 			if (!display_score) {
 				int icon_x_pos = 72;
 				for (int i = 0; i < 4; ++i) {
@@ -1783,8 +1803,8 @@ void Game::handleInventory() {
 						drawIcon(76, icon_x_pos, 157, 0xA);
 						selected_pge = items[item_it].live_pge;
 						uint8_t txt_num = items[item_it].init_pge->text_num;
-						const char *str = (const char *)_res.getTextString(_currentLevel, txt_num);
-						_vid.drawString(str, (Video::GAMESCREEN_W - strlen(str) * Video::CHAR_W) / 2, 189, 0xED);
+						const uint8_t *str = _res.getTextString(_currentLevel, txt_num);
+						drawString(str, Video::GAMESCREEN_W, 189, 0xED, true);
 						if (items[item_it].init_pge->init_flags & 4) {
 							char buf[10];
 							snprintf(buf, sizeof(buf), "%d", selected_pge->life);
