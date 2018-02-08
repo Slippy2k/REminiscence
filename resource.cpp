@@ -1611,3 +1611,24 @@ bool Resource::MAC_hasLevelMap(int level, int room) const {
 	snprintf(name, sizeof(name), "Level %c Room %d", _macLevelNumbers[level][0], room);
 	return _mac->findEntry(name) != 0;
 }
+
+static void stringLowerCase(char *p) {
+	while (*p) {
+		if (*p >= 'A' && *p <= 'Z') {
+			*p += 'a' - 'A';
+		}
+		++p;
+	}
+}
+
+void Resource::MAC_loadCutscene(const char *cutscene) {
+	char name[32];
+	free(_cmd);
+	snprintf(name, sizeof(name), "%s movie", cutscene);
+	stringLowerCase(name);
+	_cmd = decodeResourceMacData(name, true);
+	free(_pol);
+	snprintf(name, sizeof(name), "%s polygons", cutscene);
+	stringLowerCase(name);
+	_pol = decodeResourceMacData(name, true);
+}

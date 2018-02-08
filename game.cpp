@@ -329,11 +329,6 @@ void Game::playCutscene(int id) {
 		_cut._id = id;
 	}
 	if (_cut._id != 0xFFFF) {
-		if (_res._type == kResourceTypeMac) {
-			warning("Unhandled cutscene %d playback", _cut._id);
-			_cut._id = 0xFFFF;
-			return;
-		}
 		_mix.stopMusic();
 		if (_res._hasSeqData) {
 			int num = 0;

@@ -320,6 +320,7 @@ struct Resource {
 	void MAC_setupRoomClut(int level, int room, Color *clut);
 	const uint8_t *MAC_getImageData(const uint8_t *ptr, int i);
 	bool MAC_hasLevelMap(int level, int room) const;
+	void MAC_loadCutscene(const char *cutscene);
 
 	int MAC_getPersoFrame(int anim) const {
 		static const int data[] = {

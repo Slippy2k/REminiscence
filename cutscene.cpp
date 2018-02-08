@@ -17,6 +17,14 @@ Cutscene::Cutscene(Resource *res, SystemStub *stub, Video *vid)
 	memset(_palBuf, 0, sizeof(_palBuf));
 }
 
+const uint8_t *Cutscene::getCommandData() const {
+	return _res->_cmd;
+}
+
+const uint8_t *Cutscene::getPolygonData() const {
+	return _res->_pol;
+}
+
 void Cutscene::sync() {
 	if (_stub->_pi.quit) {
 		return;
@@ -281,7 +289,7 @@ void Cutscene::op_waitForSync() {
 
 void Cutscene::drawShape(const uint8_t *data, int16_t x, int16_t y) {
 	debug(DBG_CUT, "Cutscene::drawShape()");
-	_gfx._layer = _page1;
+	_gfx.setLayer(_page1, _vid->_w);
 	uint8_t numVertices = *data++;
 	if (numVertices & 0x80) {
 		Point pt;
@@ -383,16 +391,16 @@ void Cutscene::op_drawStringAtBottom() {
 
 		// 'espions' - ignore last call, allows caption to be displayed longer on the screen
 		if (_id == 0x39 && strId == 0xFFFF) {
-			if ((_res->isDOS() && (_cmdPtr - _cmdPtrBak) == 0x10) || (_res->isAmiga() && (_cmdPtr - _res->_cmd) == 0x9F3)) {
+			if ((_res->isDOS() && (_cmdPtr - _cmdPtrBak) == 0x10) || (_res->isAmiga() && (_cmdPtr - getCommandData()) == 0x9F3)) {
 				_frameDelay = 100;
 				setPalette();
 				return;
 			}
 		}
 
-		memset(_pageC + 179 * 256, 0xC0, 45 * 256);
-		memset(_page1 + 179 * 256, 0xC0, 45 * 256);
-		memset(_page0 + 179 * 256, 0xC0, 45 * 256);
+		memset(_pageC + 179 * _vid->_w, 0xC0, 45 * _vid->_w);
+		memset(_page1 + 179 * _vid->_w, 0xC0, 45 * _vid->_w);
+		memset(_page0 + 179 * _vid->_w, 0xC0, 45 * _vid->_w);
 		if (strId != 0xFFFF) {
 			const uint8_t *str = _res->getCineString(strId);
 			if (str) {
@@ -423,7 +431,7 @@ void Cutscene::op_refreshAll() {
 
 void Cutscene::drawShapeScale(const uint8_t *data, int16_t zoom, int16_t b, int16_t c, int16_t d, int16_t e, int16_t f, int16_t g) {
 	debug(DBG_CUT, "Cutscene::drawShapeScale(%d, %d, %d, %d, %d, %d, %d)", zoom, b, c, d, e, f, g);
-	_gfx._layer = _page1;
+	_gfx.setLayer(_page1, _vid->_w);
 	uint8_t numVertices = *data++;
 	if (numVertices & 0x80) {
 		int16_t x, y;
@@ -602,7 +610,7 @@ void Cutscene::op_drawShapeScale() {
 
 void Cutscene::drawShapeScaleRotate(const uint8_t *data, int16_t zoom, int16_t b, int16_t c, int16_t d, int16_t e, int16_t f, int16_t g) {
 	debug(DBG_CUT, "Cutscene::drawShapeScaleRotate(%d, %d, %d, %d, %d, %d, %d)", zoom, b, c, d, e, f, g);
-	_gfx._layer = _page1;
+	_gfx.setLayer(_page1, _vid->_w);
 	uint8_t numVertices = *data++;
 	if (numVertices & 0x80) {
 		int16_t x, y, ix, iy;
@@ -904,10 +912,10 @@ void Cutscene::op_handleKeys() {
 		}
 		_varKey = 0;
 		--n;
-		_cmdPtr = _res->_cmd;
+		_cmdPtr = getCommandData();
 		n = READ_BE_UINT16(_cmdPtr + n * 2 + 2);
 	}
-	_cmdPtr = _cmdPtrBak = _res->_cmd + n + _startOffset;
+	_cmdPtr = _cmdPtrBak = getCommandData() + n + _startOffset;
 }
 
 uint8_t Cutscene::fetchNextCmdByte() {
@@ -931,14 +939,14 @@ void Cutscene::mainLoop(uint16_t offset) {
 	}
 	_newPal = false;
 	_hasAlphaColor = false;
-	uint8_t *p = _res->_cmd;
+	const uint8_t *p = getCommandData();
 	if (offset != 0) {
 		offset = READ_BE_UINT16(p + (offset + 1) * 2);
 	}
 	_startOffset = (READ_BE_UINT16(p) + 1) * 2;
 	_varKey = 0;
 	_cmdPtr = _cmdPtrBak = p + _startOffset + offset;
-	_polPtr = _res->_pol;
+	_polPtr = getPolygonData();
 	debug(DBG_CUT, "_startOffset = %d offset = %d", _startOffset, offset);
 
 	while (!_stub->_pi.quit && !_interrupted && !_stop) {
@@ -991,6 +999,9 @@ bool Cutscene::load(uint16_t cutName) {
 		_res->load(name, Resource::OT_CMD);
 		_res->load(name, Resource::OT_POL);
 		break;
+	case kResourceTypeMac:
+		_res->MAC_loadCutscene(name);
+		break;
 	}
 	_res->load_CINE();
 	return _res->_cmd && _res->_pol;
@@ -1018,7 +1029,10 @@ void Cutscene::prepare() {
 	_stub->_pi.shift = false;
 	_interrupted = false;
 	_stop = false;
-	_gfx.setClippingRect(8, 50, 240, 128);
+	const int w = 240;
+	const int h = 128;
+	const int x = (Video::GAMESCREEN_W - w) / 2;
+	_gfx.setClippingRect(x, 50, w, h);
 }
 
 void Cutscene::playCredits() {
@@ -1213,7 +1227,7 @@ void Cutscene::playSet(const uint8_t *p, int offset) {
 	}
 
 	prepare();
-	_gfx._layer = _page1;
+	_gfx.setLayer(_page1, _vid->_w);
 
 	offset = 10;
 	const int frames = READ_BE_UINT16(p + offset); offset += 2;
