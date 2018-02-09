@@ -805,11 +805,11 @@ void Video::drawSpriteSub6(const uint8_t *src, uint8_t *dst, int pitch, int h, i
 void Video::PC_drawChar(uint8_t c, int16_t y, int16_t x, bool forceDefaultFont) {
 	debug(DBG_VIDEO, "Video::PC_drawChar(0x%X, %d, %d)", c, y, x);
 	const uint8_t *fnt = (_res->_lang == LANG_JP && !forceDefaultFont) ? _font8Jp : _res->_fnt;
-	y *= 8;
-	x *= 8;
+	y *= CHAR_W;
+	x *= CHAR_H;
 	const uint8_t *src = fnt + (c - 32) * 32;
-	uint8_t *dst = _frontLayer + x + 256 * y;
-	for (int h = 0; h < 8; ++h) {
+	uint8_t *dst = _frontLayer + x + _w * y;
+	for (int h = 0; h < CHAR_H; ++h) {
 		for (int i = 0; i < 4; ++i, ++src) {
 			const uint8_t c1 = *src >> 4;
 			if (c1 != 0) {
@@ -834,7 +834,7 @@ void Video::PC_drawChar(uint8_t c, int16_t y, int16_t x, bool forceDefaultFont) 
 			}
 			++dst;
 		}
-		dst += 256 - 8;
+		dst += _w - CHAR_W;
 	}
 }
 
@@ -884,7 +884,9 @@ void Video::MAC_drawStringChar(uint8_t *dst, int pitch, int x, int y, const uint
 	buf.h = _h;
 	buf.x = x * _layerScale;
 	buf.y = y * _layerScale;
-	buf.setPixel = Video::MAC_drawBuffer;
+	buf.setPixel = Video::MAC_drawBufferFont;
+	_charFrontColor = color;
+	buf.dataPtr = this;
 	assert(chr >= 32);
 	_res->MAC_decodeImageData(_res->_fnt, chr - 32, &buf);
 }
@@ -975,5 +977,32 @@ void Video::MAC_drawBufferMask(DecodeBuffer *buf, int src_x, int src_y, int src_
 				buf->ptr[offset] = color;
 			}
 		}
+	}
+}
+
+void Video::MAC_drawBufferFont(DecodeBuffer *buf, int src_x, int src_y, int src_w, int src_h, uint8_t color) {
+	const int y = buf->y + src_y;
+	if (y >= 0 && y < buf->h) {
+		const int x = buf->x + src_x;
+		if (x >= 0 && x < buf->w) {
+			const Video *vid = (Video *)buf->dataPtr;
+			const int offset = y * buf->pitch + x;
+			switch (color) {
+			case 0xC0:
+				buf->ptr[offset] = vid->_charShadowColor;
+				break;
+			case 0xC1:
+				buf->ptr[offset] = vid->_charFrontColor;
+				break;
+			}
+		}
+	}
+}
+
+void Video::MAC_fillRect(int x, int y, int w, int h, uint8_t color) {
+	uint8_t *p = _frontLayer + y * _layerScale * _w + x * _layerScale;
+	for (int j = 0; j < h * _layerScale; ++j) {
+		memset(p, color, w * _layerScale);
+		p += _w;
 	}
 }

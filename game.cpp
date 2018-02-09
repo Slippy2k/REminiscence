@@ -457,9 +457,6 @@ void Game::showFinalScore() {
 }
 
 bool Game::handleConfigPanel() {
-	if (_res.isAmiga()) {
-		return true;
-	}
 	const int x = 7;
 	const int y = 10;
 	const int w = 17;
@@ -472,33 +469,60 @@ bool Game::handleConfigPanel() {
 	// the panel background is drawn using special characters from FB_TXT.FNT
 	static const bool kUseDefaultFont = true;
 
-	// top-left rounded corder
-	_vid.PC_drawChar(0x81, y, x, kUseDefaultFont);
-	// top horizontal line
-	for (int i = 1; i < w; ++i) {
-		_vid.PC_drawChar(0x85, y, x + i, kUseDefaultFont);
-	}
-	// top-right rounded corner
-	_vid.PC_drawChar(0x82, y, x + w, kUseDefaultFont);
-	for (int j = 1; j < h; ++j) {
-		// left vertical line
-		_vid.PC_drawChar(0x86, y + j, x, kUseDefaultFont);
+	switch (_res._type) {
+	case kResourceTypeAmiga:
+		// TODO
+		return true;
+	case kResourceTypeDOS:
+		// top-left rounded corner
+		_vid.PC_drawChar(0x81, y, x, kUseDefaultFont);
+		// top-right rounded corner
+		_vid.PC_drawChar(0x82, y, x + w, kUseDefaultFont);
+		// bottom-left rounded corner
+		_vid.PC_drawChar(0x83, y + h, x, kUseDefaultFont);
+		// bottom-right rounded corner
+		_vid.PC_drawChar(0x84, y + h, x + w, kUseDefaultFont);
+		// horizontal lines
 		for (int i = 1; i < w; ++i) {
-			_vid._charTransparentColor = 0xE2;
-			_vid.PC_drawChar(0x20, y + j, x + i, kUseDefaultFont);
+			_vid.PC_drawChar(0x85, y, x + i, kUseDefaultFont);
+			_vid.PC_drawChar(0x88, y + h, x + i, kUseDefaultFont);
 		}
-		_vid._charTransparentColor = 0xFF;
-		// right vertical line
-		_vid.PC_drawChar(0x87, y + j, x + w, kUseDefaultFont);
+		for (int j = 1; j < h; ++j) {
+			_vid._charTransparentColor = 0xFF;
+			// left vertical line
+			_vid.PC_drawChar(0x86, y + j, x, kUseDefaultFont);
+			// right vertical line
+			_vid.PC_drawChar(0x87, y + j, x + w, kUseDefaultFont);
+			_vid._charTransparentColor = 0xE2;
+			for (int i = 1; i < w; ++i) {
+				_vid.PC_drawChar(0x20, y + j, x + i, kUseDefaultFont);
+			}
+		}
+		break;
+	case kResourceTypeMac:
+		// top-left rounded corner
+		_vid.MAC_drawStringChar(_vid._frontLayer, _vid._w, Video::CHAR_W * x,       Video::CHAR_H * y,       _res._fnt, _vid._charFrontColor, 0x81);
+		// top-right rounded corner
+		_vid.MAC_drawStringChar(_vid._frontLayer, _vid._w, Video::CHAR_W * (x + w), Video::CHAR_H * y,       _res._fnt, _vid._charFrontColor, 0x82);
+		// bottom-left rounded corner
+		_vid.MAC_drawStringChar(_vid._frontLayer, _vid._w, Video::CHAR_W * x,       Video::CHAR_H * (y + h), _res._fnt, _vid._charFrontColor, 0x83);
+		// bottom-right rounded corner
+		_vid.MAC_drawStringChar(_vid._frontLayer, _vid._w, Video::CHAR_W * (x + w), Video::CHAR_H * (y + h), _res._fnt, _vid._charFrontColor, 0x84);
+		// horizontal lines
+		for (int i = 1; i < w; ++i) {
+			_vid.MAC_drawStringChar(_vid._frontLayer, _vid._w, Video::CHAR_W * (x + i), Video::CHAR_H * y,       _res._fnt, _vid._charFrontColor, 0x85);
+			_vid.MAC_drawStringChar(_vid._frontLayer, _vid._w, Video::CHAR_W * (x + i), Video::CHAR_H * (y + h), _res._fnt, _vid._charFrontColor, 0x88);
+		}
+		// vertical lines
+		for (int i = 1; i < h; ++i) {
+			_vid.MAC_drawStringChar(_vid._frontLayer, _vid._w, Video::CHAR_W * x,       Video::CHAR_H * (y + i), _res._fnt, _vid._charFrontColor, 0x86);
+			_vid.MAC_drawStringChar(_vid._frontLayer, _vid._w, Video::CHAR_W * (x + w), Video::CHAR_H * (y + i), _res._fnt, _vid._charFrontColor, 0x87);
+			for (int j = 1; j < w; ++j) {
+				_vid.MAC_fillRect(Video::CHAR_W * (x + j), Video::CHAR_H * (y + i), Video::CHAR_W, Video::CHAR_H, 0xE2);
+			}
+		}
+		break;
 	}
-	// bottom-left rounded corner
-	_vid.PC_drawChar(0x83, y + h, x, kUseDefaultFont);
-	// bottom horizontal line
-	for (int i = 1; i < w; ++i) {
-		_vid.PC_drawChar(0x88, y + h, x + i, kUseDefaultFont);
-	}
-	// bottom-right rounded corner
-	_vid.PC_drawChar(0x84, y + h, x + w, kUseDefaultFont);
 
 	_menu._charVar3 = 0xE4;
 	_menu._charVar4 = 0xE5;

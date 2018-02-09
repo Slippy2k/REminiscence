@@ -13,8 +13,8 @@ struct DecodeBuffer {
 	int x, y;
 	bool xflip;
 
-	void *lut;
 	void (*setPixel)(DecodeBuffer *buf, int src_x, int src_y, int src_w, int src_h, uint8_t color);
+	void *dataPtr;
 };
 
 void decodeC103(const uint8_t *a3, int w, int h, DecodeBuffer *buf);
