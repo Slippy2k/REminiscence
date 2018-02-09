@@ -385,9 +385,12 @@ void Game::playCutscene(int id) {
 			_mix.playMusic(Cutscene::_musicTable[_cut._id]);
 		}
 		_cut.play();
-		if (id == 0xD && !_cut._interrupted && _res.isDOS()) {
-			_cut._id = 0x4A;
-			_cut.play();
+		if (id == 0xD && !_cut._interrupted) {
+			const bool extendedIntroduction = (_res._type == kResourceTypeDOS || _res._type == kResourceTypeMac);
+			if (extendedIntroduction) {
+				_cut._id = 0x4A;
+				_cut.play();
+			}
 		}
 		if (id == 0x3D) {
 			_cut.playCredits();
