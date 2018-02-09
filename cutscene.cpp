@@ -11,6 +11,16 @@
 #include "util.h"
 #include "video.h"
 
+static void scalePoints(Point *pt, int count, int scale) {
+	if (scale != 1) {
+		while (count-- > 0) {
+			pt->x *= scale;
+			pt->y *= scale;
+			++pt;
+		}
+	}
+}
+
 Cutscene::Cutscene(Resource *res, SystemStub *stub, Video *vid)
 	: _res(res), _stub(stub), _vid(vid) {
 	_patchedOffsetsTable = 0;
@@ -297,11 +307,13 @@ void Cutscene::drawShape(const uint8_t *data, int16_t x, int16_t y) {
 		pt.y = READ_BE_UINT16(data) + y; data += 2;
 		uint16_t rx = READ_BE_UINT16(data); data += 2;
 		uint16_t ry = READ_BE_UINT16(data); data += 2;
+		scalePoints(&pt, 1, _vid->_layerScale);
 		_gfx.drawEllipse(_primitiveColor, _hasAlphaColor, &pt, rx, ry);
 	} else if (numVertices == 0) {
 		Point pt;
 		pt.x = READ_BE_UINT16(data) + x; data += 2;
 		pt.y = READ_BE_UINT16(data) + y; data += 2;
+		scalePoints(&pt, 1, _vid->_layerScale);
 		_gfx.drawPoint(_primitiveColor, &pt);
 	} else {
 		Point *pt = _vertices;
@@ -326,6 +338,7 @@ void Cutscene::drawShape(const uint8_t *data, int16_t x, int16_t y) {
 				++pt;
 			}
 		}
+		scalePoints(_vertices, numVertices, _vid->_layerScale);
 		_gfx.drawPolygon(_primitiveColor, _hasAlphaColor, _vertices, numVertices);
 	}
 }
@@ -480,6 +493,7 @@ void Cutscene::drawShapeScale(const uint8_t *data, int16_t zoom, int16_t b, int1
 		po.y = _vertices[0].y + e + _shape_iy;
 		int16_t rx = _vertices[0].x - _vertices[2].x;
 		int16_t ry = _vertices[0].y - _vertices[1].y;
+		scalePoints(&po, 1, _vid->_layerScale);
 		_gfx.drawEllipse(_primitiveColor, _hasAlphaColor, &po, rx, ry);
 	} else if (numVertices == 0) {
 		Point pt;
@@ -502,6 +516,7 @@ void Cutscene::drawShapeScale(const uint8_t *data, int16_t zoom, int16_t b, int1
 		_shape_prev_y = _shape_cur_y;
 		_shape_prev_x16 = _shape_cur_x16;
 		_shape_prev_y16 = _shape_cur_y16;
+		scalePoints(&pt, 1, _vid->_layerScale);
 		_gfx.drawPoint(_primitiveColor, &pt);
 	} else {
 		Point *pt = _vertices;
@@ -547,6 +562,7 @@ void Cutscene::drawShapeScale(const uint8_t *data, int16_t zoom, int16_t b, int1
 		_shape_prev_y = _shape_cur_y;
 		_shape_prev_x16 = _shape_cur_x16;
 		_shape_prev_y16 = _shape_cur_y16;
+		scalePoints(_vertices, numVertices, _vid->_layerScale);
 		_gfx.drawPolygon(_primitiveColor, _hasAlphaColor, _vertices, numVertices);
 	}
 }
@@ -661,6 +677,7 @@ void Cutscene::drawShapeScaleRotate(const uint8_t *data, int16_t zoom, int16_t b
 		po.y = _vertices[0].y + e + _shape_iy;
 		int16_t rx = _vertices[0].x - _vertices[2].x;
 		int16_t ry = _vertices[0].y - _vertices[1].y;
+		scalePoints(&po, 1, _vid->_layerScale);
 		_gfx.drawEllipse(_primitiveColor, _hasAlphaColor, &po, rx, ry);
 	} else if (numVertices == 0) {
 		Point pt;
@@ -687,6 +704,7 @@ void Cutscene::drawShapeScaleRotate(const uint8_t *data, int16_t zoom, int16_t b
 		_shape_prev_y = _shape_cur_y;
 		_shape_prev_x16 = _shape_cur_x16;
 		_shape_prev_y16 = _shape_cur_y16;
+		scalePoints(&pt, 1, _vid->_layerScale);
 		_gfx.drawPoint(_primitiveColor, &pt);
 	} else {
 		int16_t x, y, a, shape_last_x, shape_last_y;
@@ -765,6 +783,7 @@ void Cutscene::drawShapeScaleRotate(const uint8_t *data, int16_t zoom, int16_t b
 		_shape_prev_y = _shape_cur_y;
 		_shape_prev_x16 = _shape_cur_x16;
 		_shape_prev_y16 = _shape_cur_y16;
+		scalePoints(_vertices, numVertices + 1, _vid->_layerScale);
 		_gfx.drawPolygon(_primitiveColor, _hasAlphaColor, _vertices, numVertices + 1);
 	}
 }
@@ -1032,7 +1051,12 @@ void Cutscene::prepare() {
 	const int w = 240;
 	const int h = 128;
 	const int x = (Video::GAMESCREEN_W - w) / 2;
-	_gfx.setClippingRect(x, 50, w, h);
+	const int y = 50;
+	const int sw = w * _vid->_layerScale;
+	const int sh = h * _vid->_layerScale;
+	const int sx = x * _vid->_layerScale;
+	const int sy = y * _vid->_layerScale;
+	_gfx.setClippingRect(sx, sy, sw, sh);
 }
 
 void Cutscene::playCredits() {
@@ -1177,12 +1201,14 @@ void Cutscene::drawSetShape(const uint8_t *p, uint16_t offset, int x, int y, uin
 			Point pt;
 			pt.x = x + ix;
 			pt.y = y + iy;
+			scalePoints(&pt, 1, _vid->_layerScale);
 			_gfx.drawEllipse(color, false, &pt, rx, ry);
 		} else {
 			for (int i = 0; i < verticesCount; ++i) {
 				_vertices[i].x = x + (int16_t)READ_BE_UINT16(p + offset); offset += 2;
 				_vertices[i].y = y + (int16_t)READ_BE_UINT16(p + offset); offset += 2;
 			}
+			scalePoints(_vertices, verticesCount, _vid->_layerScale);
 			_gfx.drawPolygon(color, false, _vertices, verticesCount);
 		}
 	}
