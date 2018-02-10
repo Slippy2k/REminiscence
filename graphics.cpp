@@ -346,8 +346,8 @@ void Graphics::drawPolygon(uint8_t color, bool hasAlpha, const Point *pts, uint8
 	debug(DBG_VIDEO, "Graphics::drawPolygon()");
 	assert(numPts * 4 < 0x100);
 
-	int16_t *apts1 = &_areaPoints[0x100];
-	int16_t *apts2 = &_areaPoints[0x100 + numPts * 2];
+	int16_t *apts1 = &_areaPoints[AREA_POINTS_SIZE];
+	int16_t *apts2 = &_areaPoints[AREA_POINTS_SIZE + numPts * 2];
 
 	int16_t xmin, xmax, ymin, ymax;
 	xmin = xmax = pts[0].x;
