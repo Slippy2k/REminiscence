@@ -289,6 +289,12 @@ struct Resource {
 			const int offset = READ_BE_UINT16(LocaleData::_cineBinJP + num * 2);
 			return LocaleData::_cineTxtJP + offset;
 		}
+		if (_type == kResourceTypeMac) {
+			const int count = READ_BE_UINT16(_cine_txt);
+			assert(num < count);
+			const int offset = READ_BE_UINT16(_cine_txt + 2 + num * 2);
+			return _cine_txt + offset;
+		}
 		if (_cine_off) {
 			const int offset = READ_BE_UINT16(_cine_off + num * 2);
 			return _cine_txt + offset;
@@ -320,7 +326,9 @@ struct Resource {
 	void MAC_setupRoomClut(int level, int room, Color *clut);
 	const uint8_t *MAC_getImageData(const uint8_t *ptr, int i);
 	bool MAC_hasLevelMap(int level, int room) const;
+	void MAC_unloadCutscene();
 	void MAC_loadCutscene(const char *cutscene);
+	void MAC_loadCutsceneText();
 
 	int MAC_getPersoFrame(int anim) const {
 		static const int data[] = {

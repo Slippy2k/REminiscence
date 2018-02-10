@@ -408,6 +408,9 @@ void Resource::load_CINE() {
 			error("Cannot load '%s'", _entryName);
 		}
 		break;
+	case kResourceTypeMac:
+		MAC_loadCutsceneText();
+		break;
 	}
 }
 
@@ -1621,6 +1624,13 @@ static void stringLowerCase(char *p) {
 	}
 }
 
+void Resource::MAC_unloadCutscene() {
+	free(_cmd);
+	_cmd = 0;
+	free(_pol);
+	_pol = 0;
+}
+
 void Resource::MAC_loadCutscene(const char *cutscene) {
 	char name[32];
 	free(_cmd);
@@ -1631,4 +1641,9 @@ void Resource::MAC_loadCutscene(const char *cutscene) {
 	snprintf(name, sizeof(name), "%s polygons", cutscene);
 	stringLowerCase(name);
 	_pol = decodeResourceMacData(name, true);
+}
+
+void Resource::MAC_loadCutsceneText() {
+	_cine_txt = decodeResourceMacData("Movie strings", false);
+	_cine_off = 0; // offsets are prepended to _cine_txt
 }

@@ -137,6 +137,10 @@ uint16_t Cutscene::findTextSeparators(const uint8_t *p) {
 
 void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, uint8_t *page, int textJustify) {
 	debug(DBG_CUT, "Cutscene::drawText(x=%d, y=%d, c=%d, justify=%d)", x, y, color, textJustify);
+	if (_res->_type == kResourceTypeMac) {
+		warning("Unhandled Cutscene::drawText"); // TODO
+		return;
+	}
 	Video::drawCharFunc dcf = _vid->_drawChar;
 	const uint8_t *fnt = (_res->_lang == LANG_JP) ? Video::_font8Jp : _res->_fnt;
 	uint16_t last_sep = 0;
@@ -152,22 +156,22 @@ void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, 
 	int16_t yy = y;
 	int16_t xx = x;
 	if (textJustify != kTextJustifyLeft) {
-		xx += ((last_sep - *sep++) / 2) * 8;
+		xx += ((last_sep - *sep++) / 2) * Video::CHAR_W;
 	}
 	for (; *p != 0xA && *p; ++p) {
 		if (isNewLineChar(*p, _res)) {
-			yy += 8;
+			yy += Video::CHAR_H;
 			xx = x;
 			if (textJustify != kTextJustifyLeft) {
-				xx += ((last_sep - *sep++) / 2) * 8;
+				xx += ((last_sep - *sep++) / 2) * Video::CHAR_W;
 			}
 		} else if (*p == 0x20) {
-			xx += 8;
+			xx += Video::CHAR_W;
 		} else if (*p == 0x9) {
 			// ignore tab
 		} else {
-			(_vid->*dcf)(page, 256, xx, yy, fnt, color, *p);
-			xx += 8;
+			(_vid->*dcf)(page, _vid->_w, xx, yy, fnt, color, *p);
+			xx += Video::CHAR_W;
 		}
 	}
 }
@@ -1034,6 +1038,9 @@ void Cutscene::unload() {
 	case kResourceTypeDOS:
 		_res->unload(Resource::OT_CMD);
 		_res->unload(Resource::OT_POL);
+		break;
+	case kResourceTypeMac:
+		_res->MAC_unloadCutscene();
 		break;
 	}
 }
