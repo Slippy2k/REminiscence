@@ -1438,7 +1438,7 @@ int Game::loadMonsterSprites(LivePGE *pge) {
 			break;
 		case kResourceTypeMac: {
 				Color palette[256];
-				_res.MAC_loadMonsterData(_monsterNames[1][_curMonsterNum], palette);
+				_res.MAC_loadMonsterData(_monsterNames[0][_curMonsterNum], palette);
 				static const int kMonsterPalette = 5;
 				for (int i = 0; i < 16; ++i) {
 					const int color = kMonsterPalette * 16 + i;
