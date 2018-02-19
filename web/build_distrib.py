@@ -9,6 +9,7 @@ SDL_TARBALL = [ 'REminiscence-%s-sdl2-win32.zip',
 		'../README-modplug.txt',
 		'../scalers/scaler_epx.dll',
 		'../scalers/scaler_xbrz.dll',
+		'../icon.bmp',
 		'../rs.cfg',
 		'../rs.exe'
 	)
