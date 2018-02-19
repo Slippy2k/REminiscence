@@ -111,6 +111,7 @@ struct Resource {
 	};
 
 	enum {
+		kPaulaFreq = 3546897,
 		kClutSize = 1024
 	};
 
@@ -329,6 +330,7 @@ struct Resource {
 	void MAC_unloadCutscene();
 	void MAC_loadCutscene(const char *cutscene);
 	void MAC_loadCutsceneText();
+	void MAC_loadSounds();
 
 	int MAC_getPersoFrame(int anim) const {
 		static const int data[] = {
