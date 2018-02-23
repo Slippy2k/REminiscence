@@ -14,12 +14,9 @@ struct UnpackCtx {
 	const uint8_t *src;
 };
 
-static int shiftBit(UnpackCtx *uc, int CF) {
-	int rCF = (uc->bits & 1);
-	uc->bits >>= 1;
-	if (CF) {
-		uc->bits |= 0x80000000;
-	}
+static int shiftBit(UnpackCtx *uc, uint32_t CF) {
+	const int rCF = (uc->bits & 1);
+	uc->bits = (uc->bits >> 1) | (CF << 31);
 	return rCF;
 }
 
@@ -33,7 +30,7 @@ static int nextBit(UnpackCtx *uc) {
 	return CF;
 }
 
-static uint16_t getBits(UnpackCtx *uc, uint8_t num_bits) {
+static uint16_t getBits(UnpackCtx *uc, int num_bits) {
 	uint16_t c = 0;
 	while (num_bits--) {
 		c <<= 1;
@@ -44,7 +41,7 @@ static uint16_t getBits(UnpackCtx *uc, uint8_t num_bits) {
 	return c;
 }
 
-static void unpackHelper1(UnpackCtx *uc, uint8_t num_bits, uint8_t add_count) {
+static void unpackHelper1(UnpackCtx *uc, int num_bits, int add_count) {
 	uint16_t count = getBits(uc, num_bits) + add_count + 1;
 	uc->datasize -= count;
 	while (count--) {
@@ -53,12 +50,12 @@ static void unpackHelper1(UnpackCtx *uc, uint8_t num_bits, uint8_t add_count) {
 	}
 }
 
-static void unpackHelper2(UnpackCtx *uc, uint8_t num_bits) {
-	uint16_t i = getBits(uc, num_bits);
+static void unpackHelper2(UnpackCtx *uc, int num_bits) {
+	const uint16_t offset = getBits(uc, num_bits);
 	uint16_t count = uc->size + 1;
 	uc->datasize -= count;
 	while (count--) {
-		*uc->dst = *(uc->dst + i);
+		*uc->dst = *(uc->dst + offset);
 		--uc->dst;
 	}
 }
@@ -81,7 +78,7 @@ bool delphine_unpack(uint8_t *dst, const uint8_t *src, int len) {
 				unpackHelper2(&uc, 8);
 			}
 		} else {
-			uint16_t c = getBits(&uc, 2);
+			const int c = getBits(&uc, 2);
 			if (c == 3) {
 				unpackHelper1(&uc, 8, 8);
 			} else if (c < 2) {
