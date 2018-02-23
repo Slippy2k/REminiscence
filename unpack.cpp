@@ -7,7 +7,7 @@
 #include "unpack.h"
 
 struct UnpackCtx {
-	int size, datasize;
+	int datasize;
 	uint32_t crc;
 	uint32_t bits;
 	uint8_t *dst;
@@ -32,7 +32,7 @@ static int nextBit(UnpackCtx *uc) {
 
 static uint16_t getBits(UnpackCtx *uc, int num_bits) {
 	uint16_t c = 0;
-	while (num_bits--) {
+	for (int i = 0; i < num_bits; ++i) {
 		c <<= 1;
 		if (nextBit(uc)) {
 			c |= 1;
@@ -42,22 +42,22 @@ static uint16_t getBits(UnpackCtx *uc, int num_bits) {
 }
 
 static void unpackHelper1(UnpackCtx *uc, int num_bits, int add_count) {
-	uint16_t count = getBits(uc, num_bits) + add_count + 1;
-	uc->datasize -= count;
-	while (count--) {
+	const int count = getBits(uc, num_bits) + add_count + 1;
+	for (int i = 0; i < count; ++i) {
 		*uc->dst = (uint8_t)getBits(uc, 8);
 		--uc->dst;
 	}
+	uc->datasize -= count;
 }
 
-static void unpackHelper2(UnpackCtx *uc, int num_bits) {
+static void unpackHelper2(UnpackCtx *uc, int num_bits, int count) {
 	const uint16_t offset = getBits(uc, num_bits);
-	uint16_t count = uc->size + 1;
-	uc->datasize -= count;
-	while (count--) {
+	++count;
+	for (int i = 0; i < count; ++i) {
 		*uc->dst = *(uc->dst + offset);
 		--uc->dst;
 	}
+	uc->datasize -= count;
 }
 
 bool delphine_unpack(uint8_t *dst, const uint8_t *src, int len) {
@@ -65,28 +65,32 @@ bool delphine_unpack(uint8_t *dst, const uint8_t *src, int len) {
 	uc.src = src + len - 4;
 	uc.datasize = READ_BE_UINT32(uc.src); uc.src -= 4;
 	uc.dst = dst + uc.datasize - 1;
-	uc.size = 0;
 	uc.crc = READ_BE_UINT32(uc.src); uc.src -= 4;
 	uc.bits = READ_BE_UINT32(uc.src); uc.src -= 4;
 	uc.crc ^= uc.bits;
+	int count = 0;
 	do {
 		if (!nextBit(&uc)) {
-			uc.size = 1;
+			count = 1;
 			if (!nextBit(&uc)) {
 				unpackHelper1(&uc, 3, 0);
 			} else {
-				unpackHelper2(&uc, 8);
+				unpackHelper2(&uc, 8, count);
 			}
 		} else {
-			const int c = getBits(&uc, 2);
-			if (c == 3) {
+			const int code = getBits(&uc, 2);
+			switch (code) {
+			case 3:
 				unpackHelper1(&uc, 8, 8);
-			} else if (c < 2) {
-				uc.size = c + 2;
-				unpackHelper2(&uc, c + 9);
-			} else {
-				uc.size = getBits(&uc, 8);
-				unpackHelper2(&uc, 12);
+				break;
+			case 2:
+				count = getBits(&uc, 8);
+				unpackHelper2(&uc, 12, count);
+				break;
+			default:
+				count = code + 2;
+				unpackHelper2(&uc, code + 9, count);
+				break;
 			}
 		}
 	} while (uc.datasize > 0);
