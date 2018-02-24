@@ -5,7 +5,7 @@ STRIP := i686-w64-mingw32-strip
 
 all: scaler_epx.dll scaler_hqx.dll scaler_xbrz.dll
 
-CPPFLAGS += -Iscale2x-4.0/ -Ihqx/include/
+CPPFLAGS += -O2 -Iscale2x-4.0/ -Ihqx/include/
 
 OBJS_SCALER_EPX := scaler_epx.o scale2x-4.0/scale2x.o scale2x-4.0/scale3x.o scale2x-4.0/scalebit.o
 
