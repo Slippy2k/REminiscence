@@ -14,25 +14,21 @@ struct UnpackCtx {
 	const uint8_t *src;
 };
 
-static int shiftBit(UnpackCtx *uc, uint32_t CF) {
-	const int rCF = (uc->bits & 1);
-	uc->bits = (uc->bits >> 1) | (CF << 31);
-	return rCF;
-}
-
-static int nextBit(UnpackCtx *uc) {
-	int CF = shiftBit(uc, 0);
+static bool nextBit(UnpackCtx *uc) {
+	bool carry = (uc->bits & 1) != 0;
+	uc->bits >>= 1;
 	if (uc->bits == 0) {
 		uc->bits = READ_BE_UINT32(uc->src); uc->src -= 4;
 		uc->crc ^= uc->bits;
-		CF = shiftBit(uc, 1);
+		carry = (uc->bits & 1) != 0;
+		uc->bits = (1 << 31) | (uc->bits >> 1);
 	}
-	return CF;
+	return carry;
 }
 
-static uint16_t getBits(UnpackCtx *uc, int num_bits) {
+static uint16_t getBits(UnpackCtx *uc, int bitsCount) {
 	uint16_t c = 0;
-	for (int i = 0; i < num_bits; ++i) {
+	for (int i = 0; i < bitsCount; ++i) {
 		c <<= 1;
 		if (nextBit(uc)) {
 			c |= 1;
@@ -41,8 +37,8 @@ static uint16_t getBits(UnpackCtx *uc, int num_bits) {
 	return c;
 }
 
-static void unpackHelper1(UnpackCtx *uc, int num_bits, int add_count) {
-	const int count = getBits(uc, num_bits) + add_count + 1;
+static void copyLiteral(UnpackCtx *uc, int bitsCount, int len) {
+	const int count = getBits(uc, bitsCount) + len + 1;
 	for (int i = 0; i < count; ++i) {
 		*uc->dst = (uint8_t)getBits(uc, 8);
 		--uc->dst;
@@ -50,9 +46,8 @@ static void unpackHelper1(UnpackCtx *uc, int num_bits, int add_count) {
 	uc->datasize -= count;
 }
 
-static void unpackHelper2(UnpackCtx *uc, int num_bits, int count) {
-	const uint16_t offset = getBits(uc, num_bits);
-	++count;
+static void copyReference(UnpackCtx *uc, int bitsCount, int count) {
+	const uint16_t offset = getBits(uc, bitsCount);
 	for (int i = 0; i < count; ++i) {
 		*uc->dst = *(uc->dst + offset);
 		--uc->dst;
@@ -68,28 +63,27 @@ bool delphine_unpack(uint8_t *dst, const uint8_t *src, int len) {
 	uc.crc = READ_BE_UINT32(uc.src); uc.src -= 4;
 	uc.bits = READ_BE_UINT32(uc.src); uc.src -= 4;
 	uc.crc ^= uc.bits;
-	int count = 0;
 	do {
 		if (!nextBit(&uc)) {
-			count = 1;
 			if (!nextBit(&uc)) {
-				unpackHelper1(&uc, 3, 0);
+				copyLiteral(&uc, 3, 0);
 			} else {
-				unpackHelper2(&uc, 8, count);
+				copyReference(&uc, 8, 2);
 			}
 		} else {
 			const int code = getBits(&uc, 2);
 			switch (code) {
 			case 3:
-				unpackHelper1(&uc, 8, 8);
+				copyLiteral(&uc, 8, 8);
 				break;
 			case 2:
-				count = getBits(&uc, 8);
-				unpackHelper2(&uc, 12, count);
+				copyReference(&uc, 12, getBits(&uc, 8) + 1);
 				break;
-			default:
-				count = code + 2;
-				unpackHelper2(&uc, code + 9, count);
+			case 1:
+				copyReference(&uc, 10, 4);
+				break;
+			case 0:
+				copyReference(&uc, 9, 3);
 				break;
 			}
 		}
