@@ -393,6 +393,15 @@ void Game::playCutscene(int id) {
 				_cut.play();
 			}
 		}
+		if (_res._type == kResourceTypeMac) {
+			// restore palette entries modified by the cutscene player (0xC and 0xD)
+			Color palette[32];
+			_res.MAC_copyClut16(palette, 0, 0x37);
+			_res.MAC_copyClut16(palette, 1, 0x38);
+			for (int i = 0; i < 32; ++i) {
+				_stub->setPaletteEntry(0xC0 + i, &palette[i]);
+			}
+		}
 		if (id == 0x3D) {
 			_cut.playCredits();
 		}
