@@ -1680,8 +1680,8 @@ void Resource::MAC_loadSounds() {
 			uint8_t *p = (uint8_t *)malloc(dataSize);
 			if (p) {
 				_mac->_f.read(p, dataSize);
-				for (int i = 0; i < dataSize; ++i) {
-					p[i] ^= 0x80;
+				for (int j = 0; j < dataSize; ++j) {
+					p[j] ^= 0x80;
 				}
 				_sfxList[i].len = READ_BE_UINT32(buf + 0x12);
 				_sfxList[i].freq = READ_BE_UINT16(buf + 0x16);
