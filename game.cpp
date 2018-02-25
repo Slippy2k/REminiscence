@@ -1497,10 +1497,10 @@ void Game::loadLevelMap() {
 	case kResourceTypeDOS:
 		if (_res._map) {
 			_vid.PC_decodeMap(_currentLevel, _currentRoom);
+			_vid.PC_setLevelPalettes();
 		} else if (_res._lev) {
 			_vid.PC_decodeLev(_currentLevel, _currentRoom);
 		}
-		_vid.PC_setLevelPalettes();
 		break;
 	case kResourceTypeMac:
 		{
