@@ -8,16 +8,44 @@
 #include "dynlib.h"
 #include "util.h"
 
+static void point2x(uint32_t *dst, int dstPitch, const uint32_t *src, int srcPitch, int w, int h) {
+	const int dstPitch2 = dstPitch * 2;
+	while (h--) {
+		uint32_t *p = dst;
+		for (int i = 0; i < w; ++i, p += 2) {
+			const uint32_t color = src[i];
+			p[0] = p[1] = color;
+			p[dstPitch] = p[dstPitch + 1] = color;
+		}
+		dst += dstPitch2;
+		src += srcPitch;
+	}
+}
+
 static void scale2x(uint32_t *dst, int dstPitch, const uint32_t *src, int srcPitch, int w, int h) {
 	const int dstPitch2 = dstPitch * 2;
-	for (int y = 0; y < h; ++y) {
+	uint32_t B, D, E, F, H;
+
+	// nearest neighbour at top, left, right and bottom borders
+	point2x(dst, dstPitch, src, srcPitch, w, 1);
+	point2x(dst, dstPitch, src, srcPitch, 1, h);
+	point2x(dst + (w - 1) * 2,         dstPitch, src + w - 1,              srcPitch, 1, h);
+	point2x(dst + (h - 1) * dstPitch2, dstPitch, src + (h - 1) * srcPitch, srcPitch, w, 1);
+
+	// center
+	src += srcPitch + 1;
+	dst += dstPitch2 + 2;
+	for (int y = 1; y < h - 1; ++y) {
+		// ABC
+		// DEF
+		// GHI
 		uint32_t *p = dst;
-		for (int x = 0; x < w; ++x, p += 2) {
-			const uint32_t E = *(src + x);
-			const uint32_t B = (y == 0) ? E : *(src + x - srcPitch);
-			const uint32_t D = (x == 0) ? E : *(src + x - 1);
-			const uint32_t F = (x == w - 1) ? E : *(src + x + 1);
-			const uint32_t H = (y == h - 1) ? E : *(src + x + srcPitch);
+		for (int x = 1; x < w - 1; ++x, p += 2) {
+			B = *(src + x - srcPitch);
+			D = *(src + x - 1);
+			E = *(src + x);
+			F = *(src + x + 1);
+			H = *(src + x + srcPitch);
 			if (B != H && D != F) {
 				*(p) = D == B ? D : E;
 				*(p + 1) = B == F ? F : E;
