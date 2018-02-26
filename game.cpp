@@ -189,13 +189,14 @@ void Game::displayTitleScreenAmiga() {
 	_stub->updateScreen(0);
 	_vid.AMIGA_decodeCmp(_res._scratchBuffer + 6, buf);
 	free(buf);
-	for (int h = 0; h < kH / 2; h += 2) {
-		const int y = kH / 2 - h;
-		_stub->copyRect(0, y, kW, h * 2, buf, kW);
-		_stub->updateScreen(0);
-		_stub->sleep(30);
-	}
+	int h = 0;
 	while (1) {
+		if (h < kH / 2) {
+			const int y = kH / 2 - h;
+			_stub->copyRect(0, y, kW, h * 2, buf, kW);
+			_stub->updateScreen(0);
+			h += 2;
+		}
 		_stub->processEvents();
 		if (_stub->_pi.quit) {
 			break;
