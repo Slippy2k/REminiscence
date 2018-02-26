@@ -600,7 +600,7 @@ void SystemStub_SDL::prepareGraphics() {
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0"); // nearest pixel sampling
 		break;
 	case kScalerTypeLinear:
-		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1"); // linear filtering
 		break;
 	case kScalerTypeInternal:
 	case kScalerTypeExternal:

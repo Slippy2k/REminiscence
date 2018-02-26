@@ -1,5 +1,5 @@
 
-all: scaler_epx.so scaler_hqx.so scaler_xbrz.so
+all: scaler_epx.so scaler_hqx.so scaler_tv2x.so scaler_xbrz.so
 
 CPPFLAGS += -O2 -fPIC -Iscale2x-4.0/ -Ihqx/include/
 
@@ -11,6 +11,11 @@ scaler_epx.so: $(OBJS_SCALER_EPX)
 OBJS_SCALER_HQX := scaler_hqx.o hqx/source/HQx.o hqx/source/HQ2x.o hqx/source/HQ3x.o
 
 scaler_hqx.so: $(OBJS_SCALER_HQX)
+	$(CXX) $(LDFLAGS) -fPIC -shared -o $@ $^
+
+OBJS_SCALER_TV2X := scaler_tv2x.o
+
+scaler_tv2x.so: $(OBJS_SCALER_TV2X)
 	$(CXX) $(LDFLAGS) -fPIC -shared -o $@ $^
 
 OBJS_SCALER_XBRZ := scaler_xbrz.o xbrz/xbrz.o
