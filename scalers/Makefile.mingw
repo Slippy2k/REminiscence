@@ -3,7 +3,7 @@ CC    := i686-w64-mingw32-gcc
 CXX   := i686-w64-mingw32-g++
 STRIP := i686-w64-mingw32-strip
 
-all: scaler_epx.dll scaler_hqx.dll scaler_xbrz.dll
+all: scaler_epx.dll scaler_tv2x.dll scaler_xbrz.dll
 
 CPPFLAGS += -O2 -Iscale2x-4.0/ -Ihqx/include/
 
@@ -14,9 +14,9 @@ scaler_epx.dll: $(OBJS_SCALER_EPX)
 	$(STRIP) $@
 	upx -9 $@
 
-OBJS_SCALER_HQX := scaler_hqx.o hqx/source/HQx.o hqx/source/HQ2x.o hqx/source/HQ3x.o
+OBJS_SCALER_TV2X := scaler_tv2x.o
 
-scaler_hqx.dll: $(OBJS_SCALER_HQX)
+scaler_tv2x.dll: $(OBJS_SCALER_TV2X)
 	$(CXX) $(LDFLAGS) -shared -o $@ $^ -static-libgcc -static-libstdc++
 	$(STRIP) $@
 	upx -9 $@
@@ -29,4 +29,4 @@ scaler_xbrz.dll: $(OBJS_SCALER_XBRZ)
 	upx -9 $@
 
 clean:
-	rm -f $(OBJS_SCALER_EPX) $(OBJS_SCALER_HQX) $(OBJS_SCALER_XBRZ) *.dll
+	rm -f $(OBJS_SCALER_EPX) $(OBJS_SCALER_TV2X) $(OBJS_SCALER_XBRZ) *.dll
