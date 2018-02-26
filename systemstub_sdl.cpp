@@ -94,7 +94,7 @@ void SystemStub_SDL::init(const char *title, int w, int h, bool fullscreen, Scal
 	_fullscreen = fullscreen;
 	_scalerType = scalerParameters->type;
 	_scaler = scalerParameters->scaler;
-	_scaleFactor = scalerParameters->factor;
+	_scaleFactor = CLIP(scalerParameters->factor, _scaler->factorMin, _scaler->factorMax);
 	memset(_rgbPalette, 0, sizeof(_rgbPalette));
 	_screenW = _screenH = 0;
 	setScreenSize(w, h);
@@ -649,12 +649,7 @@ void SystemStub_SDL::cleanupGraphics() {
 }
 
 void SystemStub_SDL::changeGraphics(bool fullscreen, int scaleFactor) {
-	int factor = scaleFactor;
-	if (factor < _scaler->factorMin) {
-		factor = _scaler->factorMin;
-	} else if (factor > _scaler->factorMax) {
-		factor = _scaler->factorMax;
-	}
+	int factor = CLIP(scaleFactor, _scaler->factorMin, _scaler->factorMax);
 	if (fullscreen == _fullscreen && factor == _scaleFactor) {
 		// no change
 		return;

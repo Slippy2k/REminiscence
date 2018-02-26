@@ -69,6 +69,16 @@ inline void SWAP(T &a, T &b) {
 	b = tmp;
 }
 
+template<typename T>
+inline T CLIP(const T& val, const T& a, const T& b) {
+	if (val < a) {
+		return a;
+	} else if (val > b) {
+		return b;
+	}
+	return val;
+}
+
 enum Language {
 	LANG_FR,
 	LANG_EN,
