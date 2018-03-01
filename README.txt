@@ -12,18 +12,11 @@ made by Delphine Software and released in 1992. More informations about the
 game can be found at [1], [2] and [3].
 
 
-Compiling:
-----------
-
-Update the defines in the Makefile if needed. The SDL, zlib and modplug
-libraries are required.
-
-
 Data Files:
 -----------
 
 You will need the original files of the PC (DOS or CD), Amiga or Macintosh
-release.
+release. Support for Amiga and Macintosh is still experimental.
 
 For the Macintosh release, the resource fork must dumped as a file named
 'FLASHBACK.BIN' (MacBinary). It shall contain 38 distinct data types.
