@@ -8,59 +8,107 @@
 #include "dynlib.h"
 #include "util.h"
 
-static void point2x(uint32_t *dst, int dstPitch, const uint32_t *src, int srcPitch, int w, int h) {
-	const int dstPitch2 = dstPitch * 2;
-	while (h--) {
-		uint32_t *p = dst;
-		for (int i = 0; i < w; ++i, p += 2) {
-			const uint32_t color = src[i];
-			p[0] = p[1] = color;
-			p[dstPitch] = p[dstPitch + 1] = color;
+static void scanline2x(uint32_t *dst0, uint32_t *dst1, const uint32_t *src0, const uint32_t *src1, const uint32_t *src2, int w) {
+	uint32_t B, D, E, F, H;
+
+	// ABC
+	// DEF
+	// GHI
+
+	int x = 0;
+
+	// first pixel (D == E)
+	B = *(src0 + x);
+	E = *(src1 + x);
+	F = *(src1 + x + 1);
+	H = *(src2 + x);
+	if (B != H && E != F) {
+		dst0[0] = E;
+		dst0[1] = B == F ? F : E;
+		dst1[0] = E;
+		dst1[1] = H == F ? F : E;
+	} else {
+		dst0[0] = E;
+		dst0[1] = E;
+		dst1[0] = E;
+		dst1[1] = E;
+	}
+	dst0 += 2;
+	dst1 += 2;
+
+	// center pixels
+	D = E;
+	E = F;
+	for (x = 1; x < w - 1; ++x) {
+		B = *(src0 + x);
+		// D = *(src0 + x - 1);
+		// E = *(src1 + x);
+		F = *(src1 + x + 1);
+		H = *(src2 + x);
+		if (B != H && D != F) {
+			dst0[0] = D == B ? D : E;
+			dst0[1] = B == F ? F : E;
+			dst1[0] = D == H ? D : E;
+			dst1[1] = H == F ? F : E;
+		} else {
+			dst0[0] = E;
+			dst0[1] = E;
+			dst1[0] = E;
+			dst1[1] = E;
 		}
-		dst += dstPitch2;
-		src += srcPitch;
+		D = E;
+		E = F;
+		dst0 += 2;
+		dst1 += 2;
+	}
+
+	// last pixel (F == E)
+	B = *(src0 + x);
+	// D = *(src1 + x - 1);
+	// E = *(src1 + x);
+	H = *(src2 + x);
+	if (B != H && D != E) {
+		dst0[0] = D == B ? D : E;
+		dst0[1] = E;
+		dst1[0] = D == H ? D : E;
+		dst1[1] = E;
+	} else {
+		dst0[0] = E;
+		dst0[1] = E;
+		dst1[0] = E;
+		dst1[1] = E;
 	}
 }
 
 static void scale2x(uint32_t *dst, int dstPitch, const uint32_t *src, int srcPitch, int w, int h) {
+	assert(w > 1 && h > 1);
 	const int dstPitch2 = dstPitch * 2;
-	uint32_t B, D, E, F, H;
 
-	// nearest neighbour at top, left, right and bottom borders
-	point2x(dst, dstPitch, src, srcPitch, w, 1);
-	point2x(dst, dstPitch, src, srcPitch, 1, h);
-	point2x(dst + (w - 1) * 2,         dstPitch, src + w - 1,              srcPitch, 1, h);
-	point2x(dst + (h - 1) * dstPitch2, dstPitch, src + (h - 1) * srcPitch, srcPitch, w, 1);
+	const uint32_t *src0, *src1, *src2;
+
+	// y == 0
+	src0 = src;
+	src1 = src;
+	src2 = src + srcPitch;
+	scanline2x(dst, dst + dstPitch, src0, src1, src2, w);
+	dst += dstPitch2;
 
 	// center
-	src += srcPitch + 1;
-	dst += dstPitch2 + 2;
+	src0 = src;
+	src1 = src + srcPitch;
+	src2 = src + srcPitch * 2;
 	for (int y = 1; y < h - 1; ++y) {
-		// ABC
-		// DEF
-		// GHI
-		uint32_t *p = dst;
-		for (int x = 1; x < w - 1; ++x, p += 2) {
-			B = *(src + x - srcPitch);
-			D = *(src + x - 1);
-			E = *(src + x);
-			F = *(src + x + 1);
-			H = *(src + x + srcPitch);
-			if (B != H && D != F) {
-				*(p) = D == B ? D : E;
-				*(p + 1) = B == F ? F : E;
-				*(p + dstPitch) = D == H ? D : E;
-				*(p + dstPitch + 1) = H == F ? F : E;
-			} else {
-				*(p) = E;
-				*(p + 1) = E;
-				*(p + dstPitch) = E;
-				*(p + dstPitch + 1) = E;
-			}
-		}
+		scanline2x(dst, dst + dstPitch, src0, src1, src2, w);
 		dst += dstPitch2;
-		src += srcPitch;
+
+		src0 += srcPitch;
+		src1 += srcPitch;
+		src2 += srcPitch;
 	}
+
+	// y == h-1
+	src2 = src1;
+	scanline2x(dst, dst + dstPitch, src0, src1, src2, w);
 }
 
 static void scale3x(uint32_t *dst, int dstPitch, const uint32_t *src, int srcPitch, int w, int h) {
