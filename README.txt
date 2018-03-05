@@ -21,20 +21,22 @@ release. Support for Amiga and Macintosh is still experimental.
 For the Macintosh release, the resource fork must dumped as a file named
 'FLASHBACK.BIN' (MacBinary). It shall contain 38 distinct data types.
 
-To have background music during polygonal cutscenes with the PC version,
-you need to copy the music/ directory of the Amiga version or use the .mod
-fileset from unexotica [4].
+To hear music during polygonal cutscenes with the PC version, you need to copy
+the music/ directory of the Amiga version or use the .mod fileset from
+unexotica [4].
 
-To hear voice during in-game dialogues, you'll need to copy the 'VOICE.VCE'
-file from the SegaCD version to the DATA directory.
+For speech with in-game dialogues, you need to copy the 'VOICE.VCE' file from
+the SegaCD version to the DATA directory.
 
 
 Running:
 --------
 
-By default, the engine will try to load the game data files from the 'DATA'
-directory (as the original game did). The savestates are saved in the current
-directory. These paths can be changed using command line switches :
+By default, the engine tries to load the game data files from the 'DATA'
+directory, as the original game executable did. The savestates are saved in the
+current directory.
+
+These paths can be changed using command line switches :
 
     Usage: rs [OPTIONS]...
     --datapath=PATH   Path to data files (default 'DATA')
@@ -45,9 +47,9 @@ directory. These paths can be changed using command line switches :
     --language=LANG   Language (fr,en,de,sp,it,jp)
 
 The scaler option specifies the algorithm used to smoothen the image in
-addition to a scaling factor. External scalers are also supported, the
-suffix shall be used as the name. Eg. If you have scaler_xbrz.dll, you can
-pass '--scaler xbrz@2' to use that algorithm with a window size 512x448.
+addition to a scaling factor. External scalers are also supported, the suffix
+shall be used as the name. Eg. If you have scaler_xbrz.dll, you can pass
+'--scaler xbrz@2' to use that algorithm with a doubled window size (512x448).
 
 In-game hotkeys :
 
