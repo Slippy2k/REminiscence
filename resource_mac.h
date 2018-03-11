@@ -30,7 +30,8 @@ struct ResourceMacEntry {
 
 struct ResourceMac {
 
-	static const char *FILENAME;
+	static const char *FILENAME1;
+	static const char *FILENAME2;
 
 	File _f;
 
@@ -43,7 +44,8 @@ struct ResourceMac {
 	~ResourceMac();
 
 	bool isOpen() const { return _entries != 0; }
-	void loadMap();
+	void load();
+	void loadResourceFork(uint32_t offset, uint32_t size);
 	const ResourceMacEntry *findEntry(const char *name) const;
 };
 

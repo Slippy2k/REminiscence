@@ -19,7 +19,7 @@ You will need the original files of the PC (DOS or CD), Amiga or Macintosh
 release. Support for Amiga and Macintosh is still experimental.
 
 For the Macintosh release, the resource fork must dumped as a file named
-'FLASHBACK.BIN' (MacBinary). It shall contain 38 distinct data types.
+'FLASHBACK.BIN' (MacBinary) or 'FLASHBACK.RSRC' (AppleDouble).
 
 To hear music during polygonal cutscenes with the PC version, you need to copy
 the music/ directory of the Amiga version or use the .mod fileset from

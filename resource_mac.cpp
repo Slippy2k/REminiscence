@@ -4,8 +4,10 @@
 #include <string.h>
 #include "fs.h"
 #include "resource_mac.h"
+#include "util.h"
 
-const char *ResourceMac::FILENAME = "Flashback.bin";
+const char *ResourceMac::FILENAME1 = "Flashback.bin";
+const char *ResourceMac::FILENAME2 = "Flashback.rsrc";
 
 ResourceMac::ResourceMac(const char *filePath, FileSystem *fs)
 	: _dataOffset(0), _types(0), _entries(0) {
@@ -23,11 +25,31 @@ ResourceMac::~ResourceMac() {
 	free(_types);
 }
 
-void ResourceMac::loadMap() {
-	_f.seek(83);
-	uint32_t dataSize = _f.readUint32BE();
-	uint32_t resourceOffset = 128 + ((dataSize + 127) & ~127);
+void ResourceMac::load() {
+	const uint32_t sig = _f.readUint32BE();
+	if (sig == 0x00051607) { // AppleDouble
+		debug(DBG_INFO, "Load Macintosh data from AppleDouble");
+		_f.seek(24);
+		const int count = _f.readUint16BE();
+		for (int i = 0; i < count; ++i) {
+			const int id = _f.readUint32BE();
+			const int offset = _f.readUint32BE();
+			const int length = _f.readUint32BE();
+			if (id == 2) { // resource fork
+				loadResourceFork(offset, length);
+				break;
+			}
+		}
+	} else { // MacBinary
+		debug(DBG_INFO, "Load Macintosh data from MacBinary");
+		_f.seek(83);
+		uint32_t dataSize = _f.readUint32BE();
+		uint32_t resourceOffset = 128 + ((dataSize + 127) & ~127);
+		loadResourceFork(resourceOffset, dataSize);
+	}
+}
 
+void ResourceMac::loadResourceFork(uint32_t resourceOffset, uint32_t dataSize) {
 	_f.seek(resourceOffset);
 	_dataOffset = resourceOffset + _f.readUint32BE();
 	uint32_t mapOffset = resourceOffset + _f.readUint32BE();

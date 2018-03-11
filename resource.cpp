@@ -71,8 +71,12 @@ void Resource::init() {
 		}
 		break;
 	case kResourceTypeMac:
-		_mac = new ResourceMac(ResourceMac::FILENAME, _fs);
-		_mac->loadMap();
+		if (_fs->exists(ResourceMac::FILENAME1)) {
+			_mac = new ResourceMac(ResourceMac::FILENAME1, _fs);
+		} else if (_fs->exists(ResourceMac::FILENAME2)) {
+			_mac = new ResourceMac(ResourceMac::FILENAME2, _fs);
+		}
+		_mac->load();
 		break;
 	}
 }

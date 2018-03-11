@@ -39,6 +39,7 @@ static int detectVersion(FileSystem *fs) {
 		{ "LEVEL1.LEV", kResourceTypeAmiga, "Amiga" },
 		{ "DEMO.LEV", kResourceTypeAmiga, "Amiga (Demo)" },
 		{ "FLASHBACK.BIN", kResourceTypeMac, "Macintosh" },
+		{ "FLASHBACK.RSRC", kResourceTypeMac, "Macintosh" },
 		{ 0, -1, 0 }
 	};
 	for (int i = 0; table[i].filename; ++i) {
