@@ -809,46 +809,77 @@ static int getLineLength(const uint8_t *str) {
 
 void Game::drawStoryTexts() {
 	if (_textToDisplay != 0xFFFF) {
-		if (_res._type == kResourceTypeMac) {
-			warning("Unhandled textToDisplay %d", _textToDisplay);
-			_textToDisplay = 0xFFFF;
-			return;
-		}
 		uint8_t textColor = 0xE8;
 		const uint8_t *str = _res.getGameString(_textToDisplay);
 		memcpy(_vid._tempLayer, _vid._frontLayer, _vid._layerSize);
 		int textSpeechSegment = 0;
+		int textSegmentsCount = 0;
 		while (!_stub->_pi.quit) {
 			drawIcon(_currentInventoryIconNum, 80, 8, 0xA);
-			if (*str == 0xFF) {
-				if (_res._lang == LANG_JP) {
+			int yPos = 26;
+			if (_res._type == kResourceTypeMac) {
+				if (textSegmentsCount == 0) {
+					textSegmentsCount = *str++;
+				}
+				int len = *str++;
+				if (*str == '@') {
 					switch (str[1]) {
-					case 0:
+					case '1':
 						textColor = 0xE9;
 						break;
-					case 1:
+					case '2':
 						textColor = 0xEB;
 						break;
 					default:
-						warning("Unhandled JP color code 0x%x", str[1]);
+						warning("Unhandled MAC text color code 0x%x", str[1]);
 						break;
 					}
 					str += 2;
-				} else {
-					textColor = str[1];
-					// str[2] is an unused color (possibly the shadow)
-					str += 3;
+					len -= 2;
 				}
-			}
-			int yPos = 26;
-			while (1) {
-				const int len = getLineLength(str);
-				str = (const uint8_t *)_vid.drawString((const char *)str, (176 - len * Video::CHAR_W) / 2, yPos, textColor);
-				yPos += 8;
-				if (*str == 0 || *str == 0xB) {
-					break;
+				for (; len > 0; yPos += 8) {
+					const uint8_t *next = (const uint8_t *)memchr(str, 0x7C, len);
+					if (!next) {
+						_vid.drawStringLen((const char *)str, len, (176 - len * Video::CHAR_W) / 2, yPos, textColor);
+						// point 'str' to beginning of next text segment
+						str += len;
+						break;
+					}
+					const int lineLength = next - str;
+					_vid.drawStringLen((const char *)str, lineLength, (176 - lineLength * Video::CHAR_W) / 2, yPos, textColor);
+					str = next + 1;
+					len -= lineLength + 1;
 				}
-				++str;
+			} else {
+				if (*str == 0xFF) {
+					if (_res._lang == LANG_JP) {
+						switch (str[1]) {
+						case 0:
+							textColor = 0xE9;
+							break;
+						case 1:
+							textColor = 0xEB;
+							break;
+						default:
+							warning("Unhandled JP text color code 0x%x", str[1]);
+							break;
+						}
+						str += 2;
+					} else {
+						textColor = str[1];
+						// str[2] is an unused color (possibly the shadow)
+						str += 3;
+					}
+				}
+				while (1) {
+					const int len = getLineLength(str);
+					str = (const uint8_t *)_vid.drawString((const char *)str, (176 - len * Video::CHAR_W) / 2, yPos, textColor);
+					if (*str == 0 || *str == 0xB) {
+						break;
+					}
+					++str;
+					yPos += 8;
+				}
 			}
 			MixerChunk chunk;
 			_res.load_VCE(_textToDisplay, textSpeechSegment++, &chunk.data, &chunk.len);
@@ -868,10 +899,16 @@ void Game::drawStoryTexts() {
 				free(chunk.data);
 			}
 			_stub->_pi.backspace = false;
-			if (*str == 0) {
-				break;
+			if (_res._type == kResourceTypeMac) {
+				if (textSpeechSegment == textSegmentsCount) {
+					break;
+				}
+			} else {
+				if (*str == 0) {
+					break;
+				}
+				++str;
 			}
-			++str;
 			memcpy(_vid._frontLayer, _vid._tempLayer, _vid._layerSize);
 		}
 		_textToDisplay = 0xFFFF;
