@@ -294,7 +294,9 @@ void Game::mainLoop() {
 	drawAnims();
 	drawCurrentInventoryItem();
 	drawLevelTexts();
-	printLevelCode();
+	if (g_options.enable_password_menu) {
+		printLevelCode();
+	}
 	if (_blinkingConradCounter != 0) {
 		--_blinkingConradCounter;
 	}
