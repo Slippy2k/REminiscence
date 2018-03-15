@@ -51,12 +51,22 @@ Video::~Video() {
 
 void Video::markBlockAsDirty(int16_t x, int16_t y, uint16_t w, uint16_t h) {
 	debug(DBG_VIDEO, "Video::markBlockAsDirty(%d, %d, %d, %d)", x, y, w, h);
-	assert(x >= 0 && x + w <= _w && y >= 0 && y + h <= _h);
-	int bx1 = x / SCREENBLOCK_W;
-	int by1 = y / SCREENBLOCK_H;
-	int bx2 = (x + w - 1) / SCREENBLOCK_W;
-	int by2 = (y + h - 1) / SCREENBLOCK_H;
-	assert(bx2 < _w / SCREENBLOCK_W && by2 < _h / SCREENBLOCK_H);
+	int bx1 = _layerScale * x / SCREENBLOCK_W;
+	int by1 = _layerScale * y / SCREENBLOCK_H;
+	int bx2 = _layerScale * (x + w - 1) / SCREENBLOCK_W;
+	int by2 = _layerScale * (y + h - 1) / SCREENBLOCK_H;
+	if (bx1 < 0) {
+		bx1 = 0;
+	}
+	if (bx2 > (_w / SCREENBLOCK_W) - 1) {
+		bx2 = (_w / SCREENBLOCK_W) - 1;
+	}
+	if (by1 < 0) {
+		by1 = 0;
+	}
+	if (by2 > (_h / SCREENBLOCK_H) - 1) {
+		by2 = (_h / SCREENBLOCK_H) - 1;
+	}
 	for (; by1 <= by2; ++by1) {
 		for (int i = bx1; i <= bx2; ++i) {
 			_screenBlocks[by1 * (_w / SCREENBLOCK_W) + i] = 2;
@@ -938,30 +948,6 @@ Color Video::AMIGA_convertColor(const uint16_t color, bool bgr) { // 4bits to 8b
 }
 
 void Video::MAC_decodeMap(int level, int room) {
-}
-
-void Video::MAC_markBlockAsDirty(int x, int y, int w, int h) {
-	if (x < 0) {
-		w += x;
-		x = 0;
-	}
-	if (x + w > _w) {
-		w = _w - x;
-	}
-	if (w <= 0) {
-		return;
-	}
-	if (y < 0) {
-		h += y;
-		y = 0;
-	}
-	if (y + h > _h) {
-		h = _h - y;
-	}
-	if (h <= 0) {
-		return;
-	}
-	markBlockAsDirty(x, y, w, h);
 }
 
 void Video::MAC_drawBuffer(DecodeBuffer *buf, int src_x, int src_y, int src_w, int src_h, uint8_t color) {

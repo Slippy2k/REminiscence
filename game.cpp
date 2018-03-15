@@ -1141,30 +1141,33 @@ void Game::drawPiege(AnimBufferState *state) {
 			buf.setPixel = _eraseBackground ? Video::MAC_drawBuffer : Video::MAC_drawBufferMask;
 			if (pge->flags & 8) {
 				const uint8_t *dataPtr = _res.MAC_getImageData(_res._spc, pge->anim_number);
-				if (dataPtr) {
-					fixOffsetDecodeBuffer(&buf, dataPtr);
-					_res.MAC_decodeImageData(_res._spc, pge->anim_number, &buf);
-					_vid.MAC_markBlockAsDirty(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2));
+				if (!dataPtr) {
+					break;
 				}
+				fixOffsetDecodeBuffer(&buf, dataPtr);
+				_res.MAC_decodeImageData(_res._spc, pge->anim_number, &buf);
+				_vid.markBlockAsDirty(buf.x / 2, buf.y / 2, READ_BE_UINT16(dataPtr) / 2, READ_BE_UINT16(dataPtr + 2) / 2);
 			} else if (pge->index == 0) {
 				if (pge->anim_number == 0x386) {
-					return;
+					break;
 				}
 				const int frame = _res.MAC_getPersoFrame(pge->anim_number);
 				const uint8_t *dataPtr = _res.MAC_getImageData(_res._perso, frame);
-				if (dataPtr) {
-					fixOffsetDecodeBuffer(&buf, dataPtr);
-					_res.MAC_decodeImageData(_res._perso, frame, &buf);
-					_vid.MAC_markBlockAsDirty(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2));
+				if (!dataPtr) {
+					break;
 				}
+				fixOffsetDecodeBuffer(&buf, dataPtr);
+				_res.MAC_decodeImageData(_res._perso, frame, &buf);
+				_vid.markBlockAsDirty(buf.x / 2, buf.y / 2, READ_BE_UINT16(dataPtr) / 2, READ_BE_UINT16(dataPtr + 2) / 2);
 			} else {
 				const int frame = _res.MAC_getMonsterFrame(pge->anim_number);
 				const uint8_t *dataPtr = _res.MAC_getImageData(_res._monster, frame);
-				if (dataPtr) {
-					fixOffsetDecodeBuffer(&buf, dataPtr);
-					_res.MAC_decodeImageData(_res._monster, frame, &buf);
-					_vid.MAC_markBlockAsDirty(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2));
+				if (!dataPtr) {
+					break;
 				}
+				fixOffsetDecodeBuffer(&buf, dataPtr);
+				_res.MAC_decodeImageData(_res._monster, frame, &buf);
+				_vid.markBlockAsDirty(buf.x / 2, buf.y / 2, READ_BE_UINT16(dataPtr) / 2, READ_BE_UINT16(dataPtr + 2) / 2);
 			}
 		}
 		break;
@@ -1761,7 +1764,7 @@ void Game::drawIcon(uint8_t iconNum, int16_t x, int16_t y, uint8_t colMask) {
 			buf.y = y * _vid._layerScale;
 			buf.setPixel = Video::MAC_drawBuffer;
 			_res.MAC_decodeImageData(_res._icn, iconNum, &buf);
-			_vid.MAC_markBlockAsDirty(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2));
+			_vid.markBlockAsDirty(x, y, READ_BE_UINT16(dataPtr) / 2, READ_BE_UINT16(dataPtr + 2) / 2);
 		}
 		return;
 	}
