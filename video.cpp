@@ -948,6 +948,25 @@ Color Video::AMIGA_convertColor(const uint16_t color, bool bgr) { // 4bits to 8b
 }
 
 void Video::MAC_decodeMap(int level, int room) {
+	DecodeBuffer buf;
+	memset(&buf, 0, sizeof(buf));
+	buf.ptr = _frontLayer;
+	buf.w = buf.pitch = _w;
+	buf.h = _h;
+	buf.setPixel = Video::MAC_drawBuffer;
+	_res->MAC_loadLevelRoom(level, room, &buf);
+	memcpy(_backLayer, _frontLayer, _layerSize);
+	Color roomPalette[256];
+	_res->MAC_setupRoomClut(level, room, roomPalette);
+	for (int j = 0; j < 16; ++j) {
+		if (j == 5 || j == 7 || j == 14 || j == 15) {
+			continue;
+		}
+		for (int i = 0; i < 16; ++i) {
+			const int color = j * 16 + i;
+			_stub->setPaletteEntry(color, &roomPalette[color]);
+		}
+	}
 }
 
 void Video::MAC_drawBuffer(DecodeBuffer *buf, int src_x, int src_y, int src_w, int src_h, uint8_t color) {
