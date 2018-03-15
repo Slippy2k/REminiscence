@@ -1115,15 +1115,6 @@ void Game::drawAnimBuffer(uint8_t stateNum, AnimBufferState *state) {
 	}
 }
 
-static void fixOffsetDecodeBuffer(DecodeBuffer *buf, const uint8_t *dataPtr) {
-	if (buf->xflip) {
-		buf->x += (int16_t)READ_BE_UINT16(dataPtr + 4) - READ_BE_UINT16(dataPtr) - 1;
-	} else {
-		buf->x -= (int16_t)READ_BE_UINT16(dataPtr + 4);
-	}
-	buf->y -= (int16_t)READ_BE_UINT16(dataPtr + 6);
-}
-
 void Game::drawPiege(AnimBufferState *state) {
 	LivePGE *pge = state->pge;
 	switch (_res._type) {
@@ -1131,46 +1122,18 @@ void Game::drawPiege(AnimBufferState *state) {
 	case kResourceTypeDOS:
 		drawObject(state->dataPtr, state->x, state->y, pge->flags);
 		break;
-	case kResourceTypeMac: {
-			DecodeBuffer buf;
-			memset(&buf, 0, sizeof(buf));
-			buf.xflip = (pge->flags & 2);
-			buf.ptr = _vid._frontLayer;
-			buf.w = buf.pitch = _vid._w;
-			buf.h = _vid._h;
-			buf.x = state->x * _vid._layerScale;
-			buf.y = state->y * _vid._layerScale;
-			buf.setPixel = _eraseBackground ? Video::MAC_drawBuffer : Video::MAC_drawBufferMask;
-			if (pge->flags & 8) {
-				const uint8_t *dataPtr = _res.MAC_getImageData(_res._spc, pge->anim_number);
-				if (!dataPtr) {
-					break;
-				}
-				fixOffsetDecodeBuffer(&buf, dataPtr);
-				_res.MAC_decodeImageData(_res._spc, pge->anim_number, &buf);
-				_vid.markBlockAsDirty(buf.x / 2, buf.y / 2, READ_BE_UINT16(dataPtr) / 2, READ_BE_UINT16(dataPtr + 2) / 2);
-			} else if (pge->index == 0) {
-				if (pge->anim_number == 0x386) {
-					break;
-				}
-				const int frame = _res.MAC_getPersoFrame(pge->anim_number);
-				const uint8_t *dataPtr = _res.MAC_getImageData(_res._perso, frame);
-				if (!dataPtr) {
-					break;
-				}
-				fixOffsetDecodeBuffer(&buf, dataPtr);
-				_res.MAC_decodeImageData(_res._perso, frame, &buf);
-				_vid.markBlockAsDirty(buf.x / 2, buf.y / 2, READ_BE_UINT16(dataPtr) / 2, READ_BE_UINT16(dataPtr + 2) / 2);
-			} else {
-				const int frame = _res.MAC_getMonsterFrame(pge->anim_number);
-				const uint8_t *dataPtr = _res.MAC_getImageData(_res._monster, frame);
-				if (!dataPtr) {
-					break;
-				}
-				fixOffsetDecodeBuffer(&buf, dataPtr);
-				_res.MAC_decodeImageData(_res._monster, frame, &buf);
-				_vid.markBlockAsDirty(buf.x / 2, buf.y / 2, READ_BE_UINT16(dataPtr) / 2, READ_BE_UINT16(dataPtr + 2) / 2);
+	case kResourceTypeMac:
+		if (pge->flags & 8) {
+			_vid.MAC_drawSprite(state->x, state->y, _res._spc, pge->anim_number, (pge->flags & 2) != 0, _eraseBackground);
+		} else if (pge->index == 0) {
+			if (pge->anim_number == 0x386) {
+				break;
 			}
+			const int frame = _res.MAC_getPersoFrame(pge->anim_number);
+			_vid.MAC_drawSprite(state->x, state->y, _res._perso, frame, (pge->flags & 2) != 0, _eraseBackground);
+		} else {
+			const int frame = _res.MAC_getMonsterFrame(pge->anim_number);
+			_vid.MAC_drawSprite(state->x, state->y, _res._monster, frame, (pge->flags & 2) != 0, _eraseBackground);
 		}
 		break;
 	}
@@ -1735,19 +1698,7 @@ void Game::drawIcon(uint8_t iconNum, int16_t x, int16_t y, uint8_t colMask) {
 			iconNum = 34;
 			break;
 		}
-		{
-			const uint8_t *dataPtr = _res.MAC_getImageData(_res._icn, iconNum);
-			DecodeBuffer buf;
-			memset(&buf, 0, sizeof(buf));
-			buf.ptr = _vid._frontLayer;
-			buf.w = buf.pitch = _vid._w;
-			buf.h = _vid._h;
-			buf.x = x * _vid._layerScale;
-			buf.y = y * _vid._layerScale;
-			buf.setPixel = Video::MAC_drawBuffer;
-			_res.MAC_decodeImageData(_res._icn, iconNum, &buf);
-			_vid.markBlockAsDirty(x, y, READ_BE_UINT16(dataPtr) / 2, READ_BE_UINT16(dataPtr + 2) / 2);
-		}
+		_vid.MAC_drawSprite(x, y, _res._icn, iconNum, false, true);
 		return;
 	}
 	_vid.drawSpriteSub1(buf, _vid._frontLayer + x + y * _vid._w, 16, 16, 16, colMask << 4);

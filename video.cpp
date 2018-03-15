@@ -1019,3 +1019,31 @@ void Video::MAC_fillRect(int x, int y, int w, int h, uint8_t color) {
 		p += _w;
 	}
 }
+
+static void fixOffsetDecodeBuffer(DecodeBuffer *buf, const uint8_t *dataPtr) {
+        if (buf->xflip) {
+                buf->x += (int16_t)READ_BE_UINT16(dataPtr + 4) - READ_BE_UINT16(dataPtr) - 1;
+        } else {
+                buf->x -= (int16_t)READ_BE_UINT16(dataPtr + 4);
+        }
+        buf->y -= (int16_t)READ_BE_UINT16(dataPtr + 6);
+}
+
+void Video::MAC_drawSprite(int x, int y, const uint8_t *data, int frame, bool xflip, bool eraseBackground) {
+	const uint8_t *dataPtr = _res->MAC_getImageData(data, frame);
+	if (dataPtr) {
+		DecodeBuffer buf;
+		memset(&buf, 0, sizeof(buf));
+		buf.xflip = xflip;
+		buf.ptr = _frontLayer;
+		buf.w = buf.pitch = _w;
+		buf.h = _h;
+		buf.x = x * _layerScale;
+		buf.y = y * _layerScale;
+		buf.setPixel = eraseBackground ? MAC_drawBuffer : MAC_drawBufferMask;
+		fixOffsetDecodeBuffer(&buf, dataPtr);
+		_res->MAC_decodeImageData(data, frame, &buf);
+		// divide by screen scale as the dirty blocks range is 256,224
+		markBlockAsDirty(buf.x / _layerScale, buf.y / _layerScale, READ_BE_UINT16(dataPtr) / _layerScale, READ_BE_UINT16(dataPtr + 2) / _layerScale);
+	}
+}
