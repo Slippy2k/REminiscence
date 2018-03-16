@@ -408,20 +408,22 @@ void Menu::handleTitleScreen() {
 			_nextScreen = -1;
 		}
 
-		if (_stub->_pi.dirMask & PlayerInput::DIR_LEFT) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_LEFT;
-			if (currentLanguage != 0) {
-				--currentLanguage;
-			} else {
-				currentLanguage = ARRAYSIZE(languages) - 1;
+		if (g_options.enable_language_selection) {
+			if (_stub->_pi.dirMask & PlayerInput::DIR_LEFT) {
+				_stub->_pi.dirMask &= ~PlayerInput::DIR_LEFT;
+				if (currentLanguage != 0) {
+					--currentLanguage;
+				} else {
+					currentLanguage = ARRAYSIZE(languages) - 1;
+				}
 			}
-		}
-		if (_stub->_pi.dirMask & PlayerInput::DIR_RIGHT) {
-			_stub->_pi.dirMask &= ~PlayerInput::DIR_RIGHT;
-			if (currentLanguage != ARRAYSIZE(languages) - 1) {
-				++currentLanguage;
-			} else {
-				currentLanguage = 0;
+			if (_stub->_pi.dirMask & PlayerInput::DIR_RIGHT) {
+				_stub->_pi.dirMask &= ~PlayerInput::DIR_RIGHT;
+				if (currentLanguage != ARRAYSIZE(languages) - 1) {
+					++currentLanguage;
+				} else {
+					currentLanguage = 0;
+				}
 			}
 		}
 		if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {

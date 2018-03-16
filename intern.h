@@ -103,6 +103,7 @@ enum Skill {
 struct Options {
 	bool bypass_protection;
 	bool enable_password_menu;
+	bool enable_language_selection;
 	bool fade_out_palette;
 	bool use_tiledata;
 	bool use_text_cutscenes;

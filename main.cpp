@@ -83,6 +83,7 @@ static void initOptions() {
 	// defaults
 	g_options.bypass_protection = true;
 	g_options.enable_password_menu = false;
+	g_options.enable_language_selection = false;
 	g_options.fade_out_palette = true;
 	g_options.use_text_cutscenes = false;
 	g_options.use_seq_cutscenes = true;
@@ -97,6 +98,7 @@ static void initOptions() {
 	} opts[] = {
 		{ "bypass_protection", &g_options.bypass_protection },
 		{ "enable_password_menu", &g_options.enable_password_menu },
+		{ "enable_language_selection", &g_options.enable_language_selection },
 		{ "fade_out_palette", &g_options.fade_out_palette },
 		{ "use_tiledata", &g_options.use_tiledata },
 		{ "use_text_cutscenes", &g_options.use_text_cutscenes },
