@@ -58,6 +58,7 @@ struct SystemStub_SDL : SystemStub {
 	virtual void getPaletteEntry(int i, Color *c);
 	virtual void setOverscanColor(int i);
 	virtual void copyRect(int x, int y, int w, int h, const uint8_t *buf, int pitch);
+	virtual void copyRectRgb24(int x, int y, int w, int h, const uint8_t *rgb);
 	virtual void fadeScreen();
 	virtual void updateScreen(int shakeOffset);
 	virtual void processEvents();
@@ -189,6 +190,22 @@ void SystemStub_SDL::copyRect(int x, int y, int w, int h, const uint8_t *buf, in
 		}
 		p += _screenW;
 		buf += pitch;
+	}
+
+	if (_pi.dbgMask & PlayerInput::DF_DBLOCKS) {
+		drawRect(x, y, w, h, 0xE7);
+	}
+}
+
+void SystemStub_SDL::copyRectRgb24(int x, int y, int w, int h, const uint8_t *rgb) {
+	assert(x >= 0 && x + w <= _screenW && y >= 0 && y + h <= _screenH);
+	uint32_t *p = _screenBuffer + y * _screenW + x;
+
+	for (int j = 0; j < h; ++j) {
+		for (int i = 0; i < w; ++i) {
+			p[i] = SDL_MapRGB(_fmt, rgb[0], rgb[1], rgb[2]); rgb += 3;
+		}
+		p += _screenW;
 	}
 
 	if (_pi.dbgMask & PlayerInput::DF_DBLOCKS) {
