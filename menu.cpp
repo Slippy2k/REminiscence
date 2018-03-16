@@ -474,6 +474,7 @@ void Menu::handleTitleScreen() {
 				break;
 			}
 			_nextScreen = SCREEN_TITLE;
+			continue;
 		}
 
 		if (previousLanguage != currentLanguage) {
