@@ -234,7 +234,7 @@ void SystemStub_SDL::updateScreen(int shakeOffset) {
 		SDL_SetRenderDrawBlendMode(_renderer, SDL_BLENDMODE_BLEND);
 		SDL_Rect r;
 		r.x = r.y = 0;
-		SDL_GetRendererOutputSize(_renderer, &r.w, &r.h);
+		SDL_RenderGetLogicalSize(_renderer, &r.w, &r.h);
 		for (int i = 1; i <= 16; ++i) {
 			SDL_SetRenderDrawColor(_renderer, 0, 0, 0, 256 - i * 16);
 			SDL_RenderCopy(_renderer, _texture, 0, 0);
@@ -250,7 +250,7 @@ void SystemStub_SDL::updateScreen(int shakeOffset) {
 		SDL_Rect r;
 		r.x = 0;
 		r.y = shakeOffset * _scaleFactor;
-		SDL_GetRendererOutputSize(_renderer, &r.w, &r.h);
+		SDL_RenderGetLogicalSize(_renderer, &r.w, &r.h);
 		SDL_RenderCopy(_renderer, _texture, 0, &r);
 	} else {
 		SDL_RenderCopy(_renderer, _texture, 0, 0);
@@ -651,6 +651,10 @@ void SystemStub_SDL::cleanupGraphics() {
 		free(_screenBuffer);
 		_screenBuffer = 0;
 	}
+	if (_texture) {
+		SDL_DestroyTexture(_texture);
+		_texture = 0;
+	}
 	if (_renderer) {
 		SDL_DestroyRenderer(_renderer);
 		_renderer = 0;
@@ -673,6 +677,10 @@ void SystemStub_SDL::changeGraphics(bool fullscreen, int scaleFactor) {
 	}
 	_fullscreen = fullscreen;
 	_scaleFactor = factor;
+	if (_texture) {
+		SDL_DestroyTexture(_texture);
+		_texture = 0;
+	}
 	if (_renderer) {
 		SDL_DestroyRenderer(_renderer);
 		_renderer = 0;
