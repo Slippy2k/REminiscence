@@ -222,6 +222,11 @@ static void PC_decodeMapPlane(int sz, const uint8_t *src, uint8_t *dst) {
 
 void Video::PC_decodeMap(int level, int room) {
 	debug(DBG_VIDEO, "Video::PC_decodeMap(%d)", room);
+	if (!_res->_map) {
+		assert(_res->_lev);
+		PC_decodeLev(level, room);
+		return;
+	}
 	assert(room < 0x40);
 	int32_t off = READ_LE_UINT32(_res->_map + room * 6);
 	if (off == 0) {
@@ -259,6 +264,7 @@ void Video::PC_decodeMap(int level, int room) {
 		}
 	}
 	memcpy(_backLayer, _frontLayer, _layerSize);
+	PC_setLevelPalettes();
 }
 
 void Video::PC_setLevelPalettes() {

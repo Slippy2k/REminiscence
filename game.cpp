@@ -157,6 +157,11 @@ void Game::run() {
 			_stub->_pi.enter = false;
 			_stub->_pi.space = false;
 			_stub->_pi.shift = false;
+			// clear widescreen borders
+			if (_stub->hasWidescreen()) {
+				_stub->copyRectLeftBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
+				_stub->copyRectRightBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
+			}
 		}
 	}
 
@@ -454,6 +459,10 @@ void Game::drawCurrentInventoryItem() {
 }
 
 void Game::showFinalScore() {
+	if (_stub->hasWidescreen()) {
+		_stub->copyRectLeftBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
+		_stub->copyRectRightBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
+	}
 	playCutscene(0x49);
 	char buf[50];
 	snprintf(buf, sizeof(buf), "SCORE %08u", _score);
@@ -610,6 +619,10 @@ bool Game::handleConfigPanel() {
 }
 
 bool Game::handleContinueAbort() {
+	if (_stub->hasWidescreen()) {
+		_stub->copyRectLeftBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
+		_stub->copyRectRightBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
+	}
 	playCutscene(0x48);
 	int timeout = 100;
 	int current_color = 0;
@@ -1510,12 +1523,23 @@ void Game::loadLevelMap() {
 		_vid.AMIGA_decodeLev(_currentLevel, _currentRoom);
 		break;
 	case kResourceTypeDOS:
-		if (_res._map) {
-			_vid.PC_decodeMap(_currentLevel, _currentRoom);
-			_vid.PC_setLevelPalettes();
-		} else if (_res._lev) {
-			_vid.PC_decodeLev(_currentLevel, _currentRoom);
+		if (_stub->hasWidescreen()) { // draw adjacent rooms
+			const int leftRoom = _res._ctData[CT_LEFT_ROOM + _currentRoom];
+			if (leftRoom > 0 && hasLevelMap(_currentLevel, leftRoom)) {
+				_vid.PC_decodeMap(_currentLevel, leftRoom);
+				_stub->copyRectLeftBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._backLayer);
+			} else {
+				_stub->copyRectLeftBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
+			}
+			const int rightRoom = _res._ctData[CT_RIGHT_ROOM + _currentRoom];
+			if (rightRoom > 0 && hasLevelMap(_currentLevel, rightRoom)) {
+				_vid.PC_decodeMap(_currentLevel, rightRoom);
+				_stub->copyRectRightBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._backLayer);
+			} else {
+				_stub->copyRectRightBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
+			}
 		}
+		_vid.PC_decodeMap(_currentLevel, _currentRoom);
 		break;
 	case kResourceTypeMac:
 		_vid.MAC_decodeMap(_currentLevel, _currentRoom);
