@@ -630,7 +630,8 @@ void Video::AMIGA_decodeLev(int level, int room) {
 	uint8_t *tmp = _res->_scratchBuffer;
 	const int offset = READ_BE_UINT32(_res->_lev + room * 4);
 	if (!delphine_unpack(tmp, _res->_lev, offset)) {
-		error("Bad CRC for level %d room %d", level, room);
+		warning("Bad CRC for level %d room %d", level, room);
+		return;
 	}
 	uint16_t offset10 = READ_BE_UINT16(tmp + 10);
 	const uint16_t offset12 = READ_BE_UINT16(tmp + 12);
