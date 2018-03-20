@@ -38,21 +38,29 @@ static uint16_t getBits(UnpackCtx *uc, int bitsCount) {
 }
 
 static void copyLiteral(UnpackCtx *uc, int bitsCount, int len) {
-	const int count = getBits(uc, bitsCount) + len + 1;
+	int count = getBits(uc, bitsCount) + len + 1;
+	uc->datasize -= count;
+	if (uc->datasize < 0) {
+		count += uc->datasize;
+		uc->datasize = 0;
+	}
 	for (int i = 0; i < count; ++i) {
 		*uc->dst = (uint8_t)getBits(uc, 8);
 		--uc->dst;
 	}
-	uc->datasize -= count;
 }
 
 static void copyReference(UnpackCtx *uc, int bitsCount, int count) {
+	uc->datasize -= count;
+	if (uc->datasize < 0) {
+		count += uc->datasize;
+		uc->datasize = 0;
+	}
 	const uint16_t offset = getBits(uc, bitsCount);
 	for (int i = 0; i < count; ++i) {
 		*uc->dst = *(uc->dst + offset);
 		--uc->dst;
 	}
-	uc->datasize -= count;
 }
 
 bool delphine_unpack(uint8_t *dst, const uint8_t *src, int len) {
@@ -88,5 +96,6 @@ bool delphine_unpack(uint8_t *dst, const uint8_t *src, int len) {
 			}
 		}
 	} while (uc.datasize > 0);
+	assert(uc.datasize == 0);
 	return uc.crc == 0;
 }
