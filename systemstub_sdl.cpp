@@ -232,16 +232,29 @@ void SystemStub_SDL::copyRectRgb24(int x, int y, int w, int h, const uint8_t *rg
 	}
 }
 
+static void clearTexture(SDL_Texture *texture, int h, SDL_PixelFormat *fmt) {
+	void *dst = 0;
+	int pitch = 0;
+	if (SDL_LockTexture(texture, 0, &dst, &pitch) == 0) {
+		assert((pitch & 3) == 0);
+		const uint32_t color = SDL_MapRGB(fmt, 0, 0, 0);
+		for (uint32_t i = 0; i < h * pitch / sizeof(uint32_t); ++i) {
+			((uint32_t *)dst)[i] = color;
+		}
+		SDL_UnlockTexture(texture);
+	}
+}
+
 void SystemStub_SDL::copyRectLeftBorder(int w, int h, const uint8_t *buf) {
+	if (!buf) {
+		clearTexture(_wideTexture, _screenH, _fmt);
+		return;
+	}
 	assert(w >= _wideMargin);
 	uint32_t *rgb = (uint32_t *)malloc(w * h * sizeof(uint32_t));
 	if (rgb) {
-		if (buf) {
-			for (int i = 0; i < w * h; ++i) {
-				rgb[i] = _darkPalette[buf[i]];
-			}
-		} else {
-			memset(rgb, 0, w * h * sizeof(uint32_t));
+		for (int i = 0; i < w * h; ++i) {
+			rgb[i] = _darkPalette[buf[i]];
 		}
 		const int xOffset = w - _wideMargin;
 		SDL_Rect r;
@@ -255,15 +268,15 @@ void SystemStub_SDL::copyRectLeftBorder(int w, int h, const uint8_t *buf) {
 }
 
 void SystemStub_SDL::copyRectRightBorder(int w, int h, const uint8_t *buf) {
+	if (!buf) {
+		clearTexture(_wideTexture, _screenH, _fmt);
+		return;
+	}
 	assert(w >= _wideMargin);
 	uint32_t *rgb = (uint32_t *)malloc(w * h * sizeof(uint32_t));
 	if (rgb) {
-		if (buf) {
-			for (int i = 0; i < w * h; ++i) {
-				rgb[i] = _darkPalette[buf[i]];
-			}
-		} else {
-			memset(rgb, 0, w * h * sizeof(uint32_t));
+		for (int i = 0; i < w * h; ++i) {
+			rgb[i] = _darkPalette[buf[i]];
 		}
 		const int xOffset = 0;
 		SDL_Rect r;
@@ -722,6 +735,8 @@ void SystemStub_SDL::prepareGraphics() {
 		const int w = _screenH * 16 / 9;
 		const int h = _screenH;
 		_wideTexture = SDL_CreateTexture(_renderer, kPixelFormat, SDL_TEXTUREACCESS_STREAMING, w, h);
+		clearTexture(_wideTexture, _screenH, _fmt);
+
 		// left and right borders
 		_wideMargin = (w - _screenW) / 2;
 	}
