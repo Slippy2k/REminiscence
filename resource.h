@@ -112,7 +112,8 @@ struct Resource {
 
 	enum {
 		kPaulaFreq = 3546897,
-		kClutSize = 1024
+		kClutSize = 1024,
+		kScratchBufferSize = 320 * 224 + 1024
 	};
 
 	static const uint16_t _voicesOffsetsTable[];
@@ -196,7 +197,7 @@ struct Resource {
 	void load_SPL_demo();
 	void load_MAP_menu(const char *fileName, uint8_t *dstPtr);
 	void load_PAL_menu(const char *fileName, uint8_t *dstPtr);
-	void load_CMP_menu(const char *fileName, uint8_t *dstPtr);
+	void load_CMP_menu(const char *fileName);
 	void load_SPR_OFF(const char *fileName, uint8_t *sprData);
 	void load_CINE();
 	void free_CINE();

@@ -172,7 +172,7 @@ void Game::run() {
 
 void Game::displayTitleScreenAmiga() {
 	static const char *FILENAME = "present.cmp";
-	_res.load_CMP_menu(FILENAME, _res._scratchBuffer);
+	_res.load_CMP_menu(FILENAME);
 	static const int kW = 320;
 	static const int kH = 224;
 	uint8_t *buf = (uint8_t *)calloc(kW * kH, 1);
