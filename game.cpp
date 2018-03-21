@@ -175,7 +175,7 @@ void Game::displayTitleScreenAmiga() {
 	_res.load_CMP_menu(FILENAME);
 	static const int kW = 320;
 	static const int kH = 224;
-	uint8_t *buf = (uint8_t *)calloc(kW * kH, 1);
+	uint8_t *buf = (uint8_t *)calloc(1, kW * kH);
 	if (!buf) {
 		error("Failed to allocate screen buffer w=%d h=%d", kW, kH);
 	}
@@ -190,13 +190,13 @@ void Game::displayTitleScreenAmiga() {
 		_stub->setPaletteEntry(i, &c);
 	}
 	_stub->setScreenSize(kW, kH);
+	// fill with black
 	_stub->copyRect(0, 0, kW, kH, buf, kW);
 	_stub->updateScreen(0);
 	_vid.AMIGA_decodeCmp(_res._scratchBuffer + 6, buf);
-	free(buf);
 	int h = 0;
 	while (1) {
-		if (h < kH / 2) {
+		if (h <= kH / 2) {
 			const int y = kH / 2 - h;
 			_stub->copyRect(0, y, kW, h * 2, buf, kW);
 			_stub->updateScreen(0);
@@ -212,6 +212,7 @@ void Game::displayTitleScreenAmiga() {
 		}
 		_stub->sleep(30);
 	}
+	free(buf);
 }
 
 void Game::resetGameState() {
