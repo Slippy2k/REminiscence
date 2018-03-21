@@ -1019,7 +1019,7 @@ void Video::MAC_drawBufferFont(DecodeBuffer *buf, int src_x, int src_y, int src_
 	}
 }
 
-void Video::MAC_fillRect(int x, int y, int w, int h, uint8_t color) {
+void Video::fillRect(int x, int y, int w, int h, uint8_t color) {
 	uint8_t *p = _frontLayer + y * _layerScale * _w + x * _layerScale;
 	for (int j = 0; j < h * _layerScale; ++j) {
 		memset(p, color, w * _layerScale);

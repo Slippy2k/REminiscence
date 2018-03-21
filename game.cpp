@@ -497,8 +497,12 @@ bool Game::handleConfigPanel() {
 
 	switch (_res._type) {
 	case kResourceTypeAmiga:
-		// TODO
-		return true;
+		for (int i = 0; i < h; ++i) {
+			for (int j = 0; j < w; ++j) {
+				_vid.fillRect(Video::CHAR_W * (x + j), Video::CHAR_H * (y + i), Video::CHAR_W, Video::CHAR_H, 0xE2);
+			}
+		}
+		break;
 	case kResourceTypeDOS:
 		// top-left rounded corner
 		_vid.PC_drawChar(0x81, y, x, kUseDefaultFont);
@@ -544,7 +548,7 @@ bool Game::handleConfigPanel() {
 			_vid.MAC_drawStringChar(_vid._frontLayer, _vid._w, Video::CHAR_W * x,       Video::CHAR_H * (y + i), _res._fnt, _vid._charFrontColor, 0x86);
 			_vid.MAC_drawStringChar(_vid._frontLayer, _vid._w, Video::CHAR_W * (x + w), Video::CHAR_H * (y + i), _res._fnt, _vid._charFrontColor, 0x87);
 			for (int j = 1; j < w; ++j) {
-				_vid.MAC_fillRect(Video::CHAR_W * (x + j), Video::CHAR_H * (y + i), Video::CHAR_W, Video::CHAR_H, 0xE2);
+				_vid.fillRect(Video::CHAR_W * (x + j), Video::CHAR_H * (y + i), Video::CHAR_W, Video::CHAR_H, 0xE2);
 			}
 		}
 		break;
