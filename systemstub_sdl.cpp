@@ -246,15 +246,18 @@ static void clearTexture(SDL_Texture *texture, int h, SDL_PixelFormat *fmt) {
 }
 
 void SystemStub_SDL::copyRectLeftBorder(int w, int h, const uint8_t *buf) {
-	if (!buf) {
-		clearTexture(_wideTexture, _screenH, _fmt);
-		return;
-	}
 	assert(w >= _wideMargin);
 	uint32_t *rgb = (uint32_t *)malloc(w * h * sizeof(uint32_t));
 	if (rgb) {
-		for (int i = 0; i < w * h; ++i) {
-			rgb[i] = _darkPalette[buf[i]];
+		if (buf) {
+			for (int i = 0; i < w * h; ++i) {
+				rgb[i] = _darkPalette[buf[i]];
+			}
+		} else {
+			const uint32_t color = SDL_MapRGB(_fmt, 0, 0, 0);
+			for (int i = 0; i < w * h; ++i) {
+				rgb[i] = color;
+			}
 		}
 		const int xOffset = w - _wideMargin;
 		SDL_Rect r;
@@ -268,15 +271,18 @@ void SystemStub_SDL::copyRectLeftBorder(int w, int h, const uint8_t *buf) {
 }
 
 void SystemStub_SDL::copyRectRightBorder(int w, int h, const uint8_t *buf) {
-	if (!buf) {
-		clearTexture(_wideTexture, _screenH, _fmt);
-		return;
-	}
 	assert(w >= _wideMargin);
 	uint32_t *rgb = (uint32_t *)malloc(w * h * sizeof(uint32_t));
 	if (rgb) {
-		for (int i = 0; i < w * h; ++i) {
-			rgb[i] = _darkPalette[buf[i]];
+		if (buf) {
+			for (int i = 0; i < w * h; ++i) {
+				rgb[i] = _darkPalette[buf[i]];
+			}
+		} else {
+			const uint32_t color = SDL_MapRGB(_fmt, 0, 0, 0);
+			for (int i = 0; i < w * h; ++i) {
+				rgb[i] = color;
+			}
 		}
 		const int xOffset = 0;
 		SDL_Rect r;
