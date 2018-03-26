@@ -36,9 +36,9 @@ Resource::Resource(FileSystem *fs, ResourceType ver, Language lang) {
 
 Resource::~Resource() {
 	clearLevelRes();
+	MAC_unloadLevelData();
 	free(_fnt);
-	free(_icn); _icn = 0;
-	_icnLen = 0;
+	free(_icn);
 	free(_tab);
 	free(_spc);
 	free(_spr1);
