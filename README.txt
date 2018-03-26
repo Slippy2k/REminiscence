@@ -60,11 +60,12 @@ In-game hotkeys :
     Escape          display the options
     Backspace       display the inventory
     Alt Enter       toggle windowed/fullscreen mode
-    Alt + and -     change video scaler
+    Alt + and -     increase or decrease game screen scaler factor
     Alt S           write screenshot as .tga
     Ctrl S          save game state
     Ctrl L          load game state
     Ctrl + and -    change game state slot
+    Function Keys   change game screen scaler
 
 Debug hotkeys :
 

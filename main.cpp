@@ -143,10 +143,16 @@ static void parseScaler(char *name, ScalerParameters *scalerParameters) {
 	struct {
 		const char *name;
 		int type;
+		const Scaler *scaler;
 	} scalers[] = {
-		{ "point", kScalerTypePoint },
-		{ "linear", kScalerTypeLinear },
-		{ "scale", kScalerTypeInternal },
+		{ "point", kScalerTypePoint, 0 },
+		{ "linear", kScalerTypeLinear, 0 },
+		{ "scale", kScalerTypeInternal, &_internalScaler },
+#ifdef USE_STATIC_SCALER
+		{ "nearest", kScalerTypeInternal, &scaler_nearest },
+		{ "tv2x", kScalerTypeInternal, &scaler_tv2x },
+		{ "xbrz", kScalerTypeInternal, &scaler_xbrz },
+#endif
 		{ 0, -1 }
 	};
 	bool found = false;
@@ -157,6 +163,7 @@ static void parseScaler(char *name, ScalerParameters *scalerParameters) {
 	for (int i = 0; scalers[i].name; ++i) {
 		if (strcmp(scalers[i].name, name) == 0) {
 			scalerParameters->type = (ScalerType)scalers[i].type;
+			scalerParameters->scaler = scalers[i].scaler;
 			found = true;
 			break;
 		}

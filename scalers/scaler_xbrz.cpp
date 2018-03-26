@@ -6,15 +6,17 @@ static void scale_xbrz(int factor, uint32_t *dst, int dstPitch, const uint32_t *
 	xbrz::scale(factor, src, dst, w, h, xbrz::ColorFormat::RGB);
 }
 
-static const Scaler scaler = {
+const Scaler scaler_xbrz = {
 	SCALER_TAG,
 	"xbrz",
 	2, 6,
 	scale_xbrz
 };
 
+#ifndef USE_STATIC_SCALER
 extern "C" {
 	const Scaler *getScaler() {
-		return &scaler;
+		return &scaler_xbrz;
 	}
 };
+#endif

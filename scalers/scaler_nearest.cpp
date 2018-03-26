@@ -39,15 +39,17 @@ static void scale_nearest(int factor, uint32_t *dst, int dstPitch, const uint32_
 	}
 }
 
-static const Scaler scaler = {
+const Scaler scaler_nearest = {
 	SCALER_TAG,
 	"nearest",
 	2, 3,
 	scale_nearest
 };
 
+#ifndef USE_STATIC_SCALER
 extern "C" {
 	const Scaler *getScaler() {
-		return &scaler;
+		return &scaler_nearest;
 	}
 };
+#endif

@@ -82,6 +82,7 @@ struct SystemStub_SDL : SystemStub {
 	void prepareGraphics();
 	void cleanupGraphics();
 	void changeGraphics(bool fullscreen, int scaleFactor);
+	void changeScaler(int scaler);
 	void drawRect(int x, int y, int w, int h, uint8_t color);
 };
 
@@ -97,7 +98,7 @@ void SystemStub_SDL::init(const char *title, int w, int h, bool fullscreen, bool
 	_window = 0;
 	_renderer = 0;
 	_texture = 0;
-	_fmt = 0;
+	_fmt = SDL_AllocFormat(kPixelFormat);
 	_screenBuffer = 0;
 	_fadeOnUpdateScreen = false;
 	_fullscreen = fullscreen;
@@ -127,6 +128,14 @@ void SystemStub_SDL::init(const char *title, int w, int h, bool fullscreen, bool
 
 void SystemStub_SDL::destroy() {
 	cleanupGraphics();
+	if (_screenBuffer) {
+		free(_screenBuffer);
+		_screenBuffer = 0;
+	}
+	if (_fmt) {
+		SDL_FreeFormat(_fmt);
+		_fmt = 0;
+	}
 	if (_controller) {
 		SDL_GameControllerClose(_controller);
 		_controller = 0;
@@ -147,6 +156,10 @@ void SystemStub_SDL::setScreenSize(int w, int h) {
 		return;
 	}
 	cleanupGraphics();
+	if (_screenBuffer) {
+		free(_screenBuffer);
+		_screenBuffer = 0;
+	}
 	const int screenBufferSize = w * h * sizeof(uint32_t);
 	_screenBuffer = (uint32_t *)calloc(1, screenBufferSize);
 	if (!_screenBuffer) {
@@ -604,6 +617,16 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 		case SDLK_ESCAPE:
 			_pi.escape = false;
 			break;
+		case SDLK_F1:
+		case SDLK_F2:
+		case SDLK_F3:
+		case SDLK_F4:
+		case SDLK_F5:
+		case SDLK_F6:
+		case SDLK_F7:
+		case SDLK_F8:
+			changeScaler(ev.key.keysym.sym - SDLK_F1);
+			break;
 		default:
 			break;
 		}
@@ -736,7 +759,6 @@ void SystemStub_SDL::prepareGraphics() {
 	_renderer = SDL_CreateRenderer(_window, -1, SDL_RENDERER_ACCELERATED);
 	SDL_RenderSetLogicalSize(_renderer, windowW, windowH);
 	_texture = SDL_CreateTexture(_renderer, kPixelFormat, SDL_TEXTUREACCESS_STREAMING, _texW, _texH);
-	_fmt = SDL_AllocFormat(kPixelFormat);
 	if (_widescreen) {
 		const int w = _screenH * 16 / 9;
 		const int h = _screenH;
@@ -749,10 +771,6 @@ void SystemStub_SDL::prepareGraphics() {
 }
 
 void SystemStub_SDL::cleanupGraphics() {
-	if (_screenBuffer) {
-		free(_screenBuffer);
-		_screenBuffer = 0;
-	}
 	if (_texture) {
 		SDL_DestroyTexture(_texture);
 		_texture = 0;
@@ -768,10 +786,6 @@ void SystemStub_SDL::cleanupGraphics() {
 	if (_window) {
 		SDL_DestroyWindow(_window);
 		_window = 0;
-	}
-	if (_fmt) {
-		SDL_FreeFormat(_fmt);
-		_fmt = 0;
 	}
 }
 
@@ -783,27 +797,51 @@ void SystemStub_SDL::changeGraphics(bool fullscreen, int scaleFactor) {
 	}
 	_fullscreen = fullscreen;
 	_scaleFactor = factor;
-	if (_texture) {
-		SDL_DestroyTexture(_texture);
-		_texture = 0;
-	}
-	if (_wideTexture) {
-		SDL_DestroyTexture(_wideTexture);
-		_wideTexture = 0;
-	}
-	if (_renderer) {
-		SDL_DestroyRenderer(_renderer);
-		_renderer = 0;
-	}
-	if (_window) {
-		SDL_DestroyWindow(_window);
-		_window = 0;
-	}
-	if (_fmt) {
-		SDL_FreeFormat(_fmt);
-		_fmt = 0;
-	}
+	cleanupGraphics();
 	prepareGraphics();
+}
+
+void SystemStub_SDL::changeScaler(int scaler) {
+	ScalerParameters scalerParameters = ScalerParameters::defaults();
+	switch (scaler) {
+	case 0:
+		scalerParameters.type = kScalerTypePoint;
+		break;
+	case 1:
+		scalerParameters.type = kScalerTypeLinear;
+		break;
+	case 2:
+		scalerParameters.type = kScalerTypeInternal;
+		scalerParameters.scaler = &_internalScaler;
+		break;
+#ifdef USE_STATIC_SCALER
+	case 3:
+		scalerParameters.type = kScalerTypeInternal;
+		scalerParameters.scaler = &scaler_nearest;
+		break;
+	case 4:
+		scalerParameters.type = kScalerTypeInternal;
+		scalerParameters.scaler = &scaler_tv2x;
+		break;
+	case 5:
+		scalerParameters.type = kScalerTypeInternal;
+		scalerParameters.scaler = &scaler_xbrz;
+		break;
+#endif
+	default:
+		return;
+	}
+	if (_scalerType != scalerParameters.type || scalerParameters.scaler != _scaler) {
+		_scalerType = scalerParameters.type;
+		_scaler = scalerParameters.scaler;
+		const int scaleFactor = CLIP(_scaleFactor, _scaler->factorMin, _scaler->factorMax);
+		// only recreate the window if dimensions actually changed
+		if (scaleFactor != _scaleFactor) {
+			cleanupGraphics();
+			_scaleFactor = scaleFactor;
+			prepareGraphics();
+		}
+	}
 }
 
 void SystemStub_SDL::drawRect(int x, int y, int w, int h, uint8_t color) {
