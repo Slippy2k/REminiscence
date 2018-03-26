@@ -104,7 +104,7 @@ void SystemStub_SDL::init(const char *title, int w, int h, bool fullscreen, bool
 	_fullscreen = fullscreen;
 	_scalerType = scalerParameters->type;
 	_scaler = scalerParameters->scaler;
-	_scaleFactor = CLIP(scalerParameters->factor, _scaler->factorMin, _scaler->factorMax);
+	_scaleFactor = _scaler ? CLIP(scalerParameters->factor, _scaler->factorMin, _scaler->factorMax) : 1;
 	memset(_rgbPalette, 0, sizeof(_rgbPalette));
 	memset(_darkPalette, 0, sizeof(_darkPalette));
 	_screenW = _screenH = 0;
@@ -543,11 +543,15 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 				break;
 			case SDLK_KP_PLUS:
 			case SDLK_PAGEUP:
-				changeGraphics(_fullscreen, _scaleFactor + 1);
+				if (_scalerType == kScalerTypeInternal || _scalerType == kScalerTypeExternal) {
+					changeGraphics(_fullscreen, _scaleFactor + 1);
+				}
 				break;
 			case SDLK_KP_MINUS:
 			case SDLK_PAGEDOWN:
-				changeGraphics(_fullscreen, _scaleFactor - 1);
+				if (_scalerType == kScalerTypeInternal || _scalerType == kScalerTypeExternal) {
+					changeGraphics(_fullscreen, _scaleFactor - 1);
+				}
 				break;
 			case SDLK_s: {
 					char name[32];
