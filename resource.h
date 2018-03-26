@@ -188,6 +188,7 @@ struct Resource {
 
 	bool isDOS()   const { return _type == kResourceTypeDOS; }
 	bool isAmiga() const { return _type == kResourceTypeAmiga; }
+	bool isMac()   const { return _type == kResourceTypeMac; }
 
 	bool fileExists(const char *filename);
 
