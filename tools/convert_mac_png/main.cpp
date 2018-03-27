@@ -76,6 +76,44 @@ static uint8_t *decodeResourceData(ResourceMac &res, const char *name, bool deco
 	return data;
 }
 
+static void writePngClutData(const char *filePath) {
+	static const int W = 16;
+	uint8_t *buf = (uint8_t *)malloc(_clutSize * W * 3);
+	if (!buf) return;
+
+	for (int y = 0; y < _clutSize; ++y) {
+		uint8_t *p = buf + y * W * 3;
+		for (int x = 0; x < W; ++x) {
+			*p++ = _clut[y].r;
+			*p++ = _clut[y].g;
+			*p++ = _clut[y].b;
+		}
+	}
+
+	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	assert(png_ptr);
+	png_infop info_ptr = png_create_info_struct(png_ptr);
+	assert(info_ptr);
+
+	FILE *fp = fopen(filePath, "wb");
+	assert(fp);
+	png_init_io(png_ptr, fp);
+
+	png_set_IHDR(png_ptr, info_ptr, W, _clutSize, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+	png_write_info(png_ptr, info_ptr);
+	png_set_packing(png_ptr);
+
+	for (int y = 0; y < _clutSize; ++y) {
+		png_write_row(png_ptr, buf + y * W * 3);
+	}
+
+	png_write_end(png_ptr, info_ptr);
+	png_destroy_write_struct(&png_ptr, &info_ptr);
+	fclose(fp);
+
+	free(buf);
+}
+
 static void writePngImageData(const char *filePath, const uint8_t *imageData, Color *imageClut, int w, int h) {
 	if (_upscaleImageData != 1) {
 		const int scaledW = w * _upscaleImageData;
@@ -441,6 +479,7 @@ int main(int argc, char *argv[]) {
 		uint8_t *ptr = decodeResourceData(res, "Flashback colors", false);
 		readClut(ptr);
 		free(ptr);
+		writePngClutData("clut.png");
 		char name[64];
 		for (int i = 1; i <= 6; ++i) {
 			snprintf(name, sizeof(name), "Title %d", i);
