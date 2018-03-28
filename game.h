@@ -91,6 +91,7 @@ struct Game {
 
 	void run();
 	void displayTitleScreenAmiga();
+	void displayTitleScreenMac(int num);
 	void resetGameState();
 	void mainLoop();
 	void updateTiming();

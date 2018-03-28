@@ -63,6 +63,12 @@ void Game::run() {
 	_mix.init();
 	_mix._mod._isAmiga = _res.isAmiga();
 
+	if (_res.isMac()) {
+		displayTitleScreenMac(Menu::kMacTitleScreen_MacPlay);
+		if (!_stub->_pi.quit) {
+			displayTitleScreenMac(Menu::kMacTitleScreen_Presage);
+		}
+	}
 	playCutscene(0x40);
 	playCutscene(0x0D);
 
@@ -86,7 +92,7 @@ void Game::run() {
 		break;
 	}
 
-	bool presentMenu = (_res._type == kResourceTypeAmiga) || (_res._type == kResourceTypeDOS && _res.fileExists("MENU1.MAP"));
+	bool presentMenu = ((_res._type != kResourceTypeDOS) || _res.fileExists("MENU1.MAP"));
 	while (!_stub->_pi.quit) {
 		if (presentMenu) {
 			_mix.playMusic(1);
@@ -121,7 +127,7 @@ void Game::run() {
 				_stub->setScreenSize(Video::GAMESCREEN_W, Video::GAMESCREEN_H);
 				break;
 			case kResourceTypeMac:
-				// TODO:
+				displayTitleScreenMac(Menu::kMacTitleScreen_Flashback);
 				break;
 			}
 			if (_stub->_pi.quit) {
@@ -213,6 +219,71 @@ void Game::displayTitleScreenAmiga() {
 		_stub->sleep(30);
 	}
 	free(buf);
+}
+
+void Game::displayTitleScreenMac(int num) {
+	const int w = 512;
+	int h = 384;
+	int clutBaseColor = 0;
+	switch (num) {
+	case Menu::kMacTitleScreen_MacPlay:
+		break;
+	case Menu::kMacTitleScreen_Presage:
+		clutBaseColor = 12;
+		break;
+	case Menu::kMacTitleScreen_Flashback:
+	case Menu::kMacTitleScreen_LeftEye:
+	case Menu::kMacTitleScreen_RightEye:
+		h = 448;
+		break;
+	case Menu::kMacTitleScreen_Controls:
+		break;
+	}
+	DecodeBuffer buf;
+	memset(&buf, 0, sizeof(buf));
+	buf.ptr = _vid._frontLayer;
+	buf.pitch = buf.w = _vid._w;
+	buf.h = _vid._h;
+	buf.x = (_vid._w - w) / 2;
+	buf.y = (_vid._h - h) / 2;
+	buf.setPixel = Video::MAC_drawBuffer;
+	memset(_vid._frontLayer, 0, _vid._layerSize);
+	_res.MAC_loadTitleImage(num, &buf);
+	for (int i = 0; i < 12; ++i) {
+		Color palette[16];
+		_res.MAC_copyClut16(palette, 0, clutBaseColor + i);
+		const int basePaletteColor = i * 16;
+		for (int j = 0; j < 16; ++j) {
+			_stub->setPaletteEntry(basePaletteColor + j, &palette[j]);
+		}
+	}
+	if (num == Menu::kMacTitleScreen_MacPlay) {
+		Color palette[16];
+		_res.MAC_copyClut16(palette, 0, 56);
+		for (int i = 12; i < 16; ++i) {
+			const int basePaletteColor = i * 16;
+			for (int j = 0; j < 16; ++j) {
+				_stub->setPaletteEntry(basePaletteColor + j, &palette[j]);
+			}
+		}
+	} else if (num == Menu::kMacTitleScreen_Presage) {
+		Color c;
+		c.r = c.g = c.b = 0;
+		_stub->setPaletteEntry(0, &c);
+	}
+	_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._frontLayer, _vid._w);
+	_stub->updateScreen(0);
+	while (1) {
+		_stub->processEvents();
+		if (_stub->_pi.quit) {
+			break;
+		}
+		if (_stub->_pi.enter) {
+			_stub->_pi.enter = false;
+			break;
+		}
+		_stub->sleep(30);
+	}
 }
 
 void Game::resetGameState() {
