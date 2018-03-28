@@ -208,7 +208,10 @@ static void decodeImageData(const char *name, const uint8_t *ptr) {
 	if (strncmp(name, "Title", 5) == 0) {
 		switch (name[6] - '1') {
 		case 0:
-			setGrayImageClut(imageClut);
+			memcpy(imageClut, &_clut[0], 192 * sizeof(Color));
+			setImageClut(imageClut, 12, 56);
+			setImageClut(imageClut, 13, 56);
+			setImageClut(imageClut, 15, 56);
 			break;
 		case 1:
 			memcpy(imageClut, &_clut[192], 192 * sizeof(Color));
