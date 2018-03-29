@@ -5,8 +5,9 @@ VERSION = '0.4.3'
 SDL_TARBALL = [ 'REminiscence-%s-sdl2-win32.zip',
 	(
 		'../README.txt',
-		'../README-SDL.txt',
 		'../README-modplug.txt',
+		'../README-scale2x.txt',
+		'../README-xBRZ.txt',
 		'../scalers/scaler_epx.dll',
 		'../scalers/scaler_nearest.dll',
 		'../scalers/scaler_tv2x.dll',
