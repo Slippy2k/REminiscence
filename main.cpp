@@ -74,6 +74,7 @@ static Language detectLanguage(FileSystem *fs) {
 			return table[i].language;
 		}
 	}
+	warning("Unable to detect language, defaults to English");
 	return LANG_EN;
 }
 
@@ -126,11 +127,16 @@ static void initOptions() {
 				}
 				if (*p) {
 					const bool value = (*p == 't' || *p == 'T' || *p == '1');
+					bool foundOption = false;
 					for (int i = 0; opts[i].name; ++i) {
 						if (strncmp(buf, opts[i].name, strlen(opts[i].name)) == 0) {
 							*opts[i].value = value;
+							foundOption = true;
 							break;
 						}
+					}
+					if (!foundOption) {
+						warning("Unhandled option '%s', ignoring", buf);
 					}
 				}
 			}
@@ -200,6 +206,7 @@ static WidescreenMode parseWidescreen(const char *mode) {
 			return modes[i].mode;
 		}
 	}
+	warning("Unhandled widecreen mode '%s', defaults to adjacent rooms", mode);
 	return kWidescreenAdjacentRooms; // default value
 }
 
