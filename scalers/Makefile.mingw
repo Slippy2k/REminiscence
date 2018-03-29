@@ -16,7 +16,7 @@ scaler_epx.dll: $(OBJS_SCALER_EPX)
 
 OBJS_SCALER_NEAREST := scaler_nearest.o
 
-scaler_nearest.so: $(OBJS_SCALER_NEAREST)
+scaler_nearest.dll: $(OBJS_SCALER_NEAREST)
 	$(CXX) $(LDFLAGS) -shared -o $@ $^ -static-libgcc -static-libstdc++
 	$(STRIP) $@
 	upx -9 $@
