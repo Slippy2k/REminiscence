@@ -1617,13 +1617,29 @@ void Game::loadLevelMap() {
 			}
 		}
 		_vid.PC_decodeMap(_currentLevel, _currentRoom);
-		if (_stub->hasWidescreen() && _widescreenMode == kWidescreenMirrorRoom) {
-			_stub->copyRectMirrorBorders(Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._backLayer);
-		}
 		break;
 	case kResourceTypeMac:
+		if (_stub->hasWidescreen() && _widescreenMode == kWidescreenAdjacentRooms) {
+			const int leftRoom = _res._ctData[CT_LEFT_ROOM + _currentRoom];
+			if (leftRoom > 0 && hasLevelMap(_currentLevel, leftRoom)) {
+				_vid.MAC_decodeMap(_currentLevel, leftRoom);
+				_stub->copyRectLeftBorder(_vid._w, _vid._h, _vid._backLayer);
+			} else {
+				_stub->copyRectLeftBorder(_vid._w, _vid._h, 0);
+			}
+			const int rightRoom = _res._ctData[CT_RIGHT_ROOM + _currentRoom];
+			if (rightRoom > 0 && hasLevelMap(_currentLevel, rightRoom)) {
+				_vid.MAC_decodeMap(_currentLevel, rightRoom);
+				_stub->copyRectRightBorder(_vid._w, _vid._h, _vid._backLayer);
+			} else {
+				_stub->copyRectRightBorder(_vid._w, _vid._h, 0);
+			}
+		}
 		_vid.MAC_decodeMap(_currentLevel, _currentRoom);
 		break;
+	}
+	if (_stub->hasWidescreen() && _widescreenMode == kWidescreenMirrorRoom) {
+		_stub->copyRectMirrorBorders(_vid._w, _vid._h, _vid._backLayer);
 	}
 }
 
