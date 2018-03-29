@@ -22,7 +22,7 @@ static const char *USAGE =
 	"  --savepath=PATH   Path to save files (default '.')\n"
 	"  --levelnum=NUM    Start to level, bypass introduction\n"
 	"  --fullscreen      Fullscreen display\n"
-	"  --widescreen      16:9 display\n"
+	"  --widescreen=MODE 16:9 display\n"
 	"  --scaler=NAME@X   Graphics scaler (default 'scale@3')\n"
 	"  --language=LANG   Language (fr,en,de,sp,it,jp)\n"
 ;
@@ -186,12 +186,29 @@ static void parseScaler(char *name, ScalerParameters *scalerParameters) {
 	}
 }
 
+static WidescreenMode parseWidescreen(const char *mode) {
+	static const struct {
+		const char *name;
+		WidescreenMode mode;
+	} modes[] = {
+		{ "adjacent", kWidescreenAdjacentRooms },
+		{ "mirror", kWidescreenMirrorRoom },
+		{ 0, kWidescreenNone },
+	};
+	for (int i = 0; modes[i].name; ++i) {
+		if (strcasecmp(modes[i].name, mode) == 0) {
+			return modes[i].mode;
+		}
+	}
+	return kWidescreenAdjacentRooms; // default value
+}
+
 int main(int argc, char *argv[]) {
 	const char *dataPath = "DATA";
 	const char *savePath = ".";
 	int levelNum = 0;
 	bool fullscreen = false;
-	bool widescreen = false;
+	WidescreenMode widescreen = kWidescreenNone;
 	ScalerParameters scalerParameters = ScalerParameters::defaults();
 	int forcedLanguage = -1;
 	if (argc == 2) {
@@ -209,7 +226,7 @@ int main(int argc, char *argv[]) {
 			{ "fullscreen", no_argument,       0, 4 },
 			{ "scaler",     required_argument, 0, 5 },
 			{ "language",   required_argument, 0, 6 },
-			{ "widescreen", no_argument,       0, 7 },
+			{ "widescreen", required_argument, 0, 7 },
 			{ 0, 0, 0, 0 }
 		};
 		int index;
@@ -255,7 +272,7 @@ int main(int argc, char *argv[]) {
 			}
 			break;
 		case 7:
-			widescreen = true;
+			widescreen = parseWidescreen(optarg);
 			break;
 		default:
 			printf(USAGE, argv[0]);
@@ -272,8 +289,8 @@ int main(int argc, char *argv[]) {
 	}
 	const Language language = (forcedLanguage == -1) ? detectLanguage(&fs) : (Language)forcedLanguage;
 	SystemStub *stub = SystemStub_SDL_create();
-	Game *g = new Game(stub, &fs, savePath, levelNum, (ResourceType)version, language);
-	stub->init(g_caption, g->_vid._w, g->_vid._h, fullscreen, widescreen, &scalerParameters);
+	Game *g = new Game(stub, &fs, savePath, levelNum, (ResourceType)version, language, widescreen);
+	stub->init(g_caption, g->_vid._w, g->_vid._h, fullscreen, widescreen != kWidescreenNone, &scalerParameters);
 	g->run();
 	delete g;
 	stub->destroy();

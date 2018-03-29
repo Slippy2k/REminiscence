@@ -14,7 +14,7 @@
 #include "unpack.h"
 #include "util.h"
 
-Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang)
+Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang, WidescreenMode widescreenMode)
 	: _cut(&_res, stub, &_vid), _menu(&_res, stub, &_vid),
 	_mix(fs, stub), _res(fs, ver, lang), _seq(stub, &_mix), _vid(&_res, stub),
 	_stub(stub), _fs(fs), _savePath(savePath) {
@@ -23,6 +23,7 @@ Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, Re
 	_skillLevel = _menu._skill = kSkillNormal;
 	_currentLevel = _menu._level = level;
 	_demoBin = -1;
+	_widescreenMode = widescreenMode;
 }
 
 void Game::run() {
@@ -1599,7 +1600,7 @@ void Game::loadLevelMap() {
 		_vid.AMIGA_decodeLev(_currentLevel, _currentRoom);
 		break;
 	case kResourceTypeDOS:
-		if (_stub->hasWidescreen()) { // draw adjacent rooms
+		if (_stub->hasWidescreen() && _widescreenMode == kWidescreenAdjacentRooms) {
 			const int leftRoom = _res._ctData[CT_LEFT_ROOM + _currentRoom];
 			if (leftRoom > 0 && hasLevelMap(_currentLevel, leftRoom)) {
 				_vid.PC_decodeMap(_currentLevel, leftRoom);
@@ -1616,6 +1617,9 @@ void Game::loadLevelMap() {
 			}
 		}
 		_vid.PC_decodeMap(_currentLevel, _currentRoom);
+		if (_stub->hasWidescreen() && _widescreenMode == kWidescreenMirrorRoom) {
+			_stub->copyRectMirrorBorders(Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._backLayer);
+		}
 		break;
 	case kResourceTypeMac:
 		_vid.MAC_decodeMap(_currentLevel, _currentRoom);

@@ -66,6 +66,7 @@ struct SystemStub_SDL : SystemStub {
 	virtual void copyRectRgb24(int x, int y, int w, int h, const uint8_t *rgb);
 	virtual void copyRectLeftBorder(int w, int h, const uint8_t *buf);
 	virtual void copyRectRightBorder(int w, int h, const uint8_t *buf);
+	virtual void copyRectMirrorBorders(int w, int h, const uint8_t *buf);
 	virtual void fadeScreen();
 	virtual void updateScreen(int shakeOffset);
 	virtual void processEvents();
@@ -304,6 +305,35 @@ void SystemStub_SDL::copyRectRightBorder(int w, int h, const uint8_t *buf) {
 		r.w = _wideMargin;
 		r.h = h;
 		SDL_UpdateTexture(_wideTexture, &r, rgb + xOffset, w * sizeof(uint32_t));
+		free(rgb);
+	}
+}
+
+void SystemStub_SDL::copyRectMirrorBorders(int w, int h, const uint8_t *buf) {
+	assert(w >= _wideMargin);
+	uint32_t *rgb = (uint32_t *)malloc(w * h * sizeof(uint32_t));
+	if (rgb) {
+		for (int i = 0; i < w * h; ++i) {
+			rgb[i] = _darkPalette[buf[i]];
+		}
+		void *dst = 0;
+		int pitch = 0;
+		if (SDL_LockTexture(_wideTexture, 0, &dst, &pitch) == 0) {
+			assert((pitch & 3) == 0);
+			uint32_t *p = (uint32_t *)dst;
+			for (int y = 0; y < h; ++y) {
+				for (int x = 0; x < _wideMargin; ++x) {
+					// left side
+					const int xLeft = _wideMargin - 1 - x;
+					p[x] = rgb[y * w + xLeft];
+					// right side
+					const int xRight = w - 1 - x;
+					p[_wideMargin + _screenW + x] = rgb[y * w + xRight];
+				}
+				p += pitch / sizeof(uint32_t);
+			}
+			SDL_UnlockTexture(_wideTexture);
+		}
 		free(rgb);
 	}
 }

@@ -86,8 +86,9 @@ struct Game {
 	bool _saveStateCompleted;
 	bool _endLoop;
 	uint32_t _frameTimestamp;
+	WidescreenMode _widescreenMode;
 
-	Game(SystemStub *, FileSystem *, const char *savePath, int level, ResourceType ver, Language lang);
+	Game(SystemStub *, FileSystem *, const char *savePath, int level, ResourceType ver, Language lang, WidescreenMode widescreenMode);
 
 	void run();
 	void displayTitleScreenAmiga();
