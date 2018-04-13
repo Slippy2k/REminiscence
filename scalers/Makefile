@@ -1,7 +1,7 @@
 
 all: scaler_epx.so scaler_nearest.so scaler_tv2x.so scaler_xbrz.so
 
-CPPFLAGS += -O2 -fPIC -Iscale2x-4.0/ -Ihqx/include/
+CPPFLAGS += -O2 -fPIC -Iscale2x-4.0/ -Ihqx/include/ -DNDEBUG
 
 OBJS_SCALER_EPX := scaler_epx.o scale2x-4.0/scale2x.o scale2x-4.0/scale3x.o scale2x-4.0/scalebit.o
 
