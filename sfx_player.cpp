@@ -159,8 +159,8 @@ bool SfxPlayer::mix(int8_t *buf, int len) {
 }
 
 bool SfxPlayer::mixCallback(void *param, int16_t *samples, int len) {
-	int8_t buf[len];
-	memset(buf, 0, sizeof(buf));
+	int8_t *buf = (int8_t *)alloca(len);
+	memset(buf, 0, len);
 	const bool ret = ((SfxPlayer *)param)->mix(buf, len);
 	for (int i = 0; i < len; ++i) {
 		samples[i] = buf[i] << 8;

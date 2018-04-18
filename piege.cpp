@@ -325,7 +325,7 @@ int Game::pge_execute(LivePGE *live_pge, InitPGE *init_pge, const Object *obj) {
 		++live_pge->life;
 	}
 	if (obj->flags & 8) {
-		live_pge->life = 0xFFFF;
+		live_pge->life = -1;
 	}
 
 	if (live_pge->flags & 1) {
