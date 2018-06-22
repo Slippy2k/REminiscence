@@ -25,7 +25,7 @@ static void print_lev_hdr(int room, const unsigned char *p, int size) {
 	printf("\n");
 }
 
-static void blit_sgd(unsigned char *dst, int x, int y, int w, int h, unsigned char *src, unsigned char *mask, int size) {
+static void blit_sgd(unsigned char *dst, int dstpitch, int x, int y, int w, int h, unsigned char *src, unsigned char *mask, int size) {
 	int i, j, color, planar_size;
 	const int x0 = x;
 	const int y0 = y;
@@ -37,7 +37,7 @@ static void blit_sgd(unsigned char *dst, int x, int y, int w, int h, unsigned ch
 	planar_size = w * 2 * h;
 	assert(planar_size == size);
 
-	dst += y * 256 + x;
+	dst += y * dstpitch + x;
 
 	for (y = 0; y < h; ++y) {
 		for (x = 0; x < w * 2; ++x) {
@@ -60,7 +60,7 @@ static void blit_sgd(unsigned char *dst, int x, int y, int w, int h, unsigned ch
 			++src;
 			++mask;
 		}
-		dst += 256;
+		dst += dstpitch;
 	}
 }
 
@@ -179,7 +179,7 @@ static void blit_mask_not_1v_8x8(unsigned char *dst, int x, int y, unsigned char
 	}
 }
 
-int copySGD(unsigned char *a4, unsigned char *a5) {
+int copySGD(unsigned char *a4, unsigned char *a5) { // decode_rle
 	const unsigned char *a6, *a5_start = a5;
 	int d6, i;
 
@@ -455,15 +455,15 @@ printf("loadSGD _sgdLoopCount %d\n", _sgdLoopCount );
 			d2 = 0;
 			d3 = 0;
 			d2 = a0[0];
-			++d2;
+			++d2; // w
 			d2 >>= 1;
 			--d2;
-			d3 = a0[1];
+			d3 = a0[1]; // h
 			a5 = a0 + 4; // src
-			d4 = movew(a0 + 2);
+			d4 = movew(a0 + 2); // size
 			a2 = a0 + d4 + 4; // mask
 			assert(len == d4 * 5 + 4);
-			blit_sgd(_roomBitmapBuf, (short)d0, (short)d1, d2, d3, a5, a2, d4);
+			blit_sgd(_roomBitmapBuf, 256, (short)d0, (short)d1, d2, d3, a5, a2, d4);
 		}
 		--_sgdLoopCount;
 	} while (_sgdLoopCount >= 0);
@@ -477,6 +477,67 @@ static int convert_amiga_color(unsigned char *p, int offset, int color) {
 	for (i = 0; i < 3; ++i) {
 		p[j + i] = (color >> t[i]) & 15;
 		p[j + i] = (p[j + i] << 4) + p[j + i];
+	}
+}
+
+static void dumpSGD() {
+	int d4, d3, d2, i, len;
+	unsigned char *a2, *a3, *a4, *a5, *a0;
+
+	const int count = movel(_sgdData) / 4;
+	fprintf(stdout, "SGD count %d\n", count);
+	_sgdDecodeLen = -1;
+
+	for (int num = 0; num < count; ++num) {
+		fprintf(stdout, "SGD num %d\n", num);
+		if (num == 166) {
+			continue;
+		}
+		a4 = _sgdData;
+		d2 = num;
+		d3 = movel(a4 + d2 * 4);
+		if (d3 < 0) {
+			d3 = -d3;
+			a4 += d3;
+			d3 = movew(a4); a4 += 2;
+			if (_sgdDecodeLen != d2) {
+				_sgdDecodeLen = d2;
+				a2 = _sgdDecodeBuf;
+				for (i = 0; i < d3; ++i) {
+					a2[i] = a4[i];
+				}
+				a0 = _sgdDecodeBuf;
+				len = d3;
+				printf("SGD %d len %d\n", _sgdDecodeLen, len);
+			}
+		} else {
+			a4 += d3;
+			if (_sgdDecodeLen != d2) {
+				_sgdDecodeLen = d2;
+				a5 = _sgdDecodeBuf;
+				len = copySGD(a4, a5);
+				printf("SGD %d len %d\n", _sgdDecodeLen, len);
+			}
+		}
+		a0 = _sgdDecodeBuf;
+		d2 = 0;
+		d3 = 0;
+		d2 = a0[0];
+		++d2; // w
+		d2 >>= 1;
+		--d2;
+		d3 = a0[1]; // h
+		a5 = a0 + 4; // src
+		d4 = movew(a0 + 2); // size
+		a2 = a0 + d4 + 4; // mask
+		assert(len == d4 * 5 + 4);
+		int w = (d2 + 1) * 16;
+		int h =  d3 + 1;
+		memset(_roomBitmapBuf, 0, w * h);
+		blit_sgd(_roomBitmapBuf, w, 0, 0, d2, d3, a5, a2, d4);
+		char name[32];
+		snprintf(name, sizeof(name), "DUMP/sgd%03d.png", num);
+		write_png_image_data(name, _roomBitmapBuf, _roomPalBuf, w, h);
 	}
 }
 
@@ -602,6 +663,9 @@ if (_currentLevel != 0) {
 }
 	snprintf(name, sizeof(name), "DUMP/level_%d_room_%02d.png", level, room);
 	write_png_image_data(name, _roomBitmapBuf, _roomPalBuf, 256, 224);
+	if (_sgdRoomBuf) {
+		dumpSGD();
+	}
 }
 
 static void decode_lev(int level, const unsigned char *a4, unsigned char *mbk, unsigned char *pal) {
@@ -663,6 +727,11 @@ static const char *rpc_names[] = {
 };
 
 static const char *sgd_name = "level1.sgd";
+
+void decode_cmp(const char *filepath);
+void decode_spc(unsigned char *data, int data_size);
+void decode_spm(const char *filename, unsigned char *data, int data_size);
+void decode_spr(unsigned char *data, int data_size);
 
 int main(int argc, char *argv[]) {
 	int i, b, mask;
