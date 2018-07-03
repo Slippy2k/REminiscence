@@ -474,7 +474,7 @@ void Game::playCutscene(int id) {
 				_cut.play();
 			}
 		}
-		if (_res._type == kResourceTypeMac) {
+		if (_res._type == kResourceTypeMac && !(id == 0x48 || id == 0x49)) { // continue or score screens
 			// restore palette entries modified by the cutscene player (0xC and 0xD)
 			Color palette[32];
 			_res.MAC_copyClut16(palette, 0, 0x37);
