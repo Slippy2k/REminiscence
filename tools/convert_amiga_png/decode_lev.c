@@ -415,6 +415,8 @@ static void loadSGD(unsigned char *a1) {
 	int d4, d3, d2, d1, d0, i, len;
 	unsigned char *a2, *a3, *a4, *a5, *a0;
 
+	_sgdDecodeLen = -1;
+
 //	word_2A31A = 1;
 	_sgdLoopCount = movew(a1); a1 += 2;
 printf("loadSGD _sgdLoopCount %d\n", _sgdLoopCount );

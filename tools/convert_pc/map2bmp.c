@@ -107,7 +107,7 @@ static void img_decode_menu_bitmap(const uint8 *src, uint8 *dst) {
 	}
 }
 
-static img_make_bitmap_menu(const uint8 *img, const uint8 *pal, FILE *fp) {
+static void img_make_bitmap_menu(const uint8 *img, const uint8 *pal, FILE *fp) {
 	int i;
 	bmp_file_header_t file_header;
 	bmp_info_header_t info_header;
@@ -212,7 +212,7 @@ static void img_write_null_palette(FILE *fp) {
 	}
 }
 
-static img_make_bitmap_level(const uint8 *img, const uint8 *pal, FILE *fp) {
+static void img_make_bitmap_level(const uint8 *img, const uint8 *pal, FILE *fp) {
 	int i;
 	bmp_file_header_t file_header;
 	bmp_info_header_t info_header;
