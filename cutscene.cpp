@@ -415,9 +415,12 @@ void Cutscene::op_drawStringAtBottom() {
 			}
 		}
 
-		memset(_pageC + 179 * _vid->_w, 0xC0, 45 * _vid->_w);
-		memset(_page1 + 179 * _vid->_w, 0xC0, 45 * _vid->_w);
-		memset(_page0 + 179 * _vid->_w, 0xC0, 45 * _vid->_w);
+		const int h = 45 * _vid->_layerScale;
+		const int y = Video::GAMESCREEN_H * _vid->_layerScale - h;
+
+		memset(_pageC + y * _vid->_w, 0xC0, h * _vid->_w);
+		memset(_page1 + y * _vid->_w, 0xC0, h * _vid->_w);
+		memset(_page0 + y * _vid->_w, 0xC0, h * _vid->_w);
 		if (strId != 0xFFFF) {
 			const uint8_t *str = _res->getCineString(strId);
 			if (str) {
