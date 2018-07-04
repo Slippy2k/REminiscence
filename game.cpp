@@ -271,10 +271,34 @@ void Game::displayTitleScreenMac(int num) {
 		Color c;
 		c.r = c.g = c.b = 0;
 		_stub->setPaletteEntry(0, &c);
+	} else if (num == Menu::kMacTitleScreen_Flashback) {
+		_vid.setTextPalette();
+		_vid._charShadowColor = 0xE0;
 	}
 	_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._frontLayer, _vid._w);
 	_stub->updateScreen(0);
 	while (1) {
+		if (num == Menu::kMacTitleScreen_Flashback) {
+			static const uint8_t selectedColor = 0xE4;
+			static const uint8_t defaultColor = 0xE8;
+			for (int i = 0; i < 7; ++i) {
+				const char *str = Menu::_levelNames[i];
+				_vid.drawString(str, 24, 24 + i * 16, (_currentLevel == i) ? selectedColor : defaultColor);
+			}
+			if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
+				_stub->_pi.dirMask &= ~PlayerInput::DIR_UP;
+				if (_currentLevel > 0) {
+					--_currentLevel;
+				}
+			}
+			if (_stub->_pi.dirMask & PlayerInput::DIR_DOWN) {
+				_stub->_pi.dirMask &= ~PlayerInput::DIR_DOWN;
+				if (_currentLevel < 6) {
+					++_currentLevel;
+				}
+			}
+			_vid.updateScreen();
+		}
 		_stub->processEvents();
 		if (_stub->_pi.quit) {
 			break;

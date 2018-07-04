@@ -254,17 +254,8 @@ bool Menu::handleLevelScreen() {
 	int currentSkill = _skill;
 	int currentLevel = _level;
 	do {
-		static const char *levelTitles[] = {
-			"Titan / The Jungle",
-			"Titan / New Washington",
-			"Titan / Death Tower Show",
-			"Earth / Surface",
-			"Earth / Paradise Club",
-			"Planet Morphs / Surface",
-			"Planet Morphs / Inner Core"
-		};
 		for (int i = 0; i < 7; ++i) {
-			drawString(levelTitles[i], 7 + i * 2, 4, (currentLevel == i) ? 2 : 3);
+			drawString(_levelNames[i], 7 + i * 2, 4, (currentLevel == i) ? 2 : 3);
 		}
 		_vid->markBlockAsDirty(4 * Video::CHAR_W, 7 * Video::CHAR_H, 192, 7 * Video::CHAR_H, _vid->_layerScale);
 
