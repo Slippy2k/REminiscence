@@ -907,7 +907,7 @@ static uint8_t _MAC_fontShadowColor;
 void Video::MAC_drawStringChar(uint8_t *dst, int pitch, int x, int y, const uint8_t *src, uint8_t color, uint8_t chr) {
 	DecodeBuffer buf;
 	memset(&buf, 0, sizeof(buf));
-	buf.ptr = _frontLayer;
+	buf.ptr = dst;
 	buf.w = buf.pitch = _w;
 	buf.h = _h;
 	buf.x = x * _layerScale;
