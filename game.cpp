@@ -14,7 +14,7 @@
 #include "unpack.h"
 #include "util.h"
 
-Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang, WidescreenMode widescreenMode)
+Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang, WidescreenMode widescreenMode, bool autoSave)
 	: _cut(&_res, stub, &_vid), _menu(&_res, stub, &_vid),
 	_mix(fs, stub), _res(fs, ver, lang), _seq(stub, &_mix), _vid(&_res, stub),
 	_stub(stub), _fs(fs), _savePath(savePath) {
@@ -24,6 +24,7 @@ Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, Re
 	_currentLevel = _menu._level = level;
 	_demoBin = -1;
 	_widescreenMode = widescreenMode;
+	_autoSave = autoSave;
 }
 
 void Game::run() {
@@ -150,6 +151,7 @@ void Game::run() {
 			resetGameState();
 			_endLoop = false;
 			_frameTimestamp = _stub->getTimeStamp();
+			_saveTimestamp = _frameTimestamp;
 			while (!_stub->_pi.quit && !_endLoop) {
 				mainLoop();
 				if (_demoBin != -1 && _inp_demPos >= _res._demLen) {
@@ -348,10 +350,10 @@ void Game::mainLoop() {
 				playCutscene(0x41);
 				_endLoop = true;
 			} else {
-				if (_validSaveState) {
-					if (!loadGameState(0)) {
-						_endLoop = true;
-					}
+				if (_autoSave && loadGameState(kAutoSaveSlot)) {
+					// autosave
+				} else if (_validSaveState && loadGameState(kIngameSaveSlot)) {
+					// ingame save
 				} else {
 					loadLevelData();
 					resetGameState();
@@ -417,6 +419,13 @@ void Game::mainLoop() {
 		}
 	}
 	inp_handleSpecialKeys();
+	if (_stub->getTimeStamp() - _saveTimestamp >= kAutoSaveIntervalMs) {
+		// do not save if we just died
+		if (_pgeLive[0].life > 0) {
+			saveGameState(kAutoSaveSlot);
+			_saveTimestamp = _stub->getTimeStamp();
+		}
+	}
 }
 
 void Game::updateTiming() {
@@ -2046,7 +2055,7 @@ static const uint32_t TAG_FBSV = 0x46425356;
 
 bool Game::saveGameState(uint8_t slot) {
 	bool success = false;
-	char stateFile[20];
+	char stateFile[32];
 	makeGameStateName(slot, stateFile);
 	File f;
 	if (!f.open(stateFile, "zwb", _savePath)) {
@@ -2073,7 +2082,7 @@ bool Game::saveGameState(uint8_t slot) {
 
 bool Game::loadGameState(uint8_t slot) {
 	bool success = false;
-	char stateFile[20];
+	char stateFile[32];
 	makeGameStateName(slot, stateFile);
 	File f;
 	if (!f.open(stateFile, "zrb", _savePath)) {
