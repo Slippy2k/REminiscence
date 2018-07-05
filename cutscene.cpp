@@ -1083,6 +1083,10 @@ void Cutscene::prepare() {
 }
 
 void Cutscene::playCredits() {
+	if (_res->isMac()) {
+		warning("Cutscene::playCredits() unimplemented");
+		return;
+	}
 	_textCurPtr = _res->isAmiga() ? _creditsDataAmiga : _creditsDataDOS;
 	_textBuf[0] = 0xA;
 	_textCurBuf = _textBuf;
