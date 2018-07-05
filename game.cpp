@@ -168,8 +168,8 @@ void Game::run() {
 			_stub->_pi.shift = false;
 			// clear widescreen borders
 			if (_stub->hasWidescreen()) {
-				_stub->copyRectLeftBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
-				_stub->copyRectRightBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
+				_stub->copyRectLeftBorder(_vid._w, _vid._h, 0);
+				_stub->copyRectRightBorder(_vid._w, _vid._h, 0);
 			}
 		}
 	}
@@ -566,8 +566,8 @@ void Game::drawCurrentInventoryItem() {
 
 void Game::showFinalScore() {
 	if (_stub->hasWidescreen()) {
-		_stub->copyRectLeftBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
-		_stub->copyRectRightBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
+		_stub->copyRectLeftBorder(_vid._w, _vid._h, 0);
+		_stub->copyRectRightBorder(_vid._w, _vid._h, 0);
 	}
 	playCutscene(0x49);
 	char buf[50];
@@ -730,8 +730,8 @@ bool Game::handleConfigPanel() {
 
 bool Game::handleContinueAbort() {
 	if (_stub->hasWidescreen()) {
-		_stub->copyRectLeftBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
-		_stub->copyRectRightBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
+		_stub->copyRectLeftBorder(_vid._w, _vid._h, 0);
+		_stub->copyRectRightBorder(_vid._w, _vid._h, 0);
 	}
 	playCutscene(0x48);
 	int timeout = 100;
