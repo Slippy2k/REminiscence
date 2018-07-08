@@ -54,9 +54,12 @@ void DPoly::Decode(const char *setFile) {
 		}
 	}
 	if (1) {
-		_gfx.setClippingRect(8, 50, 240, 128);
+		_gfx.setClippingRect(GFX_CLIP_X, GFX_CLIP_Y, GFX_CLIP_W, GFX_CLIP_H);
 		for (int i = 0; _seqOffsets[i] != 0; ++i) {
-			memset(_rgb, 0, sizeof(_rgb));
+			// memset(_rgb, 0, sizeof(_rgb));
+			for (size_t j = 0; j < sizeof(_rgb) / sizeof(uint32_t); ++j) {
+				_rgb[j] = 0xFF000000;
+			}
 			// background
 			fseek(_fp, _seqOffsets[i], SEEK_SET);
 			int background = freadUint16BE(_fp);
@@ -265,7 +268,7 @@ void DPoly::WriteShapeToBitmap(int group, int shape) {
 		p = filePath + strlen(filePath);
 	}
 	sprintf(p, "-SHAPE-%02d-%03d.BMP", group, shape);
-	WriteFile_BMP_PAL(filePath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, _gfx._layer, _currentPalette);
+	WriteFile_BMP_PAL(filePath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, DRAWING_BUFFER_W, _gfx._layer, _currentPalette);
 }
 
 void DPoly::WriteFrameToBitmap(int frame) {
@@ -274,14 +277,15 @@ void DPoly::WriteFrameToBitmap(int frame) {
 	char *p = strrchr(rgbPath, '.');
 	assert(p);
 	sprintf(p, "-FRAME-%03d.RGBA", frame);
-	WriteFile_RAW_RGB(rgbPath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, _rgb);
+	const uint32_t *src = _rgb + GFX_CLIP_Y * DRAWING_BUFFER_W + GFX_CLIP_X;
+	WriteFile_RAW_RGB(rgbPath, GFX_CLIP_W, GFX_CLIP_H, DRAWING_BUFFER_W, src);
 	char pngPath[MAXPATHLEN];
 	strcpy(pngPath, rgbPath);
 	p = strrchr(pngPath, '.');
 	assert(p);
 	strcpy(p + 1, "PNG");
 	char cmd[MAXPATHLEN];
-	snprintf(cmd, sizeof(cmd), "convert -size %dx%d -depth 8 %s %s", DRAWING_BUFFER_W, DRAWING_BUFFER_H, rgbPath, pngPath);
+	snprintf(cmd, sizeof(cmd), "convert -size %dx%d -depth 8 %s %s", GFX_CLIP_W, GFX_CLIP_H, rgbPath, pngPath);
 	int ret = system(cmd);
 	if (ret != 0) {
 		fprintf(stderr, "system() failed, ret %d\n", ret);

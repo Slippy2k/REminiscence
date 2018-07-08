@@ -10,6 +10,10 @@
 #define MAX_VERTICES  256
 #define DRAWING_BUFFER_W 256
 #define DRAWING_BUFFER_H 224
+#define GFX_CLIP_X   8
+#define GFX_CLIP_Y  50
+#define GFX_CLIP_W 240
+#define GFX_CLIP_H 128
 
 struct DPoly {
 	const char *_setFile;

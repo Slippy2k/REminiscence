@@ -5,6 +5,7 @@ do_file () {
 	./dpoly2bmp $fn
 	rm -f $fn.mp4
 	ffmpeg -framerate 10 -pattern_type glob -i '*.PNG' -c:v libx264 $fn.mp4
+	convert -delay 10 -loop 0 -layers Optimize *PNG $fn.gif
 	rm -f *.BMP *.PNG *.RGBA
 }
 
