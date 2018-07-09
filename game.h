@@ -28,7 +28,7 @@ struct Game {
 	enum {
 		kIngameSaveSlot = 0,
 		kAutoSaveSlot = 255,
-		kAutoSaveIntervalMs = 30 * 1000
+		kAutoSaveIntervalMs = 120 * 1000
 	};
 
 	enum {
