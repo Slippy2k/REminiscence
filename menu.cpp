@@ -386,7 +386,7 @@ void Menu::handleTitleScreen() {
 		}
 	}
 
-	while (!quitLoop) {
+	while (!quitLoop && !_stub->_pi.quit) {
 
 		int selectedItem = -1;
 		int previousLanguage = currentLanguage;
@@ -497,9 +497,6 @@ void Menu::handleTitleScreen() {
 		_vid->updateScreen();
 		_stub->sleep(EVENTS_DELAY);
 		_stub->processEvents();
-		if (_stub->_pi.quit) {
-			break;
-		}
 	}
 }
 

@@ -132,9 +132,9 @@ void Game::run() {
 				displayTitleScreenMac(Menu::kMacTitleScreen_Flashback);
 				break;
 			}
-			if (_stub->_pi.quit) {
-				break;
-			}
+		}
+		if (_stub->_pi.quit) {
+			break;
 		}
 		if (_currentLevel == 7) {
 			_vid.fadeOut();
@@ -198,6 +198,7 @@ void Game::displayTitleScreenAmiga() {
 		Color c = Video::AMIGA_convertColor(kAmigaColors[i]);
 		_stub->setPaletteEntry(i, &c);
 	}
+	_vid.setTextPalette();
 	_stub->setScreenSize(kW, kH);
 	// fill with black
 	_stub->copyRect(0, 0, kW, kH, buf, kW);
@@ -210,6 +211,32 @@ void Game::displayTitleScreenAmiga() {
 			_stub->copyRect(0, y, kW, h * 2, buf, kW);
 			_stub->updateScreen(0);
 			h += 2;
+		} else {
+			static const uint8_t selectedColor = 0xE4;
+			static const uint8_t defaultColor = 0xE8;
+			for (int i = 0; i < 7; ++i) {
+				const char *str = Menu::_levelNames[i];
+				const uint8_t color = (_currentLevel == i) ? selectedColor : defaultColor;
+				const int x = 24;
+				const int y = 24 + i * 16;
+				for (int j = 0; str[j]; ++j) {
+					_vid.AMIGA_drawStringChar(buf, kW, x + j * Video::CHAR_W, y, _res._fnt, color, str[j]);
+				}
+			}
+			if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
+				_stub->_pi.dirMask &= ~PlayerInput::DIR_UP;
+				if (_currentLevel > 0) {
+					--_currentLevel;
+				}
+			}
+			if (_stub->_pi.dirMask & PlayerInput::DIR_DOWN) {
+				_stub->_pi.dirMask &= ~PlayerInput::DIR_DOWN;
+				if (_currentLevel < 6) {
+					++_currentLevel;
+				}
+			}
+			_stub->copyRect(0, 0, kW, kH, buf, kW);
+			_stub->updateScreen(0);
 		}
 		_stub->processEvents();
 		if (_stub->_pi.quit) {
