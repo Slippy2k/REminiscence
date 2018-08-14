@@ -83,16 +83,16 @@ static void file_write_bmp_info_header(FILE *fp, const bmp_info_header_t *info_h
 	file_write_uint32(fp, info_header->num_colors_important);
 }
 
-static uint8 img_decode_buffer[64000];
-static uint8 img_hflip_buffer[64000];
+static uint8 img_decode_buffer[256 * 224];
+static uint8 img_hflip_buffer[256 * 224];
 
 static void img_hflip(const uint8 *src, uint8 *dst) {
 	int y;
-	src += 256 * (224 - 1);
+	src += 256 * 224;
 	for (y = 0; y < 224; ++y) {
+		src -= 256;
 		memcpy(dst, src, 256);
 		dst += 256;
-		src -= 256;
 	}
 }
 
@@ -115,7 +115,7 @@ static void img_make_bitmap_menu(const uint8 *img, const uint8 *pal, FILE *fp) {
 	/* file header */
 	memset(&file_header, 0, sizeof(file_header));
 	file_header.type = 0x4D42;
-	file_header.size = 14 + 40 + 4 * 16 + 256 * 224;
+	file_header.size = 14 + 40 + 4 * 256 + 256 * 224;
 	file_header.reserved1 = 0;
 	file_header.reserved2 = 0;
 	file_header.off_bits = 14 + 40 + 4 * 256;
@@ -149,9 +149,8 @@ static void img_make_bitmap_menu(const uint8 *img, const uint8 *pal, FILE *fp) {
 	
 	img_decode_menu_bitmap(img, img_decode_buffer);	
 	
-	/* hflip */
 	img_hflip(img_decode_buffer, img_hflip_buffer);
-	fwrite(img_hflip_buffer, 1, 64000, fp);
+	fwrite(img_hflip_buffer, 1, sizeof(img_hflip_buffer), fp);
 }
 
 static void img_decode_level_bitmap_plane(uint16 sz, const uint8 *src, uint8 *dst) {
@@ -171,7 +170,7 @@ static void img_decode_level_bitmap_plane(uint16 sz, const uint8 *src, uint8 *ds
 	}
 }
 
-static uint8 img_temp_buffer[20000];
+static uint8 img_temp_buffer[256 * 56];
 
 static void img_decode_level_bitmap(const uint8 *src, uint8 *dst) {
 	int i;
@@ -205,9 +204,9 @@ static void img_write_palette(const uint8 *pal, int pal_num, FILE *fp) {
 
 static void img_write_null_palette(FILE *fp) {
 	int i;
+	rgb_quad_t quad;
+	memset(&quad, 0, sizeof(quad));
 	for (i = 0; i < 16; ++i) {
-		rgb_quad_t quad;
-		memset(&quad, 0, sizeof(quad));
 		file_write_rgb_quad(fp, &quad);
 	}
 }
@@ -216,11 +215,12 @@ static void img_make_bitmap_level(const uint8 *img, const uint8 *pal, FILE *fp) 
 	int i;
 	bmp_file_header_t file_header;
 	bmp_info_header_t info_header;
+	uint8 palSlot1, palSlot2, palSlot3, palSlot4;
 	
 	/* file header */
 	memset(&file_header, 0, sizeof(file_header));
 	file_header.type = 0x4D42;
-	file_header.size = 14 + 40 + 4 * 16 + 256 * 224;
+	file_header.size = 14 + 40 + 4 * 256 + 256 * 224;
 	file_header.reserved1 = 0;
 	file_header.reserved2 = 0;
 	file_header.off_bits = 14 + 40 + 4 * 256;
@@ -241,45 +241,31 @@ static void img_make_bitmap_level(const uint8 *img, const uint8 *pal, FILE *fp) 
 	info_header.num_colors_important = 0;
 	file_write_bmp_info_header(fp, &info_header);
 	
-	{
-		uint8 palSlot1 = *img++;
-		uint8 palSlot2 = *img++;
-		uint8 palSlot3 = *img++;
-		uint8 palSlot4 = *img++;
-#if 0
-		img_write_palette(pal, palSlot1, fp); /* 16 */
-		img_write_palette(pal, palSlot2, fp); /* 32 */
-		img_write_palette(pal, palSlot3, fp); /* 48 */
-		img_write_palette(pal, palSlot4, fp); /* 64 */
-		img_write_null_palette(fp); /* 80 */
-		img_write_null_palette(fp); /* 96 */
-		img_write_null_palette(fp); /* 112 */
-		img_write_null_palette(fp); /* 128 */
-		img_write_palette(pal, palSlot1, fp);
-		img_write_palette(pal, palSlot2, fp);
-		img_write_palette(pal, palSlot3, fp);
-		img_write_palette(pal, palSlot4, fp);
-		img_write_null_palette(fp);
-		img_write_null_palette(fp);
-		img_write_null_palette(fp);
-		img_write_null_palette(fp);
-#endif
-	}
-	for (i = 0; i < 256; ++i) {
-		uint8 r, g, b;
-		rgb_quad_t quad;
-		memset(&quad, 0, sizeof(quad));
-		quad.r = *pal++;
-		quad.g = *pal++;
-		quad.b = *pal++;
-		file_write_rgb_quad(fp, &quad);
-	}
-		
+	palSlot1 = *img++;
+	palSlot2 = *img++;
+	palSlot3 = *img++;
+	palSlot4 = *img++;
+	img_write_palette(pal, palSlot1, fp); /* 16 */
+	img_write_palette(pal, palSlot2, fp); /* 32 */
+	img_write_palette(pal, palSlot3, fp); /* 48 */
+	img_write_palette(pal, palSlot4, fp); /* 64 */
+	img_write_null_palette(fp); /* 80 */
+	img_write_null_palette(fp); /* 96 */
+	img_write_null_palette(fp); /* 112 */
+	img_write_null_palette(fp); /* 128 */
+	img_write_palette(pal, palSlot1, fp);
+	img_write_palette(pal, palSlot2, fp);
+	img_write_palette(pal, palSlot3, fp);
+	img_write_palette(pal, palSlot4, fp);
+	img_write_null_palette(fp);
+	img_write_null_palette(fp);
+	img_write_null_palette(fp);
+	img_write_null_palette(fp);
+
 	img_decode_level_bitmap(img, img_decode_buffer);	
 	
-	/* hflip */
 	img_hflip(img_decode_buffer, img_hflip_buffer);
-	fwrite(img_hflip_buffer, 1, 64000, fp);
+	fwrite(img_hflip_buffer, 1, sizeof(img_hflip_buffer), fp);
 }
 
 static void make_bmp_filename(const char *img_file, char *bmp_file) {
