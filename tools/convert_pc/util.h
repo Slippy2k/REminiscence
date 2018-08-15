@@ -2,10 +2,6 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
-#define MIN(a,b) ((a)<(b):(a)?(b))
-#define MAX(a,b) ((a)>(b):(a)?(b))
-#define ARRAYSIZE(a) (sizeof(a)/sizeof(a[0]))
-
 typedef unsigned char uint8;
 typedef signed char int8;
 typedef unsigned short uint16;

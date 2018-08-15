@@ -5,6 +5,7 @@
 struct File_impl {
 	bool _ioErr;
 	File_impl() : _ioErr(false) {}
+	virtual ~File_impl() {}
 	virtual bool open(const char *path, const char *mode) = 0;
 	virtual void close() = 0;
 	virtual uint32_t size() = 0;
@@ -14,9 +15,9 @@ struct File_impl {
 	virtual void write(void *ptr, uint32_t len) = 0;
 };
 
-struct stdFile : File_impl {
+struct StdioFile : File_impl {
 	FILE *_fp;
-	stdFile() : _fp(0) {}
+	StdioFile() : _fp(0) {}
 	bool open(const char *path, const char *mode) {
 		_ioErr = false;
 		_fp = fopen(path, mode);
@@ -70,7 +71,7 @@ struct stdFile : File_impl {
 
 
 File::File() {
-	_impl = new stdFile;
+	_impl = new StdioFile;
 }
 
 File::~File() {

@@ -11,7 +11,7 @@ struct File {
 	File_impl *_impl;
 
 	File();
-	~File();
+	virtual ~File();
 
 	bool open(const char *filepath, const char *mode);
 	void close();

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/param.h>
 #include "util.h"
 
 
@@ -138,7 +139,6 @@ static void img_make_bitmap_menu(const uint8 *img, const uint8 *pal, FILE *fp) {
 	
 	/* palette */
 	for (i = 0; i < 256; ++i) {
-		uint8 r, g, b;
 		rgb_quad_t quad;
 		memset(&quad, 0, sizeof(quad));
 		quad.r = *pal++;
@@ -170,14 +170,14 @@ static void img_decode_level_bitmap_plane(uint16 sz, const uint8 *src, uint8 *ds
 	}
 }
 
-static uint8 img_temp_buffer[256 * 56];
+static uint8 img_plane_buffer[256 * 56];
 
 static void img_decode_level_bitmap(const uint8 *src, uint8 *dst) {
 	int i;
 	for (i = 0; i < 4; ++i) {
 		uint16 sz = read_uint16LE(src); src += 2;
-		img_decode_level_bitmap_plane(sz, src, img_temp_buffer); src += sz;
-		memcpy(dst, img_temp_buffer, 256 * 56);
+		img_decode_level_bitmap_plane(sz, src, img_plane_buffer); src += sz;
+		memcpy(dst, img_plane_buffer, 256 * 56);
 		dst += 256 * 56;
 	}
 }
@@ -188,8 +188,7 @@ static void img_write_palette(const uint8 *pal, int pal_num, FILE *fp) {
 	for (i = 0; i < 16; ++i) {
 		uint8 r, g, b;
 		rgb_quad_t quad;
-		uint16 color = read_uint16BE(pal);
-		uint8 t = (color == 0) ? 0 : 3;
+		uint16 color = read_uint16BE(p);
 		memset(&quad, 0, sizeof(quad));
 		r = (color & 0x00F) >> 0;
 		g = (color & 0x0F0) >> 4;
@@ -198,11 +197,11 @@ static void img_write_palette(const uint8 *pal, int pal_num, FILE *fp) {
 		quad.g = (g << 4) | g;
 		quad.b = (b << 4) | b;
 		file_write_rgb_quad(fp, &quad);
-		pal += 2;
+		p += 2;
 	}
 }
 
-static void img_write_null_palette(FILE *fp) {
+static void img_write_black_palette(FILE *fp) {
 	int i;
 	rgb_quad_t quad;
 	memset(&quad, 0, sizeof(quad));
@@ -212,7 +211,6 @@ static void img_write_null_palette(FILE *fp) {
 }
 
 static void img_make_bitmap_level(const uint8 *img, const uint8 *pal, FILE *fp) {
-	int i;
 	bmp_file_header_t file_header;
 	bmp_info_header_t info_header;
 	uint8 palSlot1, palSlot2, palSlot3, palSlot4;
@@ -245,22 +243,22 @@ static void img_make_bitmap_level(const uint8 *img, const uint8 *pal, FILE *fp) 
 	palSlot2 = *img++;
 	palSlot3 = *img++;
 	palSlot4 = *img++;
-	img_write_palette(pal, palSlot1, fp); /* 16 */
-	img_write_palette(pal, palSlot2, fp); /* 32 */
-	img_write_palette(pal, palSlot3, fp); /* 48 */
-	img_write_palette(pal, palSlot4, fp); /* 64 */
-	img_write_null_palette(fp); /* 80 */
-	img_write_null_palette(fp); /* 96 */
-	img_write_null_palette(fp); /* 112 */
-	img_write_null_palette(fp); /* 128 */
 	img_write_palette(pal, palSlot1, fp);
 	img_write_palette(pal, palSlot2, fp);
 	img_write_palette(pal, palSlot3, fp);
 	img_write_palette(pal, palSlot4, fp);
-	img_write_null_palette(fp);
-	img_write_null_palette(fp);
-	img_write_null_palette(fp);
-	img_write_null_palette(fp);
+	img_write_black_palette(fp); // conrad
+	img_write_black_palette(fp); // monsters
+	img_write_black_palette(fp);
+	img_write_black_palette(fp);
+	img_write_palette(pal, palSlot1, fp);
+	img_write_palette(pal, palSlot2, fp);
+	img_write_palette(pal, palSlot3, fp);
+	img_write_palette(pal, palSlot4, fp);
+	img_write_black_palette(fp); // cutscene
+	img_write_black_palette(fp); // cutscene
+	img_write_black_palette(fp);
+	img_write_black_palette(fp); // text
 
 	img_decode_level_bitmap(img, img_decode_buffer);	
 	
@@ -268,36 +266,31 @@ static void img_make_bitmap_level(const uint8 *img, const uint8 *pal, FILE *fp) 
 	fwrite(img_hflip_buffer, 1, sizeof(img_hflip_buffer), fp);
 }
 
-static void make_bmp_filename(const char *img_file, char *bmp_file) {
-	char *p;
-	strcpy(bmp_file, img_file);
-	p = bmp_file + strlen(bmp_file) - 1;
-	while (p >= bmp_file && *p != '.') {
-		--p;
-	}
-	if (*p == '.') {
-		strcpy(p + 1, "bmp");
+static void make_bmp_filename(const char *out, const char *img_file, char *bmp_file) {
+	char *ext;
+	const char *sep = strrchr(img_file, '/');
+	snprintf(bmp_file, MAXPATHLEN, "%s%s", out, sep ? (sep + 1) : img_file);
+	ext = strrchr(bmp_file, '.');
+	if (ext) {
+		strcpy(ext + 1, "bmp");
 	}
 }
 
-static void make_bmp_level_filename(const char *img_file, int room, char *bmp_file) {
-	char *p;
-	strcpy(bmp_file, img_file);
-	p = bmp_file + strlen(bmp_file) - 1;
-	while (p >= bmp_file && *p != '.') {
-		--p;
-	}
-	if (*p == '.') {
-		sprintf(p, "-%02d.bmp", room);
+static void make_bmp_level_filename(const char *out, const char *img_file, int room, char *bmp_file) {
+	char *ext;
+	const char *sep = strrchr(img_file, '/');
+	snprintf(bmp_file, MAXPATHLEN, "%s%s", out, sep ? (sep + 1) : img_file);
+	ext = strrchr(bmp_file, '.');
+	if (ext) {
+		sprintf(ext, "-%02d.bmp", room);
 	}
 }
 
-static void img_convert(const char *filename, const uint8 *img, const uint8 *pal, int menu_type) {
+static void img_convert(const char *filename, const uint8 *img, const uint8 *pal, int menu_type, const char *out) {
 	if (menu_type) {
 		FILE *fp;
-		char bitmap_filename[512];
-
-		make_bmp_filename(filename, bitmap_filename);
+		char bitmap_filename[MAXPATHLEN];
+		make_bmp_filename(out, filename, bitmap_filename);
 		fp = fopen(bitmap_filename, "wb");
 		if (fp) {
 			img_make_bitmap_menu(img, pal, fp);
@@ -305,7 +298,7 @@ static void img_convert(const char *filename, const uint8 *img, const uint8 *pal
 		}
 	} else {
 		FILE *fp;
-		char bitmap_filename[512];
+		char bitmap_filename[MAXPATHLEN];
 		int room;
 		for (room = 0; room < 64; ++room) {
 			int32 off = read_uint32LE(img + room * 6);
@@ -313,7 +306,7 @@ static void img_convert(const char *filename, const uint8 *img, const uint8 *pal
 				continue;
 			}
 			assert(off > 0); /* packed bitmap */
-			make_bmp_level_filename(filename, room, bitmap_filename);
+			make_bmp_level_filename(out, filename, room, bitmap_filename);
 			fp = fopen(bitmap_filename, "wb");
 			if (fp) {
 				img_make_bitmap_level(img + off, pal, fp);
@@ -324,7 +317,7 @@ static void img_convert(const char *filename, const uint8 *img, const uint8 *pal
 }
 
 int main(int argc, char *argv[]) {
-	if (argc >= 3) {
+	if (argc == 4) {
 		int sz, menu_type;
 		FILE *fp;
 		uint8 *img, *pal;
@@ -347,8 +340,8 @@ int main(int argc, char *argv[]) {
 		pal = (uint8 *)malloc(sz);
 		fread(pal, 1, sz, fp);
 		fclose(fp);
-		
-		img_convert(argv[1], img, pal, menu_type);
+
+		img_convert(argv[1], img, pal, menu_type, argv[3]);
 
 		free(img);
 		free(pal);
