@@ -11,8 +11,8 @@
 #include "util.h"
 #include "video.h"
 
-Menu::Menu(Resource *res, SystemStub *stub, Video *vid)
-	: _res(res), _stub(stub), _vid(vid) {
+Menu::Menu(Resource *res, SystemStub *stub, Video *vid, WidescreenMode widescreenMode)
+	: _res(res), _stub(stub), _vid(vid), _widescreenMode(widescreenMode) {
 	_skill = kSkillNormal;
 	_level = 0;
 }
@@ -100,6 +100,13 @@ void Menu::loadPicture(const char *prefix) {
 	memcpy(_vid->_backLayer, _vid->_frontLayer, _vid->_layerSize);
 	_res->load_PAL_menu(prefix, _res->_scratchBuffer);
 	_stub->setPalette(_res->_scratchBuffer, 256);
+	if (_stub->hasWidescreen()) {
+		if (_widescreenMode == kWidescreenMirrorRoom) {
+			_stub->copyRectMirrorBorders(_vid->_w, _vid->_h, _vid->_backLayer);
+		} else if (_widescreenMode == kWidescreenBlur) {
+			_stub->copyRectBlur(_vid->_w, _vid->_h, _vid->_backLayer);
+		}
+	}
 }
 
 void Menu::handleInfoScreen() {

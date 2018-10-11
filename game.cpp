@@ -15,7 +15,7 @@
 #include "util.h"
 
 Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang, WidescreenMode widescreenMode, bool autoSave)
-	: _cut(&_res, stub, &_vid), _menu(&_res, stub, &_vid),
+	: _cut(&_res, stub, &_vid), _menu(&_res, stub, &_vid, widescreenMode),
 	_mix(fs, stub), _res(fs, ver, lang), _seq(stub, &_mix), _vid(&_res, stub),
 	_stub(stub), _fs(fs), _savePath(savePath) {
 	_stateSlot = 1;
@@ -1698,8 +1698,12 @@ void Game::loadLevelMap() {
 		_vid.MAC_decodeMap(_currentLevel, _currentRoom);
 		break;
 	}
-	if (_stub->hasWidescreen() && _widescreenMode == kWidescreenMirrorRoom) {
-		_stub->copyRectMirrorBorders(_vid._w, _vid._h, _vid._backLayer);
+	if (_stub->hasWidescreen()) {
+		if (_widescreenMode == kWidescreenMirrorRoom) {
+			_stub->copyRectMirrorBorders(_vid._w, _vid._h, _vid._backLayer);
+		} else if (_widescreenMode == kWidescreenBlur) {
+			_stub->copyRectBlur(_vid._w, _vid._h, _vid._backLayer);
+		}
 	}
 }
 

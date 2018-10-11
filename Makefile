@@ -25,6 +25,6 @@ rs: $(OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 clean:
-	rm -f *.o *.d
+	rm -f $(OBJS) $(DEPS)
 
 -include $(DEPS)

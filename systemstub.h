@@ -55,7 +55,7 @@ struct SystemStub {
 
 	virtual ~SystemStub() {}
 
-	virtual void init(const char *title, int w, int h, bool fullscreen, bool widescreen, ScalerParameters *scalerParameters) = 0;
+	virtual void init(const char *title, int w, int h, bool fullscreen, int widescreenMode, ScalerParameters *scalerParameters) = 0;
 	virtual void destroy() = 0;
 
 	virtual bool hasWidescreen() const = 0;
@@ -69,6 +69,7 @@ struct SystemStub {
 	virtual void copyRectLeftBorder(int w, int h, const uint8_t *buf) = 0;
 	virtual void copyRectRightBorder(int w, int h, const uint8_t *buf) = 0;
 	virtual void copyRectMirrorBorders(int w, int h, const uint8_t *buf) = 0;
+	virtual void copyRectBlur(int w, int h, const uint8_t *buf) = 0;
 	virtual void fadeScreen() = 0;
 	virtual void updateScreen(int shakeOffset) = 0;
 

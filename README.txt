@@ -43,7 +43,7 @@ These paths can be changed using command line switches :
     --savepath=PATH   Path to save files (default '.')
     --levelnum=NUM    Level to start from (default '0')
     --fullscreen      Fullscreen display
-    --widescreen=MODE 16:9 display
+    --widescreen=MODE 16:9 display (adjacent,mirror,blur,none)
     --scaler=NAME@X   Graphics scaler (default 'scale@3')
     --language=LANG   Language (fr,en,de,sp,it,jp)
     --autosave        Save game state automatically

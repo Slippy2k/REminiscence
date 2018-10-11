@@ -22,7 +22,7 @@ static const char *USAGE =
 	"  --savepath=PATH   Path to save files (default '.')\n"
 	"  --levelnum=NUM    Start to level, bypass introduction\n"
 	"  --fullscreen      Fullscreen display\n"
-	"  --widescreen=MODE 16:9 display\n"
+	"  --widescreen=MODE 16:9 display (adjacent,mirror,blur,none)\n"
 	"  --scaler=NAME@X   Graphics scaler (default 'scale@3')\n"
 	"  --language=LANG   Language (fr,en,de,sp,it,jp)\n"
 	"  --autosave        Save game state automatically\n"
@@ -200,6 +200,7 @@ static WidescreenMode parseWidescreen(const char *mode) {
 	} modes[] = {
 		{ "adjacent", kWidescreenAdjacentRooms },
 		{ "mirror", kWidescreenMirrorRoom },
+		{ "blur", kWidescreenBlur },
 		{ 0, kWidescreenNone },
 	};
 	for (int i = 0; modes[i].name; ++i) {
@@ -207,8 +208,8 @@ static WidescreenMode parseWidescreen(const char *mode) {
 			return modes[i].mode;
 		}
 	}
-	warning("Unhandled widecreen mode '%s', defaults to adjacent rooms", mode);
-	return kWidescreenAdjacentRooms; // default value
+	warning("Unhandled widecreen mode '%s', defaults to 16:9 blur", mode);
+	return kWidescreenBlur; // default value
 }
 
 int main(int argc, char *argv[]) {
@@ -303,7 +304,7 @@ int main(int argc, char *argv[]) {
 	const Language language = (forcedLanguage == -1) ? detectLanguage(&fs) : (Language)forcedLanguage;
 	SystemStub *stub = SystemStub_SDL_create();
 	Game *g = new Game(stub, &fs, savePath, levelNum, (ResourceType)version, language, widescreen, autoSave);
-	stub->init(g_caption, g->_vid._w, g->_vid._h, fullscreen, widescreen != kWidescreenNone, &scalerParameters);
+	stub->init(g_caption, g->_vid._w, g->_vid._h, fullscreen, widescreen, &scalerParameters);
 	g->run();
 	delete g;
 	stub->destroy();
