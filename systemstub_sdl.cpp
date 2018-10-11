@@ -64,10 +64,11 @@ struct SystemStub_SDL : SystemStub {
 	virtual void setOverscanColor(int i);
 	virtual void copyRect(int x, int y, int w, int h, const uint8_t *buf, int pitch);
 	virtual void copyRectRgb24(int x, int y, int w, int h, const uint8_t *rgb);
-	virtual void copyRectLeftBorder(int w, int h, const uint8_t *buf);
-	virtual void copyRectRightBorder(int w, int h, const uint8_t *buf);
-	virtual void copyRectMirrorBorders(int w, int h, const uint8_t *buf);
-	virtual void copyRectBlur(int w, int h, const uint8_t *buf);
+	virtual void copyWidescreenLeft(int w, int h, const uint8_t *buf);
+	virtual void copyWidescreenRight(int w, int h, const uint8_t *buf);
+	virtual void copyWidescreenMirror(int w, int h, const uint8_t *buf);
+	virtual void copyWidescreenBlur(int w, int h, const uint8_t *buf);
+	virtual void clearWidescreen();
 	virtual void fadeScreen();
 	virtual void updateScreen(int shakeOffset);
 	virtual void processEvents();
@@ -260,7 +261,7 @@ static void clearTexture(SDL_Texture *texture, int h, SDL_PixelFormat *fmt) {
 	}
 }
 
-void SystemStub_SDL::copyRectLeftBorder(int w, int h, const uint8_t *buf) {
+void SystemStub_SDL::copyWidescreenLeft(int w, int h, const uint8_t *buf) {
 	assert(w >= _wideMargin);
 	uint32_t *rgb = (uint32_t *)malloc(w * h * sizeof(uint32_t));
 	if (rgb) {
@@ -285,7 +286,7 @@ void SystemStub_SDL::copyRectLeftBorder(int w, int h, const uint8_t *buf) {
 	}
 }
 
-void SystemStub_SDL::copyRectRightBorder(int w, int h, const uint8_t *buf) {
+void SystemStub_SDL::copyWidescreenRight(int w, int h, const uint8_t *buf) {
 	assert(w >= _wideMargin);
 	uint32_t *rgb = (uint32_t *)malloc(w * h * sizeof(uint32_t));
 	if (rgb) {
@@ -310,7 +311,7 @@ void SystemStub_SDL::copyRectRightBorder(int w, int h, const uint8_t *buf) {
 	}
 }
 
-void SystemStub_SDL::copyRectMirrorBorders(int w, int h, const uint8_t *buf) {
+void SystemStub_SDL::copyWidescreenMirror(int w, int h, const uint8_t *buf) {
 	assert(w >= _wideMargin);
 	uint32_t *rgb = (uint32_t *)malloc(w * h * sizeof(uint32_t));
 	if (rgb) {
@@ -366,7 +367,7 @@ static uint32_t blurPixel(int x, int y, const uint8_t *src, const uint32_t *pal,
 	return ((redBlueBlurSum / blurMatSigma) & redBlueMask) | ((greenBlurSum / blurMatSigma) & greenMask);
 }
 
-void SystemStub_SDL::copyRectBlur(int w, int h, const uint8_t *buf) {
+void SystemStub_SDL::copyWidescreenBlur(int w, int h, const uint8_t *buf) {
 	assert(w == _screenW && h == _screenH);
 	void *dst = 0;
 	int pitch = 0;
@@ -381,6 +382,10 @@ void SystemStub_SDL::copyRectBlur(int w, int h, const uint8_t *buf) {
 		}
 		SDL_UnlockTexture(_widescreenTexture);
 	}
+}
+
+void SystemStub_SDL::clearWidescreen() {
+	clearTexture(_widescreenTexture, _screenH, _fmt);
 }
 
 void SystemStub_SDL::fadeScreen() {
@@ -837,7 +842,6 @@ void SystemStub_SDL::prepareGraphics() {
 		} else {
 			_widescreenMode = kWidescreenNone;
                 }
-fprintf(stdout, "mode %d\n", _widescreenMode);
 	}
 	if (_widescreenMode != kWidescreenNone) {
 		windowW = windowH * 16 / 9;
@@ -857,7 +861,6 @@ fprintf(stdout, "mode %d\n", _widescreenMode);
 		const int w = (_widescreenMode == kWidescreenBlur) ? _screenW : _screenH * 16 / 9;
 		const int h = _screenH;
 		_widescreenTexture = SDL_CreateTexture(_renderer, kPixelFormat, SDL_TEXTUREACCESS_STREAMING, w, h);
-fprintf(stdout, "widescreenTexture %d,%d\n", w, h);
 		clearTexture(_widescreenTexture, _screenH, _fmt);
 
 		// left and right borders

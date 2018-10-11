@@ -118,9 +118,9 @@ void Video::updateScreen() {
 void Video::updateWidescreen() {
 	if (_stub->hasWidescreen()) {
 		if (_widescreenMode == kWidescreenMirrorRoom) {
-			_stub->copyRectMirrorBorders(_w, _h, _backLayer);
+			_stub->copyWidescreenMirror(_w, _h, _backLayer);
 		} else if (_widescreenMode == kWidescreenBlur || _widescreenMode == kWidescreenDefault) {
-			_stub->copyRectBlur(_w, _h, _backLayer);
+			_stub->copyWidescreenBlur(_w, _h, _backLayer);
 		}
 	}
 }

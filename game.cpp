@@ -136,6 +136,9 @@ void Game::run() {
 		if (_stub->_pi.quit) {
 			break;
 		}
+		if (_stub->hasWidescreen()) {
+			_stub->clearWidescreen();
+		}
 		if (_currentLevel == 7) {
 			_vid.fadeOut();
 			_vid.setTextPalette();
@@ -166,11 +169,6 @@ void Game::run() {
 			_stub->_pi.enter = false;
 			_stub->_pi.space = false;
 			_stub->_pi.shift = false;
-			// clear widescreen borders
-			if (_stub->hasWidescreen()) {
-				_stub->copyRectLeftBorder(_vid._w, _vid._h, 0);
-				_stub->copyRectRightBorder(_vid._w, _vid._h, 0);
-			}
 		}
 	}
 
@@ -593,8 +591,7 @@ void Game::drawCurrentInventoryItem() {
 
 void Game::showFinalScore() {
 	if (_stub->hasWidescreen()) {
-		_stub->copyRectLeftBorder(_vid._w, _vid._h, 0);
-		_stub->copyRectRightBorder(_vid._w, _vid._h, 0);
+		_stub->clearWidescreen();
 	}
 	playCutscene(0x49);
 	char buf[50];
@@ -757,8 +754,7 @@ bool Game::handleConfigPanel() {
 
 bool Game::handleContinueAbort() {
 	if (_stub->hasWidescreen()) {
-		_stub->copyRectLeftBorder(_vid._w, _vid._h, 0);
-		_stub->copyRectRightBorder(_vid._w, _vid._h, 0);
+		_stub->clearWidescreen();
 	}
 	playCutscene(0x48);
 	int timeout = 100;
@@ -1664,16 +1660,16 @@ void Game::loadLevelMap() {
 			const int leftRoom = _res._ctData[CT_LEFT_ROOM + _currentRoom];
 			if (leftRoom > 0 && hasLevelMap(_currentLevel, leftRoom)) {
 				_vid.PC_decodeMap(_currentLevel, leftRoom);
-				_stub->copyRectLeftBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._backLayer);
+				_stub->copyWidescreenLeft(Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._backLayer);
 			} else {
-				_stub->copyRectLeftBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
+				_stub->copyWidescreenLeft(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
 			}
 			const int rightRoom = _res._ctData[CT_RIGHT_ROOM + _currentRoom];
 			if (rightRoom > 0 && hasLevelMap(_currentLevel, rightRoom)) {
 				_vid.PC_decodeMap(_currentLevel, rightRoom);
-				_stub->copyRectRightBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._backLayer);
+				_stub->copyWidescreenRight(Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._backLayer);
 			} else {
-				_stub->copyRectRightBorder(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
+				_stub->copyWidescreenRight(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
 			}
 		}
 		_vid.PC_decodeMap(_currentLevel, _currentRoom);
@@ -1683,16 +1679,16 @@ void Game::loadLevelMap() {
 			const int leftRoom = _res._ctData[CT_LEFT_ROOM + _currentRoom];
 			if (leftRoom > 0 && hasLevelMap(_currentLevel, leftRoom)) {
 				_vid.MAC_decodeMap(_currentLevel, leftRoom);
-				_stub->copyRectLeftBorder(_vid._w, _vid._h, _vid._backLayer);
+				_stub->copyWidescreenLeft(_vid._w, _vid._h, _vid._backLayer);
 			} else {
-				_stub->copyRectLeftBorder(_vid._w, _vid._h, 0);
+				_stub->copyWidescreenLeft(_vid._w, _vid._h, 0);
 			}
 			const int rightRoom = _res._ctData[CT_RIGHT_ROOM + _currentRoom];
 			if (rightRoom > 0 && hasLevelMap(_currentLevel, rightRoom)) {
 				_vid.MAC_decodeMap(_currentLevel, rightRoom);
-				_stub->copyRectRightBorder(_vid._w, _vid._h, _vid._backLayer);
+				_stub->copyWidescreenRight(_vid._w, _vid._h, _vid._backLayer);
 			} else {
-				_stub->copyRectRightBorder(_vid._w, _vid._h, 0);
+				_stub->copyWidescreenRight(_vid._w, _vid._h, 0);
 			}
 		}
 		_vid.MAC_decodeMap(_currentLevel, _currentRoom);
