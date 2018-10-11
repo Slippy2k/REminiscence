@@ -1,6 +1,6 @@
 
 REminiscence README
-Release version: 0.4.4
+Release version: 0.4.5
 -------------------------------------------------------------------------------
 
 
