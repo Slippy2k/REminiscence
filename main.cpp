@@ -201,7 +201,7 @@ static WidescreenMode parseWidescreen(const char *mode) {
 		{ "adjacent", kWidescreenAdjacentRooms },
 		{ "mirror", kWidescreenMirrorRoom },
 		{ "blur", kWidescreenBlur },
-		{ 0, kWidescreenNone },
+		{ 0, kWidescreenDefault },
 	};
 	for (int i = 0; modes[i].name; ++i) {
 		if (strcasecmp(modes[i].name, mode) == 0) {
@@ -209,7 +209,7 @@ static WidescreenMode parseWidescreen(const char *mode) {
 		}
 	}
 	warning("Unhandled widecreen mode '%s', defaults to 16:9 blur", mode);
-	return kWidescreenBlur; // default value
+	return kWidescreenBlur;
 }
 
 int main(int argc, char *argv[]) {
@@ -218,7 +218,7 @@ int main(int argc, char *argv[]) {
 	int levelNum = 0;
 	bool fullscreen = false;
 	bool autoSave = false;
-	WidescreenMode widescreen = kWidescreenNone;
+	WidescreenMode widescreen = kWidescreenDefault;
 	ScalerParameters scalerParameters = ScalerParameters::defaults();
 	int forcedLanguage = -1;
 	if (argc == 2) {

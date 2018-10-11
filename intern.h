@@ -103,6 +103,7 @@ enum Skill {
 };
 
 enum WidescreenMode {
+	kWidescreenDefault,
 	kWidescreenNone,
 	kWidescreenAdjacentRooms,
 	kWidescreenMirrorRoom,

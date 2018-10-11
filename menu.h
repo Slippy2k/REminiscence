@@ -64,7 +64,6 @@ struct Menu {
 	Resource *_res;
 	SystemStub *_stub;
 	Video *_vid;
-	WidescreenMode _widescreenMode;
 
 	int _currentScreen;
 	int _nextScreen;
@@ -79,7 +78,7 @@ struct Menu {
 	uint8_t _charVar4;
 	uint8_t _charVar5;
 
-	Menu(Resource *res, SystemStub *stub, Video *vid, WidescreenMode widescreenMode);
+	Menu(Resource *res, SystemStub *stub, Video *vid);
 
 	void drawString(const char *str, int16_t y, int16_t x, uint8_t color);
 	void drawString2(const char *str, int16_t y, int16_t x);

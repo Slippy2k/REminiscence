@@ -11,8 +11,8 @@
 #include "util.h"
 #include "video.h"
 
-Video::Video(Resource *res, SystemStub *stub)
-	: _res(res), _stub(stub) {
+Video::Video(Resource *res, SystemStub *stub, WidescreenMode widescreenMode)
+	: _res(res), _stub(stub), _widescreenMode(widescreenMode) {
 	_layerScale = (_res->_type == kResourceTypeMac) ? 2 : 1; // Macintosh version is 512x448
 	_w = GAMESCREEN_W * _layerScale;
 	_h = GAMESCREEN_H * _layerScale;
@@ -112,6 +112,16 @@ void Video::updateScreen() {
 	if (_shakeOffset != 0) {
 		_shakeOffset = 0;
 		_fullRefresh = true;
+	}
+}
+
+void Video::updateWidescreen() {
+	if (_stub->hasWidescreen()) {
+		if (_widescreenMode == kWidescreenMirrorRoom) {
+			_stub->copyRectMirrorBorders(_w, _h, _backLayer);
+		} else if (_widescreenMode == kWidescreenBlur || _widescreenMode == kWidescreenDefault) {
+			_stub->copyRectBlur(_w, _h, _backLayer);
+		}
 	}
 }
 

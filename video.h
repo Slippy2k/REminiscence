@@ -32,6 +32,7 @@ struct Video {
 
 	Resource *_res;
 	SystemStub *_stub;
+	WidescreenMode _widescreenMode;
 
 	int _w, _h;
 	int _layerSize;
@@ -50,11 +51,12 @@ struct Video {
 	uint8_t _shakeOffset;
 	drawCharFunc _drawChar;
 
-	Video(Resource *res, SystemStub *stub);
+	Video(Resource *res, SystemStub *stub, WidescreenMode widescreenMode);
 	~Video();
 
 	void markBlockAsDirty(int16_t x, int16_t y, uint16_t w, uint16_t h, int scale);
 	void updateScreen();
+	void updateWidescreen();
 	void fullRefresh();
 	void fadeOut();
 	void fadeOutPalette();

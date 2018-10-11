@@ -801,6 +801,10 @@ void SystemStub_SDL::unlockAudio() {
 	SDL_UnlockAudio();
 }
 
+static bool is16_9(const SDL_DisplayMode *mode) {
+	return (mode->w / (float)mode->h) >= (16 / 9.f);
+}
+
 void SystemStub_SDL::prepareGraphics() {
 	_texW = _screenW;
 	_texH = _screenH;
@@ -826,6 +830,15 @@ void SystemStub_SDL::prepareGraphics() {
 	} else {
 		flags |= SDL_WINDOW_RESIZABLE;
 	}
+	if (_widescreenMode == kWidescreenDefault) {
+		SDL_DisplayMode dm;
+		if (SDL_GetDesktopDisplayMode(0, &dm) == 0 && is16_9(&dm)) {
+			_widescreenMode = kWidescreenBlur; // default widescreen mode
+		} else {
+			_widescreenMode = kWidescreenNone;
+                }
+fprintf(stdout, "mode %d\n", _widescreenMode);
+	}
 	if (_widescreenMode != kWidescreenNone) {
 		windowW = windowH * 16 / 9;
 	}
@@ -844,6 +857,7 @@ void SystemStub_SDL::prepareGraphics() {
 		const int w = (_widescreenMode == kWidescreenBlur) ? _screenW : _screenH * 16 / 9;
 		const int h = _screenH;
 		_widescreenTexture = SDL_CreateTexture(_renderer, kPixelFormat, SDL_TEXTUREACCESS_STREAMING, w, h);
+fprintf(stdout, "widescreenTexture %d,%d\n", w, h);
 		clearTexture(_widescreenTexture, _screenH, _fmt);
 
 		// left and right borders
