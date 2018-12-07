@@ -53,6 +53,7 @@ Resource::~Resource() {
 	free(_sfxList);
 	free(_bankData);
 	delete _aba;
+	delete _mac;
 }
 
 void Resource::init() {
@@ -168,6 +169,7 @@ void Resource::load_FIB(const char *fileName) {
 			if (!data) {
 				error("Unable to allocate SoundFx data buffer");
 			}
+			// Fibonacci-delta decoding
 			sfx->data = data;
 			uint8_t c = f.readByte();
 			*data++ = c;
