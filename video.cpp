@@ -922,7 +922,7 @@ void Video::MAC_drawStringChar(uint8_t *dst, int pitch, int x, int y, const uint
 	buf.h = _h;
 	buf.x = x * _layerScale;
 	buf.y = y * _layerScale;
-	buf.setPixel = Video::MAC_drawBufferFont;
+	buf.setPixel = Video::MAC_setPixelFont;
 	_MAC_fontFrontColor = color;
 	_MAC_fontShadowColor = _charShadowColor;
 	assert(chr >= 32);
@@ -973,7 +973,7 @@ void Video::MAC_decodeMap(int level, int room) {
 	buf.ptr = _frontLayer;
 	buf.w = buf.pitch = _w;
 	buf.h = _h;
-	buf.setPixel = Video::MAC_drawBuffer;
+	buf.setPixel = Video::MAC_setPixel;
 	_res->MAC_loadLevelRoom(level, room, &buf);
 	memcpy(_backLayer, _frontLayer, _layerSize);
 	Color roomPalette[256];
@@ -989,45 +989,27 @@ void Video::MAC_decodeMap(int level, int room) {
 	}
 }
 
-void Video::MAC_drawBuffer(DecodeBuffer *buf, int src_x, int src_y, int src_w, int src_h, uint8_t color) {
-	const int y = buf->y + src_y;
-	if (y >= 0 && y < buf->h) {
-		const int x = buf->xflip ? (buf->x + (src_w - 1 - src_x)) : (buf->x + src_x);
-		if (x >= 0 && x < buf->w) {
-			const int offset = y * buf->pitch + x;
-			buf->ptr[offset] = color;
-		}
+void Video::MAC_setPixel(DecodeBuffer *buf, int x, int y, uint8_t color) {
+	const int offset = y * buf->pitch + x;
+	buf->ptr[offset] = color;
+}
+
+void Video::MAC_setPixelMask(DecodeBuffer *buf, int x, int y, uint8_t color) {
+	const int offset = y * buf->pitch + x;
+	if ((buf->ptr[offset] & 0x80) == 0) {
+		buf->ptr[offset] = color;
 	}
 }
 
-void Video::MAC_drawBufferMask(DecodeBuffer *buf, int src_x, int src_y, int src_w, int src_h, uint8_t color) {
-	const int y = buf->y + src_y;
-	if (y >= 0 && y < buf->h) {
-		const int x = buf->xflip ? (buf->x + (src_w - 1 - src_x)) : (buf->x + src_x);
-		if (x >= 0 && x < buf->w) {
-			const int offset = y * buf->pitch + x;
-			if ((buf->ptr[offset] & 0x80) == 0) {
-				buf->ptr[offset] = color;
-			}
-		}
-	}
-}
-
-void Video::MAC_drawBufferFont(DecodeBuffer *buf, int src_x, int src_y, int src_w, int src_h, uint8_t color) {
-	const int y = buf->y + src_y;
-	if (y >= 0 && y < buf->h) {
-		const int x = buf->x + src_x;
-		if (x >= 0 && x < buf->w) {
-			const int offset = y * buf->pitch + x;
-			switch (color) {
-			case 0xC0:
-				buf->ptr[offset] = _MAC_fontShadowColor;
-				break;
-			case 0xC1:
-				buf->ptr[offset] = _MAC_fontFrontColor;
-				break;
-			}
-		}
+void Video::MAC_setPixelFont(DecodeBuffer *buf, int x, int y, uint8_t color) {
+	const int offset = y * buf->pitch + x;
+	switch (color) {
+	case 0xC0:
+		buf->ptr[offset] = _MAC_fontShadowColor;
+		break;
+	case 0xC1:
+		buf->ptr[offset] = _MAC_fontFrontColor;
+		break;
 	}
 }
 
@@ -1059,7 +1041,7 @@ void Video::MAC_drawSprite(int x, int y, const uint8_t *data, int frame, bool xf
 		buf.h = _h;
 		buf.x = x * _layerScale;
 		buf.y = y * _layerScale;
-		buf.setPixel = eraseBackground ? MAC_drawBuffer : MAC_drawBufferMask;
+		buf.setPixel = eraseBackground ? MAC_setPixel : MAC_setPixelMask;
 		fixOffsetDecodeBuffer(&buf, dataPtr);
 		_res->MAC_decodeImageData(data, frame, &buf);
 		markBlockAsDirty(buf.x, buf.y, READ_BE_UINT16(dataPtr), READ_BE_UINT16(dataPtr + 2), 1);

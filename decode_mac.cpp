@@ -30,7 +30,16 @@ uint8_t *decodeLzss(File &f, uint32_t &decodedSize) {
 }
 
 static void setPixel(int x, int y, int w, int h, uint8_t color, DecodeBuffer *buf) {
-	buf->setPixel(buf, x, y, w, h, color);
+	y += buf->y;
+	if (y >= 0 && y < buf->h) {
+		if (buf->xflip) {
+			x = w - 1 - x;
+		}
+		x += buf->x;
+		if (x >= 0 && x < buf->w) {
+			buf->setPixel(buf, x, y, color);
+		}
+	}
 }
 
 void decodeC103(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {

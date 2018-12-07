@@ -274,7 +274,7 @@ void Game::displayTitleScreenMac(int num) {
 	buf.h = _vid._h;
 	buf.x = (_vid._w - w) / 2;
 	buf.y = (_vid._h - h) / 2;
-	buf.setPixel = Video::MAC_drawBuffer;
+	buf.setPixel = Video::MAC_setPixel;
 	memset(_vid._frontLayer, 0, _vid._layerSize);
 	_res.MAC_loadTitleImage(num, &buf);
 	for (int i = 0; i < 12; ++i) {
