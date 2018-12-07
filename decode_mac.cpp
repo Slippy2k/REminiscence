@@ -42,49 +42,47 @@ static void setPixel(int x, int y, int w, int h, uint8_t color, DecodeBuffer *bu
 	}
 }
 
-void decodeC103(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
-	uint8_t d0;
-	int d3 = 0;
-	int d7 = 1;
-	int d6 = 0;
-	int d1 = 0;
-	static const uint32_t d5 = 0xFFF;
-	uint8_t a1[0x1000];
+void decodeC103(const uint8_t *src, int w, int h, DecodeBuffer *buf) {
+	static const int kBits = 12;
+	static const int kMask = (1 << kBits) - 1;
+	int cursor = 0;
+	int bits = 1;
+	int count = 0;
+	int offset = 0;
+	uint8_t window[(1 << kBits)];
 
 	for (int y = 0; y < h; ++y) {
 		for (int x = 0; x < w; ++x) {
-			assert(d6 >= 0);
-			if (d6 == 0) {
-				int carry = d7 & 1;
-				d7 >>= 1;
-				if (d7 == 0) {
-					d7 = *a3++;
-					const int extended_bit = carry ? 0x80 : 0;
-					carry = d7 & 1;
-					d7 = extended_bit | (d7 >> 1);
+			if (count == 0) {
+				int carry = bits & 1;
+				bits >>= 1;
+				if (bits == 0) {
+					bits = *src++;
+					if (carry) {
+						bits |= 0x100;
+					}
+					carry = bits & 1;
+					bits >>= 1;
 				}
 				if (!carry) {
-					d0 = *a3++;
-					a1[d3] = d0;
-					++d3;
-					d3 &= d5;
-					setPixel(x, y, w, h, d0, buf);
+					const uint8_t color = *src++;
+					window[cursor] = color;
+					++cursor;
+					cursor &= kMask;
+					setPixel(x, y, w, h, color, buf);
 					continue;
 				}
-				d1 = READ_BE_UINT16(a3); a3 += 2;
-				d6 = d1;
-				d1 &= d5;
-				++d1;
-				d1 = (d3 - d1) & d5;
-				d6 >>= 12;
-				d6 += 3;
+				offset = READ_BE_UINT16(src); src += 2;
+				count = 3 + (offset >> 12);
+				offset &= kMask;
+				offset = (cursor - offset - 1) & kMask;
 			}
-			d0 = a1[d1++];
-			d1 &= d5;
-			a1[d3++] = d0;
-			d3 &= d5;
-			setPixel(x, y, w, h, d0, buf);
-			--d6;
+			const uint8_t color = window[offset++];
+			offset &= kMask;
+			window[cursor++] = color;
+			cursor &= kMask;
+			setPixel(x, y, w, h, color, buf);
+			--count;
 		}
 	}
 }
