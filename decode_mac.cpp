@@ -87,7 +87,7 @@ void decodeC103(const uint8_t *src, int w, int h, DecodeBuffer *buf) {
 	}
 }
 
-void decodeC211(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
+void decodeC211(const uint8_t *src, int w, int h, DecodeBuffer *buf) {
 	struct {
 		const uint8_t *ptr;
 		int repeatCount;
@@ -97,52 +97,48 @@ void decodeC211(const uint8_t *a3, int w, int h, DecodeBuffer *buf) {
 	int sp = 0;
 
 	while (1) {
-		uint8_t d0 = *a3++;
-		if ((d0 & 0x80) != 0) {
+		const uint8_t code = *src++;
+		if ((code & 0x80) != 0) {
 			++y;
 			x = 0;
 		}
-		int d1 = d0 & 0x1F;
-		if (d1 == 0) {
-			d1 = READ_BE_UINT16(a3); a3 += 2;
+		int count = code & 0x1F;
+		if (count == 0) {
+			count = READ_BE_UINT16(src); src += 2;
 		}
-		const int carry_set = (d0 & 0x40) != 0;
-		d0 <<= 2;
-		if (!carry_set) {
-			if ((d0 & 0x80) == 0) {
-				--d1;
-				if (d1 == 0) {
+		if ((code & 0x40) == 0) {
+			if ((code & 0x20) == 0) {
+				if (count == 1) {
 					assert(sp > 0);
 					--stack[sp - 1].repeatCount;
 					if (stack[sp - 1].repeatCount >= 0) {
-						a3 = stack[sp - 1].ptr;
+						src = stack[sp - 1].ptr;
 					} else {
 						--sp;
 					}
 				} else {
 					assert(sp < ARRAYSIZE(stack));
-					stack[sp].ptr = a3;
-					stack[sp].repeatCount = d1;
+					stack[sp].ptr = src;
+					stack[sp].repeatCount = count - 1;
 					++sp;
 				}
 			} else {
-				x += d1;
+				x += count;
 			}
 		} else {
-			if ((d0 & 0x80) == 0) {
-				if (d1 == 1) {
+			if ((code & 0x20) == 0) {
+				if (count == 1) {
 					return;
 				}
-				const uint8_t color = *a3++;
-				for (int i = 0; i < d1; ++i) {
+				const uint8_t color = *src++;
+				for (int i = 0; i < count; ++i) {
 					setPixel(x++, y, w, h, color, buf);
 				}
 			} else {
-				for (int i = 0; i < d1; ++i) {
-					setPixel(x++, y, w, h, *a3++, buf);
+				for (int i = 0; i < count; ++i) {
+					setPixel(x++, y, w, h, *src++, buf);
 				}
 			}
 		}
 	}
 }
-
