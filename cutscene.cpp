@@ -188,21 +188,20 @@ void Cutscene::swapLayers() {
 
 void Cutscene::drawCreditsText() {
 	if (_creditsSequence) {
-		if (_textUnk2 != 0) {
-			if (_varText == 0) {
-				_textUnk2 = 0;
+		if (_creditsKeepText != 0) {
+			if (_creditsSlowText == 0) {
+				_creditsKeepText = 0;
 			} else {
 				return;
 			}
 		}
 		if (_creditsTextCounter <= 0) {
-			uint8_t code = *_textCurPtr;
+			const uint8_t code = *_textCurPtr;
 			if (code == 0xFF) {
 				_textBuf[0] = 0xA;
 			} else if (code == 0xFE) {
 				++_textCurPtr;
-				code = *_textCurPtr++;
-				_creditsTextCounter = code;
+				_creditsTextCounter = *_textCurPtr++;
 			} else if (code == 1) {
 				++_textCurPtr;
 				_creditsTextPosX = *_textCurPtr++;
@@ -211,8 +210,8 @@ void Cutscene::drawCreditsText() {
 				_textCurBuf = _textBuf;
 				_textBuf[0] = 0xA;
 				++_textCurPtr;
-				if (_varText != 0) {
-					_textUnk2 = 0xFF;
+				if (_creditsSlowText != 0) {
+					_creditsKeepText = 0xFF;
 				}
 			} else {
 				*_textCurBuf++ = code;
@@ -269,7 +268,7 @@ void Cutscene::op_markCurPos() {
 	_frameDelay = 5;
 	setPalette();
 	swapLayers();
-	_varText = 0;
+	_creditsSlowText = 0;
 }
 
 void Cutscene::op_refreshScreen() {
@@ -277,7 +276,7 @@ void Cutscene::op_refreshScreen() {
 	_clearScreen = fetchNextCmdByte();
 	if (_clearScreen != 0) {
 		swapLayers();
-		_varText = 0;
+		_creditsSlowText = 0;
 	}
 }
 
@@ -286,7 +285,7 @@ void Cutscene::op_waitForSync() {
 	if (_creditsSequence) {
 		uint16_t n = fetchNextCmdByte() * 2;
 		do {
-			_varText = 0xFF;
+			_creditsSlowText = 0xFF;
 			_frameDelay = 3;
 			if (_textBuf == _textCurBuf) {
 				_creditsTextCounter = _res->isAmiga() ? 60 : 20;
@@ -296,7 +295,7 @@ void Cutscene::op_waitForSync() {
 			setPalette();
 		} while (--n);
 		swapLayers();
-		_varText = 0;
+		_creditsSlowText = 0;
 	} else {
 		_frameDelay = fetchNextCmdByte() * 4;
 		sync(); // XXX handle input
@@ -447,7 +446,7 @@ void Cutscene::op_refreshAll() {
 	_frameDelay = 5;
 	setPalette();
 	swapLayers();
-	_varText = 0xFF;
+	_creditsSlowText = 0xFF;
 	op_handleKeys();
 }
 
@@ -859,7 +858,7 @@ void Cutscene::op_drawShapeScaleRotate() {
 
 void Cutscene::op_drawCreditsText() {
 	debug(DBG_CUT, "Cutscene::op_drawCreditsText()");
-	_varText = 0xFF;
+	_creditsSlowText = 0xFF;
 	if (_textCurBuf == _textBuf) {
 		++_creditsTextCounter;
 	}
@@ -1091,8 +1090,8 @@ void Cutscene::playCredits() {
 	_textBuf[0] = 0xA;
 	_textCurBuf = _textBuf;
 	_creditsSequence = true;
-	_varText = 0;
-	_textUnk2 = 0;
+	_creditsSlowText = 0;
+	_creditsKeepText = 0;
 	_creditsTextCounter = 0;
 	_interrupted = false;
 	const uint16_t *cut_seq = _creditsCutSeq;

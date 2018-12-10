@@ -81,7 +81,6 @@ struct Cutscene {
 	uint8_t _clearScreen;
 	Point _vertices[0x80];
 	bool _hasAlphaColor;
-	uint8_t _varText;
 	uint8_t _varKey;
 	int16_t _shape_ix;
 	int16_t _shape_iy;
@@ -100,7 +99,8 @@ struct Cutscene {
 	uint8_t _textBuf[500];
 	const uint8_t *_textCurPtr;
 	uint8_t *_textCurBuf;
-	uint8_t _textUnk2;
+	uint8_t _creditsSlowText;
+	uint8_t _creditsKeepText;
 	uint8_t _creditsTextPosX;
 	uint8_t _creditsTextPosY;
 	int16_t _creditsTextCounter;
