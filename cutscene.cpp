@@ -101,10 +101,10 @@ void Cutscene::setRotationTransform(uint16_t a, uint16_t b, uint16_t c) { // ide
 	const int16_t cos_c = COS(c);
 	const int16_t sin_b = SIN(b);
 	const int16_t cos_b = COS(b);
-	_rotMat[0] /* .x1 */ = ((cos_a * cos_b) >> 8) - ((((cos_c * sin_a) >> 8) * sin_b) >> 8);
-	_rotMat[1] /* .y1 */ = ((sin_a * cos_b) >> 8) + ((((cos_c * cos_a) >> 8) * sin_b) >> 8);
-	_rotMat[2] /* .x2 */ = ( sin_c * sin_a) >> 8;
-	_rotMat[3] /* .y2 */ = (-sin_c * cos_a) >> 8;
+	_rotAff.x1 = ((cos_a * cos_b) >> 8) - ((((cos_c * sin_a) >> 8) * sin_b) >> 8);
+	_rotAff.y1 = ((sin_a * cos_b) >> 8) + ((((cos_c * cos_a) >> 8) * sin_b) >> 8);
+	_rotAff.x2 = ( sin_c * sin_a) >> 8;
+	_rotAff.y2 = (-sin_c * cos_a) >> 8;
 }
 
 static bool isNewLineChar(uint8_t chr, Resource *res) {
@@ -647,8 +647,8 @@ void Cutscene::drawShapeScaleRotate(const uint8_t *data, int16_t zoom, int16_t b
 		y = READ_BE_UINT16(data); data += 2;
 		_shape_cur_x16 = _shape_ix - ix;
 		_shape_cur_y16 = _shape_iy - iy;
-		_shape_ox = _shape_cur_x = _shape_ix + ((_shape_cur_x16 * _rotMat[0] + _shape_cur_y16 * _rotMat[1]) >> 8);
-		_shape_oy = _shape_cur_y = _shape_iy + ((_shape_cur_x16 * _rotMat[2] + _shape_cur_y16 * _rotMat[3]) >> 8);
+		_shape_ox = _shape_cur_x = _shape_ix + ((_shape_cur_x16 * _rotAff.x1 + _shape_cur_y16 * _rotAff.y1) >> 8);
+		_shape_oy = _shape_cur_y = _shape_iy + ((_shape_cur_x16 * _rotAff.x2 + _shape_cur_y16 * _rotAff.y2) >> 8);
 		pr[0].x =  0;
 		pr[0].y = -y;
 		pr[1].x = -x;
@@ -694,8 +694,8 @@ void Cutscene::drawShapeScaleRotate(const uint8_t *data, int16_t zoom, int16_t b
 		pt.y = c + READ_BE_UINT16(data); data += 2;
 		_shape_cur_x16 = _shape_ix - pt.x;
 		_shape_cur_y16 = _shape_iy - pt.y;
-		_shape_cur_x = _shape_ix + ((_rotMat[0] * _shape_cur_x16 + _rotMat[1] * _shape_cur_y16) >> 8);
-		_shape_cur_y = _shape_iy + ((_rotMat[2] * _shape_cur_x16 + _rotMat[3] * _shape_cur_y16) >> 8);
+		_shape_cur_x = _shape_ix + ((_rotAff.x1 * _shape_cur_x16 + _rotAff.y1 * _shape_cur_y16) >> 8);
+		_shape_cur_y = _shape_iy + ((_rotAff.x2 * _shape_cur_x16 + _rotAff.y2 * _shape_cur_y16) >> 8);
 		if (_shape_count != 0) {
 			_shape_cur_x16 = _shape_prev_x16 + (_shape_cur_x - _shape_prev_x) * zoom * 128;
 			pt.x = ((_shape_cur_x16 + 0x8000) >> 16) + _shape_ix + d;
@@ -725,12 +725,12 @@ void Cutscene::drawShapeScaleRotate(const uint8_t *data, int16_t zoom, int16_t b
 		_shape_cur_x16 = _shape_ix - x;
 		_shape_cur_y16 = _shape_iy - y;
 
-		a = _shape_ix + ((_rotMat[0] * _shape_cur_x16 + _rotMat[1] * _shape_cur_y16) >> 8);
+		a = _shape_ix + ((_rotAff.x1 * _shape_cur_x16 + _rotAff.y1 * _shape_cur_y16) >> 8);
 		if (_shape_count == 0) {
 			_shape_ox = a;
 		}
 		_shape_cur_x = shape_last_x = a;
-		a = _shape_iy + ((_rotMat[2] * _shape_cur_x16 + _rotMat[3] * _shape_cur_y16) >> 8);
+		a = _shape_iy + ((_rotAff.x2 * _shape_cur_x16 + _rotAff.y2 * _shape_cur_y16) >> 8);
 		if (_shape_count == 0) {
 			_shape_oy = a;
 		}
@@ -752,10 +752,10 @@ void Cutscene::drawShapeScaleRotate(const uint8_t *data, int16_t zoom, int16_t b
 				sx = 0;
 				_shape_cur_x16 = _shape_ix - ix;
 				_shape_cur_y16 = _shape_iy - iy;
-				a = _shape_ix + ((_rotMat[0] * _shape_cur_x16 + _rotMat[1] * _shape_cur_y16) >> 8);
+				a = _shape_ix + ((_rotAff.x1 * _shape_cur_x16 + _rotAff.y1 * _shape_cur_y16) >> 8);
 				pt2->x = a - shape_last_x;
 				shape_last_x = a;
-				a = _shape_iy + ((_rotMat[2] * _shape_cur_x16 + _rotMat[3] * _shape_cur_y16) >> 8);
+				a = _shape_iy + ((_rotAff.x2 * _shape_cur_x16 + _rotAff.y2 * _shape_cur_y16) >> 8);
 				pt2->y = a - shape_last_y;
 				shape_last_y = a;
 				++pt2;
