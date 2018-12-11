@@ -56,9 +56,10 @@ void Game::run() {
 	}
 
 	if (!g_options.bypass_protection && !_res.isMac()) {
-		while (!handleProtectionScreen());
-		if (_stub->_pi.quit) {
-			return;
+		while (!handleProtectionScreen()) {
+			if (_stub->_pi.quit) {
+				return;
+			}
 		}
 	}
 
@@ -822,14 +823,22 @@ bool Game::handleContinueAbort() {
 	return false;
 }
 
-static uint8_t decryptChar(uint8_t ch) {
+static uint8_t reverseBits(uint8_t ch) {
 	uint8_t r = 0;
 	for (int b = 0; b < 8; ++b) {
 		if (ch & (1 << b)) {
 			r |= (1 << (7 - b));
 		}
 	}
-	return r ^ 0x55;
+	return r;
+}
+
+static uint8_t decryptChar(uint8_t ch) {
+	return reverseBits(ch ^ 0x55);
+}
+
+static uint8_t encryptChar(uint8_t ch) {
+	return reverseBits(ch) ^ 0x55;
 }
 
 bool Game::handleProtectionScreen() {
@@ -847,6 +856,19 @@ bool Game::handleProtectionScreen() {
 	_menu._charVar5 = 0xE2;
 
 	// 5 codes per shape (a code is 6 characters long)
+	if (0) {
+		for (int shape = 0; shape < 30; ++shape) {
+			fprintf(stdout, "Shape #%2d\n", shape);
+			for (int code = 0; code < 5; ++code) {
+				const int offset = (shape * 5 + code) * 6;
+				fprintf(stdout, "\t code %d : ", code + 1);
+				for (int i = 0; i < 6; ++i) {
+					fprintf(stdout, "%c", decryptChar(_protectionCodeData[offset + i]));
+				}
+				fprintf(stdout, "\n");
+			}
+		}
+	}
 	const int shapeNum = getRandomNumber() % 30;
 	const int codeNum = getRandomNumber() % 5;
 	for (int16_t zoom = 2000; zoom > 0; zoom -= 100) {
@@ -894,7 +916,7 @@ bool Game::handleProtectionScreen() {
 				int charsCount = 0;
 				const uint8_t *p = _protectionCodeData + (shapeNum * 5 + codeNum) * kCodeLen;
 				for (int i = 0; i < len; ++i) {
-					if (decryptChar(codeText[i]) != p[i]) {
+					if (encryptChar(codeText[i]) != p[i]) {
 						++charsCount;
 						break;
 					}
