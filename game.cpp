@@ -55,7 +55,7 @@ void Game::run() {
 		break;
 	}
 
-	if (!g_options.bypass_protection) {
+	if (!g_options.bypass_protection && !_res.isMac()) {
 		while (!handleProtectionScreen());
 		if (_stub->_pi.quit) {
 			return;
@@ -822,8 +822,18 @@ bool Game::handleContinueAbort() {
 	return false;
 }
 
+static uint8_t decryptChar(uint8_t ch) {
+	uint8_t r = 0;
+	for (int b = 0; b < 8; ++b) {
+		if (ch & (1 << b)) {
+			r |= (1 << (7 - b));
+		}
+	}
+	return r ^ 0x55;
+}
+
 bool Game::handleProtectionScreen() {
-	bool valid = true;
+	bool valid = false;
 	_cut.prepare();
 	const int palOffset = _res.isAmiga() ? 32 : 0;
 	_cut.copyPalette(_protectionPal + palOffset, 0);
@@ -836,17 +846,18 @@ bool Game::handleProtectionScreen() {
 	_menu._charVar4 = 0xE5;
 	_menu._charVar5 = 0xE2;
 
-	int shapeNum = getRandomNumber() % 30;
-	for (int16_t zoom = 2000; zoom != 0; zoom -= 100) {
+	// 5 codes per shape (a code is 6 characters long)
+	const int shapeNum = getRandomNumber() % 30;
+	const int codeNum = getRandomNumber() % 5;
+	for (int16_t zoom = 2000; zoom > 0; zoom -= 100) {
 		_cut.drawProtectionShape(shapeNum, zoom);
 		_stub->copyRect(0, 0, _vid._w, _vid._h, _vid._tempLayer, _vid._w);
 		_stub->updateScreen(0);
 		_stub->sleep(30);
 	}
-	int codeNum = getRandomNumber() % 5;
-	_cut.drawProtectionShape(shapeNum, 1);
 	_vid.setTextPalette();
-	char codeText[7];
+	static const int kCodeLen = 6;
+	char codeText[kCodeLen + 1];
 	int len = 0;
 	do {
 		codeText[len] = '\0';
@@ -861,7 +872,7 @@ bool Game::handleProtectionScreen() {
 		char c = _stub->_pi.lastChar;
 		if (c != 0) {
 			_stub->_pi.lastChar = 0;
-			if (len < 6) {
+			if (len < kCodeLen) {
 				if (c >= 'a' && c <= 'z') {
 					c &= ~0x20;
 				}
@@ -880,21 +891,15 @@ bool Game::handleProtectionScreen() {
 		if (_stub->_pi.enter) {
 			_stub->_pi.enter = false;
 			if (len > 0) {
-				const uint8_t *p = _protectionCodeData + shapeNum * 0x1E + codeNum * 6;
+				int charsCount = 0;
+				const uint8_t *p = _protectionCodeData + (shapeNum * 5 + codeNum) * kCodeLen;
 				for (int i = 0; i < len; ++i) {
-					uint8_t r = 0;
-					uint8_t ch = codeText[i];
-					for (int b = 0; b < 8; ++b) {
-						if (ch & (1 << b)) {
-							r |= (1 << (7 - b));
-						}
-					}
-					r ^= 0x55;
-					if (r != *p++) {
-						valid = false;
+					if (decryptChar(codeText[i]) != p[i]) {
+						++charsCount;
 						break;
 					}
 				}
+				valid = (charsCount == kCodeLen);
 				break;
 			}
 		}
