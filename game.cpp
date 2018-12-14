@@ -1270,7 +1270,7 @@ void Game::drawAnimBuffer(uint8_t stateNum, AnimBufferState *state) {
 					break;
 				case kResourceTypeDOS:
 					if (!(state->dataPtr[-2] & 0x80)) {
-						decodeCharacterFrame(state->dataPtr, _res._scratchBuffer);
+						_vid.PC_decodeSpm(state->dataPtr, _res._scratchBuffer);
 						drawCharacter(_res._scratchBuffer, state->x, state->y, state->h, state->w, pge->flags);
 					} else {
 						drawCharacter(state->dataPtr, state->x, state->y, state->h, state->w, pge->flags);
@@ -1446,39 +1446,6 @@ void Game::drawObjectFrame(const uint8_t *bankDataPtr, const uint8_t *dataPtr, i
 		}
 	}
 	_vid.markBlockAsDirty(sprite_x, sprite_y, sprite_clipped_w, sprite_clipped_h, _vid._layerScale);
-}
-
-void Game::decodeCharacterFrame(const uint8_t *dataPtr, uint8_t *dstPtr) {
-	int n = READ_BE_UINT16(dataPtr); dataPtr += 2;
-	uint16_t len = n * 2;
-	uint8_t *dst = dstPtr + 0x400;
-	while (n--) {
-		uint8_t c = *dataPtr++;
-		dst[0] = (c & 0xF0) >> 4;
-		dst[1] = (c & 0x0F) >> 0;
-		dst += 2;
-	}
-	dst = dstPtr;
-	const uint8_t *src = dstPtr + 0x400;
-	do {
-		uint8_t c1 = *src++;
-		if (c1 == 0xF) {
-			uint8_t c2 = *src++;
-			uint16_t c3 = *src++;
-			if (c2 == 0xF) {
-				c1 = *src++;
-				c2 = *src++;
-				c3 = (c3 << 4) | c1;
-				len -= 2;
-			}
-			memset(dst, c2, c3 + 4);
-			dst += c3 + 4;
-			len -= 3;
-		} else {
-			*dst++ = c1;
-			--len;
-		}
-	} while (len != 0);
 }
 
 void Game::drawCharacter(const uint8_t *dataPtr, int16_t pos_x, int16_t pos_y, uint8_t a, uint8_t b, uint8_t flags) {

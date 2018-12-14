@@ -127,7 +127,6 @@ struct Game {
 	void drawPiege(AnimBufferState *state);
 	void drawObject(const uint8_t *dataPtr, int16_t x, int16_t y, uint8_t flags);
 	void drawObjectFrame(const uint8_t *bankDataPtr, const uint8_t *dataPtr, int16_t x, int16_t y, uint8_t flags);
-	void decodeCharacterFrame(const uint8_t *dataPtr, uint8_t *dstPtr);
 	void drawCharacter(const uint8_t *dataPtr, int16_t x, int16_t y, uint8_t a, uint8_t b, uint8_t flags);
 	int loadMonsterSprites(LivePGE *pge);
 	void playSound(uint8_t sfxId, uint8_t softVol);

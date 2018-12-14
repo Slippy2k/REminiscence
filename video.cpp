@@ -325,6 +325,33 @@ void Video::PC_decodeSpc(const uint8_t *src, int w, int h, uint8_t *dst) {
 	}
 }
 
+void Video::PC_decodeSpm(const uint8_t *dataPtr, uint8_t *dst) {
+	const int len = 2 * READ_BE_UINT16(dataPtr); dataPtr += 2;
+	uint8_t *dst2 = dst + 1024;
+	for (int i = 0; i < len; ++i) {
+		*dst2++ = dataPtr[i] >> 4;
+		*dst2++ = dataPtr[i] & 15;
+	}
+	const uint8_t *src = dst + 1024;
+	const uint8_t *end = src + len;
+	do {
+		const uint8_t code = *src++;
+		if (code == 0xF) {
+			uint8_t color = *src++;
+			int count = *src++;
+			if (color == 0xF) {
+				count = (count << 4) | *src++;
+				color = *src++;
+			}
+			count += 4;
+			memset(dst, color, count);
+			dst += count;
+		} else {
+			*dst++ = code;
+		}
+	} while (src < end);
+}
+
 static void AMIGA_planar16(uint8_t *dst, int w, int h, int depth, const uint8_t *src) {
 	const int pitch = w * 16;
 	const int planarSize = w * 2 * h;

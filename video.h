@@ -70,6 +70,7 @@ struct Video {
 	void PC_setLevelPalettes();
 	void PC_decodeIcn(const uint8_t *src, int num, uint8_t *dst);
 	void PC_decodeSpc(const uint8_t *src, int w, int h, uint8_t *dst);
+	void PC_decodeSpm(const uint8_t *dataPtr, uint8_t *dstPtr);
 	void AMIGA_decodeLev(int level, int room);
 	void AMIGA_decodeSpm(const uint8_t *src, uint8_t *dst);
 	void AMIGA_decodeIcn(const uint8_t *src, int num, uint8_t *dst);
