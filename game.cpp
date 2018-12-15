@@ -56,7 +56,7 @@ void Game::run() {
 	}
 
 	if (!g_options.bypass_protection && !_res.isMac()) {
-		while (!handleProtectionScreen()) {
+		while (!handleProtectionScreenShape()) {
 			if (_stub->_pi.quit) {
 				return;
 			}
@@ -93,6 +93,10 @@ void Game::run() {
 		_res.MAC_loadPersoData();
 		_res.MAC_loadSounds();
 		break;
+	}
+
+	if (0) {
+		handleProtectionScreenWords();
 	}
 
 	bool presentMenu = ((_res._type != kResourceTypeDOS) || _res.fileExists("MENU1.MAP"));
@@ -841,7 +845,7 @@ static uint8_t encryptChar(uint8_t ch) {
 	return reverseBits(ch) ^ 0x55;
 }
 
-bool Game::handleProtectionScreen() {
+bool Game::handleProtectionScreenShape() {
 	bool valid = false;
 	_cut.prepare();
 	const int palOffset = _res.isAmiga() ? 32 : 0;
@@ -928,6 +932,59 @@ bool Game::handleProtectionScreen() {
 	} while (!_stub->_pi.quit);
 	_vid.fadeOut();
 	return valid;
+}
+
+bool Game::handleProtectionScreenWords() {
+	_vid.setTextPalette();
+	_vid.setPalette0xF();
+
+	static const char *kText[] = {
+		"Enter the word found in the",
+		"following location in your",
+		"rulebook. (Do not count the",
+		"title header that appears on",
+		"all pages. Ignore captions",
+		"and header).",
+		0
+	};
+
+	for (int i = 0; kText[i]; ++i) {
+		_vid.drawString(kText[i], 24, 16 + i * Video::CHAR_H, 0xE5);
+	}
+	static const int icon_spr_w = 16;
+	static const int icon_spr_h = 16;
+	int icon_num = 31;
+	for (int y = 140; y < 140 + 5 * icon_spr_h; y += icon_spr_h) {
+		for (int x = 56; x < 56 + 9 * icon_spr_w; x += icon_spr_w) {
+			drawIcon(icon_num, x, y, 0xF);
+			++icon_num;
+		}
+	}
+
+	const uint8_t code = getRandomNumber() % 40;
+
+	const char *kSecurityCodeText = "SECURITY CODE";
+	_vid.drawString(kSecurityCodeText, 72 + (114 - strlen(kSecurityCodeText) * 8) / 2, 158, 0xE4);
+
+	const uint8_t *protectionData = _protectionWordData + code * 18;
+
+	char buf[16];
+	snprintf(buf, sizeof(buf), "PAGE %d", protectionData[0]);
+	_vid.drawString(buf, 69, 189, 0xE5);
+	snprintf(buf, sizeof(buf), "COLUMN %d", protectionData[1]);
+	_vid.drawString(buf, 69, 197, 0xE5);
+	snprintf(buf, sizeof(buf), "LINE %d", protectionData[2]);
+	_vid.drawString(buf, (protectionData[2] < 10) ? 141 : 133, 189, 0xE5);
+	snprintf(buf, sizeof(buf), "WORD %d", protectionData[3]);
+	_vid.drawString(buf, 141, 197, 0xE5);
+
+	do {
+		_vid.updateScreen();
+		_stub->sleep(50);
+		_stub->processEvents();
+	} while (!_stub->_pi.quit);
+	_vid.fadeOut();
+	return false;
 }
 
 void Game::printLevelCode() {
@@ -1933,19 +1990,13 @@ void Game::handleInventory() {
 			case kResourceTypeAmiga:
 			case kResourceTypeDOS: {
 					// draw inventory background
-					int icon_h = 5;
-					int icon_y = 140;
 					int icon_num = 31;
-					do {
-						int icon_x = 56;
-						int icon_w = 9;
-						do {
-							drawIcon(icon_num, icon_x, icon_y, 0xF);
+					for (int y = 140; y < 140 + 5 * icon_spr_h; y += icon_spr_h) {
+						for (int x = 56; x < 56 + 9 * icon_spr_w; x += icon_spr_w) {
+							drawIcon(icon_num, x, y, 0xF);
 							++icon_num;
-							icon_x += icon_spr_w;
-						} while (--icon_w);
-						icon_y += icon_spr_h;
-					} while (--icon_h);
+						}
+					}
 				}
 				if (_res._type == kResourceTypeAmiga) {
 					// draw outline rectangle

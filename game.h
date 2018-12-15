@@ -54,6 +54,7 @@ struct Game {
 	static const pge_OpcodeProc _pge_opcodeTable[];
 	static const uint8_t _pge_modKeysTable[];
 	static const uint8_t _protectionCodeData[];
+	static const uint8_t _protectionWordData[];
 	static const uint8_t _protectionPal[];
 
 	Cutscene _cut;
@@ -115,7 +116,8 @@ struct Game {
 	void showFinalScore();
 	bool handleConfigPanel();
 	bool handleContinueAbort();
-	bool handleProtectionScreen();
+	bool handleProtectionScreenShape();
+	bool handleProtectionScreenWords();
 	void printSaveStateCompleted();
 	void drawLevelTexts();
 	void drawStoryTexts();
