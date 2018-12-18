@@ -55,7 +55,7 @@ void Game::run() {
 		break;
 	}
 
-	if (!g_options.bypass_protection && !_res.isMac()) {
+	if (!g_options.bypass_protection && !g_options.enable_words_protection && !_res.isMac()) {
 		while (!handleProtectionScreenShape()) {
 			if (_stub->_pi.quit) {
 				return;
@@ -95,8 +95,12 @@ void Game::run() {
 		break;
 	}
 
-	if (0) {
-		handleProtectionScreenWords();
+	if (!g_options.bypass_protection && g_options.enable_words_protection && _res.isDOS()) {
+		while (!handleProtectionScreenWords()) {
+			if (_stub->_pi.quit) {
+				return;
+			}
+		}
 	}
 
 	bool presentMenu = ((_res._type != kResourceTypeDOS) || _res.fileExists("MENU1.MAP"));
@@ -935,8 +939,27 @@ bool Game::handleProtectionScreenShape() {
 }
 
 bool Game::handleProtectionScreenWords() {
+	bool valid = false;
+	static const int kWordsCount = 40;
+	if (0) {
+		for (int i = 0; i < kWordsCount * 18; i += 18) {
+			const uint8_t *data = _protectionWordData + i;
+			fprintf(stdout, "page %d column %d line %2d word %d : ", data[0], data[1], data[2], data[3]);
+			for (int j = 4; j < 18; ++j) {
+				const uint8_t ch = decryptChar(data[j]);
+				if (!(ch >= 'A' && ch <= 'Z')) {
+					break;
+				}
+				fprintf(stdout, "%c", ch);
+			}
+			fprintf(stdout, "\n");
+		}
+	}
+
 	_vid.setTextPalette();
 	_vid.setPalette0xF();
+
+	memset(_vid._frontLayer, 0, _vid._layerSize);
 
 	static const char *kText[] = {
 		"Enter the word found in the",
@@ -947,7 +970,6 @@ bool Game::handleProtectionScreenWords() {
 		"and header).",
 		0
 	};
-
 	for (int i = 0; kText[i]; ++i) {
 		_vid.drawString(kText[i], 24, 16 + i * Video::CHAR_H, 0xE5);
 	}
@@ -961,13 +983,11 @@ bool Game::handleProtectionScreenWords() {
 		}
 	}
 
-	const uint8_t code = getRandomNumber() % 40;
+	const uint8_t code = getRandomNumber() % kWordsCount;
+	const uint8_t *protectionData = _protectionWordData + code * 18;
 
 	const char *kSecurityCodeText = "SECURITY CODE";
 	_vid.drawString(kSecurityCodeText, 72 + (114 - strlen(kSecurityCodeText) * 8) / 2, 158, 0xE4);
-
-	const uint8_t *protectionData = _protectionWordData + code * 18;
-
 	char buf[16];
 	snprintf(buf, sizeof(buf), "PAGE %d", protectionData[0]);
 	_vid.drawString(buf, 69, 189, 0xE5);
@@ -978,13 +998,54 @@ bool Game::handleProtectionScreenWords() {
 	snprintf(buf, sizeof(buf), "WORD %d", protectionData[3]);
 	_vid.drawString(buf, 141, 197, 0xE5);
 
+	memcpy(_vid._tempLayer, _vid._frontLayer, _vid._layerSize);
+
+	static const int kCodeLen = 14;
+	char codeText[kCodeLen + 1];
+	int len = 0;
 	do {
+		memcpy(_vid._frontLayer, _vid._tempLayer, _vid._layerSize);
+		codeText[len] = '\0';
+		_vid.drawString(codeText, 72 + (114 - strlen(codeText) * 8) / 2, 166, 0xE3);
 		_vid.updateScreen();
 		_stub->sleep(50);
 		_stub->processEvents();
+		char c = _stub->_pi.lastChar;
+		if (c != 0) {
+			_stub->_pi.lastChar = 0;
+			if (len < kCodeLen) {
+				if (c >= 'a' && c <= 'z') {
+					c &= ~0x20;
+				}
+				if (c >= 'A' && c <= 'Z') {
+					codeText[len] = c;
+					++len;
+				}
+			}
+		}
+		if (_stub->_pi.backspace) {
+			_stub->_pi.backspace = false;
+			if (len > 0) {
+				--len;
+			}
+		}
+		if (_stub->_pi.enter) {
+			_stub->_pi.enter = false;
+			if (len > 0) {
+				int charsCount = 0;
+				for (int i = 0; i < len; ++i) {
+					if (encryptChar(codeText[i]) != protectionData[4 + i]) {
+						break;
+					}
+					++charsCount;
+				}
+				// words are padded with spaces
+				valid = decryptChar(protectionData[4 + charsCount]) == 0x20;
+			}
+		}
 	} while (!_stub->_pi.quit);
 	_vid.fadeOut();
-	return false;
+	return valid;
 }
 
 void Game::printLevelCode() {

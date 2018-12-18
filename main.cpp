@@ -85,6 +85,7 @@ const char *g_caption = "REminiscence";
 static void initOptions() {
 	// defaults
 	g_options.bypass_protection = true;
+	g_options.enable_words_protection = false;
 	g_options.enable_password_menu = false;
 	g_options.enable_language_selection = false;
 	g_options.fade_out_palette = true;
@@ -100,6 +101,7 @@ static void initOptions() {
 		bool *value;
 	} opts[] = {
 		{ "bypass_protection", &g_options.bypass_protection },
+		{ "enable_words_protection", &g_options.enable_words_protection },
 		{ "enable_password_menu", &g_options.enable_password_menu },
 		{ "enable_language_selection", &g_options.enable_language_selection },
 		{ "fade_out_palette", &g_options.fade_out_palette },
