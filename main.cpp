@@ -36,6 +36,7 @@ static int detectVersion(FileSystem *fs) {
 	} table[] = {
 		{ "DEMO_UK.ABA", kResourceTypeDOS, "DOS (Demo)" },
 		{ "INTRO.SEQ", kResourceTypeDOS, "DOS CD" },
+		{ "MENU1SSI.MAP", kResourceTypeDOS, "DOS SSI" },
 		{ "LEVEL1.MAP", kResourceTypeDOS, "DOS" },
 		{ "LEVEL1.BNQ", kResourceTypeDOS, "DOS (Demo)" },
 		{ "LEVEL1.LEV", kResourceTypeAmiga, "Amiga" },
