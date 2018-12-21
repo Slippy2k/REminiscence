@@ -85,12 +85,12 @@ const char *g_caption = "REminiscence";
 static void initOptions() {
 	// defaults
 	g_options.bypass_protection = true;
-	g_options.enable_words_protection = false;
 	g_options.enable_password_menu = false;
 	g_options.enable_language_selection = false;
 	g_options.fade_out_palette = true;
 	g_options.use_text_cutscenes = false;
 	g_options.use_seq_cutscenes = true;
+	g_options.use_words_protection = false;
 	g_options.play_asc_cutscene = false;
 	g_options.play_caillou_cutscene = false;
 	g_options.play_metro_cutscene = false;
@@ -101,13 +101,13 @@ static void initOptions() {
 		bool *value;
 	} opts[] = {
 		{ "bypass_protection", &g_options.bypass_protection },
-		{ "enable_words_protection", &g_options.enable_words_protection },
 		{ "enable_password_menu", &g_options.enable_password_menu },
 		{ "enable_language_selection", &g_options.enable_language_selection },
 		{ "fade_out_palette", &g_options.fade_out_palette },
 		{ "use_tiledata", &g_options.use_tiledata },
 		{ "use_text_cutscenes", &g_options.use_text_cutscenes },
 		{ "use_seq_cutscenes", &g_options.use_seq_cutscenes },
+		{ "use_words_protection", &g_options.use_words_protection },
 		{ "play_asc_cutscene", &g_options.play_asc_cutscene },
 		{ "play_caillou_cutscene", &g_options.play_caillou_cutscene },
 		{ "play_metro_cutscene", &g_options.play_metro_cutscene },

@@ -55,7 +55,7 @@ void Game::run() {
 		break;
 	}
 
-	if (!g_options.bypass_protection && !g_options.enable_words_protection && !_res.isMac()) {
+	if (!g_options.bypass_protection && !g_options.use_words_protection && !_res.isMac()) {
 		while (!handleProtectionScreenShape()) {
 			if (_stub->_pi.quit) {
 				return;
@@ -95,7 +95,7 @@ void Game::run() {
 		break;
 	}
 
-	if (!g_options.bypass_protection && g_options.enable_words_protection && _res.isDOS()) {
+	if (!g_options.bypass_protection && g_options.use_words_protection && _res.isDOS()) {
 		while (!handleProtectionScreenWords()) {
 			if (_stub->_pi.quit) {
 				return;

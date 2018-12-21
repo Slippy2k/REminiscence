@@ -112,13 +112,13 @@ enum WidescreenMode {
 
 struct Options {
 	bool bypass_protection;
-	bool enable_words_protection;
 	bool enable_password_menu;
 	bool enable_language_selection;
 	bool fade_out_palette;
 	bool use_tiledata;
 	bool use_text_cutscenes;
 	bool use_seq_cutscenes;
+	bool use_words_protection;
 	bool play_asc_cutscene;
 	bool play_caillou_cutscene;
 	bool play_metro_cutscene;
