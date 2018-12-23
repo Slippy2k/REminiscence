@@ -324,6 +324,16 @@ void File::writeByte(uint8_t b) {
 	write(&b, 1);
 }
 
+void File::writeUint16LE(uint16_t n) {
+	writeByte(n & 0xFF);
+	writeByte(n >> 8);
+}
+
+void File::writeUint32LE(uint32_t n) {
+	writeUint16LE(n & 0xFFFF);
+	writeUint16LE(n >> 16);
+}
+
 void File::writeUint16BE(uint16_t n) {
 	writeByte(n >> 8);
 	writeByte(n & 0xFF);

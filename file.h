@@ -32,6 +32,8 @@ struct File {
 	uint32_t readUint32BE();
 	uint32_t write(const void *ptr, uint32_t size);
 	void writeByte(uint8_t b);
+	void writeUint16LE(uint16_t n);
+	void writeUint32LE(uint32_t n);
 	void writeUint16BE(uint16_t n);
 	void writeUint32BE(uint32_t n);
 };
