@@ -116,8 +116,6 @@ struct Game {
 	void showFinalScore();
 	bool handleConfigPanel();
 	bool handleContinueAbort();
-	bool handleProtectionScreenShape();
-	bool handleProtectionScreenWords();
 	void printSaveStateCompleted();
 	void drawLevelTexts();
 	void drawStoryTexts();
@@ -136,6 +134,9 @@ struct Game {
 	void changeLevel();
 	void handleInventory();
 
+	// protection
+	bool handleProtectionScreenShape();
+	bool handleProtectionScreenWords();
 
 	// pieges
 	bool _pge_playAnimSound;
