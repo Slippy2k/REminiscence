@@ -80,6 +80,18 @@ bool Game::handleProtectionScreenShape() {
 		_stub->sleep(30);
 	}
 	_vid.setTextPalette();
+
+	char codeNumber[8];
+	if (_res.isAmiga()) {
+		static const uint8_t kNumberLen = 6;
+		for (int i = 0; i < kNumberLen; ++i) {
+			codeNumber[i] = _protectionNumberData[(shapeNum * 5 + codeNum) * kNumberLen + i] ^ 0xD7;
+		}
+		codeNumber[kNumberLen] = 0;
+	} else {
+		snprintf(codeNumber, sizeof(codeNumber), "CODE %d", codeNum + 1);
+	}
+
 	static const int kCodeLen = 6;
 	char codeText[kCodeLen + 1];
 	int len = 0;
@@ -87,8 +99,8 @@ bool Game::handleProtectionScreenShape() {
 		codeText[len] = '\0';
 		memcpy(_vid._frontLayer, _vid._tempLayer, _vid._layerSize);
 		_vid.drawString("PROTECTION", 11 * Video::CHAR_W, 2 * Video::CHAR_H, _menu._charVar2);
-		char buf[20];
-		snprintf(buf, sizeof(buf), "CODE %d :  %s", codeNum + 1, codeText);
+		char buf[32];
+		snprintf(buf, sizeof(buf), "%s :  %s", codeNumber, codeText);
 		_vid.drawString(buf, 8 * Video::CHAR_W, 23 * Video::CHAR_H, _menu._charVar2);
 		_vid.updateScreen();
 		_stub->sleep(50);

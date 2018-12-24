@@ -55,6 +55,7 @@ struct Game {
 	static const uint8_t _pge_modKeysTable[];
 	static const uint8_t _protectionCodeData[];
 	static const uint8_t _protectionWordData[];
+	static const uint8_t _protectionNumberData[];
 	static const uint8_t _protectionPal[];
 
 	Cutscene _cut;

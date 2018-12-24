@@ -83,13 +83,34 @@ static void dumpProtectionText(FILE *fp) {
 	}
 }
 
+/* Flashback _protectionCodeData */
+static void dumpProtectionCodeData(FILE *fp) {
+	static const int kPos = 0x2A498;
+	static const int kLen = 900;
+
+	dumpBinary(fp, kPos, kPos + kLen - 1);
+	{
+		int i;
+
+		fseek(fp, kPos, SEEK_SET);
+		for (i = 0; i < kLen; ++i) {
+			if ((i % 6) == 0) {
+				fprintf(stdout, "\n");
+			}
+			const uint8_t ch = fgetc(fp) ^ 0xD7;
+			fprintf(stdout, "%c", ch);
+		}
+	}
+}
+
 int main(int argc, char *argv[]) {
 	if (argc >= 2) {
 		int count = 0;
 		FILE *fp = fopen(argv[1], "rb");
 		if (fp) {
-			dumpProtectionData(fp);
-			dumpProtectionText(fp);
+			// dumpProtectionData(fp);
+			// dumpProtectionText(fp);
+			dumpProtectionCodeData(fp);
 			fclose(fp);
 		}
 	}
