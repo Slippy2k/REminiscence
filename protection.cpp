@@ -46,7 +46,16 @@ bool Game::handleProtectionScreenShape() {
 			fprintf(stdout, "Shape #%2d\n", shape);
 			for (int code = 0; code < 5; ++code) {
 				const int offset = (shape * 5 + code) * 6;
-				fprintf(stdout, "\t code %d : ", code + 1);
+				if (_res.isAmiga()) {
+					fprintf(stdout, "\t ");
+					for (int i = 0; i < 6; ++i) {
+						const char chr = _protectionNumberData[(shape * 5 + code) * 6 + i] ^ 0xD7;
+						fprintf(stdout, "%c", chr);
+					}
+					fprintf(stdout, " : ");
+				} else {
+					fprintf(stdout, "\t code %d : ", code + 1);
+				}
 				for (int i = 0; i < 6; ++i) {
 					fprintf(stdout, "%c", decryptChar(_protectionCodeData[offset + i]));
 				}
