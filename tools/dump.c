@@ -87,7 +87,9 @@ static void dumpProtectionText(FILE *fp) {
 static void dumpProtectionCodeData(FILE *fp) {
 	static const int kPos = 0x2A498;
 	static const int kLen = 900;
+	int pos2;
 
+	// numbers stored first
 	dumpBinary(fp, kPos, kPos + kLen - 1);
 	{
 		int i;
@@ -101,6 +103,9 @@ static void dumpProtectionCodeData(FILE *fp) {
 			fprintf(stdout, "%c", ch);
 		}
 	}
+	// codes stored second
+	pos2 = kPos + kLen;
+	dumpBinary(fp, pos2, pos2 + kLen - 1);
 }
 
 int main(int argc, char *argv[]) {

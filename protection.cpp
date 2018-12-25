@@ -49,15 +49,18 @@ bool Game::handleProtectionScreenShape() {
 				if (_res.isAmiga()) {
 					fprintf(stdout, "\t ");
 					for (int i = 0; i < 6; ++i) {
-						const char chr = _protectionNumberData[(shape * 5 + code) * 6 + i] ^ 0xD7;
+						const char chr = _protectionNumberDataAmiga[(shape * 5 + code) * 6 + i] ^ 0xD7;
 						fprintf(stdout, "%c", chr);
 					}
 					fprintf(stdout, " : ");
+					for (int i = 0; i < 6; ++i) {
+						fprintf(stdout, "%c", _protectionCodeDataAmiga[offset + i] ^ 0xD7);
+					}
 				} else {
 					fprintf(stdout, "\t code %d : ", code + 1);
-				}
-				for (int i = 0; i < 6; ++i) {
-					fprintf(stdout, "%c", decryptChar(_protectionCodeData[offset + i]));
+					for (int i = 0; i < 6; ++i) {
+						fprintf(stdout, "%c", decryptChar(_protectionCodeData[offset + i]));
+					}
 				}
 				fprintf(stdout, "\n");
 			}
@@ -94,7 +97,7 @@ bool Game::handleProtectionScreenShape() {
 	if (_res.isAmiga()) {
 		static const uint8_t kNumberLen = 6;
 		for (int i = 0; i < kNumberLen; ++i) {
-			codeNumber[i] = _protectionNumberData[(shapeNum * 5 + codeNum) * kNumberLen + i] ^ 0xD7;
+			codeNumber[i] = _protectionNumberDataAmiga[(shapeNum * 5 + codeNum) * kNumberLen + i] ^ 0xD7;
 		}
 		codeNumber[kNumberLen] = 0;
 	} else {
@@ -137,11 +140,15 @@ bool Game::handleProtectionScreenShape() {
 			_stub->_pi.enter = false;
 			if (len > 0) {
 				int charsCount = 0;
-				const uint8_t *p = _protectionCodeData + (shapeNum * 5 + codeNum) * kCodeLen;
-				for (int i = 0; i < len; ++i) {
-					if (encryptChar(codeText[i]) != p[i]) {
+				if (_res.isAmiga()) {
+					const uint8_t *p = _protectionCodeDataAmiga + (shapeNum * 5 + codeNum) * kCodeLen;
+					for (int i = 0; i < len && (codeText[i] ^ 0xD7) == p[i]; ++i) {
 						++charsCount;
-						break;
+					}
+				} else {
+					const uint8_t *p = _protectionCodeData + (shapeNum * 5 + codeNum) * kCodeLen;
+					for (int i = 0; i < len && encryptChar(codeText[i]) == p[i]; ++i) {
+						++charsCount;
 					}
 				}
 				valid = (charsCount == kCodeLen);
