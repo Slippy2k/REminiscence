@@ -72,7 +72,23 @@ if type == 'DOS' or type == 'Amiga':
 			fnt.drawString(s, img, xs, ys)
 		y += 16 + 128 + 16
 
-	img.save('copy_protection_%s.png' % type.lower())
+	# relayout 5x6
+	w = SHEET_W * 5
+	h = SHEET_H / 5
+	img2 = Image.new('RGB', [w, h], 0)
+	x2 = 0
+	y2 = 0
+	for count in range(SHAPES_COUNT):
+		h = SHEET_H / SHAPES_COUNT
+		y = count * h
+		tmp = img.copy().crop((0, y, SHEET_W - 1, y + h - 1))
+		img2.paste(tmp, (x2, y2))
+		x2 += SHEET_W
+		if x2 == w:
+			x2 = 0
+			y2 += h
+
+	img2.save('copy_protection_%s.png' % type.lower())
 
 elif type == 'SSI':
 
