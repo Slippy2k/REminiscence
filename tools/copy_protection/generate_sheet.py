@@ -103,9 +103,9 @@ elif type == 'SSI':
 	img.paste(screenshot_img, (64, 0))
 	y = 224
 	for word in words:
-		xs = 0
+		xs = 8
 		ys = y
-		fnt.drawString(word, img, 0, y)
+		fnt.drawString(word, img, xs, ys)
 		y += 4 + CHAR_H
 
 	img.save('copy_protection_ssi.png')
