@@ -1,4 +1,6 @@
 
+#include <queue>
+#include <assert.h>
 #include <dirent.h>
 #include <getopt.h>
 #include <stdio.h>
@@ -9,6 +11,9 @@
 #include <unistd.h>
 #include <libmodplug/modplug.h>
 #include "file.h"
+extern "C" {
+#include "unpack.h"
+}
 
 static const char *OUT = "out";
 
@@ -170,11 +175,138 @@ static void convertAmigaModDir(const char *dir) {
 	}
 }
 
+struct LevelMapScreen {
+	uint8_t num;
+	int x, y;
+};
+
+enum {
+	GRID_UP    = 0x00,
+	GRID_DOWN  = 0x40,
+	GRID_RIGHT = 0x80,
+	GRID_LEFT  = 0xC0
+};
+
+static const int kLevelMapMaxW = 128;
+static const int kLevelMapMaxH = 128;
+
+static const int kMaxScreens = 64;
+
+static uint8_t levelMap[kLevelMapMaxH][kLevelMapMaxW];
+
+static const uint8_t firstRoomLevel[] = { 27, 16, 56, 0, 52, 0, 29 };
+
+static bool isScreenValid(const uint8_t *grid, int num) {
+	// a room is valid if it has a least a neighboor
+	int top = grid[GRID_UP + num];
+	int bottom = grid[GRID_DOWN + num];
+	int right = grid[GRID_RIGHT + num];
+	int left = grid[GRID_LEFT + num];
+	return (top & 0x80) == 0 || (bottom & 0x80) == 0 || (right & 0x80) == 0 || (left & 0x80) == 0;
+}
+
+static int findScreen(const uint8_t *grid, const bool *visited) {
+	for (int i = 0; i < kMaxScreens; ++i) {
+		if (!visited[i] && isScreenValid(grid, i)) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+static void generateLevelMap(File &f, int level) {
+	const uint32_t size = f.size();
+	uint8_t *tmp = (uint8_t *)malloc(size);
+	if (tmp) {
+		f.read(tmp, size);
+		uint8_t gridData[0x1D00];
+		if (delphine_unpack(tmp, size, gridData)) {
+			bool visited[kMaxScreens];
+			memset(visited, 0, sizeof(visited));
+			int xmin, xmax;
+			int ymin, ymax;
+			// TODO: handle multiple room maps (eg. level2)
+			std::queue<LevelMapScreen> q;
+			LevelMapScreen lms;
+			lms.num = (level != -1) ? firstRoomLevel[level] : findScreen(gridData, visited);
+			lms.x = xmin = xmax = kLevelMapMaxW / 2;
+			lms.y = ymin = ymax = kLevelMapMaxH / 2;
+			q.push(lms);
+			while (!q.empty()) {
+				int num = q.front().num;
+				int x = q.front().x;
+				int y = q.front().y;
+				q.pop();
+				if (visited[num]) {
+					continue;
+				}
+				if (x < xmin) {
+					xmin = x;
+				} else if (x > xmax) {
+					xmax = x;
+				}
+				if (y < ymin) {
+					ymin = y;
+				} else if (y > ymax) {
+					ymax = y;
+				}
+				levelMap[y][x] = num;
+				visited[num] = true;
+				int top = gridData[GRID_UP + num];
+				if ((top & 0x80) == 0) {
+					assert(y > 0);
+					lms.num = top;
+					lms.x = x;
+					lms.y = y - 1;
+					q.push(lms);
+				}
+				int bottom = gridData[GRID_DOWN + num];
+				if ((bottom & 0x80) == 0) {
+					assert(y < kLevelMapMaxH - 1);
+					lms.num = bottom;
+					lms.x = x;
+					lms.y = y + 1;
+					q.push(lms);
+				}
+				int right = gridData[GRID_RIGHT + num];
+				if ((right & 0x80) == 0) {
+					assert(x < kLevelMapMaxW - 1);
+					lms.num = right;
+					lms.x = x + 1;
+					lms.y = y;
+					q.push(lms);
+				}
+				int left = gridData[GRID_LEFT + num];
+				if ((left & 0x80) == 0) {
+					assert(x > 0);
+					lms.num = left;
+					lms.x = x - 1;
+					lms.y = y;
+					q.push(lms);
+				}
+			}
+			fprintf(stdout, "levelMap %d %d\n", (ymax - ymin + 1), (xmax - xmin + 1));
+			for (int y = ymin; y <= ymax; ++y) {
+				for (int x = xmin; x <= xmax; ++x) {
+					if (levelMap[y][x] == 255) {
+						fprintf(stdout, "    ");
+					} else {
+						fprintf(stdout, " %02x ", levelMap[y][x]);
+					}
+				}
+				fprintf(stdout, "\n");
+			}
+		}
+		free(tmp);
+	}
+}
+
 int main(int argc, char *argv[]) {
 	while (1) {
 		static struct option options[] = {
 			{ "voice", required_argument, 0, 1 },
 			{ "music", required_argument, 0, 2 },
+			{ "levelmap", required_argument, 0, 3 },
 			{ 0, 0, 0, 0 }
 		};
 		int index;
@@ -200,6 +332,21 @@ int main(int argc, char *argv[]) {
 					fprintf(stderr, "'%s' is not a directory\n", optarg);
 				} else {
 					convertAmigaModDir(optarg);
+				}
+			}
+			break;
+		case 3:
+			{
+				File f;
+				if (!f.open(optarg, "rb")) {
+					fprintf(stderr, "Unable to open '%s' for reading\n", optarg);
+				} else {
+					int levelNum = -1;
+					const char *ext = strrchr(optarg, '.');
+					if (ext && strcasecmp(ext, ".CT") == 0) {
+						levelNum = ext[-1] - '1';
+					}
+					generateLevelMap(f, levelNum);
 				}
 			}
 			break;
