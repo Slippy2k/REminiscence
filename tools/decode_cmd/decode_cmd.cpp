@@ -49,10 +49,10 @@ static void printOpcode(uint16_t addr, uint8_t opcode, int args[16]) {
 		fprintf(_out, "op_refreshScreen %d", args[0]);
 		break;
 	case op_waitForSync:
-		fprintf(_out, "op_waitForSync");
+		fprintf(_out, "op_waitForSync %d", args[0]);
 		break;
 	case op_drawShape:
-		fprintf(_out, "op_drawShape shape:%d", args[0]);
+		fprintf(_out, "op_drawShape shape:%d", args[0] & 0xFFF);
 		break;
 	case op_setPalette:
 		fprintf(_out, "op_setPalette src:%d dst:%d", args[0], args[1]);
@@ -73,16 +73,25 @@ static void printOpcode(uint16_t addr, uint8_t opcode, int args[16]) {
 		fprintf(_out, "op_refreshAll");
 		break;
 	case op_drawShapeScale:
-		fprintf(_out, "op_drawShapeScale");
+		fprintf(_out, "op_drawShapeScale shape:%d", args[0] & 0xFFF);
+		if (args[0] & 0x8000) {
+			fprintf(_out, " x:%d y:%d", args[1], args[2]);
+		}
+		fprintf(_out, " zoom:%d ix:%d iy:%d", args[3], args[4], args[5]);
 		break;
 	case op_drawShapeScaleRotate:
-		fprintf(_out, "op_drawShapeScaleRotate");
+		fprintf(_out, "op_drawShapeScaleRotate shape:%d", args[0] & 0xFFF);
+		if (args[0] & 0x8000) {
+			fprintf(_out, " x:%d y:%d", args[1], args[2]);
+		}
+		fprintf(_out, " zoom:%d ix:%d iy:%d", args[3], args[4], args[5]);
+		fprintf(_out, " r1:%d r2:%d r3:%d", args[6], args[7], args[8]);
 		break;
 	case op_drawCreditsText:
 		fprintf(_out, "op_drawCreditsText");
 		break;
 	case op_drawStringAtPos:
-		fprintf(_out, "op_drawStringAtPos id:%d", args[0]);
+		fprintf(_out, "op_drawStringAtPos id:%d x:%d y:%d", args[0], args[1], args[2]);
 		break;
 	case op_handleKeys:
 		fprintf(_out, "op_handleKeys");
@@ -97,12 +106,13 @@ static int parse(const uint8_t *buf, uint32_t size) {
 	const uint8_t *p = buf;
 	while (p < buf + size) {
 		uint16_t addr = p - buf;
-		int a, b, c, d, e, f;
+		int a, b, c, d, e, f, g, h, i;
 		uint8_t op = *p++;
 		if (op & 0x80) {
+			fprintf(stdout, "// END\n");
 			break;
 		}
-		a = b = c = d = e = f = 0;
+		a = b = c = d = e = f = g = h = i = 0;
 		op >>= 2;
 		switch (op) {
 		case op_markCurPos:
@@ -127,7 +137,7 @@ static int parse(const uint8_t *buf, uint32_t size) {
 		case op_markCurPos2:
 			break;
 		case op_drawStringAtBottom:
-			a = *p++;
+			a = readWord(p); p += 2;
 			break;
 		case op_nop:
 			break;
@@ -153,7 +163,30 @@ static int parse(const uint8_t *buf, uint32_t size) {
 			e = *p++;
 			f = *p++;
 			break;
-//		case op_drawShapeScaleRotate:
+		case op_drawShapeScaleRotate:
+			a = readWord(p); p += 2;
+			if (a & 0x8000) {
+				b = (int16_t)readWord(p); p += 2;
+				c = (int16_t)readWord(p); p += 2;
+			}
+			d = 512;
+			if (a & 0x4000) {
+				d += readWord(p); p += 2;
+			}
+			e = *p++;
+			f = *p++;
+			g = readWord(p); p += 2;
+			if (a & 0x2000) {
+				h = readWord(p); p += 2;
+			} else {
+				h = 180;
+			}
+			if (a & 0x1000) {
+				i = readWord(p); p += 2;
+			} else {
+				i = 90;
+			}
+			break;
 		case op_drawCreditsText:
 			break;
 		case op_drawStringAtPos:
@@ -173,7 +206,7 @@ static int parse(const uint8_t *buf, uint32_t size) {
 			fprintf(stderr, "Invalid opcode %d at 0x%04x\n", op, addr);
 			break;
 		}
-		int args[6] = { a, b, c, d, e, f };
+		int args[9] = { a, b, c, d, e, f, g, h, i };
 		visitOpcode(addr, op, args);
 	}
 	return 0;
