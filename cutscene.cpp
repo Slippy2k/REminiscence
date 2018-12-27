@@ -234,7 +234,6 @@ void Cutscene::drawProtectionShape(uint8_t shapeNum, int16_t zoom) {
 	int16_t x = 0;
 	int16_t y = 0;
 	zoom += 512;
-	setRotationTransform(0, 180, 90);
 
 	const uint8_t *shapeOffsetTable    = _protectionShapeData + READ_BE_UINT16(_protectionShapeData + 0x02);
 	const uint8_t *shapeDataTable      = _protectionShapeData + READ_BE_UINT16(_protectionShapeData + 0x0E);
@@ -256,7 +255,7 @@ void Cutscene::drawProtectionShape(uint8_t shapeNum, int16_t zoom) {
 		}
 		_hasAlphaColor = (verticesOffset & 0x4000) != 0;
 		_primitiveColor = 0xC0 + *shapeData++;
-		drawShapeScaleRotate(p, zoom, dx, dy, x, y, 0, 0);
+		drawShapeScale(p, zoom, dx, dy, x, y, 0, 0);
 		++_shape_count;
 	}
 }
