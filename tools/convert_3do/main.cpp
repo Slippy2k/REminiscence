@@ -44,10 +44,6 @@ static void uyvy_to_rgb565(const uint8_t *in, int len, uint16_t *out) {
 	}
 }
 
-static uint16_t swap16(uint16_t v) {
-	return ((v & 255) << 8) | (v >> 8);
-}
-
 static uint16_t rgb555_to_565(uint16_t color) {
 	const int r = (color >> 10) & 31;
 	const int g = (color >>  5) & 31;
@@ -200,7 +196,7 @@ static void decodeCel_PDAT(const struct ccb_t *ccb, FILE *fp, uint32_t size) {
 					for (int i = 0; i < count; ++i) {
 						if (bpp == 16) {
 							const uint16_t color = decodeCel_readBits(fp, ccbPRE0_bitsPerPixel);
-							*(uint16_t *)dst = rgb555_to_565(color);
+							*(uint16_t *)dst = color;
 							dst += 2;
 						} else {
 							const uint8_t color = decodeCel_readBits(fp, ccbPRE0_bitsPerPixel);
@@ -215,7 +211,7 @@ static void decodeCel_PDAT(const struct ccb_t *ccb, FILE *fp, uint32_t size) {
 					if (bpp == 16) {
 						const uint16_t color = decodeCel_readBits(fp, ccbPRE0_bitsPerPixel);
 						for (int i = 0; i < count; ++i) {
-							*(uint16_t *)dst = rgb555_to_565(color);
+							*(uint16_t *)dst = color;
 							dst += 2;
 						}
 					} else {
@@ -232,7 +228,7 @@ static void decodeCel_PDAT(const struct ccb_t *ccb, FILE *fp, uint32_t size) {
 			fseek(fp, pos + align, SEEK_SET);
 		}
 	} else {
-		fprintf(stderr, "Cel_PDAT - Unhandled image flags 0x%x\n", ccb->flags);
+		fread(_bitmapBuffer, 1, ccb->height * ccb->width * bpp / 8, fp);
 	}
 }
 
@@ -301,7 +297,6 @@ static void decodeCel(FILE *fp, const char *fname) {
 	}
 	int bpp = _cel_bitsPerPixelLookupTable[ccb.pre0 & 7];
 	fprintf(stdout, "tga width %d height %d bpp %d\n", ccb.width, ccb.height, bpp);
-	if (bpp < 8) bpp = 8;
 	struct TgaFile *tga = tgaOpen(fname, ccb.width, ccb.height, bpp);
 	if (tga) {
 		if (bpp == 8) {
