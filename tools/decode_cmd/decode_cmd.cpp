@@ -19,22 +19,22 @@ static uint16_t readWord(const uint8_t *p) {
 
 enum {
 	/* 0x00 */
-	op_markCurPos,
-	op_refreshScreen,
-	op_waitForSync,
-	op_drawShape,
+	op_markCurPos, // _delay = 5, update palette, flip graphics buffer
+	op_refreshScreen, // set _clearScreen, if 0 clear by copying _pageC and use 2nd palette, otherwise clear with 0xC0 and use first palette
+	op_waitForSync, // _delay = n * 4
+	op_drawShape, // if _clearScreen != 0, page1 is copied to pageC
 	/* 0x04 */
 	op_setPalette,
-	op_markCurPos2,
-	op_drawStringAtBottom,
+	op_markCurPos2, // same as 0x00
+	op_drawCaptionString,
 	op_nop,
 	/* 0x08 */
-	op_skip3,
-	op_refreshAll,
+	op_skip3, // ignored 3 bytes
+	op_refreshAll, // same as 0x00 + updateKeys (0x0E)
 	op_drawShapeScale,
 	op_drawShapeScaleRotate,
 	/* 0x0C */
-	op_drawCreditsText,
+	op_drawCreditsText, // _delay = 10, update palette, copy page0 to page1
 	op_drawStringAtPos,
 	op_handleKeys
 };
@@ -53,6 +53,9 @@ static void printOpcode(uint16_t addr, uint8_t opcode, int args[16]) {
 		break;
 	case op_drawShape:
 		fprintf(_out, "op_drawShape shape:%d", args[0] & 0xFFF);
+		if (args[0] & 0x8000) {
+			fprintf(_out, " x:%d y:%d", args[1], args[2]);
+		}
 		break;
 	case op_setPalette:
 		fprintf(_out, "op_setPalette src:%d dst:%d", args[0], args[1]);
@@ -60,8 +63,8 @@ static void printOpcode(uint16_t addr, uint8_t opcode, int args[16]) {
 	case op_markCurPos2:
 		fprintf(_out, "op_markCurPos2");
 		break;
-	case op_drawStringAtBottom:
-		fprintf(_out, "op_drawStringAtBottom id:%d", args[0]);
+	case op_drawCaptionString:
+		fprintf(_out, "op_drawCaptionString id:%d", args[0]);
 		break;
 	case op_nop:
 		fprintf(_out, "op_nop");
@@ -136,7 +139,7 @@ static int parse(const uint8_t *buf, uint32_t size) {
 			break;
 		case op_markCurPos2:
 			break;
-		case op_drawStringAtBottom:
+		case op_drawCaptionString:
 			a = readWord(p); p += 2;
 			break;
 		case op_nop:
