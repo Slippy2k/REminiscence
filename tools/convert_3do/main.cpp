@@ -130,6 +130,13 @@ struct ccb_t {
 	uint32_t height;
 };
 
+struct anim_t {
+	uint32_t version;
+	uint32_t type;
+	uint32_t frames;
+	uint32_t rate;
+};
+
 static const uint8_t _cel_bitsPerPixelLookupTable[8] = {
         0, 1, 2, 4, 6, 8, 16, 0
 };
@@ -229,17 +236,20 @@ static void decodeCel_PDAT(const struct ccb_t *ccb, FILE *fp, uint32_t size) {
 	}
 }
 
-static void decodeCel(FILE *fp) {
-	ccb_t ccb;
+static ccb_t ccb;
+static int plutSize;
+
+static void decodeCel(FILE *fp, const char *fname) {
 	uint16_t rgb555[256];
-	int plutSize = 0;
 	while (1) {
 		const uint32_t pos = ftell(fp);
-		char tag[4];
+		char tag[5];
 		const uint32_t size = readTag(fp, tag);
 		if (feof(fp)) {
 			break;
 		}
+		tag[4] = 0;
+		fprintf(stdout, "Found tag '%s' size %d\n", tag, size);
 		if (memcmp(tag, "CCB ", 4) == 0) {
 			ccb.version = freadUint32BE(fp);
 			ccb.flags = freadUint32BE(fp);
@@ -282,14 +292,17 @@ static void decodeCel(FILE *fp) {
 			plutSize = count;
 		} else if (memcmp(tag, "PDAT", 4) == 0) {
 			decodeCel_PDAT(&ccb, fp, size);
+			// stop on first PDAT
+			break;
 		} else {
 			fprintf(stderr, "Unhandled tag '%c%c%c%c' size %d\n", tag[0], tag[1], tag[2], tag[3], size);
 		}
 		fseek(fp, pos + size, SEEK_SET);
 	}
 	int bpp = _cel_bitsPerPixelLookupTable[ccb.pre0 & 7];
+	fprintf(stdout, "tga width %d height %d bpp %d\n", ccb.width, ccb.height, bpp);
 	if (bpp < 8) bpp = 8;
-	struct TgaFile *tga = tgaOpen("ccb.tga", ccb.width, ccb.height, bpp);
+	struct TgaFile *tga = tgaOpen(fname, ccb.width, ccb.height, bpp);
 	if (tga) {
 		if (bpp == 8) {
 			assert(plutSize != 0);
@@ -316,13 +329,31 @@ static void decodeCel(FILE *fp) {
 			tgaWritePixelsData(tga, _bitmapBuffer, ccb.width * ccb.height * bpp / 8);
 		} else if (bpp == 16) {
 			const int len = ccb.width * ccb.height * sizeof(uint16_t);
-			// uyvy_to_rgb555(_bitmapBuffer, len, (uint16_t *)_rgbBuffer);
-			// tgaWritePixelsData(tga, _rgbBuffer, len);
 			tgaWritePixelsData(tga, _bitmapBuffer, len);
 		} else {
 			fprintf(stderr, "Unhandled bpp %d\n", bpp);
 		}
 		tgaClose(tga);
+	}
+}
+
+static void decodeAnim(FILE *fp) {
+	char tag[4];
+	const uint32_t size = readTag(fp, tag);
+	assert(memcmp(tag, "ANIM", 4) == 0);
+	anim_t anim;
+	anim.version = freadUint32BE(fp);
+	anim.type = freadUint32BE(fp);
+	anim.frames = freadUint32BE(fp);
+	anim.rate = freadUint32BE(fp);
+	fprintf(stdout, "anim version %d type %d frames %d rate %d\n", anim.version, anim.type, anim.frames, anim.rate);
+	fseek(fp, size, SEEK_SET);
+	for (int i = 0; i < anim.frames; ++i) {
+		char name[16];
+
+		fprintf(stdout, "frame #%d at 0x%lx\n", i, ftell(fp));
+		snprintf(name, sizeof(name), "anim_%03d.tga", i);
+		decodeCel(fp, name);
 	}
 }
 
@@ -568,8 +599,11 @@ int main(int argc, char *argv[]) {
 			fread(buf, 4, 1, fp);
 			fseek(fp, 0, SEEK_SET);
 
-			if (memcmp(buf, "CCB ", 4) == 0) {
-				decodeCel(fp);
+			if (memcmp(buf, "ANIM", 4) == 0) {
+				decodeAnim(fp);
+				return 0;
+			} else if (memcmp(buf, "CCB ", 4) == 0) {
+				decodeCel(fp, "ccb.tga");
 				return 0;
 			} else if (memcmp(buf, "SHDR", 4) != 0) {
 				fprintf(stderr, "Unhandled file '%s'\n", argv[1]);
