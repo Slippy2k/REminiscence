@@ -61,6 +61,7 @@ struct SystemStub {
 	virtual bool hasWidescreen() const = 0;
 	virtual void setScreenSize(int w, int h) = 0;
 	virtual void setPalette(const uint8_t *pal, int n) = 0;
+	virtual void getPalette(uint8_t *pal, int n) = 0;
 	virtual void setPaletteEntry(int i, const Color *c) = 0;
 	virtual void getPaletteEntry(int i, Color *c) = 0;
 	virtual void setOverscanColor(int i) = 0;

@@ -59,6 +59,7 @@ struct SystemStub_SDL : SystemStub {
 	virtual bool hasWidescreen() const;
 	virtual void setScreenSize(int w, int h);
 	virtual void setPalette(const uint8_t *pal, int n);
+	virtual void getPalette(uint8_t *pal, int n);
 	virtual void setPaletteEntry(int i, const Color *c);
 	virtual void getPaletteEntry(int i, Color *c);
 	virtual void setOverscanColor(int i);
@@ -182,6 +183,14 @@ void SystemStub_SDL::setPalette(const uint8_t *pal, int n) {
 	assert(n <= 256);
 	for (int i = 0; i < n; ++i) {
 		setPaletteColor(i, pal[0], pal[1], pal[2]);
+		pal += 3;
+	}
+}
+
+void SystemStub_SDL::getPalette(uint8_t *pal, int n) {
+	assert(n <= 256);
+	for (int i = 0; i < n; ++i) {
+		SDL_GetRGB(_rgbPalette[i], _fmt, &pal[0], &pal[1], &pal[2]);
 		pal += 3;
 	}
 }

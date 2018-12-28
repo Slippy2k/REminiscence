@@ -68,14 +68,7 @@ bool Game::handleProtectionScreenShape() {
 	}
 	if (0) {
 		uint8_t palette[256 * 3];
-		memset(palette, 0, sizeof(palette));
-		for (int i = 0; i < 32; ++i) {
-			Color c;
-			_stub->getPaletteEntry(0xC0 + i, &c);
-			palette[(0xC0 + i) * 3] = c.r;
-			palette[(0xC0 + i) * 3 + 1] = c.g;
-			palette[(0xC0 + i) * 3 + 2] = c.b;
-		}
+		_stub->getPalette(palette, 256);
 		for (int shape = 0; shape < 30; ++shape) {
 			_cut.drawProtectionShape(shape, 0);
 			char fname[32];
