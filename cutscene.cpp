@@ -1151,6 +1151,8 @@ void Cutscene::play() {
 		uint16_t cutOff  = _offsetsTable[_id * 2 + 1];
 		if (cutName == 0xFFFF) {
 			switch (_id) {
+			case 8: // save checkpoints
+				break;
 			case 19:
 				if (g_options.play_serrure_cutscene) {
 					cutName = 31; // SERRURE
@@ -1168,6 +1170,9 @@ void Cutscene::play() {
 				if (g_options.play_metro_cutscene) {
 					cutName = 14; // METRO
 				}
+				break;
+			default:
+				warning("Disabled cutscene %d", _id);
 				break;
 			}
 		}
@@ -1282,7 +1287,7 @@ void Cutscene::playSet(const uint8_t *p, int offset) {
 
 	offset = 10;
 	const int frames = READ_BE_UINT16(p + offset); offset += 2;
-	for (int i = 0; i < frames && !_stub->_pi.quit; ++i) {
+	for (int i = 0; i < frames && !_stub->_pi.quit && !_interrupted; ++i) {
 		const uint32_t timestamp = _stub->getTimeStamp();
 
 		memset(_page1, 0xC0, _vid->_layerSize);
@@ -1337,5 +1342,9 @@ void Cutscene::playSet(const uint8_t *p, int offset) {
 		const int diff = 6 * TIMER_SLICE - (_stub->getTimeStamp() - timestamp);
 		_stub->sleep((diff < 16) ? 16 : diff);
 		_stub->processEvents();
+		if (_stub->_pi.backspace) {
+			_stub->_pi.backspace = false;
+			_interrupted = true;
+		}
 	}
 }
