@@ -377,6 +377,26 @@ static void decodeFontChr(FILE *fp) {
 	}
 }
 
+// 16x16x4bpp
+static void decodeIcons(FILE *fp) {
+	uint8_t buf[16 * 8];
+	int count = 0;
+	while (1) {
+		fread(buf, 1, sizeof(buf), fp);
+		if (feof(fp)) {
+			break;
+		}
+		fprintf(stdout, "// Icon #%d\n", count);
+		for (int y = 0; y < 16; ++y) {
+			for (int x = 0; x < 8; ++x) {
+				fprintf(stdout, "%02X", buf[y * 8 + x]);
+			}
+			fprintf(stdout, "\n");
+		}
+		++count;
+	}
+}
+
 #define MAX_TEXTS 54
 #define MAX_TEXT_LENGTH 256
 
@@ -582,6 +602,9 @@ int main(int argc, char *argv[]) {
 			if (ext) {
 				if (strcmp(ext, ".CHR") == 0) {
 					decodeFontChr(fp);
+					return 0;
+				} else if (strcmp(ext, ".3DO") == 0) {
+					decodeIcons(fp);
 					return 0;
 				} else if (strcmp(ext, ".BIN") == 0) {
 					decodeTextBin(fp);
