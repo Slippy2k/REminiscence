@@ -123,6 +123,7 @@ struct Options {
 	bool play_caillou_cutscene;
 	bool play_metro_cutscene;
 	bool play_serrure_cutscene;
+	bool play_carte_cutscene;
 };
 
 struct Color {

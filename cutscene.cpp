@@ -1171,6 +1171,11 @@ void Cutscene::play() {
 					cutName = 14; // METRO
 				}
 				break;
+			case 46:
+				if (g_options.play_carte_cutscene) {
+					cutName = 2; // CARTE
+				}
+				break;
 			default:
 				warning("Disabled cutscene %d", _id);
 				break;
