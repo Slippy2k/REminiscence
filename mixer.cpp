@@ -9,8 +9,9 @@
 #include "util.h"
 
 Mixer::Mixer(FileSystem *fs, SystemStub *stub)
-	: _stub(stub), _musicType(MT_NONE), _mod(this, fs), _ogg(this, fs), _sfx(this) {
+	: _stub(stub), _musicType(MT_NONE), _cpc(this, fs), _mod(this, fs), _ogg(this, fs), _sfx(this) {
 	_musicTrack = -1;
+	_backgroundMusicType = MT_NONE;
 }
 
 void Mixer::init() {
@@ -93,15 +94,20 @@ void Mixer::playMusic(int num) {
 			_musicTrack = num;
 			return;
 		}
+		if (_cpc.playTrack(num - MUSIC_TRACK)) {
+			_backgroundMusicType = _musicType = MT_CPC;
+			_musicTrack = num;
+			return;
+		}
 	}
 	if (num == 1) { // menu screen
-		if (_ogg.playTrack(2)) {
-			_musicType = MT_OGG;
+		if (_cpc.playTrack(2) || _ogg.playTrack(2)) {
+			_backgroundMusicType = _musicType = MT_OGG;
 			_musicTrack = 2;
 			return;
 		}
 	}
-	if (_musicType == MT_OGG && isMusicSfx(num)) { // do not play level action music with background music
+	if ((_musicType == MT_OGG || _musicType == MT_CPC) && isMusicSfx(num)) { // do not play level action music with background music
 		return;
 	}
 	if (isMusicSfx(num)) { // level action sequence
@@ -131,11 +137,24 @@ void Mixer::stopMusic() {
 	case MT_SFX:
 		_sfx.stop();
 		break;
+	case MT_CPC:
+		_cpc.pauseTrack();
+		break;
 	}
 	_musicType = MT_NONE;
 	if (_musicTrack != -1) {
-		_ogg.resumeTrack();
-		_musicType = MT_OGG;
+		switch (_backgroundMusicType) {
+		case MT_OGG:
+			_ogg.resumeTrack();
+			_musicType = MT_OGG;
+			break;
+		case MT_CPC:
+			_cpc.resumeTrack();
+			_musicType = MT_CPC;
+			break;
+		default:
+			break;
+		}
 	}
 }
 
