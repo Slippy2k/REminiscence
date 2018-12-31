@@ -27,7 +27,7 @@ bool CpcPlayer::playTrack(int num) {
 		_sampleL = _sampleR = 0;
 		while (nextChunk()) {
 			if (_compression[0]) {
-				_restartPos = _pos;
+				_restartPos = _nextPos;
 				_mix->setPremixHook(mixCallback, this);
 				return true;
 			}
@@ -105,10 +105,9 @@ int8_t CpcPlayer::readSampleData() {
 		_f.seek(_nextPos);
 		_pos = _nextPos;
 		if (!nextChunk()) {
-			// TODO: rewind for looping
-//			_f.seek(_restartPos);
-//			nextChunk();
-			return 0;
+			// rewind
+			_f.seek(_restartPos);
+			nextChunk();
 		}
 	}
 	const int8_t data = _f.readByte();
