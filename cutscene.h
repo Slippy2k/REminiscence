@@ -73,10 +73,7 @@ struct Cutscene {
 	uint8_t _palBuf[16 * sizeof(uint16_t) * 2];
 	uint16_t _baseOffset;
 	bool _creditsSequence;
-	struct {
-		uint32_t x1, y1;
-		uint32_t x2, y2;
-	} _rotAff;
+	uint32_t _rotMat[4];
 	uint8_t _primitiveColor;
 	uint8_t _clearScreen;
 	Point _vertices[0x80];
