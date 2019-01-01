@@ -1,5 +1,10 @@
 Cels/
 
+Cpak/
+	*.sub - japanese subtitles
+
+Demo/
+
 Global/
 	Conrad.coded8
 	Conrad.smlanim.Uncoded16 - Menu animation
@@ -15,17 +20,19 @@ Langs/
 Levels/
 	same as on PC
 		even SGD
+		need to generate the bitmap
+			the PC version would generate a .MAP files from .MBK/.LEV/.SGD so as to preload
 
 samples/
 
 tunes/
 	play in demo mode (but no sfx), but no in regular playback
 
-
 LaunchMe
-
 	04: BL SelfRelocCode NOP if the image is not self-relocating
 	change 0xEB 0x00 0x99 0xF8 to a NOP
+
+	try changing the '=_demoNumTestPtr' checks to enable music background during playback
 
 
 Conrad.coded8 is only loaded if Conrad.smlanim.Uncoded16 fails

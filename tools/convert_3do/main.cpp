@@ -228,16 +228,30 @@ static void decodeCel_PDAT(const struct ccb_t *ccb, FILE *fp, uint32_t size) {
 			fseek(fp, pos + align, SEEK_SET);
 		}
 	} else {
-		fread(_bitmapBuffer, 1, ccb->height * ccb->width * bpp / 8, fp);
+		if (ccbPRE0_bitsPerPixel == 4) {
+			for (int i = 0; i < ccb->height * ccb->width; i += 2) {
+				const uint8_t color = fgetc(fp);
+				_bitmapBuffer[i + 1] = color & 15;
+				_bitmapBuffer[i + 0] = color >> 4;
+			}
+		} else {
+			fread(_bitmapBuffer, 1, ccb->height * ccb->width * bpp / 8, fp);
+		}
 	}
 }
 
 static ccb_t ccb;
 static int plutSize;
 
-static void decodeCel(FILE *fp, const char *fname) {
+enum {
+	kMaskCCB  = 1 << 0,
+	kMaskPLUT = 1 << 1,
+	kMaskPDAT = 1 << 2
+};
+
+static void decodeCel(FILE *fp, const char *fname, int mask) {
 	uint16_t rgb555[256];
-	while (1) {
+	while (mask != 0) {
 		const uint32_t pos = ftell(fp);
 		char tag[5];
 		const uint32_t size = readTag(fp, tag);
@@ -277,6 +291,8 @@ static void decodeCel(FILE *fp, const char *fname) {
 
 			fprintf(stdout, "ccbPRE bits %d width %d height %d rle %d\n", ccbPRE0_bitsPerPixel, ccbPRE1_width, ccbPRE0_height, (ccb.flags & 0x200) != 0);
 
+			mask &= ~kMaskCCB;
+
 		} else if (memcmp(tag, "PLUT", 4) == 0) {
 			int count = freadUint32BE(fp);
 			fprintf(stdout, "PLUT count %d\n", count);
@@ -286,19 +302,29 @@ static void decodeCel(FILE *fp, const char *fname) {
 				rgb555[i] = freadUint16BE(fp);
 			}
 			plutSize = count;
+
+			mask &= ~kMaskPLUT;
+
 		} else if (memcmp(tag, "PDAT", 4) == 0) {
 			decodeCel_PDAT(&ccb, fp, size);
-			// stop on first PDAT
-			break;
+
+			mask &= ~kMaskPDAT;
 		} else {
 			fprintf(stderr, "Unhandled tag '%c%c%c%c' size %d\n", tag[0], tag[1], tag[2], tag[3], size);
 		}
 		fseek(fp, pos + size, SEEK_SET);
 	}
 	int bpp = _cel_bitsPerPixelLookupTable[ccb.pre0 & 7];
+	const int bppTga = (plutSize != 0) ? 8 : 16;
 	fprintf(stdout, "tga width %d height %d bpp %d\n", ccb.width, ccb.height, bpp);
-	struct TgaFile *tga = tgaOpen(fname, ccb.width, ccb.height, bpp);
+	struct TgaFile *tga = tgaOpen(fname, ccb.width, ccb.height, bppTga);
 	if (tga) {
+		if (bpp == 4 && plutSize != 0) {
+			bpp = 8;
+		}
+		if (bpp == 6 && plutSize != 0) {
+			bpp = 8;
+		}
 		if (bpp == 8) {
 			assert(plutSize != 0);
 			uint8_t palette[256 * 3];
@@ -348,7 +374,7 @@ static void decodeAnim(FILE *fp) {
 
 		fprintf(stdout, "frame #%d at 0x%lx\n", i, ftell(fp));
 		snprintf(name, sizeof(name), "anim_%03d.tga", i);
-		decodeCel(fp, name);
+		decodeCel(fp, name, kMaskCCB | kMaskPDAT);
 	}
 }
 
@@ -611,6 +637,16 @@ int main(int argc, char *argv[]) {
 					renderTextTga();
 					fseek(fp, 0, SEEK_SET);
 					return 0;
+				} else if (strcasecmp(ext, ".SUB") == 0) {
+					// 6bpp - japanese subtitles
+					int frames = 0;
+					do {
+						char name[16];
+						snprintf(name, sizeof(name), "sub%03d.tga", frames);
+						decodeCel(fp, name, kMaskCCB | kMaskPDAT | kMaskPLUT);
+						++frames;
+					} while (!feof(fp));
+					return 0;
 				}
 			}
 			char buf[4];
@@ -621,7 +657,7 @@ int main(int argc, char *argv[]) {
 				decodeAnim(fp);
 				return 0;
 			} else if (memcmp(buf, "CCB ", 4) == 0) {
-				decodeCel(fp, "ccb.tga");
+				decodeCel(fp, "ccb.tga", kMaskCCB | kMaskPDAT);
 				return 0;
 			} else if (memcmp(buf, "SHDR", 4) != 0) {
 				fprintf(stderr, "Unhandled file '%s'\n", argv[1]);
