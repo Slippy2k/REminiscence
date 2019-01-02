@@ -224,15 +224,20 @@ static void decodeCel_PDAT(const struct ccb_t *ccb, FILE *fp, uint32_t size) {
 				w -= count;
 			}
 			const int align = (lineSize + 2) * sizeof(uint32_t);
-			// fprintf(stdout, "y %d count w %d lineSize %d (%d) offset %d\n", j, w, lineSize, align, int(ftell(fp) - pos));
 			fseek(fp, pos + align, SEEK_SET);
 		}
 	} else {
 		if (ccbPRE0_bitsPerPixel == 4) {
-			for (int i = 0; i < ccb->height * ccb->width; i += 2) {
-				const uint8_t color = fgetc(fp);
-				_bitmapBuffer[i + 1] = color & 15;
-				_bitmapBuffer[i + 0] = color >> 4;
+			const int lineSize = ccb->width * ccbPRE0_bitsPerPixel / 8;
+			const int align = ((lineSize + 3) & ~3) - lineSize;
+			for (int j = 0; j < ccb->height; ++j) {
+				const int offset = j * ccb->width;
+				for (int i = 0; i < ccb->width; i += 2) {
+					const uint8_t color = fgetc(fp);
+					_bitmapBuffer[offset + i + 1] = color & 15;
+					_bitmapBuffer[offset + i + 0] = color >> 4;
+				}
+				fseek(fp, align, SEEK_CUR);
 			}
 		} else {
 			fread(_bitmapBuffer, 1, ccb->height * ccb->width * bpp / 8, fp);
