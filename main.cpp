@@ -106,7 +106,7 @@ static void initOptions() {
 		{ "enable_password_menu", &g_options.enable_password_menu },
 		{ "enable_language_selection", &g_options.enable_language_selection },
 		{ "fade_out_palette", &g_options.fade_out_palette },
-		{ "use_tiledata", &g_options.use_tiledata },
+		{ "use_tile_data", &g_options.use_tile_data },
 		{ "use_text_cutscenes", &g_options.use_text_cutscenes },
 		{ "use_seq_cutscenes", &g_options.use_seq_cutscenes },
 		{ "use_words_protection", &g_options.use_words_protection },

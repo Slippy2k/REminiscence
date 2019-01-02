@@ -114,7 +114,7 @@ struct Options {
 	bool enable_password_menu;
 	bool enable_language_selection;
 	bool fade_out_palette;
-	bool use_tiledata;
+	bool use_tile_data;
 	bool use_text_cutscenes;
 	bool use_seq_cutscenes;
 	bool use_words_protection;
