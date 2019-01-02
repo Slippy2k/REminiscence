@@ -22,7 +22,7 @@ CpcPlayer::~CpcPlayer() {
 bool CpcPlayer::playTrack(int num) {
 	_compression[0] = 0;
 	const int tuneNum = num - 2;
-	if (_f.open(_tunes[tuneNum], "rb", _fs)) {
+	if (tuneNum >= 0 && tuneNum < ARRAYSIZE(_tunes) && _f.open(_tunes[tuneNum], "rb", _fs)) {
 		_pos = 0;
 		_sampleL = _sampleR = 0;
 		while (nextChunk()) {
