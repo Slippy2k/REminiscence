@@ -206,7 +206,7 @@ static WidescreenMode parseWidescreen(const char *mode) {
 		{ "adjacent", kWidescreenAdjacentRooms },
 		{ "mirror", kWidescreenMirrorRoom },
 		{ "blur", kWidescreenBlur },
-		{ 0, kWidescreenDefault },
+		{ 0, kWidescreenNone },
 	};
 	for (int i = 0; modes[i].name; ++i) {
 		if (strcasecmp(modes[i].name, mode) == 0) {
@@ -223,7 +223,7 @@ int main(int argc, char *argv[]) {
 	int levelNum = 0;
 	bool fullscreen = false;
 	bool autoSave = false;
-	WidescreenMode widescreen = kWidescreenDefault;
+	WidescreenMode widescreen = kWidescreenNone;
 	ScalerParameters scalerParameters = ScalerParameters::defaults();
 	int forcedLanguage = -1;
 	if (argc == 2) {

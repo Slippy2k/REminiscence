@@ -478,6 +478,9 @@ void Game::playCutscene(int id) {
 		_cut._id = id;
 	}
 	if (_cut._id != 0xFFFF) {
+		if (_stub->hasWidescreen()) {
+			_stub->enableWidescreen(false);
+		}
 		_mix.stopMusic();
 		if (_res._hasSeqData) {
 			int num = 0;
@@ -554,6 +557,9 @@ void Game::playCutscene(int id) {
 			_cut.playCredits();
 		}
 		_mix.stopMusic();
+		if (_stub->hasWidescreen()) {
+			_stub->enableWidescreen(true);
+		}
 	}
 }
 

@@ -52,6 +52,7 @@ struct SystemStub_SDL : SystemStub {
 	int _widescreenMode;
 	SDL_Texture *_widescreenTexture;
 	int _wideMargin;
+	bool _enableWidescreen;
 
 	virtual ~SystemStub_SDL() {}
 	virtual void init(const char *title, int w, int h, bool fullscreen, int widescreenMode, ScalerParameters *scalerParameters);
@@ -70,6 +71,7 @@ struct SystemStub_SDL : SystemStub {
 	virtual void copyWidescreenMirror(int w, int h, const uint8_t *buf);
 	virtual void copyWidescreenBlur(int w, int h, const uint8_t *buf);
 	virtual void clearWidescreen();
+	virtual void enableWidescreen(bool enable);
 	virtual void fadeScreen();
 	virtual void updateScreen(int shakeOffset);
 	virtual void processEvents();
@@ -115,6 +117,7 @@ void SystemStub_SDL::init(const char *title, int w, int h, bool fullscreen, int 
 	_widescreenMode = widescreenMode;
 	_widescreenTexture = 0;
 	_wideMargin = 0;
+	_enableWidescreen = false;
 	setScreenSize(w, h);
 	_joystick = 0;
 	_controller = 0;
@@ -397,6 +400,10 @@ void SystemStub_SDL::clearWidescreen() {
 	clearTexture(_widescreenTexture, _screenH, _fmt);
 }
 
+void SystemStub_SDL::enableWidescreen(bool enable) {
+	_enableWidescreen = enable;
+}
+
 void SystemStub_SDL::fadeScreen() {
 	_fadeOnUpdateScreen = true;
 }
@@ -415,8 +422,10 @@ void SystemStub_SDL::updateScreen(int shakeOffset) {
 	}
 	SDL_RenderClear(_renderer);
 	if (_widescreenMode != kWidescreenNone) {
-		// borders / background screen
-		SDL_RenderCopy(_renderer, _widescreenTexture, 0, 0);
+		if (_enableWidescreen) {
+			// borders / background screen
+			SDL_RenderCopy(_renderer, _widescreenTexture, 0, 0);
+		}
 		// game screen
 		SDL_Rect r;
 		r.y = shakeOffset * _scaleFactor;
@@ -844,7 +853,7 @@ void SystemStub_SDL::prepareGraphics() {
 	} else {
 		flags |= SDL_WINDOW_RESIZABLE;
 	}
-	if (_widescreenMode == kWidescreenDefault) {
+	if (0 /* && _widescreenMode == kWidescreenDefault */) {
 		SDL_DisplayMode dm;
 		if (SDL_GetDesktopDisplayMode(0, &dm) == 0 && is16_9(&dm)) {
 			_widescreenMode = kWidescreenBlur; // default widescreen mode
