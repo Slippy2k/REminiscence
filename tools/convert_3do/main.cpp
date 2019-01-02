@@ -7,6 +7,7 @@
 #include "cinepak.h"
 extern "C" {
 #include "tga.h"
+#include "unpack.h"
 }
 
 static uint8_t _bitmapBuffer[320 * 200 * sizeof(uint32_t)];
@@ -651,6 +652,12 @@ int main(int argc, char *argv[]) {
 						decodeCel(fp, name, kMaskCCB | kMaskPDAT | kMaskPLUT);
 						++frames;
 					} while (!feof(fp));
+					return 0;
+				} else if (strcasecmp(ext, ".CT") == 0 || strcasecmp(ext, ".CT2") == 0) {
+					static uint8_t buffer[0x1D00];
+					const int size = fread(buffer, 1, sizeof(buffer), fp);
+					int ret = bytekiller_unpack(buffer, size, _bitmapBuffer);
+					fprintf(stdout, "Unpacked %s %d\n", ext, ret);
 					return 0;
 				}
 			}
