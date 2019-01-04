@@ -380,7 +380,7 @@ static void decodeAnim(FILE *fp) {
 
 		fprintf(stdout, "frame #%d at 0x%lx\n", i, ftell(fp));
 		snprintf(name, sizeof(name), "anim_%03d.tga", i);
-		decodeCel(fp, name, kMaskCCB | kMaskPDAT);
+		decodeCel(fp, name, kMaskPDAT);
 	}
 }
 
@@ -626,7 +626,39 @@ static void renderTextTga() {
 	}
 }
 
+static const struct {
+	const char *name;
+	void (*decode)(FILE *fp, const char *output);
+} _types[] = {
+	{ "anim", 0 },
+	{ "cel", 0 },
+	{ 0, 0 }
+};
+
 int main(int argc, char *argv[]) {
+	if (argc == 3) {
+		FILE *fp = fopen(argv[2], "rb");
+		if (fp) {
+			if (strcmp(argv[1], "-anim") == 0) {
+				decodeAnim(fp);
+			} else if (strcmp(argv[1], "-cel") == 0) {
+				const char *p = strrchr(argv[2], '/');
+				if (!p) {
+					p = argv[2];
+				} else {
+					++p;
+				}
+				char *name = (char *)malloc(strlen(p) + 4 /* '.tga' */ + 1);
+				if (name) {
+					strcpy(name, p);
+					strcat(name, ".tga");
+					decodeCel(fp, name, kMaskCCB | kMaskPDAT);
+					free(name);
+				}
+			}
+			fclose(fp);
+		}
+	}
 	if (argc == 2) {
 		FILE *fp = fopen(argv[1], "rb");
 		if (fp) {
@@ -665,17 +697,11 @@ int main(int argc, char *argv[]) {
 			fread(buf, 4, 1, fp);
 			fseek(fp, 0, SEEK_SET);
 
-			if (memcmp(buf, "ANIM", 4) == 0) {
-				decodeAnim(fp);
-				return 0;
-			} else if (memcmp(buf, "CCB ", 4) == 0) {
-				decodeCel(fp, "ccb.tga", kMaskCCB | kMaskPDAT);
-				return 0;
-			} else if (memcmp(buf, "SHDR", 4) != 0) {
+			if (memcmp(buf, "SHDR", 4) != 0) {
 				fprintf(stderr, "Unhandled file '%s'\n", argv[1]);
 				return -1;
 			}
-			// .cpc
+			// .cpak
 			CinepakDecoder decoder;
 			OutputBuffer out;
 			int frmeCounter = 0;
