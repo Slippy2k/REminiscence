@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cinepak.h"
+#include "endian.h"
 extern "C" {
 #include "tga.h"
 #include "unpack.h"
@@ -555,7 +556,8 @@ static void decodeTextBin(FILE *fp) {
 	}
 }
 
-static uint8_t _fontChr[6400];
+static uint8_t _fontChr[12800];
+static int _fontLen;
 
 #define HORIZONTAL_MARGIN 0
 #define VERTICAL_MARGIN 2
@@ -565,16 +567,31 @@ static uint8_t _textPalette[256 * 3];
 
 static void drawChar(int x, int y, int chr) {
 	uint8_t *p = _textBitmap + y * 1024 + x;
-	uint8_t *f = &_fontChr[chr * 8 * 4];
+	uint8_t *f = _fontChr;
+
+	if (_fontLen == 6400) {
+		f += chr * 8 * 4;
+	} else if (_fontLen == 12800) {
+		f += chr * 8 * 8;
+	} else {
+		return;
+	}
 
 	for (int j = 0; j < 8; ++j) {
-		for (int i = 0; i < 4; ++i) {
-			const int c = f[j * 4 + i];
-			if ((c >> 4) != 0) {
-				p[2 * i] = c >> 4;
+		if (_fontLen == 6400) {
+			for (int i = 0; i < 4; ++i) {
+				const int c = f[j * 4 + i];
+				if ((c >> 4) != 0) {
+					p[2 * i] = c >> 4;
+				}
+				if ((c & 15) != 0) {
+					p[2 * i + 1] = c & 15;
+				}
 			}
-			if ((c & 15) != 0) {
-				p[2 * i + 1] = c & 15;
+		} else if (_fontLen == 12800) {
+			for (int i = 0; i < 8; ++i) {
+				const int c = f[j * 8 + i];
+				p[i] = c != 0 ? 1 : 0;
 			}
 		}
 		p += 1024;
@@ -596,10 +613,13 @@ static void drawString(int x, int y, const uint8_t *str) {
 	}
 }
 
+//static const char *kFontChr = "FONT.CHR";
+static const char *kFontChr = "FONT8JAP.CHR";
+
 static void renderTextTga() {
-	FILE *fp = fopen("FONT8JAP.CHR", "rb");
+	FILE *fp = fopen(kFontChr, "rb");
 	if (fp) {
-		fread(_fontChr, 1, sizeof(_fontChr), fp);
+		_fontLen = fread(_fontChr, 1, sizeof(_fontChr), fp);
 		fclose(fp);
 	}
 	for (int i = 0; i < MAX_TEXTS; ++i) {
@@ -673,7 +693,6 @@ int main(int argc, char *argv[]) {
 				} else if (strcmp(ext, ".BIN") == 0) {
 					decodeTextBin(fp);
 					renderTextTga();
-					fseek(fp, 0, SEEK_SET);
 					return 0;
 				} else if (strcasecmp(ext, ".SUB") == 0) {
 					// 6bpp - japanese subtitles

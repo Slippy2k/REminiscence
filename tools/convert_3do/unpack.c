@@ -1,10 +1,7 @@
 
 #include "unpack.h"
+#include "endian.h"
 
-static uint32_t READ_BE_UINT32(const unsigned char *src) {
-	uint32_t num = (src[0] << 24) | (src[1] << 16) | (src[2] << 8) | src[3];
-	return num;
-}
 
 static int rcr(unpack_context_t *uc, int CF) {
 	int rCF = (uc->chk & 1);

@@ -137,8 +137,10 @@ tunes/
 
 LaunchMe
 	04: BL SelfRelocCode NOP if the image is not self-relocating
-	change 0xEB 0x00 0x99 0xF8 to a NOP
+		change 0xEB 0x00 0x99 0xF8 to a NOP
 
-	try changing the '=_demoNumTestPtr' checks to enable music background during playback
+	patches (.iso)
+		try changing the '=_demoNumTestPtr' checks to enable music background during playback
+		try forcing loading Conrad.Coded8 animation
 
 
