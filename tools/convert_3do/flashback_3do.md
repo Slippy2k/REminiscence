@@ -101,6 +101,9 @@ the sounds and the music if a demo file (DEMOx.TEST) has been loaded.
 .text:00008BE0     BL      play_music
 ```
 
+Patching the executable (by changing the BEQ instruction to a NOP) enables to both background
+music and sound effects.
+
 
 
 ---
@@ -137,10 +140,15 @@ tunes/
 
 LaunchMe
 	04: BL SelfRelocCode NOP if the image is not self-relocating
-		change 0xEB 0x00 0x99 0xF8 to a NOP
+		change 0xEB 0x00 0x99 0xF8 to a NOP (0xe1a00000, mov r0, r0)
 
-	patches (.iso)
-		try changing the '=_demoNumTestPtr' checks to enable music background during playback
-		try forcing loading Conrad.Coded8 animation
 
+patches (.iso)
+	LaunchMe is at 0x2c61800
+	change the '=_demoNumTestPtr' checks to enable music background during playback
+		.text:00008BD8                 BEQ     loc_8BE4
+		0xA0 0x00 0x00 0x01
+		0x2c6a3d8 change to 0xe1a00000
+	force loading Conrad.Coded8 animation
+		change 0x36 to 0x39 at 0x2C6B4B4 (Uncoded16 to Uncoded19)
 
