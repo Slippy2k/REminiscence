@@ -6,9 +6,9 @@
 #include <string.h>
 #include "cinepak.h"
 #include "endian.h"
+#include "unpack.h"
 extern "C" {
 #include "tga.h"
-#include "unpack.h"
 }
 
 static uint8_t _bitmapBuffer[320 * 200 * sizeof(uint32_t)];
@@ -761,7 +761,7 @@ int main(int argc, char *argv[]) {
 				} else if (strcasecmp(ext, ".CT") == 0 || strcasecmp(ext, ".CT2") == 0) {
 					static uint8_t buffer[0x1D00];
 					const int size = fread(buffer, 1, sizeof(buffer), fp);
-					int ret = bytekiller_unpack(buffer, size, _bitmapBuffer);
+					int ret = bytekiller_unpack(buffer, size, _bitmapBuffer, sizeof(_bitmapBuffer));
 					fprintf(stdout, "Unpacked %s %d\n", ext, ret);
 					return 0;
 				}
