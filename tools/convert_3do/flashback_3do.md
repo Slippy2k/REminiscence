@@ -30,8 +30,6 @@ are rendered to.
 
 ## Differences with Amiga/PC
 
-Can we save in game ? or password only ?
-
 ### Texts
 
 On Amiga/PC, the in-game texts are stored in the executable. The 3DO reworked that and all
@@ -56,6 +54,23 @@ The PC version used Fibonnaci-delta encoded samples at 6000Hz. The Amiga
 version used uncompressed samples at an equivalent sample rate (PAULA / 650).
 
 The 3DO version comes with uncompressed 8 bits mono samples at 8000Hz.
+
+### Checkpoints
+
+The 3DO version plays a voice sample ('Game saved') when the game state has been written.
+Although there is a distinct playSound opcode, the change has been done directly in the
+engine code.
+
+.text:0000A034     ADR     R1, aGamesave_aif ; "GAMESAVE.AIF"
+.text:0000A038     MOV     R0, #66
+.text:0000A03C     BL      load_aif
+
+.text:000125DC ; jumptable 00011FC8 entry 104
+.text:000125DC     BL      pge_op_saveState
+
+.text:00007328 pge_op_saveState
+.text:00007344     MOV     R0, #66    ; gamesave.aif
+.text:00007348     BL      play_sound
 
 ## Unused assets
 
