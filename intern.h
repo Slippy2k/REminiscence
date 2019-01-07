@@ -158,7 +158,7 @@ struct InitPGE {
 	int16_t pos_y;
 	uint16_t obj_node_number;
 	uint16_t life;
-	int16_t counter_values[4];
+	int16_t counter_values[4]; // messages
 	uint8_t object_type;
 	uint8_t init_room;
 	uint8_t room_location;
@@ -180,7 +180,7 @@ struct LivePGE {
 	uint8_t anim_seq;
 	uint8_t room_location;
 	int16_t life;
-	int16_t counter_value;
+	int16_t counter_value; // msg
 	uint8_t collision_slot;
 	uint8_t next_inventory_PGE;
 	uint8_t current_inventory_PGE;
