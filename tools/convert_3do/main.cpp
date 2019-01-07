@@ -14,6 +14,20 @@ extern "C" {
 static uint8_t _bitmapBuffer[320 * 200 * sizeof(uint32_t)];
 static uint8_t _rgbBuffer[320 * 200 * sizeof(uint32_t)];
 
+static uint8_t *readFile(FILE *fp, int *size) {
+	fseek(fp, 0, SEEK_END);
+	*size = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	uint8_t *buf = (uint8_t *)malloc(*size);
+	if (buf) {
+		const int count = fread(buf, 1, *size, fp);
+		if (count != *size) {
+			fprintf(stderr, "Failed to read %d bytes\n", count);
+		}
+	}
+	return buf;
+}
+
 static uint8_t clip8(int a) {
 	if (a < 0) {
 		return 0;
@@ -763,6 +777,17 @@ int main(int argc, char *argv[]) {
 					const int size = fread(buffer, 1, sizeof(buffer), fp);
 					int ret = bytekiller_unpack(buffer, size, _bitmapBuffer, sizeof(_bitmapBuffer));
 					fprintf(stdout, "Unpacked %s %d\n", ext, ret);
+					return 0;
+				} else if (strcasecmp(ext, ".MBK") == 0) {
+					struct {
+						uint32_t offset;
+						uint16_t len32;
+					} mbk[74]; // size of .RP
+					for (int i = 0; i < 74; ++i) {
+						mbk[i].offset = freadUint32BE(fp); // point to compressed data if (len2&0x8000)==0
+						mbk[i].len32 = freadUint16BE(fp);
+						fprintf(stdout, "MBK #%d offset 0x%x len %d (next 0x%x)\n", i, mbk[i].offset, mbk[i].len, mbk[i].offset + mbk[i].len32);
+					}
 					return 0;
 				}
 			}
