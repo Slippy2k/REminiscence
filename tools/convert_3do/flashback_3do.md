@@ -19,9 +19,10 @@ other dedicated memory.
 
 As the PC does not have this kind of hardware acceleration, the PC version comes with pre-processed
 level backgrounds. The .MAP files contains all of the backgrounds bitmaps (256x224) of a given level.
+The Macintosh version also used the same rendering method.
 
-The 3DO does not come with preprocessed backkground bitmaps (as in the PC version), but composes
-in software the background bitmaps by reading the .LEV files and then decoding the tiles found
+The 3DO does not come with preprocessed background bitmaps, but draws in software the background
+btiamps by reading the .LEV files for attributes (flipping, xy) and decoding the graphic tiles found
 in .BNQ and .SGD files.
 
 The executable relies on default .cel files as place-holders where the software decoded graphics
@@ -29,10 +30,16 @@ are rendered to.
 
 ## Differences with Amiga/PC
 
+Can we save in game ? or password only ?
+
 ### Texts
 
 On Amiga/PC, the in-game texts are stored in the executable. The 3DO reworked that and all
 texts are now read from external files.
+
+### Passwords
+
+On Amiga/PC, the passwords are not stored in clear in the executable.
 
 ### Cutscenes
 
@@ -46,7 +53,7 @@ when the bitmaps need to be rendered on top of the video. The bitmaps are stored
 ### Sounds
 
 The PC version used Fibonnaci-delta encoded samples at 6000Hz. The Amiga
-version was not compressed and played at higger sample rate (~8000Hz).
+version used uncompressed samples at an equivalent sample rate (PAULA / 650).
 
 The 3DO version comes with uncompressed 8 bits mono samples at 8000Hz.
 
@@ -55,9 +62,9 @@ The 3DO version comes with uncompressed 8 bits mono samples at 8000Hz.
 ### Menu animation
 
 The Conrad animation played in the main menu comes with two encodings.
-One 'Uncoded16' and another one 'coded8'.
+One 'Uncoded16' (RGB555) and another one 'coded8' (paletted)
 
-Conrad.coded8 is only loaded in Conrad.smlanim.Uncoded16 fails
+Conrad.coded8 is loaded if Conrad.smlanim.Uncoded16 fails
 
 ```
 .text:00009C4C     ADR     R0, aBootGlobalConr ; "$boot/Global/Conrad.smlanim.Uncoded16"
@@ -78,9 +85,15 @@ Conrad.coded8 is only loaded in Conrad.smlanim.Uncoded16 fails
 
 ### Level music
 
-Background level music can be found in the tunes/ directory. The music are only played when
-the game is in demo mode. The code has explicit checks to condition the playback of the cutscene,
-the sounds and the music if a demo file (DEMOx.TEST) has been loaded.
+Background level music can be found in the tunes/ directory. At least with the US version,
+the music is only played when in demo mode. During regular playback, only sounds can be heard.
+
+Looking at the disassembly, this is seems to be done on purpose. The code has three checks if
+a demo file (Demo/DEMOx.TEST) is loaded :
+
+- cutscene playback is disabled
+- sounds are not played
+- background level music is played
 
 ```
 .text:00008B28     LDR     R0, =_demoNumTestPtr
@@ -101,10 +114,32 @@ the sounds and the music if a demo file (DEMOx.TEST) has been loaded.
 .text:00008BE0     BL      play_music
 ```
 
-Patching the executable (by changing the BEQ instruction to a NOP) enables to both background
-music and sound effects.
+Patching the executable (eg. by changing the BEQ instruction to a NOP) enables playback of
+both background music and sound effects during game play. A playthrough of the first level
+shows no major glitches. It is not clear why the feature was conditionned.
 
 
+
+## ISO Patches
+
+The patches have been tested on the US version. The executable ('LaunchMe') can
+be found at offset 0x2c61800.
+
+### Enable music during gameplay
+
+Change BEQ to NOP.
+
+.text:00008BD8     BEQ     loc_8BE4
+
+At 0x2c6a3d8, change 0xa0000001 to 0xe1a00000
+
+This is for the first level.
+
+### Load Conrad.coded8 animation
+
+Change the filename from 'Uncoded16' to something not else.
+
+At 0x2c6b4b4, change 0x36 to 0x39 (Uncoded16 to Uncoded19)
 
 ---
 
@@ -141,14 +176,4 @@ tunes/
 LaunchMe
 	04: BL SelfRelocCode NOP if the image is not self-relocating
 		change 0xEB 0x00 0x99 0xF8 to a NOP (0xe1a00000, mov r0, r0)
-
-
-patches (.iso)
-	LaunchMe is at 0x2c61800
-	change the '=_demoNumTestPtr' checks to enable music background during playback
-		.text:00008BD8                 BEQ     loc_8BE4
-		0xA0 0x00 0x00 0x01
-		0x2c6a3d8 change to 0xe1a00000
-	force loading Conrad.Coded8 animation
-		change 0x36 to 0x39 at 0x2C6B4B4 (Uncoded16 to Uncoded19)
 
