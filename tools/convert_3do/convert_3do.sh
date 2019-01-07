@@ -12,6 +12,10 @@ convert_cel() {
 	./convert_3do -cel $1
 }
 
+convert_pal() {
+	./convert_3do -pal $1
+}
+
 convert_text() {
 	./convert_3do $1
 }
@@ -35,6 +39,12 @@ convert_anim $datadir/Global/Conrad.smlanim.Uncoded16
 convert_text $datadir/Langs/JAPANESE.BIN
 
 # Levels/
+
+convert_pal $datadir/Levels/LEVEL1.PAL
+convert_pal $datadir/Levels/LEVEL2.PAL
+convert_pal $datadir/Levels/DT.PAL
+convert_pal $datadir/Levels/LEVEL3.PAL
+convert_pal $datadir/Levels/LEVEL4.PAL
 
 # tunes/
 

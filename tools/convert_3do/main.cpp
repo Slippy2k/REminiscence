@@ -646,6 +646,46 @@ static void renderTextTga() {
 	}
 }
 
+static void convertAmigaColor(uint16_t color, uint8_t *rgb) {
+	rgb[0] = (color >> 8) & 15;
+	rgb[0] = (rgb[0] << 4) | rgb[0];
+	rgb[1] = (color >> 4) & 15;
+	rgb[1] = (rgb[1] << 4) | rgb[1];
+	rgb[2] =  color       & 15;
+	rgb[2] = (rgb[2] << 4) | rgb[2];
+}
+
+static void fillRect_rgb555(uint8_t *dst, uint32_t pitch, int x, int y, int w, int h, const uint8_t *rgb) {
+	const uint16_t color555 = ((rgb[0] >> 3) << 10) | ((rgb[1] >> 3) << 5) | (rgb[2] >> 3);
+	const int y2 = y + h;
+	for (; y < y2; ++y) {
+		for (int i = 0; i < w; ++i) {
+			*((uint16_t *)dst + y * pitch + x + i) = color555;
+		}
+	}
+}
+
+static void decodeLevelPal(FILE *fp, const char *name) {
+	static const int W = 16;
+	static const int H = 16;
+	fseek(fp, 0, SEEK_END);
+	const int fileSize = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	assert((fileSize % 32) == 0);
+	const int count = fileSize / 32;
+	struct TgaFile *tga = tgaOpen(name, W * 16, H * count, 16);
+	for (int i = 0; i < count; ++i) {
+		for (int j = 0; j < 16; ++j) {
+			uint8_t rgb[3];
+			convertAmigaColor(freadUint16BE(fp), rgb);
+			// rgb[0] = rgb[1] = rgb[2] = 255;
+			fillRect_rgb555(_rgbBuffer, W * 16, j * W, i * H, W, H, rgb);
+		}
+	}
+	tgaWritePixelsData(tga, _rgbBuffer, (W * 16) * (H * count) * sizeof(uint16_t));
+	tgaClose(tga);
+}
+
 static const struct {
 	const char *name;
 	void (*decode)(FILE *fp, const char *output);
@@ -673,6 +713,20 @@ int main(int argc, char *argv[]) {
 					strcpy(name, p);
 					strcat(name, ".tga");
 					decodeCel(fp, name, kMaskCCB | kMaskPDAT);
+					free(name);
+				}
+			} else if (strcmp(argv[1], "-pal") == 0) {
+				const char *p = strrchr(argv[2], '/');
+				if (!p) {
+					p = argv[2];
+				} else {
+					++p;
+				}
+				char *name = (char *)malloc(strlen(p) + 4 /* '.tga' */ + 1);
+				if (name) {
+					strcpy(name, p);
+					strcat(name, ".tga");
+					decodeLevelPal(fp, name);
 					free(name);
 				}
 			}
