@@ -1160,6 +1160,11 @@ void Cutscene::play() {
 		uint16_t cutOff  = _offsetsTable[_id * 2 + 1];
 		if (cutName == 0xFFFF) {
 			switch (_id) {
+			case 3: // keys
+				if (g_options.play_carte_cutscene) {
+					cutName = 2; // CARTE
+				}
+				break;
 			case 8: // save checkpoints
 				break;
 			case 19:
@@ -1167,12 +1172,13 @@ void Cutscene::play() {
 					cutName = 31; // SERRURE
 				}
 				break;
-			case 22:
-			case 23:
-			case 24:
+			case 22: // Level 2 fuse repaired
+			case 24: // Level 2 fuse is blown
 				if (g_options.play_asc_cutscene) {
 					cutName = 12; // ASC
 				}
+				break;
+			case 23: // switch
 				break;
 			case 30:
 			case 31:
@@ -1180,10 +1186,7 @@ void Cutscene::play() {
 					cutName = 14; // METRO
 				}
 				break;
-			case 46:
-				if (g_options.play_carte_cutscene) {
-					cutName = 2; // CARTE
-				}
+			case 46: // Level 2 terminal card mission
 				break;
 			default:
 				warning("Disabled cutscene %d", _id);
