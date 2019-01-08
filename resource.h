@@ -119,6 +119,8 @@ struct Resource {
 	static const uint16_t _voicesOffsetsTable[];
 	static const uint32_t _spmOffsetsTable[];
 	static const char *_splNames[];
+	static const uint8_t _gameSavedSoundData[];
+	static const uint16_t _gameSavedSoundLen;
 
 	FileSystem *_fs;
 	ResourceType _type;

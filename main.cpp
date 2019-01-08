@@ -97,6 +97,7 @@ static void initOptions() {
 	g_options.play_metro_cutscene = false;
 	g_options.play_serrure_cutscene = false;
 	g_options.play_carte_cutscene = false;
+	g_options.play_gamesaved_sound = false;
 	// read configuration file
 	struct {
 		const char *name;
@@ -115,6 +116,7 @@ static void initOptions() {
 		{ "play_metro_cutscene", &g_options.play_metro_cutscene },
 		{ "play_serrure_cutscene", &g_options.play_serrure_cutscene },
 		{ "play_carte_cutscene", &g_options.play_carte_cutscene },
+		{ "play_gamesaved_sound", &g_options.play_gamesaved_sound },
 		{ 0, 0 }
 	};
 	static const char *filename = "rs.cfg";

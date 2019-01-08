@@ -14,7 +14,7 @@
 #include "sfx_player.h"
 
 struct MixerChunk {
-	uint8_t *data;
+	const uint8_t *data;
 	uint32_t len;
 
 	MixerChunk()
@@ -77,8 +77,8 @@ struct Mixer {
 	void init();
 	void free();
 	void setPremixHook(PremixHook premixHook, void *userData);
-	void play(const MixerChunk *mc, uint16_t freq, uint8_t volume);
-	bool isPlaying(const MixerChunk *mc) const;
+	void play(const uint8_t *data, uint32_t len, uint16_t freq, uint8_t volume);
+	bool isPlaying(const uint8_t *data) const;
 	uint32_t getSampleRate() const;
 	void stopAll();
 	void playMusic(int num);

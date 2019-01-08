@@ -33,14 +33,14 @@ void Mixer::setPremixHook(PremixHook premixHook, void *userData) {
 	_premixHookData = userData;
 }
 
-void Mixer::play(const MixerChunk *mc, uint16_t freq, uint8_t volume) {
+void Mixer::play(const uint8_t *data, uint32_t len, uint16_t freq, uint8_t volume) {
 	debug(DBG_SND, "Mixer::play(%d, %d)", freq, volume);
 	LockAudioStack las(_stub);
 	MixerChannel *ch = 0;
 	for (int i = 0; i < NUM_CHANNELS; ++i) {
 		MixerChannel *cur = &_channels[i];
 		if (cur->active) {
-			if (cur->chunk.data == mc->data) {
+			if (cur->chunk.data == data) {
 				cur->chunkPos = 0;
 				return;
 			}
@@ -52,18 +52,19 @@ void Mixer::play(const MixerChunk *mc, uint16_t freq, uint8_t volume) {
 	if (ch) {
 		ch->active = true;
 		ch->volume = volume;
-		ch->chunk = *mc;
+		ch->chunk.data = data;
+		ch->chunk.len = len;
 		ch->chunkPos = 0;
 		ch->chunkInc = (freq << FRAC_BITS) / _stub->getOutputSampleRate();
 	}
 }
 
-bool Mixer::isPlaying(const MixerChunk *mc) const {
+bool Mixer::isPlaying(const uint8_t *data) const {
 	debug(DBG_SND, "Mixer::isPlaying");
 	LockAudioStack las(_stub);
 	for (int i = 0; i < NUM_CHANNELS; ++i) {
 		const MixerChannel *ch = &_channels[i];
-		if (ch->active && ch->chunk.data == mc->data) {
+		if (ch->active && ch->chunk.data == data) {
 			return true;
 		}
 	}

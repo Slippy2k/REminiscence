@@ -963,22 +963,23 @@ void Game::drawStoryTexts() {
 					yPos += 8;
 				}
 			}
-			MixerChunk chunk;
-			_res.load_VCE(_textToDisplay, textSpeechSegment++, &chunk.data, &chunk.len);
-			if (chunk.data) {
-				_mix.play(&chunk, 32000, Mixer::MAX_VOLUME);
+			uint8_t *voiceSegmentData = 0;
+			uint32_t voiceSegmentLen = 0;
+			_res.load_VCE(_textToDisplay, textSpeechSegment++, &voiceSegmentData, &voiceSegmentLen);
+			if (voiceSegmentData) {
+				_mix.play(voiceSegmentData, voiceSegmentLen, 32000, Mixer::MAX_VOLUME);
 			}
 			_vid.updateScreen();
 			while (!_stub->_pi.backspace && !_stub->_pi.quit) {
-				if (chunk.data && !_mix.isPlaying(&chunk)) {
+				if (voiceSegmentData && !_mix.isPlaying(voiceSegmentData)) {
 					break;
 				}
 				inp_update();
 				_stub->sleep(80);
 			}
-			if (chunk.data) {
+			if (voiceSegmentData) {
 				_mix.stopAll();
-				free(chunk.data);
+				free(voiceSegmentData);
 			}
 			_stub->_pi.backspace = false;
 			if (_res._type == kResourceTypeMac) {
@@ -1784,10 +1785,7 @@ void Game::playSound(uint8_t sfxId, uint8_t softVol) {
 	if (sfxId < _res._numSfx) {
 		SoundFx *sfx = &_res._sfxList[sfxId];
 		if (sfx->data) {
-			MixerChunk mc;
-			mc.data = sfx->data;
-			mc.len = sfx->len;
-			_mix.play(&mc, sfx->freq, Mixer::MAX_VOLUME >> softVol);
+			_mix.play(sfx->data, sfx->len, sfx->freq, Mixer::MAX_VOLUME >> softVol);
 		}
 	} else {
 		// in-game music
