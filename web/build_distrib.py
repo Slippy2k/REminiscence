@@ -4,6 +4,7 @@ VERSION = '0.4.5'
 
 SDL_TARBALL = [ 'REminiscence-%s-sdl2-win32.zip',
 	(
+		'CHANGES.txt',
 		'../README.txt',
 		'../README-modplug.txt',
 		'../README-scale2x.txt',
@@ -20,10 +21,13 @@ SDL_TARBALL = [ 'REminiscence-%s-sdl2-win32.zip',
 
 SRC_TARBALL = [ 'REminiscence-%s.tar.bz2',
 	(
+		'CHANGES.txt',
 		'../README.txt',
 		'../rs.cfg',
 		'../Makefile',
 		'../collision.cpp',
+		'../cpc_player.cpp',
+		'../cpc_player.h',
 		'../cutscene.cpp',
 		'../cutscene.h',
 		'../decode_mac.cpp',
