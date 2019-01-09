@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bitmap.h"
-#include "cinepak.h"
+#include "decode_3dostr.h"
 #include "endian.h"
 #include "fileio.h"
 #include "unpack.h"
@@ -14,86 +14,6 @@ extern "C" {
 }
 
 static uint8_t _bitmapBuffer[320 * 200 * sizeof(uint32_t)];
-static uint8_t _rgbBuffer[320 * 200 * sizeof(uint32_t)];
-
-static uint8_t clip8(int a) {
-	if (a < 0) {
-		return 0;
-	} else if (a > 255) {
-		return 255;
-	} else {
-		return a;
-	}
-}
-
-static uint16_t yuv_to_rgb565(int y, int u, int v) {
-	int r = int(y + (1.370705 * (v - 128)));
-	r = clip8(r) >> 3;
-	int g = int(y - (0.698001 * (v - 128)) - (0.337633 * (u - 128)));
-	g = clip8(g) >> 2;
-	int b = int(y + (1.732446 * (u - 128)));
-	b = clip8(b) >> 3;
-	return (r << 11) | (g << 5) | b;
-}
-
-static void uyvy_to_rgb565(const uint8_t *in, int len, uint16_t *out) {
-	assert((len & 3) == 0);
-	for (int i = 0; i < len; i += 4, in += 4) {
-		const int u  = in[0];
-		const int y0 = in[1];
-		const int v  = in[2];
-		const int y1 = in[3];
-		*out++ = yuv_to_rgb565(y0, u, v);
-		*out++ = yuv_to_rgb565(y1, u, v);
-	}
-}
-
-static uint16_t rgb555_to_565(uint16_t color) {
-	const int r = (color >> 10) & 31;
-	const int g = (color >>  5) & 31;
-	const int b =  color        & 31;
-	return (r << 11) | (g << 6) | b;
-}
-
-struct OutputBuffer {
-	void setup(int w, int h, CinepakDecoder *decoder) {
-		_bufSize = w * h * 2;
-		_buf = (uint8_t *)malloc(_bufSize);
-		decoder->_yuvFrame = _buf;
-		decoder->_yuvW = w;
-		decoder->_yuvH = h;
-		decoder->_yuvPitch = w * 2;
-		_w = w;
-		_h = h;
-	}
-	void dump(int num) {
-		if (1) {
-			char filename[64];
-			snprintf(filename, sizeof(filename), "out/%04d.tga", num);
-			uyvy_to_rgb565(_buf, _bufSize, (uint16_t *)_rgbBuffer);
-			struct TgaFile *tga = tgaOpen(filename, _w, _h, 16);
-			if (tga) {
-				tgaWritePixelsData(tga, _rgbBuffer, _bufSize);
-				tgaClose(tga);
-			}
-			return;
-		}
-		char name[16];
-		snprintf(name, sizeof(name), "out/%04d.uyvy", num);
-		FILE *fp = fopen(name, "wb");
-		if (fp) {
-			fwrite(_buf, _bufSize, 1, fp);
-			fclose(fp);
-			char cmd[256];
-			snprintf(cmd, sizeof(cmd), "convert -size 256x128 -depth 8 out/%04d.uyvy out/%04d.png", num, num);
-			system(cmd);
-		}
-	}
-
-	uint8_t *_buf;
-	uint32_t _bufSize;
-	int _w, _h;
-};
 
 struct ccb_t {
 	uint32_t version;
@@ -650,10 +570,10 @@ static void decodeLevelPal(FILE *fp, const char *name) {
 		for (int j = 0; j < 16; ++j) {
 			uint8_t rgb[3];
 			convertAmigaColor(freadUint16BE(fp), rgb);
-			fillRect_rgb555(_rgbBuffer, W * 16, j * W, i * H, W, H, rgb);
+			fillRect_rgb555(_bitmapBuffer, W * 16, j * W, i * H, W, H, rgb);
 		}
 	}
-	tgaWritePixelsData(tga, _rgbBuffer, (W * 16) * (H * count) * sizeof(uint16_t));
+	tgaWritePixelsData(tga, _bitmapBuffer, (W * 16) * (H * count) * sizeof(uint16_t));
 	tgaClose(tga);
 }
 
@@ -711,14 +631,11 @@ int main(int argc, char *argv[]) {
 			if (ext) {
 				if (strcmp(ext, ".CHR") == 0) {
 					decodeFontChr(fp);
-					return 0;
 				} else if (strcmp(ext, ".3DO") == 0) {
 					decodeIcons(fp);
-					return 0;
 				} else if (strcmp(ext, ".BIN") == 0) {
 					decodeTextBin(fp);
 					renderText();
-					return 0;
 				} else if (strcasecmp(ext, ".SUB") == 0) {
 					// 6bpp - japanese subtitles
 					int frames = 0;
@@ -728,13 +645,11 @@ int main(int argc, char *argv[]) {
 						decodeCel(fp, name, kMaskCCB | kMaskPDAT | kMaskPLUT);
 						++frames;
 					} while (!feof(fp));
-					return 0;
 				} else if (strcasecmp(ext, ".CT") == 0 || strcasecmp(ext, ".CT2") == 0) {
 					static uint8_t buffer[0x1D00];
 					const int size = fread(buffer, 1, sizeof(buffer), fp);
 					int ret = bytekiller_unpack(buffer, size, _bitmapBuffer, sizeof(_bitmapBuffer));
 					fprintf(stdout, "Unpacked %s %d\n", ext, ret);
-					return 0;
 				} else if (strcasecmp(ext, ".MBK") == 0) {
 					struct {
 						uint32_t offset;
@@ -745,62 +660,9 @@ int main(int argc, char *argv[]) {
 						mbk[i].len32 = freadUint16BE(fp);
 						fprintf(stdout, "MBK #%d offset 0x%x len %d (next 0x%x)\n", i, mbk[i].offset, mbk[i].len32, mbk[i].offset + mbk[i].len32);
 					}
-					return 0;
+				} else if (strcasecmp(ext, ".CPC") == 0) {
+					decode_3dostr(fp);
 				}
-			}
-			char buf[4];
-			fread(buf, 4, 1, fp);
-			fseek(fp, 0, SEEK_SET);
-
-			if (memcmp(buf, "SHDR", 4) != 0) {
-				fprintf(stderr, "Unhandled file '%s'\n", argv[1]);
-				return -1;
-			}
-			// .cpak
-			CinepakDecoder decoder;
-			OutputBuffer out;
-			int frmeCounter = 0;
-			while (1) {
-				uint32_t pos = ftell(fp);
-				char tag[4];
-				uint32_t size = freadTag(fp, tag);
-				if (feof(fp)) {
-					break;
-				}
-				if (memcmp(tag, "FILM", 4) == 0) {
-					fseek(fp, 8, SEEK_CUR);
-					char type[4];
-					fread(type, 4, 1, fp);
-					if (memcmp(type, "FHDR", 4) == 0) {
-						fseek(fp, 4, SEEK_CUR);
-						char compression[4];
-						fread(compression, 4, 1, fp);
-						uint32_t height = freadUint32BE(fp);
-						uint32_t width = freadUint32BE(fp);
-						out.setup(width, height, &decoder);
-					} else if (memcmp(type, "FRME", 4) == 0) {
-						uint32_t duration = freadUint32BE(fp);
-						uint32_t frameSize = freadUint32BE(fp);
-						uint8_t *frameBuf = (uint8_t *)malloc(frameSize);
-						if (frameBuf) {
-							fread(frameBuf, 1, frameSize, fp);
-							// fprintf(stdout, "FRME duration %d frame %d size %d\n", duration, frameSize, size);
-							decoder.decode(frameBuf, frameSize);
-							free(frameBuf);
-							out.dump(frmeCounter);
-						}
-						++frmeCounter;
-					}
-				} else if (memcmp(tag, "SHDR", 4) == 0) {
-					// ignore
-				} else if (memcmp(tag, "SNDS", 4) == 0) {
-					// ignore
-				} else if (memcmp(tag, "FILL", 4) == 0) {
-					// ignore
-				} else {
-					fprintf(stderr, "Unhandled tag '%c%c%c%c' size %d\n", tag[0], tag[1], tag[2], tag[3], size);
-				}
-				fseek(fp, pos + size, SEEK_SET);
 			}
 			fclose(fp);
 		}
