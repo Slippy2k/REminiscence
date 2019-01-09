@@ -1529,6 +1529,7 @@ bool Game::hasLevelMap(int level, int room) const {
 
 void Game::loadLevelMap() {
 	debug(DBG_GAME, "Game::loadLevelMap() room=%d", _currentRoom);
+	bool widescreenUpdated = false;
 	_currentIcon = 0xFF;
 	switch (_res._type) {
 	case kResourceTypeAmiga:
@@ -1573,6 +1574,7 @@ void Game::loadLevelMap() {
 			} else {
 				_stub->copyWidescreenRight(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
 			}
+			widescreenUpdated = true;
 		}
 		_vid.PC_decodeMap(_currentLevel, _currentRoom);
 		break;
@@ -1592,11 +1594,14 @@ void Game::loadLevelMap() {
 			} else {
 				_stub->copyWidescreenRight(_vid._w, _vid._h, 0);
 			}
+			widescreenUpdated = true;
 		}
 		_vid.MAC_decodeMap(_currentLevel, _currentRoom);
 		break;
 	}
-	_vid.updateWidescreen();
+	if (!widescreenUpdated) {
+		_vid.updateWidescreen();
+	}
 }
 
 void Game::loadLevelData() {
