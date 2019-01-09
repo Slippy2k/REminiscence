@@ -6,6 +6,7 @@
 #include <string.h>
 #include "cinepak.h"
 #include "endian.h"
+#include "fileio.h"
 #include "unpack.h"
 extern "C" {
 #include "tga.h"
@@ -13,20 +14,6 @@ extern "C" {
 
 static uint8_t _bitmapBuffer[320 * 200 * sizeof(uint32_t)];
 static uint8_t _rgbBuffer[320 * 200 * sizeof(uint32_t)];
-
-static uint8_t *readFile(FILE *fp, int *size) {
-	fseek(fp, 0, SEEK_END);
-	*size = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-	uint8_t *buf = (uint8_t *)malloc(*size);
-	if (buf) {
-		const int count = fread(buf, 1, *size, fp);
-		if (count != *size) {
-			fprintf(stderr, "Failed to read %d bytes\n", count);
-		}
-	}
-	return buf;
-}
 
 static uint8_t clip8(int a) {
 	if (a < 0) {
@@ -106,30 +93,6 @@ struct OutputBuffer {
 	uint32_t _bufSize;
 	int _w, _h;
 };
-
-static uint16_t freadUint16LE(FILE *fp) {
-	uint8_t buf[2];
-	fread(buf, 1, sizeof(buf), fp);
-	return buf[0] | (buf[1] << 8);
-}
-
-static uint16_t freadUint16BE(FILE *fp) {
-	uint8_t buf[2];
-	fread(buf, 1, sizeof(buf), fp);
-	return (buf[0] << 8) | buf[1];
-}
-
-static uint32_t freadUint32BE(FILE *fp) {
-	uint8_t buf[4];
-	fread(buf, 1, sizeof(buf), fp);
-	return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
-}
-
-static uint32_t readTag(FILE *fp, char *type) {
-	fread(type, 4, 1, fp);
-	uint32_t size = freadUint32BE(fp);
-	return size;
-}
 
 struct ccb_t {
 	uint32_t version;
@@ -275,7 +238,7 @@ static void decodeCel(FILE *fp, const char *fname, int mask) {
 	while (mask != 0) {
 		const uint32_t pos = ftell(fp);
 		char tag[5];
-		const uint32_t size = readTag(fp, tag);
+		const uint32_t size = freadTag(fp, tag);
 		if (feof(fp)) {
 			break;
 		}
@@ -381,7 +344,7 @@ static void decodeCel(FILE *fp, const char *fname, int mask) {
 
 static void decodeAnim(FILE *fp) {
 	char tag[4];
-	const uint32_t size = readTag(fp, tag);
+	const uint32_t size = freadTag(fp, tag);
 	assert(memcmp(tag, "ANIM", 4) == 0);
 	anim_t anim;
 	anim.version = freadUint32BE(fp);
@@ -786,7 +749,7 @@ int main(int argc, char *argv[]) {
 					for (int i = 0; i < 74; ++i) {
 						mbk[i].offset = freadUint32BE(fp); // point to compressed data if (len2&0x8000)==0
 						mbk[i].len32 = freadUint16BE(fp);
-						fprintf(stdout, "MBK #%d offset 0x%x len %d (next 0x%x)\n", i, mbk[i].offset, mbk[i].len, mbk[i].offset + mbk[i].len32);
+						fprintf(stdout, "MBK #%d offset 0x%x len %d (next 0x%x)\n", i, mbk[i].offset, mbk[i].len32, mbk[i].offset + mbk[i].len32);
 					}
 					return 0;
 				}
@@ -806,7 +769,7 @@ int main(int argc, char *argv[]) {
 			while (1) {
 				uint32_t pos = ftell(fp);
 				char tag[4];
-				uint32_t size = readTag(fp, tag);
+				uint32_t size = freadTag(fp, tag);
 				if (feof(fp)) {
 					break;
 				}
