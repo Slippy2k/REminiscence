@@ -23,33 +23,26 @@ static uint8_t clip8(int a) {
 	}
 }
 
-static uint16_t yuv_to_rgb565(int y, int u, int v) {
+static uint16_t yuv_to_rgb555(int y, int u, int v) {
 	int r = int(y + (1.370705 * (v - 128)));
 	r = clip8(r) >> 3;
 	int g = int(y - (0.698001 * (v - 128)) - (0.337633 * (u - 128)));
-	g = clip8(g) >> 2;
+	g = clip8(g) >> 3;
 	int b = int(y + (1.732446 * (u - 128)));
 	b = clip8(b) >> 3;
-	return (r << 11) | (g << 5) | b;
+	return (r << 10) | (g << 5) | b;
 }
 
-static void uyvy_to_rgb565(const uint8_t *in, int len, uint16_t *out) {
+static void uyvy_to_rgb555(const uint8_t *in, int len, uint16_t *out) {
 	assert((len & 3) == 0);
 	for (int i = 0; i < len; i += 4, in += 4) {
 		const int u  = in[0];
 		const int y0 = in[1];
 		const int v  = in[2];
 		const int y1 = in[3];
-		*out++ = yuv_to_rgb565(y0, u, v);
-		*out++ = yuv_to_rgb565(y1, u, v);
+		*out++ = yuv_to_rgb555(y0, u, v);
+		*out++ = yuv_to_rgb555(y1, u, v);
 	}
-}
-
-static uint16_t rgb555_to_565(uint16_t color) {
-	const int r = (color >> 10) & 31;
-	const int g = (color >>  5) & 31;
-	const int b =  color        & 31;
-	return (r << 11) | (g << 6) | b;
 }
 
 struct OutputBuffer {
@@ -67,7 +60,7 @@ struct OutputBuffer {
 		if (1) {
 			char filename[64];
 			snprintf(filename, sizeof(filename), "out/%04d.tga", num);
-			uyvy_to_rgb565(_buf, _bufSize, (uint16_t *)_rgbBuffer);
+			uyvy_to_rgb555(_buf, _bufSize, (uint16_t *)_rgbBuffer);
 			struct TgaFile *tga = tgaOpen(filename, _w, _h, 16);
 			if (tga) {
 				tgaWritePixelsData(tga, _rgbBuffer, _bufSize);
