@@ -37,12 +37,6 @@ static const uint8_t _cel_bitsPerPixelLookupTable[8] = {
         0, 1, 2, 4, 6, 8, 16, 0
 };
 
-static uint16_t _cel_bitsMask[17] = {
-        0,
-        0x0001, 0x0003, 0x0007, 0x000F, 0x001F, 0x003F, 0x007F, 0x00FF,
-        0x01FF, 0x03FF, 0x07FF, 0x0FFF, 0x1FFF, 0x3FFF, 0x7FFF, 0xFFFF
-};
-
 // BitReader
 static int _celBits_bits;
 static int _celBits_size;
@@ -56,12 +50,14 @@ static uint32_t decodeCel_readBits(FILE *fp, int count) {
 	uint32_t value = 0;
 	while (count != 0) {
 		if (count < _celBits_size) {
-			value |= (_celBits_bits >> (_celBits_size -  count)) & _cel_bitsMask[count];
+			const uint16_t mask = (1 << count) - 1;
+			value |= (_celBits_bits >> (_celBits_size -  count)) & mask;
 			_celBits_size -= count;
 			count = 0;
 		} else {
 			count -= _celBits_size;
-			value |= (_celBits_bits & _cel_bitsMask[_celBits_size]) << count;
+			const uint16_t mask = (1 << count) - 1;
+			value |= (_celBits_bits & mask) << count;
 			// refill
 			_celBits_bits = fgetc(fp);
 			_celBits_size = 8;
@@ -586,6 +582,13 @@ static const struct {
 	{ 0, 0 }
 };
 
+static const struct {
+	const char *ext;
+	void (*decode)(const char *name, FILE *fp);
+} _decoders[] {
+	{ 0, 0 }
+}; // keep 'ext' alphabetically sorted, bsearch
+
 int main(int argc, char *argv[]) {
 	if (argc == 3) {
 		FILE *fp = fopen(argv[2], "rb");
@@ -660,6 +663,7 @@ int main(int argc, char *argv[]) {
 						mbk[i].len32 = freadUint16BE(fp);
 						fprintf(stdout, "MBK #%d offset 0x%x len %d (next 0x%x)\n", i, mbk[i].offset, mbk[i].len32, mbk[i].offset + mbk[i].len32);
 					}
+					// TODO: check bytekiller
 				} else if (strcasecmp(ext, ".CPC") == 0) {
 					decode_3dostr(fp);
 				}
