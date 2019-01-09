@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "bitmap.h"
 #include "cinepak.h"
 #include "endian.h"
 #include "fileio.h"
@@ -593,7 +594,7 @@ static void drawString(int x, int y, const uint8_t *str) {
 //static const char *kFontChr = "FONT.CHR";
 static const char *kFontChr = "FONT8JAP.CHR";
 
-static void renderTextTga() {
+static void renderText() {
 	FILE *fp = fopen(kFontChr, "rb");
 	if (fp) {
 		_fontLen = fread(_fontChr, 1, sizeof(_fontChr), fp);
@@ -602,25 +603,19 @@ static void renderTextTga() {
 	for (int i = 0; i < MAX_TEXTS; ++i) {
 		drawString(0, i * (8 + VERTICAL_MARGIN), _textsTable[i]);
 	}
-	struct TgaFile *tga = tgaOpen("test.tga", 1024, MAX_TEXTS * (8 + VERTICAL_MARGIN), 8);
-	if (tga) {
-		_textPalette[0] = 0x44;
-		_textPalette[1] = 0x88;
-		_textPalette[2] = 0x88;
+	_textPalette[0] = 0x44;
+	_textPalette[1] = 0x88;
+	_textPalette[2] = 0x88;
 
-		_textPalette[3] = 0xFF;
-		_textPalette[4] = 0xBB;
-		_textPalette[5] = 0x00;
+	_textPalette[3] = 0xFF;
+	_textPalette[4] = 0xBB;
+	_textPalette[5] = 0x00;
 
-		_textPalette[6] = 0x00;
-		_textPalette[7] = 0x00;
-		_textPalette[8] = 0x00;
+	_textPalette[6] = 0x00;
+	_textPalette[7] = 0x00;
+	_textPalette[8] = 0x00;
 
-		tgaSetLookupColorTable(tga, _textPalette);
-		tgaWritePixelsData(tga, _textBitmap, sizeof(_textBitmap));
-
-		tgaClose(tga);
-	}
+	saveBMP("text.bmp", _textBitmap, _textPalette, 1024, MAX_TEXTS * (8 + VERTICAL_MARGIN));
 }
 
 static void convertAmigaColor(uint16_t color, uint8_t *rgb) {
@@ -655,7 +650,6 @@ static void decodeLevelPal(FILE *fp, const char *name) {
 		for (int j = 0; j < 16; ++j) {
 			uint8_t rgb[3];
 			convertAmigaColor(freadUint16BE(fp), rgb);
-			// rgb[0] = rgb[1] = rgb[2] = 255;
 			fillRect_rgb555(_rgbBuffer, W * 16, j * W, i * H, W, H, rgb);
 		}
 	}
@@ -723,7 +717,7 @@ int main(int argc, char *argv[]) {
 					return 0;
 				} else if (strcmp(ext, ".BIN") == 0) {
 					decodeTextBin(fp);
-					renderTextTga();
+					renderText();
 					return 0;
 				} else if (strcasecmp(ext, ".SUB") == 0) {
 					// 6bpp - japanese subtitles
