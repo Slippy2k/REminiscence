@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bitmap.h"
+#include "decode_3docel.h"
 #include "decode_3dostr.h"
 #include "endian.h"
 #include "fileio.h"
@@ -15,17 +16,6 @@ extern "C" {
 
 static uint8_t _bitmapBuffer[320 * 200 * sizeof(uint32_t)];
 
-struct ccb_t {
-	uint32_t version;
-	uint32_t flags;
-	uint16_t ppmp0;
-	uint16_t ppmp1;
-	uint32_t pre0;
-	uint32_t pre1;
-	uint32_t width;
-	uint32_t height;
-};
-
 struct anim_t {
 	uint32_t version;
 	uint32_t type;
@@ -33,227 +23,28 @@ struct anim_t {
 	uint32_t rate;
 };
 
-static const uint8_t _cel_bitsPerPixelLookupTable[8] = {
-        0, 1, 2, 4, 6, 8, 16, 0
-};
-
-// BitReader
-static int _celBits_bits;
-static int _celBits_size;
-
-static void decodeCel_reset(FILE *fp) {
-	_celBits_bits = fgetc(fp);
-	_celBits_size = 8;
-}
-
-static uint32_t decodeCel_readBits(FILE *fp, int count) {
-	uint32_t value = 0;
-	while (count != 0) {
-		if (count < _celBits_size) {
-			const uint16_t mask = (1 << count) - 1;
-			value |= (_celBits_bits >> (_celBits_size -  count)) & mask;
-			_celBits_size -= count;
-			count = 0;
-		} else {
-			count -= _celBits_size;
-			const uint16_t mask = (1 << count) - 1;
-			value |= (_celBits_bits & mask) << count;
-			// refill
-			_celBits_bits = fgetc(fp);
-			_celBits_size = 8;
-		}
-	}
-	return value;
-}
-
-static void decodeCel_PDAT(const struct ccb_t *ccb, FILE *fp, uint32_t size) {
-	const int ccbPRE0_bitsPerPixel = _cel_bitsPerPixelLookupTable[ccb->pre0 & 7];
-	const int bpp = (ccbPRE0_bitsPerPixel < 8) ? 8 : ccbPRE0_bitsPerPixel;
-	assert(ccb->width * ccb->height * bpp / 8 <= sizeof(_bitmapBuffer));
-	if (ccb->flags & 0x200) { // RLE
-		for (int j = 0; j < ccb->height; ++j) {
-			uint8_t *dst = _bitmapBuffer + j * ccb->width * bpp / 8;
-			const int pos = ftell(fp);
-			int lineSize = (ccbPRE0_bitsPerPixel >= 8) ? freadUint16BE(fp) : fgetc(fp);
-			decodeCel_reset(fp);
-			int w = ccb->width;
-			while (w > 0) {
-				int type = decodeCel_readBits(fp, 2);
-				int count = decodeCel_readBits(fp, 6) + 1;
-				// fprintf(stdout, "\t type %d count %d\n", type, count);
-				if (type == 0) { // PACK_EOL
-					break;
-				}
-				if (w - count < 0) {
-					count = w;
-				}
-				switch (type) {
-				case 1: // PACK_LITERAL
-					for (int i = 0; i < count; ++i) {
-						if (bpp == 16) {
-							const uint16_t color = decodeCel_readBits(fp, ccbPRE0_bitsPerPixel);
-							*(uint16_t *)dst = color;
-							dst += 2;
-						} else {
-							const uint8_t color = decodeCel_readBits(fp, ccbPRE0_bitsPerPixel);
-							*dst++ = color;
-						}
-					}
-					break;
-				case 2: // PACK_TRANSPARENT
-					dst += count * bpp / 8;
-					break;
-				case 3: // PACK_REPEAT
-					if (bpp == 16) {
-						const uint16_t color = decodeCel_readBits(fp, ccbPRE0_bitsPerPixel);
-						for (int i = 0; i < count; ++i) {
-							*(uint16_t *)dst = color;
-							dst += 2;
-						}
-					} else {
-						const uint8_t color = decodeCel_readBits(fp, ccbPRE0_bitsPerPixel);
-						memset(dst, color, count);
-						dst += count;
-					}
-					break;
-				}
-				w -= count;
-			}
-			const int align = (lineSize + 2) * sizeof(uint32_t);
-			fseek(fp, pos + align, SEEK_SET);
-		}
-	} else {
-		if (ccbPRE0_bitsPerPixel == 4) {
-			const int lineSize = ccb->width * ccbPRE0_bitsPerPixel / 8;
-			const int align = ((lineSize + 3) & ~3) - lineSize;
-			for (int j = 0; j < ccb->height; ++j) {
-				const int offset = j * ccb->width;
-				for (int i = 0; i < ccb->width; i += 2) {
-					const uint8_t color = fgetc(fp);
-					_bitmapBuffer[offset + i + 1] = color & 15;
-					_bitmapBuffer[offset + i + 0] = color >> 4;
-				}
-				fseek(fp, align, SEEK_CUR);
-			}
-		} else {
-			fread(_bitmapBuffer, 1, ccb->height * ccb->width * bpp / 8, fp);
-		}
-	}
-}
-
-static ccb_t ccb;
-static int plutSize;
-
-enum {
-	kMaskCCB  = 1 << 0,
-	kMaskPLUT = 1 << 1,
-	kMaskPDAT = 1 << 2
-};
-
-static void decodeCel(FILE *fp, const char *fname, int mask) {
-	uint16_t rgb555[256];
-	while (mask != 0) {
-		const uint32_t pos = ftell(fp);
-		char tag[5];
-		const uint32_t size = freadTag(fp, tag);
-		if (feof(fp)) {
-			break;
-		}
-		tag[4] = 0;
-		fprintf(stdout, "Found tag '%s' size %d\n", tag, size);
-		if (memcmp(tag, "CCB ", 4) == 0) {
-			ccb.version = freadUint32BE(fp);
-			ccb.flags = freadUint32BE(fp);
-			fseek(fp, 3 * 4, SEEK_CUR);
-			uint32_t xpos = freadUint32BE(fp);
-			uint32_t ypos = freadUint32BE(fp);
-			uint32_t hdx = freadUint32BE(fp);
-			uint32_t hdy = freadUint32BE(fp);
-			uint32_t vdx = freadUint32BE(fp);
-			uint32_t vdy = freadUint32BE(fp);
-			uint32_t hddx = freadUint32BE(fp);
-			uint32_t hddy = freadUint32BE(fp);
-			fprintf(stdout, "pos 0x%x,0x%x hd 0x%x,0x%x vd 0x%x,0x%x, hdd 0x%x,0x%x\n", xpos, ypos, hdx, hdy, vdx, vdy, hddx, hddy);
-			uint32_t ppmp = freadUint32BE(fp);
-			ccb.ppmp0 = ppmp >> 16;
-			ccb.ppmp1 = ppmp & 0xFFFF;
-			ccb.pre0 = freadUint32BE(fp);
-			ccb.pre1 = freadUint32BE(fp);
-			ccb.width = freadUint32BE(fp);
-			ccb.height = freadUint32BE(fp);
-			fprintf(stdout, "version %d flags 0x%x width %d height %d\n", ccb.version, ccb.flags, ccb.width, ccb.height);
-
-			// bit9 - 0x200 - compressed
-			// bit5 - RGB(0,0,0) is actual black not transparent
-
-			int ccbPRE0_bitsPerPixel = _cel_bitsPerPixelLookupTable[ccb.pre0 & 7];
-			int ccbPRE0_height = ((ccb.pre0 >> 6) & 0x3FF) + 1;
-			int ccbPRE1_width  = (ccb.pre1 & 0x3FF) + 1;
-
-			fprintf(stdout, "ccbPRE bits %d width %d height %d rle %d\n", ccbPRE0_bitsPerPixel, ccbPRE1_width, ccbPRE0_height, (ccb.flags & 0x200) != 0);
-
-			mask &= ~kMaskCCB;
-
-		} else if (memcmp(tag, "PLUT", 4) == 0) {
-			int count = freadUint32BE(fp);
-			fprintf(stdout, "PLUT count %d\n", count);
-			assert(count <= 256);
-			memset(rgb555, 0, sizeof(rgb555));
-			for (int i = 0; i < count; ++i) {
-				rgb555[i] = freadUint16BE(fp);
-			}
-			plutSize = count;
-
-			mask &= ~kMaskPLUT;
-
-		} else if (memcmp(tag, "PDAT", 4) == 0) {
-			decodeCel_PDAT(&ccb, fp, size);
-
-			mask &= ~kMaskPDAT;
-		} else {
-			fprintf(stderr, "Unhandled tag '%c%c%c%c' size %d\n", tag[0], tag[1], tag[2], tag[3], size);
-		}
-		fseek(fp, pos + size, SEEK_SET);
-	}
-	int bpp = _cel_bitsPerPixelLookupTable[ccb.pre0 & 7];
-	const int bppTga = (plutSize != 0) ? 8 : 16;
-	fprintf(stdout, "tga width %d height %d bpp %d\n", ccb.width, ccb.height, bpp);
-	struct TgaFile *tga = tgaOpen(fname, ccb.width, ccb.height, bppTga);
-	if (tga) {
-		if (bpp == 4 && plutSize != 0) {
-			bpp = 8;
-		}
-		if (bpp == 6 && plutSize != 0) {
-			bpp = 8;
-		}
-		if (bpp == 8) {
-			assert(plutSize != 0);
+static void decodeCel(FILE *fp, const char *fname) {
+	CelPicture cp;
+	if (decode_3docel(fp, &cp) == 0) {
+		const int bpp = (cp.bpp <= 8) ? 8 : 16;
+		struct TgaFile *tga = tgaOpen(fname, cp.w, cp.h, bpp);
+		if (cp.bpp == 6 || cp.bpp == 8) {
 			uint8_t palette[256 * 3];
-			if (0) {
-				const int colorsCount = 1 << _cel_bitsPerPixelLookupTable[ccb.pre0 & 7];
-				for (int i = 0; i < colorsCount; ++i) {
-					uint8_t color = i * 255 / colorsCount;
-					palette[i * 3]     = color;
-					palette[i * 3 + 1] = color;
-					palette[i * 3 + 2] = color;
-				}
-			} else {
-				for (int i = 0; i < 256; ++i) {
-					const uint8_t r = ((rgb555[i % plutSize] >> 10) & 31) << 3;
-					const uint8_t g = ((rgb555[i % plutSize] >>  5) & 31) << 3;
-					const uint8_t b =  (rgb555[i % plutSize]        & 31) << 3;
-					palette[i * 3]     = r;
-					palette[i * 3 + 1] = g;
-					palette[i * 3 + 2] = b;
-				}
+			for (int i = 0; i < 256; ++i) {
+				const uint8_t r = ((cp.pal[i % cp.palSize] >> 10) & 31) << 3;
+				const uint8_t g = ((cp.pal[i % cp.palSize] >>  5) & 31) << 3;
+				const uint8_t b =  (cp.pal[i % cp.palSize]        & 31) << 3;
+				palette[i * 3]     = r;
+				palette[i * 3 + 1] = g;
+				palette[i * 3 + 2] = b;
 			}
 			tgaSetLookupColorTable(tga, palette);
-			tgaWritePixelsData(tga, _bitmapBuffer, ccb.width * ccb.height * bpp / 8);
-		} else if (bpp == 16) {
-			const int len = ccb.width * ccb.height * sizeof(uint16_t);
-			tgaWritePixelsData(tga, _bitmapBuffer, len);
+			tgaWritePixelsData(tga, cp.data, cp.w * cp.h);
+		} else if (cp.bpp == 16) {
+			const int len = cp.w * cp.h * sizeof(uint16_t);
+			tgaWritePixelsData(tga, cp.data, len);
 		} else {
-			fprintf(stderr, "Unhandled bpp %d\n", bpp);
+			fprintf(stderr, "Unhandled bpp %d\n", cp.bpp);
 		}
 		tgaClose(tga);
 	}
@@ -275,7 +66,7 @@ static void decodeAnim(FILE *fp) {
 
 		fprintf(stdout, "frame #%d at 0x%lx\n", i, ftell(fp));
 		snprintf(name, sizeof(name), "anim_%03d.tga", i);
-		decodeCel(fp, name, kMaskPDAT);
+		decodeCel(fp, name);
 	}
 }
 
@@ -606,7 +397,7 @@ int main(int argc, char *argv[]) {
 				if (name) {
 					strcpy(name, p);
 					strcat(name, ".tga");
-					decodeCel(fp, name, kMaskCCB | kMaskPDAT);
+					decodeCel(fp, name);
 					free(name);
 				}
 			} else if (strcmp(argv[1], "-pal") == 0) {
@@ -645,7 +436,7 @@ int main(int argc, char *argv[]) {
 					do {
 						char name[16];
 						snprintf(name, sizeof(name), "sub%03d.tga", frames);
-						decodeCel(fp, name, kMaskCCB | kMaskPDAT | kMaskPLUT);
+						decodeCel(fp, name);
 						++frames;
 					} while (!feof(fp));
 				} else if (strcasecmp(ext, ".CT") == 0 || strcasecmp(ext, ".CT2") == 0) {
