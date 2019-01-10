@@ -9,8 +9,10 @@
 //#define WITH_MASK
 //#define WITH_DEPTH5
 
+static int _tilesSega = 0;
 #define DECODE_BUFSIZE (65536 * 8)
 static unsigned char _decodeLevBuf[DECODE_BUFSIZE];
+static int _decodeLevLen;
 static unsigned char pic[DECODE_BUFSIZE];
 static unsigned char tmp[DECODE_BUFSIZE];
 static unsigned char _tmpBuf[DECODE_BUFSIZE];
@@ -30,7 +32,7 @@ static void blit_sgd(unsigned char *dst, int dstpitch, int x, int y, int w, int 
 	const int x0 = x;
 	const int y0 = y;
 
-	printf("blit_sgd pos %d,%d dim %d,%d size %d\n", x, y, w, h, size);
+	// printf("blit_sgd pos %d,%d dim %d,%d size %d\n", x, y, w, h, size);
 
 	++w;
 	++h;
@@ -67,8 +69,16 @@ static void blit_sgd(unsigned char *dst, int dstpitch, int x, int y, int w, int 
 static void blit_4v_8x8(unsigned char *dst, int x, int y, unsigned char *src, int shift) {
 	int i, color, mask, bit;
 
+	// printf("blit_4v_8x8 pos %d,%d shift %d\n", x, y, shift);
 	dst += (y * 256 + x) * 8;
 	for (y = 0; y < 8; ++y) {
+if (_tilesSega) {
+	for (i = 0; i < 4; ++i) {
+		dst[2 * i] = (src[i] >> 4) << shift;
+		dst[2 * i + 1] = (src[i] & 15) << shift;
+	}
+	src += 4;
+} else { // Amiga
 		for (i = 0; i < 8; ++i) {
 			mask = 1 << (7 - i);
 			color = 0;
@@ -80,6 +90,7 @@ static void blit_4v_8x8(unsigned char *dst, int x, int y, unsigned char *src, in
 			dst[i] = (color << shift);
 		}
 		++src;
+}
 		dst += 256;
 	}
 }
@@ -87,8 +98,20 @@ static void blit_4v_8x8(unsigned char *dst, int x, int y, unsigned char *src, in
 static void blit_mask_4v_8x8(unsigned char *dst, int x, int y, unsigned char *src, unsigned char *src_mask, int shift) {
 	int i, color, mask, bit, tmp;
 
+	// printf("blit_mask_4v_8x8 pos %d,%d shift %d\n", x, y, shift);
 	dst += (y * 256 + x) * 8;
 	for (y = 0; y < 8; ++y) {
+if (_tilesSega) {
+	for (i = 0; i < 4; ++i) {
+		if ((src[i] >> 4) != 0) {
+			dst[2 * i] = (src[i] >> 4) << shift;
+		}
+		if ((src[i] & 15) != 0) {
+			dst[2 * i + 1] = (src[i] & 15) << shift;
+		}
+	}
+	src += 4;
+} else { // Amiga
 		for (i = 0; i < 8; ++i) {
 			mask = 1 << (7 - i);
 			color = 0;
@@ -106,6 +129,7 @@ static void blit_mask_4v_8x8(unsigned char *dst, int x, int y, unsigned char *sr
 			}
 		}
 		++src;
+}
 		dst += 256;
 	}
 }
@@ -113,6 +137,7 @@ static void blit_mask_4v_8x8(unsigned char *dst, int x, int y, unsigned char *sr
 static void clear_1v_8x8(unsigned char *dst, int x, int y, int shift) {
 	int i;
 
+	// printf("clear_1v_8x8 pos %d,%d shift %d\n", x, y, shift);
 	dst += (y * 256 + x) * 8;
 	for (y = 0; y < 8; ++y) {
 		for (i = 0; i < 8; ++i) {
@@ -125,6 +150,7 @@ static void clear_1v_8x8(unsigned char *dst, int x, int y, int shift) {
 static void blit_mask_1v_8x8(unsigned char *dst, int x, int y, unsigned char *src_mask, int shift, int or_mask) {
 	int i, mask, tmp;
 
+	// printf("blit_mask_1v_8x8 pos %d,%d shift %d\n", x, y, shift);
 	dst += (y * 256 + x) * 8;
 	for (y = 0; y < 8; ++y) {
 		for (i = 0; i < 8; ++i) {
@@ -144,6 +170,7 @@ static void blit_mask_1v_8x8(unsigned char *dst, int x, int y, unsigned char *sr
 static void blit_not_1v_8x8(unsigned char *dst, int x, int y, unsigned char *src, int shift) {
 	int i, color, mask;
 
+	// printf("blit_not_1v_8x8 pos %d,%d shift %d\n", x, y, shift);
 	dst += (y * 256 + x) * 8;
 	for (y = 0; y < 8; ++y) {
 		color = src[8] | src[16] | src[24];
@@ -646,13 +673,15 @@ printf("pal %d %d %d\n", d1, movew(a0), movew(a0 + 2));
 	assert(d1 >= 0 && d1 < 6);
 if (_currentLevel == 0) {
 	d1 = 0;
+} else if (_currentLevel == 7) {
+	d1 = 0;
 }
 	a3 = pal + d1 * 32;
 	for (i = 0; i < 16; ++i) {
 		d2 = movew(a3); a3 += 2;
 		convert_amiga_color(_roomPalBuf, i, d2);
 	}
-#if 1
+#if 0
 	// output palette (debug)
 	for (i = 0; i < 16; ++i) {
 		fill_image_data(_roomBitmapBuf, i * 8,  0, 8, 4, i);
@@ -679,13 +708,14 @@ static void decode_lev(int level, const unsigned char *a4, unsigned char *mbk, u
 		offsets[i] = movel(a4 + 4 * i);
 		printf("room %2d offset 0x%X\n", i, offsets[i]);
 	}
-	offset_prev = 0;
+	offset_prev = 64 * 4;
 	for (i = 0; i < 64; ++i) {
 		if (offset_prev != 0) {
 			size = offsets[i] - offset_prev;
 			if (size != 0) {
 				ret = delphine_unpack(a4 + offsets[i] - 4, _decodeLevBuf);
 				assert(ret);
+				_decodeLevLen = size;
 				print_lev_hdr(i, _decodeLevBuf, size);
 				loadLevelMap(level, i, _decodeLevBuf, mbk, pal);
 			}
@@ -709,15 +739,15 @@ static unsigned char *load_file_sgd(unsigned char *a1) {
 }
 
 static const char *lev_names[] = {
-	"level1.lev", "level2_1.lev", "dt.LEV", "level3_1.lev", "level3_1.lev", "level4_1.LEV", "level4_2.lev"
+	"level1.lev", "level2_1.lev", "dt.LEV", "level3_1.lev", "level3_1.lev", "level4_1.LEV", "level4_2.lev", "present.lev"
 };
 
 static const char *pal_names[] = {
-	"level1.pal", "level2.PAL", "dt.PAL", "level3_1.pal", "level3_1.pal", "level4_1.PAL", "level4_2.pal"
+	"level1.pal", "level2.PAL", "dt.PAL", "level3_1.pal", "level3_1.pal", "level4_1.PAL", "level4_2.pal", "present.pal"
 };
 
 static const char *mbk_names[] = {
-	"level1.mbk", "level2.MBK", "dt.MBK", "level3_1.mbk", "level3_1.mbk", "level4_1.MBK", "level4_2.mbk"
+	"level1.mbk", "level2.MBK", "dt.MBK", "level3_1.mbk", "level3_1.mbk", "level4_1.MBK", "level4_2.mbk", "present.mbk"
 };
 
 static const char *spc_names[] = {
@@ -782,7 +812,10 @@ int main(int argc, char *argv[]) {
 		snprintf(path, sizeof(path), "%s/%s", argv[1], mbk_names[i]);
 		mbk_data = load_file(path);
 		snprintf(path, sizeof(path), "%s/%s", argv[1], sgd_name);
-		_sgdData = load_file_sgd(load_file(path));
+		_sgdData = i == 0 ? load_file_sgd(load_file(path)) : 0;
+		if (i == 7) { // present.lev
+			_tilesSega = 1;
+		}
 		_sgdDecodeBuf = malloc(7174 * 16);
 		_roomBitmapBuf = malloc(43014 * 16);
 		decode_lev(i, lev_data, mbk_data, pal_data);
