@@ -334,34 +334,38 @@ static void convertAmigaColor(uint16_t color, uint8_t *rgb) {
 	rgb[2] = (rgb[2] << 4) | rgb[2];
 }
 
-static void fillRect_rgb555(uint8_t *dst, uint32_t pitch, int x, int y, int w, int h, const uint8_t *rgb) {
-	const uint16_t color555 = ((rgb[0] >> 3) << 10) | ((rgb[1] >> 3) << 5) | (rgb[2] >> 3);
+static void fillRect(uint8_t *dst, uint32_t pitch, int x, int y, int w, int h, uint8_t color) {
 	const int y2 = y + h;
 	for (; y < y2; ++y) {
-		for (int i = 0; i < w; ++i) {
-			*((uint16_t *)dst + y * pitch + x + i) = color555;
-		}
+		memset(dst + y * pitch + x, color, w);
 	}
 }
 
 static void decodeLevelPal(FILE *fp, const char *name) {
 	static const int W = 16;
 	static const int H = 16;
+
 	fseek(fp, 0, SEEK_END);
 	const int fileSize = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
+
+	// 16 colors on uint16_t (0rgb)
 	assert((fileSize % 32) == 0);
 	const int count = fileSize / 32;
-	struct TgaFile *tga = tgaOpen(name, W * 16, H * count, 16);
+
+	// check for less than 16 palettes, so we can output to 256 colors paletted
+	assert(count <= 16);
+
+	uint8_t paletteBuffer[256 * 3];
 	for (int i = 0; i < count; ++i) {
+		const uint8_t base = i * 16;
 		for (int j = 0; j < 16; ++j) {
-			uint8_t rgb[3];
-			convertAmigaColor(freadUint16BE(fp), rgb);
-			fillRect_rgb555(_bitmapBuffer, W * 16, j * W, i * H, W, H, rgb);
+			const uint8_t color = base + j;
+			fillRect(_bitmapBuffer, W * 16, j * W, i * H, W, H, color);
+			convertAmigaColor(freadUint16BE(fp), paletteBuffer + color * 3);
 		}
 	}
-	tgaWritePixelsData(tga, _bitmapBuffer, (W * 16) * (H * count) * sizeof(uint16_t));
-	tgaClose(tga);
+	saveBMP(name, _bitmapBuffer, paletteBuffer, W * 16, H * count);
 }
 
 static const struct {
@@ -407,10 +411,10 @@ int main(int argc, char *argv[]) {
 				} else {
 					++p;
 				}
-				char *name = (char *)malloc(strlen(p) + 4 /* '.tga' */ + 1);
+				char *name = (char *)malloc(strlen(p) + 4 /* '.bmp' */ + 1);
 				if (name) {
 					strcpy(name, p);
-					strcat(name, ".tga");
+					strcat(name, ".bmp");
 					decodeLevelPal(fp, name);
 					free(name);
 				}
@@ -442,8 +446,25 @@ int main(int argc, char *argv[]) {
 				} else if (strcasecmp(ext, ".CT") == 0 || strcasecmp(ext, ".CT2") == 0) {
 					static uint8_t buffer[0x1D00];
 					const int size = fread(buffer, 1, sizeof(buffer), fp);
-					int ret = bytekiller_unpack(buffer, size, _bitmapBuffer, sizeof(_bitmapBuffer));
+					int ret = bytekiller_unpack(_bitmapBuffer, sizeof(_bitmapBuffer), buffer, size);
 					fprintf(stdout, "Unpacked %s %d\n", ext, ret);
+				} else if (strcasecmp(ext, ".LEV") == 0 || strcasecmp(ext, ".LV2") == 0) {
+					uint32_t offsets[64];
+					for (int i = 0; i < 64; ++i) {
+						offsets[i] = freadUint32BE(fp);
+					}
+					static uint8_t buffer[82216];
+					fread(buffer, 1, sizeof(buffer), fp);
+					uint32_t prevOffset = 64 * sizeof(uint32_t);
+					for (int i = 0; i < 64; ++i) {
+						const uint32_t size = offsets[i] - prevOffset;
+						if (size != 0) {
+							const uint32_t relativeOffset = offsets[i] - 64 * sizeof(uint32_t);
+							int ret = bytekiller_unpack(_bitmapBuffer, sizeof(_bitmapBuffer), buffer, relativeOffset);
+							fprintf(stdout, "Unpacked %s room %d ret %d\n", ext, i, ret);
+						}
+						offsets[i] = prevOffset;
+					}
 				} else if (strcasecmp(ext, ".MBK") == 0) {
 					struct {
 						uint32_t offset;
@@ -454,7 +475,6 @@ int main(int argc, char *argv[]) {
 						mbk[i].len32 = freadUint16BE(fp);
 						fprintf(stdout, "MBK #%d offset 0x%x len %d (next 0x%x)\n", i, mbk[i].offset, mbk[i].len32, mbk[i].offset + mbk[i].len32);
 					}
-					// TODO: check bytekiller
 				} else if (strcasecmp(ext, ".CPC") == 0) {
 					decode_3dostr(fp);
 				}
