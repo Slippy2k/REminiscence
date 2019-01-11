@@ -26,49 +26,50 @@ static const uint8_t _cel_bitsPerPixelLookupTable[8] = {
 static uint8_t _bitmapBuffer[320 * 240];
 static uint16_t _paletteBuffer[256];
 
-// BitReader
-static int _celBits_bits;
-static int _celBits_size;
+struct BitStream {
+	int _bits;
+	int _size;
 
-static void decodeCel_reset(FILE *fp) {
-	_celBits_bits = fgetc(fp);
-	_celBits_size = 8;
-}
-
-static uint32_t decodeCel_readBits(FILE *fp, int count) {
-	uint32_t value = 0;
-	while (count != 0) {
-		if (count < _celBits_size) {
-			const uint16_t mask = (1 << count) - 1;
-			value |= (_celBits_bits >> (_celBits_size -  count)) & mask;
-			_celBits_size -= count;
-			count = 0;
-		} else {
-			count -= _celBits_size;
-			const uint16_t mask = (1 << _celBits_size) - 1;
-			value |= (_celBits_bits & mask) << count;
-			// refill
-			_celBits_bits = fgetc(fp);
-			_celBits_size = 8;
-		}
+	void reset(FILE *fp) {
+		_bits = fgetc(fp);
+		_size = 8;
 	}
-	return value;
-}
+
+	uint32_t readBits(FILE *fp, int count) {
+		uint32_t value = 0;
+		while (count != 0) {
+			if (count < _size) {
+				const uint16_t mask = (1 << count) - 1;
+				value |= (_bits >> (_size - count)) & mask;
+				_size -= count;
+				break;
+			}
+			count -= _size;
+			const uint16_t mask = (1 << _size) - 1;
+			value |= (_bits & mask) << count;
+			// refill
+			_bits = fgetc(fp);
+			_size = 8;
+		}
+		return value;
+	}
+};
 
 static void decodeCel_PDAT(const struct ccb_t *ccb, FILE *fp, uint32_t size) {
 	const int ccbPRE0_bitsPerPixel = _cel_bitsPerPixelLookupTable[ccb->pre0 & 7];
 	const int bpp = (ccbPRE0_bitsPerPixel <= 8) ? 8 : ccbPRE0_bitsPerPixel;
 	assert(ccb->width * ccb->height * bpp / 8 <= sizeof(_bitmapBuffer));
+	BitStream bs;
 	if (ccb->flags & 0x200) { // RLE
 		for (int j = 0; j < ccb->height; ++j) {
 			uint8_t *dst = _bitmapBuffer + j * ccb->width * bpp / 8;
 			const int pos = ftell(fp);
 			int lineSize = (ccbPRE0_bitsPerPixel >= 8) ? freadUint16BE(fp) : fgetc(fp);
-			decodeCel_reset(fp);
+			bs.reset(fp);
 			int w = ccb->width;
 			while (w > 0) {
-				int type = decodeCel_readBits(fp, 2);
-				int count = decodeCel_readBits(fp, 6) + 1;
+				int type = bs.readBits(fp, 2);
+				int count = bs.readBits(fp, 6) + 1;
 				if (type == 0) { // PACK_EOL
 					break;
 				}
@@ -79,11 +80,11 @@ static void decodeCel_PDAT(const struct ccb_t *ccb, FILE *fp, uint32_t size) {
 				case 1: // PACK_LITERAL
 					for (int i = 0; i < count; ++i) {
 						if (bpp == 16) {
-							const uint16_t color = decodeCel_readBits(fp, ccbPRE0_bitsPerPixel);
+							const uint16_t color = bs.readBits(fp, ccbPRE0_bitsPerPixel);
 							*(uint16_t *)dst = color;
 							dst += 2;
 						} else {
-							const uint8_t color = decodeCel_readBits(fp, ccbPRE0_bitsPerPixel);
+							const uint8_t color = bs.readBits(fp, ccbPRE0_bitsPerPixel);
 							*dst++ = color;
 						}
 					}
@@ -93,13 +94,13 @@ static void decodeCel_PDAT(const struct ccb_t *ccb, FILE *fp, uint32_t size) {
 					break;
 				case 3: // PACK_REPEAT
 					if (bpp == 16) {
-						const uint16_t color = decodeCel_readBits(fp, ccbPRE0_bitsPerPixel);
+						const uint16_t color = bs.readBits(fp, ccbPRE0_bitsPerPixel);
 						for (int i = 0; i < count; ++i) {
 							*(uint16_t *)dst = color;
 							dst += 2;
 						}
 					} else {
-						const uint8_t color = decodeCel_readBits(fp, ccbPRE0_bitsPerPixel);
+						const uint8_t color = bs.readBits(fp, ccbPRE0_bitsPerPixel);
 						memset(dst, color, count);
 						dst += count;
 					}

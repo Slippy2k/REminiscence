@@ -13,13 +13,6 @@
 
 static uint8_t _bitmapBuffer[320 * 200 * sizeof(uint32_t)];
 
-struct anim_t {
-	uint32_t version;
-	uint32_t type;
-	uint32_t frames;
-	uint32_t rate;
-};
-
 static void decodeCel(FILE *fp, const char *fname) {
 	CelPicture cp;
 	if (decode_3docel(fp, &cp) == 0) {
@@ -46,14 +39,13 @@ static void decodeAnim(FILE *fp) {
 	char tag[4];
 	const uint32_t size = freadTag(fp, tag);
 	assert(memcmp(tag, "ANIM", 4) == 0);
-	anim_t anim;
-	anim.version = freadUint32BE(fp);
-	anim.type = freadUint32BE(fp);
-	anim.frames = freadUint32BE(fp);
-	anim.rate = freadUint32BE(fp);
-	fprintf(stdout, "anim version %d type %d frames %d rate %d\n", anim.version, anim.type, anim.frames, anim.rate);
+	uint32_t version = freadUint32BE(fp);
+	uint32_t type = freadUint32BE(fp);
+	uint32_t frames = freadUint32BE(fp);
+	uint32_t rate = freadUint32BE(fp);
+	fprintf(stdout, "anim version %d type %d frames %d rate %d\n", version, type, frames, rate);
 	fseek(fp, size, SEEK_SET);
-	for (int i = 0; i < anim.frames; ++i) {
+	for (int i = 0; i < frames; ++i) {
 		char name[16];
 
 		fprintf(stdout, "frame #%d at 0x%lx\n", i, ftell(fp));
@@ -119,6 +111,10 @@ static void decodeIcons(FILE *fp) {
 	}
 	saveBMP("icons.3do.bmp", _bitmapBuffer, paletteBuffer, count * ICON_W, ICON_H);
 }
+
+//
+// .TBN
+//
 
 #define MAX_TEXTS 54
 #define MAX_TEXT_LENGTH 256
@@ -246,6 +242,10 @@ static void decodeTextBin(FILE *fp) {
 	}
 }
 
+//
+// .CHR
+//
+
 static uint8_t _fontChr[12800];
 static int _fontLen;
 
@@ -324,6 +324,10 @@ static void renderText() {
 
 	saveBMP("text.bmp", _textBitmap, _textPalette, 1024, MAX_TEXTS * (8 + VERTICAL_MARGIN));
 }
+
+//
+// .PAL
+//
 
 static void convertAmigaColor(uint16_t color, uint8_t *rgb) {
 	rgb[0] = (color >> 8) & 15;
