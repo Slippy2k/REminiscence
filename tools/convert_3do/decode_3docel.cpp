@@ -23,7 +23,7 @@ static const uint8_t _cel_bitsPerPixelLookupTable[8] = {
         0, 1, 2, 4, 6, 8, 16, 0
 };
 
-static uint8_t _bitmapBuffer[320 * 200 * sizeof(uint32_t)];
+static uint8_t _bitmapBuffer[320 * 240];
 static uint16_t _paletteBuffer[256];
 
 // BitReader
@@ -45,7 +45,7 @@ static uint32_t decodeCel_readBits(FILE *fp, int count) {
 			count = 0;
 		} else {
 			count -= _celBits_size;
-			const uint16_t mask = (1 << count) - 1;
+			const uint16_t mask = (1 << _celBits_size) - 1;
 			value |= (_celBits_bits & mask) << count;
 			// refill
 			_celBits_bits = fgetc(fp);
@@ -57,7 +57,7 @@ static uint32_t decodeCel_readBits(FILE *fp, int count) {
 
 static void decodeCel_PDAT(const struct ccb_t *ccb, FILE *fp, uint32_t size) {
 	const int ccbPRE0_bitsPerPixel = _cel_bitsPerPixelLookupTable[ccb->pre0 & 7];
-	const int bpp = (ccbPRE0_bitsPerPixel < 8) ? 8 : ccbPRE0_bitsPerPixel;
+	const int bpp = (ccbPRE0_bitsPerPixel <= 8) ? 8 : ccbPRE0_bitsPerPixel;
 	assert(ccb->width * ccb->height * bpp / 8 <= sizeof(_bitmapBuffer));
 	if (ccb->flags & 0x200) { // RLE
 		for (int j = 0; j < ccb->height; ++j) {
@@ -69,7 +69,6 @@ static void decodeCel_PDAT(const struct ccb_t *ccb, FILE *fp, uint32_t size) {
 			while (w > 0) {
 				int type = decodeCel_readBits(fp, 2);
 				int count = decodeCel_readBits(fp, 6) + 1;
-				// fprintf(stdout, "\t type %d count %d\n", type, count);
 				if (type == 0) { // PACK_EOL
 					break;
 				}
