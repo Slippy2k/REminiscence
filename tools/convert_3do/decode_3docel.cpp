@@ -23,7 +23,7 @@ static const uint8_t _cel_bitsPerPixelLookupTable[8] = {
         0, 1, 2, 4, 6, 8, 16, 0
 };
 
-static uint8_t _bitmapBuffer[320 * 240];
+static uint8_t _bitmapBuffer[320 * 240 * sizeof(uint16_t)];
 static uint16_t _paletteBuffer[256];
 
 struct BitStream {
@@ -64,16 +64,15 @@ static void decodeCel_PDAT(const struct ccb_t *ccb, FILE *fp, uint32_t size) {
 		for (int j = 0; j < ccb->height; ++j) {
 			uint8_t *dst = _bitmapBuffer + j * ccb->width * bpp / 8;
 			const int pos = ftell(fp);
-			int lineSize = (ccbPRE0_bitsPerPixel >= 8) ? freadUint16BE(fp) : fgetc(fp);
+			const int lineSize = (ccbPRE0_bitsPerPixel >= 8) ? freadUint16BE(fp) : fgetc(fp);
 			bs.reset(fp);
-			int w = ccb->width;
-			while (w > 0) {
+			for (int w = ccb->width; w > 0; ) {
 				int type = bs.readBits(fp, 2);
 				int count = bs.readBits(fp, 6) + 1;
 				if (type == 0) { // PACK_EOL
 					break;
 				}
-				if (w - count < 0) {
+				if (count > w) {
 					count = w;
 				}
 				switch (type) {
@@ -139,6 +138,7 @@ enum {
 int decode_3docel(FILE *fp, CelPicture *p) {
 	int mask = kMaskCCB;
 	ccb_t ccb;
+	memset(&ccb, 0, sizeof(ccb));
 	int plutSize;
 	while (mask != 0) {
 		const uint32_t pos = ftell(fp);
@@ -185,6 +185,7 @@ int decode_3docel(FILE *fp, CelPicture *p) {
 			p->w = ccbPRE1_width;
 
 			mask &= ~kMaskCCB;
+			mask |= kMaskPDAT;
 			if (ccbPRE0_bitsPerPixel <= 8) {
 				mask |= kMaskPLUT;
 			}

@@ -45,6 +45,7 @@ static void decodeAnim(FILE *fp) {
 	uint32_t rate = freadUint32BE(fp);
 	fprintf(stdout, "anim version %d type %d frames %d rate %d\n", version, type, frames, rate);
 	fseek(fp, size, SEEK_SET);
+	// TODO: 'PLUT' can be common to all frames...
 	for (int i = 0; i < frames; ++i) {
 		char name[16];
 
