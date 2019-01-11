@@ -1,13 +1,33 @@
 
 # Flashback 3DO
 
+![Flashback Logo](img/flashlogo.cel.png)
+
 ## CDROM
+
+% space used
+total number of files
 
 ## Files
 
-*.CT
+Same format as Amiga/PC
 
-Compressed with bytekiller ?
+Extension | Description
+--------- | -----------
+
+*.CT  | Compressed with bytekiller
+
+*.LEV | Room tiles attributes - Compressed with bytekiller
+
+*.PAL | Amiga 16 colors palettes (xRGB)
+
+*.MBK | Graphic tiles
+
+*.PGE | Triggers
+
+*.RP |
+
+*.SGD | Graphic tiles for Level 1 (Jungle)
 
 ## Rendering
 
@@ -23,7 +43,7 @@ The Macintosh version also used the same pre-processing. Loading and displaying 
 just a matter of decoding the bitmap directly to a video buffer.
 
 The 3DO does not come with preprocessed background bitmaps, but draws in software the background
-btiamps by reading the .LEV files for attributes (flipping, xy) and decoding the graphic tiles found
+bitmaps by reading the .LEV files for attributes (flipping, xy) and decoding the graphic tiles found
 in .BNQ and .SGD files.
 
 The executable relies on default .cel files as place-holders where the software decoded graphics
@@ -43,28 +63,8 @@ On Amiga/PC, the passwords are not stored in clear in the executable (reversed b
 Running 'strings' on the executable of the 3DO lists the level access codes.
 
 ```
-0GATORS
-0DIABLO
-0PMBRTN
-0EXPO!!
-0PATROL
-0BOOGIE
-0TREK!!
-0LEAGUE
-0ANIMAL
-0QUASI!
-0BANG!!
-0TIMERS
-0STALIO
-0SHKSPR
-0LASSO!
-0STRIKE
-0KNOCK!
-0POKER!
-0ATOMIC
-0KNUCKL
-0DYNSTY
-0ANNUIT
+GATORSDIABLOPMBRTNEXPO  PATROLBOOGIETREK  LEAGUEANIMALQUASI BANG
+TIMERSSTALIOSHKSPRLASSO STRIKEKNOCK POKER ATOMICKNUCKLDYNSTYANNUIT
 ```
 
 ### Cutscenes
@@ -78,7 +78,7 @@ when the bitmaps need to be rendered on top of the video. The bitmaps are stored
 
 ### Sounds
 
-The PC version used Fibonnaci-delta encoded samples at 6000Hz. The Amiga
+The PC version used Fibonacci-delta encoded samples at 6000Hz. The Amiga
 version used uncompressed samples at an equivalent sample rate (PAULA / 650).
 
 The 3DO version comes with uncompressed 8 bits mono samples at 8000Hz.
@@ -161,7 +161,7 @@ a demo file (Demo/DEMOx.TEST) is loaded :
 
 Patching the executable (eg. by changing the BEQ instruction to a NOP) enables playback of
 both background music and sound effects during game play. A playthrough of the first level
-shows no major glitches. It is not clear why the feature was conditionned.
+shows no major glitches. It is not clear why the feature was conditioned.
 
 
 
@@ -223,4 +223,3 @@ tunes/
 LaunchMe
 	04: BL SelfRelocCode NOP if the image is not self-relocating
 		change 0xEB 0x00 0x99 0xF8 to a NOP (0xe1a00000, mov r0, r0)
-
