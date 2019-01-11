@@ -26,27 +26,27 @@ struct anim_t {
 static void decodeCel(FILE *fp, const char *fname) {
 	CelPicture cp;
 	if (decode_3docel(fp, &cp) == 0) {
-		const int bpp = (cp.bpp <= 8) ? 8 : 16;
-		struct TgaFile *tga = tgaOpen(fname, cp.w, cp.h, bpp);
 		if (cp.bpp == 6 || cp.bpp == 8) {
 			uint8_t palette[256 * 3];
 			for (int i = 0; i < 256; ++i) {
-				const uint8_t r = ((cp.pal[i % cp.palSize] >> 10) & 31) << 3;
-				const uint8_t g = ((cp.pal[i % cp.palSize] >>  5) & 31) << 3;
-				const uint8_t b =  (cp.pal[i % cp.palSize]        & 31) << 3;
+				const uint8_t r = ((cp.pal[i] >> 10) & 31) << 3;
+				const uint8_t g = ((cp.pal[i] >>  5) & 31) << 3;
+				const uint8_t b =  (cp.pal[i]        & 31) << 3;
 				palette[i * 3]     = r;
 				palette[i * 3 + 1] = g;
 				palette[i * 3 + 2] = b;
 			}
-			tgaSetLookupColorTable(tga, palette);
-			tgaWritePixelsData(tga, cp.data, cp.w * cp.h);
+			saveBMP(fname, cp.data, palette, cp.w, cp.h);
 		} else if (cp.bpp == 16) {
-			const int len = cp.w * cp.h * sizeof(uint16_t);
-			tgaWritePixelsData(tga, cp.data, len);
+			struct TgaFile *tga = tgaOpen(fname, cp.w, cp.h, cp.bpp);
+			if (tga) {
+				const int len = cp.w * cp.h * sizeof(uint16_t);
+				tgaWritePixelsData(tga, cp.data, len);
+				tgaClose(tga);
+			}
 		} else {
 			fprintf(stderr, "Unhandled bpp %d\n", cp.bpp);
 		}
-		tgaClose(tga);
 	}
 }
 
@@ -97,22 +97,35 @@ static void decodeFontChr(FILE *fp) {
 
 // 16x16x4bpp
 static void decodeIcons(FILE *fp) {
+	fseek(fp, 0, SEEK_END);
+	const uint32_t size = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+
+	static const int ICON_W = 16;
+	static const int ICON_H = 16;
+	// icons are 16x16 4bpp
+	assert(size % (16 * 8) == 0);
+	const int count = size / (16 * 8);
+	const int pitch = count * ICON_W;
+
 	uint8_t buf[16 * 8];
-	int count = 0;
-	while (1) {
+	for (int i = 0; i < count; ++i) {
 		fread(buf, 1, sizeof(buf), fp);
-		if (feof(fp)) {
-			break;
-		}
-		fprintf(stdout, "// Icon #%d\n", count);
-		for (int y = 0; y < 16; ++y) {
-			for (int x = 0; x < 8; ++x) {
-				fprintf(stdout, "%02X", buf[y * 8 + x]);
+		const int offset = i * ICON_W;
+		for (int y = 0; y < ICON_H; ++y) {
+			for (int x = 0; x < ICON_W; x += 2) {
+				const uint8_t color = buf[y * 8 + x / 2];
+				_bitmapBuffer[y * pitch + offset + x]     = color >> 4;
+				_bitmapBuffer[y * pitch + offset + x + 1] = color & 15;
 			}
-			fprintf(stdout, "\n");
 		}
-		++count;
 	}
+	uint8_t paletteBuffer[256 * 3];
+	for (int i = 0; i < 16; ++i) {
+		const uint8_t color = i * 16;
+		paletteBuffer[3 * i] = paletteBuffer[3 * i + 1] = paletteBuffer[3 * i + 2] = color;
+	}
+	saveBMP("icons.3do.bmp", _bitmapBuffer, paletteBuffer, count * ICON_W, ICON_H);
 }
 
 #define MAX_TEXTS 54
@@ -369,15 +382,6 @@ static void decodeLevelPal(FILE *fp, const char *name) {
 }
 
 static const struct {
-	const char *name;
-	void (*decode)(FILE *fp, const char *output);
-} _types[] = {
-	{ "anim", 0 },
-	{ "cel", 0 },
-	{ 0, 0 }
-};
-
-static const struct {
 	const char *ext;
 	void (*decode)(const char *name, FILE *fp);
 } _decoders[] {
@@ -404,22 +408,7 @@ int main(int argc, char *argv[]) {
 					decodeCel(fp, name);
 					free(name);
 				}
-			} else if (strcmp(argv[1], "-pal") == 0) {
-				const char *p = strrchr(argv[2], '/');
-				if (!p) {
-					p = argv[2];
-				} else {
-					++p;
-				}
-				char *name = (char *)malloc(strlen(p) + 4 /* '.bmp' */ + 1);
-				if (name) {
-					strcpy(name, p);
-					strcat(name, ".bmp");
-					decodeLevelPal(fp, name);
-					free(name);
-				}
 			}
-			fclose(fp);
 		}
 	}
 	if (argc == 2) {
@@ -427,13 +416,15 @@ int main(int argc, char *argv[]) {
 		if (fp) {
 			const char *ext = strrchr(argv[1], '.');
 			if (ext) {
-				if (strcmp(ext, ".CHR") == 0) {
-					decodeFontChr(fp);
-				} else if (strcmp(ext, ".3DO") == 0) {
+				if (strcmp(ext, ".3DO") == 0) {
 					decodeIcons(fp);
 				} else if (strcmp(ext, ".BIN") == 0) {
 					decodeTextBin(fp);
 					renderText();
+				} else if (strcmp(ext, ".CHR") == 0) {
+					decodeFontChr(fp);
+				} else if (strcasecmp(ext, ".CPC") == 0) {
+					decode_3dostr(fp);
 				} else if (strcasecmp(ext, ".SUB") == 0) {
 					// 6bpp - japanese subtitles
 					int frames = 0;
@@ -443,6 +434,7 @@ int main(int argc, char *argv[]) {
 						decodeCel(fp, name);
 						++frames;
 					} while (!feof(fp));
+					fprintf(stdout, "Decoded %d frames\n", frames);
 				} else if (strcasecmp(ext, ".CT") == 0 || strcasecmp(ext, ".CT2") == 0) {
 					static uint8_t buffer[0x1D00];
 					const int size = fread(buffer, 1, sizeof(buffer), fp);
@@ -475,8 +467,20 @@ int main(int argc, char *argv[]) {
 						mbk[i].len32 = freadUint16BE(fp);
 						fprintf(stdout, "MBK #%d offset 0x%x len %d (next 0x%x)\n", i, mbk[i].offset, mbk[i].len32, mbk[i].offset + mbk[i].len32);
 					}
-				} else if (strcasecmp(ext, ".CPC") == 0) {
-					decode_3dostr(fp);
+				} else if (strcasecmp(ext, ".PAL") == 0) {
+					const char *p = strrchr(argv[1], '/');
+					if (!p) {
+						p = argv[1];
+					} else {
+						++p;
+					}
+					char *name = (char *)malloc(strlen(p) + 4 /* '.bmp' */ + 1);
+					if (name) {
+						strcpy(name, p);
+						strcat(name, ".bmp");
+						decodeLevelPal(fp, name);
+						free(name);
+					}
 				}
 			}
 			fclose(fp);

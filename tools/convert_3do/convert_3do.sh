@@ -13,7 +13,7 @@ convert_cel() {
 }
 
 convert_pal() {
-	./convert_3do -pal $1
+	./convert_3do $1
 }
 
 convert_text() {
