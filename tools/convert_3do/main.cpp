@@ -10,9 +10,6 @@
 #include "endian.h"
 #include "fileio.h"
 #include "unpack.h"
-extern "C" {
-#include "tga.h"
-}
 
 static uint8_t _bitmapBuffer[320 * 200 * sizeof(uint32_t)];
 
@@ -38,12 +35,7 @@ static void decodeCel(FILE *fp, const char *fname) {
 			}
 			saveBMP(fname, cp.data, palette, cp.w, cp.h);
 		} else if (cp.bpp == 16) {
-			struct TgaFile *tga = tgaOpen(fname, cp.w, cp.h, cp.bpp);
-			if (tga) {
-				const int len = cp.w * cp.h * sizeof(uint16_t);
-				tgaWritePixelsData(tga, cp.data, len);
-				tgaClose(tga);
-			}
+			saveTGA(fname, cp.data, cp.w, cp.h);
 		} else {
 			fprintf(stderr, "Unhandled bpp %d\n", cp.bpp);
 		}
@@ -263,33 +255,20 @@ static int _fontLen;
 static uint8_t _textBitmap[1024 * MAX_TEXTS * (8 + VERTICAL_MARGIN)];
 static uint8_t _textPalette[256 * 3];
 
-static void drawChar(int x, int y, int chr) {
+static void drawChar(int x, int y, int chr, int offset) {
 	uint8_t *p = _textBitmap + y * 1024 + x;
 	uint8_t *f = _fontChr;
 
-	if (_fontLen == 6400) {
-		f += chr * 8 * 4;
-	} else if (_fontLen == 12800) {
-		f += chr * 8 * 8;
-	} else {
-		return;
-	}
+	f += chr * 8 * 4 + offset;
 
 	for (int j = 0; j < 8; ++j) {
-		if (_fontLen == 6400) {
-			for (int i = 0; i < 4; ++i) {
-				const int c = f[j * 4 + i];
-				if ((c >> 4) != 0) {
-					p[2 * i] = c >> 4;
-				}
-				if ((c & 15) != 0) {
-					p[2 * i + 1] = c & 15;
-				}
+		for (int i = 0; i < 4; ++i) {
+			const int c = f[j * 4 + i];
+			if ((c >> 4) != 0) {
+				p[2 * i] = c >> 4;
 			}
-		} else if (_fontLen == 12800) {
-			for (int i = 0; i < 8; ++i) {
-				const int c = f[j * 8 + i];
-				p[i] = c != 0 ? 1 : 0;
+			if ((c & 15) != 0) {
+				p[2 * i + 1] = c & 15;
 			}
 		}
 		p += 1024;
@@ -299,7 +278,10 @@ static void drawChar(int x, int y, int chr) {
 static void drawString(int x, int y, const uint8_t *str) {
 	while (*str && x < 1024) {
 		if (*str >= 32 && *str < 32 + 200) { // 200 == 6400 / (8 * 4)
-			drawChar(x, y, *str - 32);
+			drawChar(x, y, *str - 32, 0);
+			if (_fontLen == 12800) {
+				drawChar(x, y + 8, *str - 32, 6400);
+			}
 			if (*str >= 0xD1) {
 				fprintf(stderr, "Empty bitmap for character 0x%x pos %d,%d\n", *str, x, y);
 			}
@@ -310,6 +292,11 @@ static void drawString(int x, int y, const uint8_t *str) {
 		++str;
 	}
 }
+
+static const uint8_t _textPal[] = {
+	0x00, 0x00, 0x11, 0x01, 0x22, 0x02, 0xEF, 0x0E, 0x00, 0x0F, 0xF0, 0x0F, 0xA0, 0x0E, 0xB0, 0x0F,
+	0xA0, 0x0E, 0xA0, 0x0E, 0xAA, 0x0A, 0xF0, 0x00, 0xCC, 0x0C, 0xDF, 0x0D, 0xEE, 0x0E, 0xEE, 0x0E
+};
 
 //static const char *kFontChr = "FONT.CHR";
 static const char *kFontChr = "FONT8JAP.CHR";

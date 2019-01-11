@@ -4,12 +4,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "bitmap.h"
 #include "cinepak.h"
 #include "decode_3dostr.h"
 #include "fileio.h"
-extern "C" {
-#include "tga.h"
-}
 
 static uint8_t _rgbBuffer[320 * 200 * sizeof(uint32_t)];
 
@@ -61,11 +59,7 @@ struct OutputBuffer {
 			char filename[64];
 			snprintf(filename, sizeof(filename), "out/%04d.tga", num);
 			uyvy_to_rgb555(_buf, _bufSize, (uint16_t *)_rgbBuffer);
-			struct TgaFile *tga = tgaOpen(filename, _w, _h, 16);
-			if (tga) {
-				tgaWritePixelsData(tga, _rgbBuffer, _bufSize);
-				tgaClose(tga);
-			}
+			saveTGA(filename, _rgbBuffer, _w, _h);
 			return;
 		}
 		char name[16];

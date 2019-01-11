@@ -12,14 +12,13 @@ static void TO_LE16(uint8_t *dst, uint16_t value) {
 }
 
 #define kTgaImageTypeUncompressedTrueColor 2
-#define kTgaImageTypeRunLengthEncodedTrueColor 10
 #define kTgaDirectionTop (1 << 5)
 
 static const int TGA_HEADER_SIZE = 18;
 
-void saveTGA(const char *filename, const uint8_t *rgba, int w, int h) {
+void saveTGA(const char *filename, const uint8_t *rgb555, int w, int h) {
 
-	static const uint8_t kImageType = kTgaImageTypeRunLengthEncodedTrueColor;
+	static const uint8_t kImageType = kTgaImageTypeUncompressedTrueColor;
 	uint8_t buffer[TGA_HEADER_SIZE];
 	buffer[0]            = 0; // ID Length
 	buffer[1]            = 0; // ColorMap Type
@@ -31,44 +30,13 @@ void saveTGA(const char *filename, const uint8_t *rgba, int w, int h) {
 	TO_LE16(buffer + 10,   0); // Y-origin
 	TO_LE16(buffer + 12,   w); // Image Width
 	TO_LE16(buffer + 14,   h); // Image Height
-	buffer[16]           = 24; // Pixel Depth
+	buffer[16]           = 16; // Pixel Depth
 	buffer[17]           = kTgaDirectionTop;  // Descriptor
 
 	FILE *fp = fopen(filename, "wb");
 	if (fp) {
 		fwrite(buffer, sizeof(buffer), 1, fp);
-		if (kImageType == kTgaImageTypeUncompressedTrueColor) {
-			for (int i = 0; i < w * h; ++i) {
-				fputc(rgba[0], fp);
-				fputc(rgba[1], fp);
-				fputc(rgba[2], fp);
-				rgba += 4;
-			}
-		} else {
-			assert(kImageType == kTgaImageTypeRunLengthEncodedTrueColor);
-			int prevColor = rgba[2] + (rgba[1] << 8) + (rgba[0] << 16); rgba += 4;
-			int count = 0;
-			for (int i = 1; i < w * h; ++i) {
-				int color = rgba[2] + (rgba[1] << 8) + (rgba[0] << 16); rgba += 4;
-				if (prevColor == color && count < 127) {
-					++count;
-					continue;
-				}
-				fputc(count | 0x80, fp);
-				fputc((prevColor >> 16) & 255, fp);
-				fputc((prevColor >>  8) & 255, fp);
-				fputc( prevColor        & 255, fp);
-				count = 0;
-				prevColor = color;
-			}
-			if (count != 0) {
-				fputc(count | 0x80, fp);
-				fputc((prevColor >> 16) & 255, fp);
-				fputc((prevColor >>  8) & 255, fp);
-				fputc( prevColor        & 255, fp);
-			}
-		}
-
+		fwrite(rgb555, w * h, sizeof(uint16_t), fp);
 		fclose(fp);
 	}
 }
