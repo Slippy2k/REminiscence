@@ -126,8 +126,8 @@ void SfxPlayer::mixSamples(int16_t *buf, int samplesLen) {
 					curLen = 0;
 				}
 				while (count--) {
-					const int out = si->getPCM(pos >> FRAC_BITS);
-					*mixbuf = ADDC_S16(*mixbuf, (out * si->vol / 64) << 8);
+					const int out = si->getPCM(pos >> FRAC_BITS) * si->vol / 64;
+					*mixbuf = ADDC_S16(*mixbuf, S8_to_S16(out));
 					++mixbuf;
 					pos += deltaPos;
 				}

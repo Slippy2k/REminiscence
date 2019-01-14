@@ -183,8 +183,8 @@ void Mixer::mix(int16_t *out, int len) {
 					ch->active = false;
 					break;
 				}
-				const int sample = ch->chunk.getPCM(ch->chunkPos >> FRAC_BITS);
-				out[pos] = ADDC_S16(out[pos], (sample * ch->volume / Mixer::MAX_VOLUME) << 8);
+				const int sample = ch->chunk.getPCM(ch->chunkPos >> FRAC_BITS) * ch->volume / Mixer::MAX_VOLUME;
+				out[pos] = ADDC_S16(out[pos], S8_to_S16(sample));
 				ch->chunkPos += ch->chunkInc;
 			}
 		}

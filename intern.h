@@ -46,6 +46,16 @@ inline int16_t ADDC_S16(int a, int b) {
 	return a;
 }
 
+inline int16_t S8_to_S16(int a) {
+	if (a < -128) {
+		a = -128;
+	} else if (a > 127) {
+		a = 127;
+	}
+	const uint8_t s8 = a;
+	return (int16_t)((s8 << 8) | s8);
+}
+
 template<typename T>
 inline void SWAP(T &a, T &b) {
 	T tmp = a;
