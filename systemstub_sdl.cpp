@@ -950,13 +950,13 @@ void SystemStub_SDL::changeScaler(int scaler) {
 	if (_scalerType != scalerParameters.type || scalerParameters.scaler != _scaler) {
 		_scalerType = scalerParameters.type;
 		_scaler = scalerParameters.scaler;
-		const int scaleFactor = CLIP(_scaleFactor, _scaler->factorMin, _scaler->factorMax);
-		// only recreate the window if dimensions actually changed
-		if (scaleFactor != _scaleFactor) {
-			cleanupGraphics();
-			_scaleFactor = scaleFactor;
-			prepareGraphics();
+		if (_scalerType == kScalerTypeInternal || _scalerType == kScalerTypeExternal) {
+			_scaleFactor = CLIP(_scaleFactor, _scaler->factorMin, _scaler->factorMax);
+		} else {
+			_scaleFactor = 1;
 		}
+		cleanupGraphics();
+		prepareGraphics();
 	}
 }
 
