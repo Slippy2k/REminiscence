@@ -450,14 +450,36 @@ int main(int argc, char *argv[]) {
 						offsets[i] = prevOffset;
 					}
 				} else if (strcasecmp(ext, ".MBK") == 0) {
+#define MAX_MBK 128
 					struct {
 						uint32_t offset;
-						uint16_t len32;
-					} mbk[74]; // size of .RP
-					for (int i = 0; i < 74; ++i) {
-						mbk[i].offset = freadUint32BE(fp); // point to compressed data if (len2&0x8000)==0
+						int16_t len32;
+					} mbk[MAX_MBK];
+					fseek(fp, 0, SEEK_END);
+					const uint32_t fileSize = ftell(fp);
+					fseek(fp, 0, SEEK_SET);
+					int count = 0;
+					for (int i = 0; i < MAX_MBK; ++i) {
+						const uint32_t offset = freadUint32BE(fp);
+						if (offset >= fileSize) {
+							break;
+						}
+						assert(i < MAX_MBK);
+						mbk[i].offset = offset;
 						mbk[i].len32 = freadUint16BE(fp);
-						fprintf(stdout, "MBK #%d offset 0x%x len %d (next 0x%x)\n", i, mbk[i].offset, mbk[i].len32, mbk[i].offset + mbk[i].len32);
+						++count;
+					}
+					for (int i = 0; i < count; ++i) {
+						const bool compressed = mbk[i].len32 > 0;
+						int len;
+						if (mbk[i].len32 < 0) {
+							len = (-mbk[i].len32) * 32;
+						} else {
+							fseek(fp, mbk[i].offset - 4, SEEK_SET);
+							// bytekiller compressed data
+							len = freadUint32BE(fp);
+						}
+						fprintf(stdout, "MBK #%d offset 0x%x len %d (compressed %d)\n", i, mbk[i].offset, len, compressed);
 					}
 				} else if (strcasecmp(ext, ".PAL") == 0) {
 					const char *p = strrchr(argv[1], '/');
