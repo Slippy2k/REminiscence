@@ -48,12 +48,13 @@ inline int16_t ADDC_S16(int a, int b) {
 
 inline int16_t S8_to_S16(int a) {
 	if (a < -128) {
-		a = -128;
+		return -32768;
 	} else if (a > 127) {
-		a = 127;
+		return 32767;
+	} else {
+		const uint8_t u8 = (a ^ 0x80);
+		return ((u8 << 8) | u8) - 32768;
 	}
-	const uint8_t s8 = a;
-	return (int16_t)((s8 << 8) | s8);
 }
 
 template<typename T>
