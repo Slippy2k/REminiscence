@@ -1,5 +1,5 @@
 set -x
-for num in 68 70 72 73 74 75 99; do
+for num in 68 70 72 73 74 75 98 99; do
 	filename=soundfx$num.raw
 #	SDL_AUDIODRIVER=disk SDL_DISKAUDIOFILE=$filename ./sfxply $num
 	./sfxply $num

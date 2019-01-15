@@ -76,8 +76,9 @@ struct Module {
 	bool module;
 } MODULES[] = {
 	/* module data */
+	{ "SfxPlayer::_musicDataUnkA",  0xC1D8, 0xC2DE, true },
 	{ "SfxPlayer::_musicData68_69", 0xC30E, 0xC30E + 4 * 15 + 34 + 6 * 0x1B, true },
-	{ "SfxPlayer::_musicDataUnk",   0xC40E, 0xC40E + 4 * 15 + 34 + 6 * 0x25, true },
+	{ "SfxPlayer::_musicDataUnkB",  0xC40E, 0xC40E + 4 * 15 + 34 + 6 * 0x25, true },
 	{ "SfxPlayer::_musicData70_71", 0xC54A, 0xC54A + 4 * 15 + 34 + 6 * 0x12, true },
 	{ "SfxPlayer::_musicData72",    0xC614, 0xC614 + 4 * 15 + 34 + 6 * 0x4F, true },
 	{ "SfxPlayer::_musicData73",    0xC84C, 0xC84C + 4 * 15 + 34 + 6 * 0x41, true },

@@ -44,8 +44,9 @@ struct SfxPlayer {
 	};
 	
 	static const uint16_t _periodTable[];
+	static const uint8_t _musicDataUnkA[];
 	static const uint8_t _musicData68_69[];
-	static const uint8_t _musicDataUnk[];
+	static const uint8_t _musicDataUnkB[];
 	static const uint8_t _musicData70_71[];
 	static const uint8_t _musicData72[];
 	static const uint8_t _musicData73[];
@@ -59,8 +60,9 @@ struct SfxPlayer {
 	static const uint8_t _musicDataSample6[];
 	static const uint8_t _musicDataSample7[];
 	static const uint8_t _musicDataSample8[];
+	static const Module _moduleUnkA;
 	static const Module _module68_69;
-	static const Module _moduleUnk;
+	static const Module _moduleUnkB;
 	static const Module _module70_71;
 	static const Module _module72;
 	static const Module _module73;
@@ -109,8 +111,11 @@ void SfxPlayer::loadModule(const int num) {
 	case 75:
 		_mod = &_module75;
 		break;
+	case 98:
+		_mod = &_moduleUnkA;
+		break;
 	case 99:
-		_mod = &_moduleUnk;
+		_mod = &_moduleUnkB;
 		break;
 	default:
 		fprintf(stderr, "Unknown module number %d\n", num);
@@ -369,6 +374,14 @@ const uint16_t SfxPlayer::_periodTable[] = {
 };
 
 #include "musicdata.h"
+const SfxPlayer::Module SfxPlayer::_moduleUnkA = {
+	{
+		_musicDataSample1, _musicDataSample8, _musicDataSample2, _musicDataSample8, _musicDataSample8,
+		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
+		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
+	},
+	_musicDataUnkA
+};
 const SfxPlayer::Module SfxPlayer::_module68_69 = {
 	{
 		_musicDataSample1, _musicDataSample8, _musicDataSample3, _musicDataSample4, _musicDataSample8,
@@ -377,13 +390,13 @@ const SfxPlayer::Module SfxPlayer::_module68_69 = {
 	},
 	_musicData68_69
 };
-const SfxPlayer::Module SfxPlayer::_moduleUnk = {
+const SfxPlayer::Module SfxPlayer::_moduleUnkB = {
 	{
 		_musicDataSample2, _musicDataSample3, _musicDataSample8, _musicDataSample8, _musicDataSample8,
 		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
 		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
 	},
-	_musicDataUnk
+	_musicDataUnkB
 };
 const SfxPlayer::Module SfxPlayer::_module70_71 = {
 	{
