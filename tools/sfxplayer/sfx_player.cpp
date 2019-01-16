@@ -59,6 +59,7 @@ struct SfxPlayer {
 	static const uint8_t _musicDataSample5[];
 	static const uint8_t _musicDataSample6[];
 	static const uint8_t _musicDataSample7[];
+	static const uint8_t _musicDataSampleUnk[];
 	static const uint8_t _musicDataSample8[];
 	static const Module _moduleUnkA;
 	static const Module _module68_69;
@@ -160,6 +161,10 @@ void SfxPlayer::start() {
 }
 
 void SfxPlayer::playSample(int channel, const uint8_t *sampleData, uint16_t period) {
+	if (sampleData == 0) {
+		fprintf(stdout, "No sample data for channel %d period %d\n", channel, period);
+		return;
+	}
 	assert(channel < NUM_CHANNELS);
 	SampleInfo *si = &_samples[channel];
 	si->len = READ_BE_UINT16(sampleData); sampleData += 2;
@@ -201,12 +206,12 @@ void SfxPlayer::handleTick() {
 				int16_t per = period + (b - 1);
 				if (per >= 0 && per < 40) {
 					per = _periodTable[per];
+				} else if (per >= 40 and per < 84) {
+					per = 0x71;
 				} else {
 					fprintf(stdout, "Out of bounds per=%d period=%d b=%d\n", per, period, b);
 					if (per == -3) {
 						per = 0xA0;
-					} else if (per == 40 || per == 74) {
-						per = 0x71;
 					} else {
 						assert(0);
 					}
@@ -224,13 +229,14 @@ void SfxPlayer::handleTick() {
 }
 
 static void addclamp(int8_t& a, int b) {
-	int add = a + b;
+	const int add = a + b;
 	if (add < -128) {
-		add = -128;
+		a = -128;
 	} else if (add > 127) {
-		add = 127;
+		a = 127;
+	} else {
+		a = add;
 	}
-	a = add;
 }
 
 int resampleLinear(SfxPlayer::SampleInfo *si, int pos, int frac) {
@@ -323,7 +329,6 @@ void SfxPlayer::mixCallback(void *param, uint8_t *buf, int len) {
 	((SfxPlayer *)param)->mix((int8_t *)buf, len);
 }
 
-#undef main
 int main(int argc, char *argv[]) {
 	SDL_Init(SDL_INIT_AUDIO);
 	if (argc != 2) {
@@ -376,7 +381,7 @@ const uint16_t SfxPlayer::_periodTable[] = {
 #include "musicdata.h"
 const SfxPlayer::Module SfxPlayer::_moduleUnkA = {
 	{
-		_musicDataSample1, _musicDataSample8, _musicDataSample2, _musicDataSample8, _musicDataSample8,
+		_musicDataSample1,                 0, _musicDataSample2,                 0, _musicDataSample8,
 		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
 		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
 	},
@@ -392,7 +397,7 @@ const SfxPlayer::Module SfxPlayer::_module68_69 = {
 };
 const SfxPlayer::Module SfxPlayer::_moduleUnkB = {
 	{
-		_musicDataSample2, _musicDataSample3, _musicDataSample8, _musicDataSample8, _musicDataSample8,
+		                0,                 0, _musicDataSample2, _musicDataSample3, _musicDataSample8,
 		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
 		_musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8, _musicDataSample8,
 	},

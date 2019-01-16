@@ -17,3 +17,5 @@ sox -r $(( $paulafreq /  538 )) -e signed -b 8 -c 1 sample3.raw sample3.wav
 sox -r $(( $paulafreq /  135 )) -e signed -b 8 -c 1 sample4.raw sample4.wav
 sox -r $(( $paulafreq / 1076 )) -e signed -b 8 -c 1 sample5.raw sample5.wav
 sox -r $(( $paulafreq /  135 )) -e signed -b 8 -c 1 sample6.raw sample6.wav
+sox -r $(( $paulafreq /  135 )) -e signed -b 8 -c 1 sample7.raw sample7.wav
+sox -r $(( $paulafreq /  135 )) -e signed -b 8 -c 1 sample8.raw sample8.wav
