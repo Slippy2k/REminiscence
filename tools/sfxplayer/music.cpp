@@ -34,7 +34,7 @@ void music_vector(const uint8_t *p) { // 50Hz
 		printf("mod[0x3C]=%d mod[0x3E]=%d\n", tmp, _sfx_length);
 		uint16_t d1, d2; // XXX default value ?
 		uint8_t d0;
-		
+
 		d0 = *a1++; // sample_num for channel 0
 		if (d0 != 0) {
 			d1 = READ_BE_UINT16(p + (d0 - 1) * 2 + 0x40 - 15 * 4);
@@ -50,7 +50,7 @@ void music_vector(const uint8_t *p) { // 50Hz
 //			startIngameMusicSample();
 		}
 		printf("d0=%d d1=%d word_304A6=0x%X\n", d0, d1, word_304A6);
-		
+
 		d0 = *a1++; // sample_num for channel 1
 		if (d0 != 0) {
 			d1 = READ_BE_UINT16(p + (d0 - 1) * 2 + 0x40 - 15 * 4);
@@ -66,7 +66,7 @@ void music_vector(const uint8_t *p) { // 50Hz
 //			startIngameMusicSample();
 		}
 		printf("d0=%d d1=%d word_304A8=0x%X\n", d0, d1, word_304A8);
-		
+
 		d0 = *a1++; // sample_num for channel 2
 		if (d0 != 0) {
 			d1 = READ_BE_UINT16(p + (d0 - 1) * 2 + 0x40 - 15 * 4);
@@ -82,7 +82,7 @@ void music_vector(const uint8_t *p) { // 50Hz
 //			startIngameMusicSample();
 		}
 		printf("d0=%d d1=%d word_304AA=%d", d0, d1, word_304AA);
-		
+
 		_snd_ingameMusicOffset = a1;
 		d0 = _sfx_curOrder + 1;
 		if (d0 >= READ_BE_UINT16(p + 0x3C - 15 * 4)) { // 0x0
@@ -107,9 +107,9 @@ void music_vector(const uint8_t *p) { // 50Hz
 int main(int argc, char *argv[]) {
 	const uint8_t *p = _snd_musicData68_69;
 	init(p);
-	return 0;	
+	return 0;
 }
-	
+
 
 
 
@@ -139,7 +139,7 @@ void Sound::startIngameMusicSample() {
 	d1 |= -0x8000;
 	*(uint16_t *)0xDFF096 = d1;
 	d0 = 256;
-	while (--d0 != 0);	
+	while (--d0 != 0);
 	d5 >>= 1;
 	d6 += d7;
 	*(uint32_t *)(a1 + 0) = d6;

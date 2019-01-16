@@ -4,7 +4,7 @@ SDL_LIBS = `sdl-config --libs`
 
 CXXFLAGS += -g -O -Wall -Wno-unused-variable $(SDL_CFLAGS)
 
-SRCS_SFXPLY = low_pass.cpp sfx_player.cpp
+SRCS_SFXPLY = low_pass.cpp paula.cpp sfx_player.cpp
 OBJS_SFXPLY = $(SRCS_SFXPLY:.cpp=.o)
 DEPS_SFXPLY = $(SRCS_SFXPLY:.cpp=.d)
 

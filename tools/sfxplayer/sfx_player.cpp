@@ -1,7 +1,8 @@
 
-#include <cmath>
+#include <SDL.h>
+#include <math.h>
 #include "intern.h"
-#include "SDL.h"
+#include "paula.h"
 
 
 #define SAMPLE_RATE 22050
@@ -12,6 +13,7 @@ void low_pass(const int8_t *in, int len, int8_t *out);
 void nr(const int8_t *in, int len, int8_t *out);
 void sinc(double pos, const int8_t *in, int len, int fsr, int8_t *out);
 
+static const bool kUsePaula = true;
 static const bool kOutputToDisk = true;
 
 struct SfxPlayer {
@@ -20,12 +22,12 @@ struct SfxPlayer {
 		NUM_CHANNELS = 3,
 		FRAC_BITS = 12
 	};
-	
+
 	struct Module {
 		const uint8_t *sampleData[NUM_SAMPLES];
 		const uint8_t *moduleData;
 	};
-	
+
 	struct SampleInfo {
 		uint16_t len;
 		uint16_t vol;
@@ -42,7 +44,7 @@ struct SfxPlayer {
 			return data[offset];
 		}
 	};
-	
+
 	static const uint16_t _periodTable[];
 	static const uint8_t _musicDataUnkA[];
 	static const uint8_t _musicData68_69[];
@@ -69,7 +71,7 @@ struct SfxPlayer {
 	static const Module _module73;
 	static const Module _module74;
 	static const Module _module75;
-	
+
 	const Module *_mod;
 	bool _playing;
 	int _samplesLeft;
@@ -78,7 +80,7 @@ struct SfxPlayer {
 	uint16_t _orderDelay;
 	const uint8_t *_modData;
 	SampleInfo _samples[NUM_CHANNELS];
-	
+
 	void loadModule(const int num);
 	void stop();
 	void start();
@@ -86,9 +88,16 @@ struct SfxPlayer {
 	void handleTick();
 	void mix(int8_t *buf, int len);
 	void mixSamples(int8_t *buf, int samplesLen);
-	
+
+	static void *playSampleData;
+	typedef void (*PlaySampleCb)(void *userdata, int channel, const uint8_t *sampleData, int period);
+	static PlaySampleCb playSampleCallback;
+
 	static void mixCallback(void *param, uint8_t *buf, int len);
 };
+
+void *SfxPlayer::playSampleData = 0;
+SfxPlayer::PlaySampleCb SfxPlayer::playSampleCallback;
 
 void SfxPlayer::loadModule(const int num) {
 	switch (num) {
@@ -120,7 +129,7 @@ void SfxPlayer::loadModule(const int num) {
 		break;
 	default:
 		fprintf(stderr, "Unknown module number %d\n", num);
-		break;	
+		break;
 	}
 	_curOrder = 0;
 	_numOrders = READ_BE_UINT16(_mod->moduleData);
@@ -216,7 +225,11 @@ void SfxPlayer::handleTick() {
 						assert(0);
 					}
 				}
-				playSample(ch, sampleData, per);
+				if (playSampleCallback) {
+					playSampleCallback(playSampleData, ch, sampleData, per);
+				} else {
+					playSample(ch, sampleData, per);
+				}
 			}
 		}
 		++_curOrder;
@@ -277,7 +290,7 @@ void SfxPlayer::mixSamples(int8_t *buf, int samplesLen) {
 			while (curLen != 0) {
 				int count;
 				if (loopLen > (2 << FRAC_BITS)) {
-					assert(si->loopPos + si->loopLen <= si->len);					
+					assert(si->loopPos + si->loopLen <= si->len);
 					if (pos >= loopPos + loopLen) {
 						pos -= loopLen;
 					}
@@ -319,7 +332,7 @@ void SfxPlayer::mix(int8_t *buf, int len) {
 		}
 		_samplesLeft -= count;
 		len -= count;
-		
+
 		mixSamples(buf, count);
 		buf += count;
 	}
@@ -329,11 +342,58 @@ void SfxPlayer::mixCallback(void *param, uint8_t *buf, int len) {
 	((SfxPlayer *)param)->mix((int8_t *)buf, len);
 }
 
+struct SfxPlayerPaula : Paula {
+	SfxPlayer _player;
+
+	SfxPlayerPaula()
+		: Paula(false, SAMPLE_RATE, SAMPLE_RATE / 50) {
+	}
+	void play(int num) {
+		_player.loadModule(num);
+		_player._playing = true;
+		SfxPlayer::playSampleData = this;
+		SfxPlayer::playSampleCallback = playSample;
+		startPlay();
+	}
+	void interrupt() {
+		_player.handleTick();
+	}
+	static void playSample(void *userdata, int channel, const uint8_t *sampleData, int period);
+};
+
+void SfxPlayerPaula::playSample(void *userdata, int channel, const uint8_t *sampleData, int period) {
+	if (sampleData == 0) {
+		return;
+	}
+	SfxPlayerPaula *p = (SfxPlayerPaula *)userdata;
+	const int len = READ_BE_UINT16(sampleData); sampleData += 2;
+	const int vol = READ_BE_UINT16(sampleData); sampleData += 2;
+	const int loopPos = READ_BE_UINT16(sampleData); sampleData += 2;
+	const int loopLen = READ_BE_UINT16(sampleData); sampleData += 2;
+	p->setChannelData(channel, (const int8_t *)sampleData, (const int8_t *)sampleData + loopPos, len, loopLen);
+	p->setChannelVolume(channel, vol);
+	p->setChannelPeriod(channel, period);
+}
+
 int main(int argc, char *argv[]) {
-	SDL_Init(SDL_INIT_AUDIO);
 	if (argc != 2) {
 		printf("Syntax: %s mod\n",argv[0]);
 	} else {
+		if (kUsePaula) {
+			FILE *fp = fopen("S16.raw", "wb");
+			if (fp) {
+				SfxPlayerPaula p;
+				p.play(atoi(argv[1]));
+				while (p._player._playing) {
+					static const int kBufSize = 4096;
+					int16_t buffer[kBufSize];
+					p.readBuffer(buffer, kBufSize);
+					fwrite(buffer, 1, sizeof(buffer), fp);
+				}
+				fclose(fp);
+			}
+			return 0;
+		}
 		SfxPlayer p;
 		p.loadModule(atoi(argv[1]));
 		p.start();
@@ -351,6 +411,7 @@ int main(int argc, char *argv[]) {
 				fclose(fp);
 			}
 		} else {
+			SDL_Init(SDL_INIT_AUDIO);
 			bool quit = false;
 			while (!quit && p._playing) {
 				SDL_Event ev;
@@ -363,9 +424,9 @@ int main(int argc, char *argv[]) {
 				}
 				SDL_Delay(100);
 			}
+			SDL_Quit();
 		}
 		p.stop();
-		SDL_Quit();
 	}
 	return 0;
 }
