@@ -25,22 +25,24 @@ void nr(const int8_t *in, int len, int8_t *out) {
 	}
 }
 
-void sinc(double pos, const int8_t *in, int len, int fsr, int8_t *out) {
-	static const int fmax = kCutOffFreq; // should be < fsr / 2
-	const int windowWidth = 16;
-	const double r_g = 2 * fmax / (double)fsr; // calc gain correction factor
-	double r_y = 0;
-	for (int i = -windowWidth / 2; i < windowWidth / 2; ++i) {
-		const int j = int(pos + i);
-		const double r_w = .5 - .5 * cos(2 * M_PI * (.5 + (j - pos) / (double)windowWidth));
-		const double r_a = 2 * M_PI * (j - pos) * fmax / (double)fsr;
-		double r_snc = 1;
-		if (r_a != 0.) {
-			r_snc = sin(r_a) / r_a;
-		}
-		if (j >= 0 && j < len) {
-			r_y += r_g * r_w * r_snc * in[j];
+#define NZEROS 2
+#define NPOLES 2
+#define GAIN   7.655158005e+00
+
+static float xv[NZEROS+1], yv[NPOLES+1];
+
+void butterworth(const int8_t *in, int len, int8_t *out) {
+	for (int i = 0; i < len; ++i) {
+		xv[0] = xv[1]; xv[1] = xv[2];
+		xv[2] = in[i] / GAIN;
+		yv[0] = yv[1]; yv[1] = yv[2];
+		yv[2] = (xv[0] + xv[2]) + 2 * xv[1] + (-0.2729352339 * yv[0]) + (0.7504117278 * yv[1]);
+		if (yv[2] > 127) {
+			out[i] = 127;
+		} else if (yv[2] < -128) {
+			out[i] = -128;
+		} else {
+			out[i] = (int8_t)yv[2];
 		}
 	}
-	*out = (int8_t)r_y;
 }

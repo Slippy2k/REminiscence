@@ -11,9 +11,9 @@
 
 void low_pass(const int8_t *in, int len, int8_t *out);
 void nr(const int8_t *in, int len, int8_t *out);
-void sinc(double pos, const int8_t *in, int len, int fsr, int8_t *out);
+void butterworth(const int8_t *in, int len, int8_t *out);
 
-static const bool kUsePaula = true;
+static const bool kUsePaula = false;
 static const bool kOutputToDisk = true;
 
 struct SfxPlayer {
@@ -266,13 +266,6 @@ int resamplePoint(SfxPlayer::SampleInfo *si, int pos, int frac) {
 	return b;
 }
 
-int resampleSinc(SfxPlayer::SampleInfo *si, int pos, int frac) {
-	const double x = (double)pos / (1 << frac);
-	int8_t sample;
-	sinc(x, (const int8_t *)si->data, si->len, si->freq, &sample);
-	return sample;
-}
-
 static int (*resample)(SfxPlayer::SampleInfo *, int, int) = resamplePoint;
 
 void SfxPlayer::mixSamples(int8_t *buf, int samplesLen) {
@@ -402,11 +395,10 @@ int main(int argc, char *argv[]) {
 			if (fp) {
 				while (p._playing) {
 					static const int kBufSize = 2048;
-					int8_t buf[3][kBufSize];
+					int8_t buf[2][kBufSize];
 					p.mix(buf[0], kBufSize);
-					nr(buf[0], kBufSize, buf[1]);
-					low_pass(buf[1], kBufSize, buf[2]);
-					fwrite(buf[2], 1, kBufSize, fp);
+					butterworth(buf[0], kBufSize, buf[1]);
+					fwrite(buf[1], 1, kBufSize, fp);
 				}
 				fclose(fp);
 			}
