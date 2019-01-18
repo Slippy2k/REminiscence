@@ -159,6 +159,8 @@ void Mixer::stopMusic() {
 	}
 }
 
+static const bool kUseNr = false;
+
 static void nr(int16_t *buf, int len) {
 	static int prev = 0;
 	for (int i = 0; i < len; ++i) {
@@ -189,7 +191,9 @@ void Mixer::mix(int16_t *out, int len) {
 			}
 		}
 	}
-	nr(out, len);
+	if (kUseNr) {
+		nr(out, len);
+	}
 }
 
 void Mixer::mixCallback(void *param, int16_t *buf, int len) {

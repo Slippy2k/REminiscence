@@ -8,6 +8,24 @@
 #include "sfx_player.h"
 #include "util.h"
 
+// 12 dB/oct Butterworth low-pass filter at 3.3 kHz
+static const bool kLowPassFilter = true;
+
+#define NZEROS 2
+#define NPOLES 2
+static float bw_xf[NZEROS+1], bw_yf[NPOLES+1];
+static const float GAIN = 7.655158005e+00;
+
+static void butterworth(int16_t *p, int len) {
+	for (int i = 0; i < len; ++i) {
+		bw_xf[0] = bw_xf[1]; bw_xf[1] = bw_xf[2];
+		bw_xf[2] = p[i] / GAIN;
+		bw_yf[0] = bw_yf[1]; bw_yf[1] = bw_yf[2];
+		bw_yf[2] = (bw_xf[0] + bw_xf[2]) + 2 * bw_xf[1] + (-0.2729352339 * bw_yf[0]) + (0.7504117278 * bw_yf[1]);
+		p[i] = (int16_t)CLIP(bw_yf[2], -32768.f, 32767.f);
+        }
+}
+
 SfxPlayer::SfxPlayer(Mixer *mixer)
 	: _mod(0), _playing(false), _mix(mixer) {
 }
@@ -29,6 +47,10 @@ void SfxPlayer::play(uint8_t num) {
 			_samplesLeft = 0;
 			_mix->setPremixHook(mixCallback, this);
 			_playing = true;
+			if (kLowPassFilter) {
+				memset(bw_xf, 0, sizeof(bw_xf));
+				memset(bw_yf, 0, sizeof(bw_yf));
+			}
 		}
 	}
 }
@@ -153,6 +175,9 @@ bool SfxPlayer::mix(int16_t *buf, int len) {
 			_samplesLeft -= count;
 			len -= count;
 			mixSamples(buf, count);
+			if (kLowPassFilter) {
+				butterworth(buf, count);
+			}
 			buf += count;
 		}
 	}
