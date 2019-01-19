@@ -1,3 +1,9 @@
+* release 0.4.5
+	- added low-pass filtering for in-game music
+	- added support for 3DO background music (tunes/*.Cpc)
+	- added protection screen for DOS SSI version
+	- fixed ASC and CARTE cutscenes enablement
+
 * release 0.4.4
 	- added auto-save
 	- fixed graphical glitches with Macintosh data files
