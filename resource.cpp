@@ -169,6 +169,11 @@ void Resource::load_FIB(const char *fileName) {
 			if (!data) {
 				error("Unable to allocate SoundFx data buffer");
 			}
+			// After decoding, the samples amplitude is within the (-32,38) range, which
+			// is a lot lower than the uncompressed Amiga samples. This is also a lot
+			// quieter than the in-game music (sfxplayer).
+			// The constant tries to make the wave forms louder.
+			static const int kGain = 2;
 			// Fibonacci-delta decoding
 			sfx->data = data;
 			uint8_t c = f.readByte();
@@ -176,11 +181,11 @@ void Resource::load_FIB(const char *fileName) {
 			*data++ = c;
 			uint16_t sz = sfx->len - 1;
 			while (sz--) {
-				uint8_t d = f.readByte();
+				const uint8_t d = f.readByte();
 				c += fibonacciTable[d >> 4];
-				*data++ = c;
+				*data++ = c * kGain;
 				c += fibonacciTable[d & 15];
-				*data++ = c;
+				*data++ = c * kGain;
 			}
 			sfx->len *= 2;
 		}

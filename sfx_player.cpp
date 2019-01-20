@@ -8,9 +8,8 @@
 #include "sfx_player.h"
 #include "util.h"
 
-// theoretical value is 64 (aud0vol) but in-game musics sound too loud compared to sfx
-// volume instruments are either equal to 64 or 32
-static const int kVolumeMax = 96;
+// volume instruments are either equal to 64 or 32 (this corresponds to aud0vol)
+static const int kVolumeMax = 64;
 
 // 12 dB/oct Butterworth low-pass filter at 3.3 kHz
 static const bool kLowPassFilter = true;

@@ -1790,7 +1790,8 @@ void Game::playSound(uint8_t sfxId, uint8_t softVol) {
 	if (sfxId < _res._numSfx) {
 		SoundFx *sfx = &_res._sfxList[sfxId];
 		if (sfx->data) {
-			_mix.play(sfx->data, sfx->len, sfx->freq, Mixer::MAX_VOLUME >> softVol);
+			const int volume = Mixer::MAX_VOLUME >> (2 * softVol);
+			_mix.play(sfx->data, sfx->len, sfx->freq, volume);
 		}
 	} else {
 		// in-game music
