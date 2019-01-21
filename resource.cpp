@@ -1233,15 +1233,17 @@ void Resource::load_SPL(File *f) {
 		}
 		debug(DBG_RES, "sfx=%d size=%d", i, size);
 		assert(size != 0 && (size & 1) == 0);
-		if (i != 64) {
+		if (i == 64) {
+			warning("Skipping sound #%d (%s) size %d", i, _splNames[i], size);
+			f->seek(offset + size);
+		}  else {
 			_sfxList[i].offset = offset;
-			_sfxList[i].len = size;
 			_sfxList[i].freq = kPaulaFreq / 650;
 			_sfxList[i].data = (uint8_t *)malloc(size);
-			assert(_sfxList[i].data);
-			f->read(_sfxList[i].data, size);
-		} else {
-			f->seek(offset + size);
+			if (_sfxList[i].data) {
+				f->read(_sfxList[i].data, size);
+				_sfxList[i].len = size;
+			}
 		}
 		offset += size;
 	}
