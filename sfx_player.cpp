@@ -54,6 +54,8 @@ void SfxPlayer::play(uint8_t num) {
 				memset(bw_xf, 0, sizeof(bw_xf));
 				memset(bw_yf, 0, sizeof(bw_yf));
 			}
+		} else {
+			warning("Unknown sfx music %d", num);
 		}
 	}
 }

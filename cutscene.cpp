@@ -1188,7 +1188,7 @@ void Cutscene::play() {
 			case 46: // Level 2 terminal card mission
 				break;
 			default:
-				warning("Disabled cutscene %d", _id);
+				warning("Unknown cutscene %d", _id);
 				break;
 			}
 		}

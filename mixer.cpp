@@ -84,7 +84,7 @@ void Mixer::stopAll() {
 }
 
 static bool isMusicSfx(int num) {
-	return (num >= 68 && num <= 75);
+	return (num >= 68 && num <= 99);
 }
 
 void Mixer::playMusic(int num) {
