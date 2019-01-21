@@ -2928,7 +2928,7 @@ const char *Resource::_splNames[] = {
 	"touche.spl",
 	"coup",
 	"chenille.spl",
-	"robot.spl",
+	"robot",
 	"tombe.spl",
 	"porte_ferme.spl",
 	"canon_down",
