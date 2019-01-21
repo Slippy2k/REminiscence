@@ -343,3 +343,16 @@ void File::writeUint32BE(uint32_t n) {
 	writeUint16BE(n >> 16);
 	writeUint16BE(n & 0xFFFF);
 }
+
+void dumpFile(const char *filename, const uint8_t *p, int size) {
+	char path[MAXPATHLEN];
+	snprintf(path, sizeof(path), "DUMP/%s", filename);
+	FILE *fp = fopen(filename, "wb");
+	if (fp) {
+		const int count = fwrite(p, 1, size, fp);
+		if (count != size) {
+			warning("Failed to write %d bytes (expected %d)", count, size);
+		}
+		fclose(fp);
+	}
+}
