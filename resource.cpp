@@ -139,10 +139,6 @@ void Resource::load_DEM(const char *filename) {
 
 void Resource::load_FIB(const char *fileName) {
 	debug(DBG_RES, "Resource::load_FIB('%s')", fileName);
-	static const uint8_t fibonacciTable[] = {
-		0xDE, 0xEB, 0xF3, 0xF8, 0xFB, 0xFD, 0xFE, 0xFF,
-		0x00, 0x01, 0x02, 0x03, 0x05, 0x08, 0x0D, 0x15
-	};
 	snprintf(_entryName, sizeof(_entryName), "%s.FIB", fileName);
 	File f;
 	if (f.open(_entryName, "rb", _fs)) {
@@ -151,43 +147,44 @@ void Resource::load_FIB(const char *fileName) {
 		if (!_sfxList) {
 			error("Unable to allocate SoundFx table");
 		}
-		int i;
-		for (i = 0; i < _numSfx; ++i) {
+		for (int i = 0; i < _numSfx; ++i) {
 			SoundFx *sfx = &_sfxList[i];
 			sfx->offset = f.readUint32LE();
 			sfx->len = f.readUint16LE();
 			sfx->freq = 6000;
 			sfx->data = 0;
 		}
-		for (i = 0; i < _numSfx; ++i) {
+		for (int i = 0; i < _numSfx; ++i) {
 			SoundFx *sfx = &_sfxList[i];
 			if (sfx->len == 0) {
 				continue;
 			}
 			f.seek(sfx->offset);
-			uint8_t *data = (uint8_t *)malloc(sfx->len * 2);
+			const int len = (sfx->len * 2) - 1;
+			uint8_t *data = (uint8_t *)malloc(len);
 			if (!data) {
 				error("Unable to allocate SoundFx data buffer");
 			}
+			sfx->data = data;
+
 			// After decoding, the samples amplitude is within the (-32,38) range, which
-			// is a lot lower than the uncompressed Amiga samples. This is also a lot
-			// quieter than the in-game music (sfxplayer).
+			// which sounds a lot quieter than the uncompressed Amiga samples. The difference
+			// is also very noticeable with the in-game music (sfxplayer).
 			// The constant tries to make the wave forms louder.
 			static const int kGain = 2;
+
 			// Fibonacci-delta decoding
-			sfx->data = data;
-			uint8_t c = f.readByte();
+			static const int8_t codeToDelta[16] = { -34, -21, -13, -8, -5, -3, -2, -1, 0, 1, 2, 3, 5, 8, 13, 21 };
+			int8_t c = f.readByte();
 			*data++ = c;
-			*data++ = c;
-			uint16_t sz = sfx->len - 1;
-			while (sz--) {
+			for (int j = 1; j < sfx->len; ++j) {
 				const uint8_t d = f.readByte();
-				c += fibonacciTable[d >> 4];
-				*data++ = c * kGain;
-				c += fibonacciTable[d & 15];
-				*data++ = c * kGain;
+				c += codeToDelta[d >> 4];
+				*data++ = CLIP(c * kGain, -128, 127);
+				c += codeToDelta[d & 15];
+				*data++ = CLIP(c * kGain, -128, 127);
 			}
-			sfx->len *= 2;
+			sfx->len = len;
 		}
 		if (f.ioErr()) {
 			error("I/O error when reading '%s'", _entryName);
