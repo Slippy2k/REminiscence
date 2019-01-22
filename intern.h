@@ -282,6 +282,7 @@ struct SoundFx {
 	uint16_t len;
 	uint16_t freq;
 	uint8_t *data;
+	int8_t peak;
 };
 
 extern Options g_options;

@@ -368,6 +368,24 @@ void SfxPlayerPaula::playSample(void *userdata, int channel, const uint8_t *samp
 	p->setChannelPeriod(channel, period);
 }
 
+struct Stats {
+	int peak;
+	double squareSum;
+	int count;
+	double rms;
+} _stats;
+
+static void updateStats(const int8_t *samples, int len) {
+	for (int i = 0; i < len; ++i) {
+		const int8_t s = (samples[i] < 0) ? -samples[i] : samples[i];
+		if (s > _stats.peak) {
+			_stats.peak = s;
+		}
+		_stats.squareSum = (s * s);
+	}
+	_stats.count += len;
+}
+
 int main(int argc, char *argv[]) {
 	if (argc != 2) {
 		printf("Syntax: %s mod\n",argv[0]);
@@ -388,7 +406,8 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 		SfxPlayer p;
-		p.loadModule(atoi(argv[1]));
+		const int num = atoi(argv[1]);
+		p.loadModule(num);
 		p.start();
 		if (kOutputToDisk) {
 			FILE *fp = fopen("out.raw", "wb");
@@ -399,8 +418,11 @@ int main(int argc, char *argv[]) {
 					p.mix(buf[0], kBufSize);
 					butterworth(buf[0], kBufSize, buf[1]);
 					fwrite(buf[1], 1, kBufSize, fp);
+					updateStats(buf[1], kBufSize);
 				}
 				fclose(fp);
+				_stats.rms = sqrt(_stats.squareSum) / _stats.count;
+				fprintf(stdout, "stat module %d, peak %d rms %f\n", num, _stats.peak, _stats.rms);
 			}
 		} else {
 			SDL_Init(SDL_INIT_AUDIO);

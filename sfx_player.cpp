@@ -9,7 +9,8 @@
 #include "util.h"
 
 // volume instruments are either equal to 64 or 32 (this corresponds to aud0vol)
-static const int kVolumeMax = 64;
+// use half of the volume for master (for comparaison, modplug uses a master volume of 128, max 512, eg. 1/4th)
+static const int kMasterVolume = 64 * 2;
 
 // 12 dB/oct Butterworth low-pass filter at 3.3 kHz
 static const bool kLowPassFilter = true;
@@ -153,7 +154,7 @@ void SfxPlayer::mixSamples(int16_t *buf, int samplesLen) {
 					curLen = 0;
 				}
 				while (count--) {
-					const int out = si->getPCM(pos >> FRAC_BITS) * si->vol / kVolumeMax;
+					const int out = si->getPCM(pos >> FRAC_BITS) * si->vol / kMasterVolume;
 					*mixbuf = ADDC_S16(*mixbuf, S8_to_S16(out));
 					++mixbuf;
 					pos += deltaPos;

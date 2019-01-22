@@ -177,12 +177,22 @@ void Resource::load_FIB(const char *fileName) {
 			static const int8_t codeToDelta[16] = { -34, -21, -13, -8, -5, -3, -2, -1, 0, 1, 2, 3, 5, 8, 13, 21 };
 			int8_t c = f.readByte();
 			*data++ = c;
+			sfx->peak = ABS(c);
+
 			for (int j = 1; j < sfx->len; ++j) {
 				const uint8_t d = f.readByte();
+
 				c += codeToDelta[d >> 4];
 				*data++ = CLIP(c * kGain, -128, 127);
+				if (ABS(c) > sfx->peak) {
+					sfx->peak = ABS(c);
+				}
+
 				c += codeToDelta[d & 15];
 				*data++ = CLIP(c * kGain, -128, 127);
+				if (ABS(c) > sfx->peak) {
+					sfx->peak = ABS(c);
+				}
 			}
 			sfx->len = len;
 		}

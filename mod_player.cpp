@@ -40,6 +40,9 @@ struct ModPlayer_impl {
 		if (data) {
 			f->read(data, size);
 			_mf = ModPlug_Load(data, size);
+			if (_mf) {
+				ModPlug_SetMasterVolume(_mf, 256);
+			}
 		}
 		return _mf != 0;
 	}

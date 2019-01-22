@@ -3,6 +3,7 @@
 	- added support for 3DO background music (tunes/*.Cpc)
 	- added protection screen for DOS SSI version
 	- fixed ASC and CARTE cutscenes enablement
+	- fixed loudness of sound effects and in-game music
 
 * release 0.4.4
 	- added auto-save
