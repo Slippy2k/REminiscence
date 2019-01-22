@@ -1786,16 +1786,20 @@ void Game::drawIcon(uint8_t iconNum, int16_t x, int16_t y, uint8_t colMask) {
 	_vid.markBlockAsDirty(x, y, 16, 16, _vid._layerScale);
 }
 
-void Game::playSound(uint8_t sfxId, uint8_t softVol) {
-	if (sfxId < _res._numSfx) {
-		SoundFx *sfx = &_res._sfxList[sfxId];
+void Game::playSound(uint8_t num, uint8_t softVol) {
+	if (num < _res._numSfx) {
+		SoundFx *sfx = &_res._sfxList[num];
 		if (sfx->data) {
 			const int volume = Mixer::MAX_VOLUME >> (2 * softVol);
 			_mix.play(sfx->data, sfx->len, sfx->freq, volume);
 		}
-	} else {
+	} else if (num >= 68 && num <= 75) {
 		// in-game music
-		_mix.playMusic(sfxId);
+		_mix.playMusic(num);
+	} else if (num == 77) {
+		// triggered when Conrad reaches a platform
+	} else {
+		warning("Unknown sound num %d", num);
 	}
 }
 

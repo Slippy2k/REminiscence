@@ -37,26 +37,23 @@ SfxPlayer::SfxPlayer(Mixer *mixer)
 void SfxPlayer::play(uint8_t num) {
 	debug(DBG_SFX, "SfxPlayer::play(%d)", num);
 	if (!_playing) {
-		if (num >= 68 && num <= 75) {
-			static const Module *modTable[] = {
-				&_module68, &_module68, &_module70, &_module70,
-				&_module72, &_module73, &_module74, &_module75
-			};
-			_mod = modTable[num - 68];
-			_curOrder = 0;
-			_numOrders = READ_BE_UINT16(_mod->moduleData);
-			_orderDelay = 0;
-			_modData = _mod->moduleData + 0x22;
-			memset(_samples, 0, sizeof(_samples));
-			_samplesLeft = 0;
-			_mix->setPremixHook(mixCallback, this);
-			_playing = true;
-			if (kLowPassFilter) {
-				memset(bw_xf, 0, sizeof(bw_xf));
-				memset(bw_yf, 0, sizeof(bw_yf));
-			}
-		} else {
-			warning("Unknown sfx music %d", num);
+		assert(num >= 68 && num <= 75);
+		static const Module *modTable[] = {
+			&_module68, &_module68, &_module70, &_module70,
+			&_module72, &_module73, &_module74, &_module75
+		};
+		_mod = modTable[num - 68];
+		_curOrder = 0;
+		_numOrders = READ_BE_UINT16(_mod->moduleData);
+		_orderDelay = 0;
+		_modData = _mod->moduleData + 0x22;
+		memset(_samples, 0, sizeof(_samples));
+		_samplesLeft = 0;
+		_mix->setPremixHook(mixCallback, this);
+		_playing = true;
+		if (kLowPassFilter) {
+			memset(bw_xf, 0, sizeof(bw_xf));
+			memset(bw_yf, 0, sizeof(bw_yf));
 		}
 	}
 }
