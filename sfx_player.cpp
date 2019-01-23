@@ -9,8 +9,8 @@
 #include "util.h"
 
 // volume instruments are either equal to 64 or 32 (this corresponds to aud0vol)
-// use half of the volume for master (for comparaison, modplug uses a master volume of 128, max 512, eg. 1/4th)
-static const int kMasterVolume = 64 * 2;
+// use a quarter of the volume for master (similar to modplug, that uses a master volume of 128, max 512)
+static const int kMasterVolume = 64 * 4;
 
 // 12 dB/oct Butterworth low-pass filter at 3.3 kHz
 static const bool kLowPassFilter = true;

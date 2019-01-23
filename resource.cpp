@@ -167,15 +167,9 @@ void Resource::load_FIB(const char *fileName) {
 			}
 			sfx->data = data;
 
-			// After decoding, the samples amplitude is within the (-32,38) range, which
-			// which sounds a lot quieter than the uncompressed Amiga samples. The difference
-			// is also very noticeable with the in-game music (sfxplayer).
-			// The constant tries to make the wave forms louder.
-			static const int kGain = 2;
-
 			// Fibonacci-delta decoding
 			static const int8_t codeToDelta[16] = { -34, -21, -13, -8, -5, -3, -2, -1, 0, 1, 2, 3, 5, 8, 13, 21 };
-			int8_t c = f.readByte();
+			int c = (int8_t)f.readByte();
 			*data++ = c;
 			sfx->peak = ABS(c);
 
@@ -183,13 +177,13 @@ void Resource::load_FIB(const char *fileName) {
 				const uint8_t d = f.readByte();
 
 				c += codeToDelta[d >> 4];
-				*data++ = CLIP(c * kGain, -128, 127);
+				*data++ = CLIP(c, -128, 127);
 				if (ABS(c) > sfx->peak) {
 					sfx->peak = ABS(c);
 				}
 
 				c += codeToDelta[d & 15];
-				*data++ = CLIP(c * kGain, -128, 127);
+				*data++ = CLIP(c, -128, 127);
 				if (ABS(c) > sfx->peak) {
 					sfx->peak = ABS(c);
 				}
@@ -201,6 +195,19 @@ void Resource::load_FIB(const char *fileName) {
 		}
 	} else {
 		error("Cannot open '%s'", _entryName);
+	}
+}
+
+static void normalizeSPL(SoundFx *sfx) {
+	static const int kGain = 2;
+
+	sfx->peak = ABS(sfx->data[0]);
+	for (int i = 1; i < sfx->len; ++i) {
+		const int8_t sample = sfx->data[i];
+		if (ABS(sample) > sfx->peak) {
+			sfx->peak = ABS(sample);
+		}
+		sfx->data[i] = sample / kGain;
 	}
 }
 
@@ -221,6 +228,7 @@ void Resource::load_SPL_demo() {
 				sfx->offset = 0;
 				sfx->len = size;
 				sfx->freq = kPaulaFreq / 650;
+				normalizeSPL(sfx);
 			}
 		}
 	}
@@ -1253,6 +1261,7 @@ void Resource::load_SPL(File *f) {
 			if (_sfxList[i].data) {
 				f->read(_sfxList[i].data, size);
 				_sfxList[i].len = size;
+				normalizeSPL(&_sfxList[i]);
 			}
 		}
 		offset += size;
