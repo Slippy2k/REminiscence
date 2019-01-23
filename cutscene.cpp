@@ -1016,11 +1016,13 @@ void Cutscene::mainLoop(uint16_t num) {
 
 bool Cutscene::load(uint16_t cutName) {
 	assert(cutName != 0xFFFF);
-	const char *name = _namesTable[cutName & 0xFF];
+	const char *name = _namesTableDOS[cutName & 0xFF];
 	switch (_res->_type) {
 	case kResourceTypeAmiga:
-		if (strncmp(name, "INTRO", 5) == 0) {
+		if (cutName == 7) {
 			name = "INTRO";
+		} else if (cutName == 10) {
+			name = "SERRURE";
 		}
 		_res->load(name, Resource::OT_CMP);
 		if (_id == 0x39 && _res->_lang != LANG_FR) {

@@ -30,7 +30,7 @@ const Cutscene::OpcodeStub Cutscene::_opcodeTable[] = {
 	&Cutscene::op_handleKeys
 };
 
-const char *Cutscene::_namesTable[] = {
+const char *Cutscene::_namesTableDOS[] = {
 	"DEBUT",
 	"OBJET",
 	"CARTE",

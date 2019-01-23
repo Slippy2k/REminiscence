@@ -39,7 +39,7 @@ struct Cutscene {
 	};
 
 	static const OpcodeStub _opcodeTable[];
-	static const char *_namesTable[];
+	static const char *_namesTableDOS[];
 	static const uint16_t _offsetsTableDOS[];
 	static const uint16_t _offsetsTableAmiga[];
 	static const uint8_t _amigaDemoOffsetsTable[];
