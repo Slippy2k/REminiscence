@@ -1109,8 +1109,9 @@ void Cutscene::playCredits() {
 			break;
 		}
 		prepare();
-		uint16_t cutName = _offsetsTable[cut_id * 2 + 0];
-		uint16_t cutOff  = _offsetsTable[cut_id * 2 + 1];
+		const uint16_t *offsets = _res->isAmiga() ? _offsetsTableAmiga : _offsetsTableDOS;
+		uint16_t cutName = offsets[cut_id * 2 + 0];
+		uint16_t cutOff  = offsets[cut_id * 2 + 1];
 		if (load(cutName)) {
 			mainLoop(cutOff);
 			unload();
@@ -1156,8 +1157,9 @@ void Cutscene::play() {
 		debug(DBG_CUT, "Cutscene::play() _id=0x%X", _id);
 		_creditsSequence = false;
 		prepare();
-		uint16_t cutName = _offsetsTable[_id * 2 + 0];
-		uint16_t cutOff  = _offsetsTable[_id * 2 + 1];
+		const uint16_t *offsets = _res->isAmiga() ? _offsetsTableAmiga : _offsetsTableDOS;
+		uint16_t cutName = offsets[_id * 2 + 0];
+		uint16_t cutOff  = offsets[_id * 2 + 1];
 		if (cutName == 0xFFFF) {
 			switch (_id) {
 			case 3: // keys

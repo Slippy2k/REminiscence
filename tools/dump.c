@@ -108,14 +108,39 @@ static void dumpProtectionCodeData(FILE *fp) {
 	dumpBinary(fp, pos2, pos2 + kLen - 1);
 }
 
+/* Flashback _cutscene_offsetsTable */
+static void dumpAmigaCutsceneOffsetsTable(FILE *fp) {
+	static const int kPos = 0xBF60;
+	static const int kLen = 148 * sizeof(uint16_t);
+
+	int count = 0;
+
+	fseek(fp, kPos, SEEK_SET);
+	while (ftell(fp) < kPos + kLen) {
+		uint8_t buf[4];
+		fread(buf, 1, sizeof(buf), fp);
+
+		const uint16_t offset = buf[0] * 256 + buf[1];
+		const uint8_t num = buf[2];
+
+		if ((count % 8) == 0) {
+			fprintf(stdout, "\n\t");
+		} else {
+			fprintf(stdout, " ");
+		}
+		fprintf(stdout, "0x%04X, %2d,", offset, num);
+		++count;
+	}
+}
+
 int main(int argc, char *argv[]) {
 	if (argc >= 2) {
-		int count = 0;
 		FILE *fp = fopen(argv[1], "rb");
 		if (fp) {
 			// dumpProtectionData(fp);
 			// dumpProtectionText(fp);
-			dumpProtectionCodeData(fp);
+			// dumpProtectionCodeData(fp);
+			dumpAmigaCutsceneOffsetsTable(fp);
 			fclose(fp);
 		}
 	}

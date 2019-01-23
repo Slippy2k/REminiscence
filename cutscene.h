@@ -40,7 +40,8 @@ struct Cutscene {
 
 	static const OpcodeStub _opcodeTable[];
 	static const char *_namesTable[];
-	static const uint16_t _offsetsTable[];
+	static const uint16_t _offsetsTableDOS[];
+	static const uint16_t _offsetsTableAmiga[];
 	static const uint8_t _amigaDemoOffsetsTable[];
 	static const uint8_t _ssiOffsetsTable[];
 	static const uint16_t _cosTable[];
