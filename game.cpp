@@ -1793,6 +1793,8 @@ void Game::playSound(uint8_t num, uint8_t softVol) {
 			const int volume = Mixer::MAX_VOLUME >> (2 * softVol);
 			_mix.play(sfx->data, sfx->len, sfx->freq, volume);
 		}
+	} else if (num == 66) {
+		// open/close inventory (DOS)
 	} else if (num >= 68 && num <= 75) {
 		// in-game music
 		_mix.playMusic(num);
