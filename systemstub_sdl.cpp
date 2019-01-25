@@ -941,7 +941,7 @@ void SystemStub_SDL::changeScaler(int scaler) {
 		break;
 	case 5:
 		scalerParameters.type = kScalerTypeInternal;
-		scalerParameters.scaler = &scaler_xbrz;
+		scalerParameters.scaler = &scaler_xbr;
 		break;
 #endif
 	default:

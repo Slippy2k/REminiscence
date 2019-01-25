@@ -3,16 +3,7 @@ CC    := i686-w64-mingw32-gcc
 CXX   := i686-w64-mingw32-g++
 STRIP := i686-w64-mingw32-strip
 
-all: scaler_epx.dll scaler_nearest.dll scaler_tv2x.dll scaler_xbrz.dll
-
-CPPFLAGS += -O2 -Iscale2x-4.0/ -Ihqx/include/
-
-OBJS_SCALER_EPX := scaler_epx.o scale2x-4.0/scale2x.o scale2x-4.0/scale3x.o scale2x-4.0/scalebit.o
-
-scaler_epx.dll: $(OBJS_SCALER_EPX)
-	$(CXX) $(LDFLAGS) -shared -o $@ $^ -static-libgcc -static-libstdc++
-	$(STRIP) $@
-	upx -9 $@
+all: scaler_nearest.dll scaler_tv2x.dll scaler_xbr.dll
 
 OBJS_SCALER_NEAREST := scaler_nearest.o
 
@@ -28,12 +19,12 @@ scaler_tv2x.dll: $(OBJS_SCALER_TV2X)
 	$(STRIP) $@
 	upx -9 $@
 
-OBJS_SCALER_XBRZ := scaler_xbrz.o xbrz/xbrz.o
+OBJS_SCALER_XBR := scaler_xbr.o xbr/xbr.o
 
-scaler_xbrz.dll: $(OBJS_SCALER_XBRZ)
+scaler_xbr.dll: $(OBJS_SCALER_XBRZ)
 	$(CXX) $(LDFLAGS) -shared -o $@ $^ -static-libgcc -static-libstdc++
 	$(STRIP) $@
 	upx -9 $@
 
 clean:
-	rm -f $(OBJS_SCALER_EPX) $(OBJS_SCALER_NEAREST) $(OBJS_SCALER_TV2X) $(OBJS_SCALER_XBRZ) *.dll
+	rm -f $(OBJS_SCALER_NEAREST) $(OBJS_SCALER_TV2X) $(OBJS_SCALER_XBR) *.dll

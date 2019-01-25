@@ -165,7 +165,7 @@ static void parseScaler(char *name, ScalerParameters *scalerParameters) {
 #ifdef USE_STATIC_SCALER
 		{ "nearest", kScalerTypeInternal, &scaler_nearest },
 		{ "tv2x", kScalerTypeInternal, &scaler_tv2x },
-		{ "xbrz", kScalerTypeInternal, &scaler_xbrz },
+		{ "xbr", kScalerTypeInternal, &scaler_xbr },
 #endif
 		{ 0, -1 }
 	};

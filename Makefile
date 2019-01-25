@@ -14,7 +14,7 @@ SRCS = collision.cpp cpc_player.cpp cutscene.cpp decode_mac.cpp dynlib.cpp file.
 	resource_mac.cpp scaler.cpp screenshot.cpp seq_player.cpp \
 	sfx_player.cpp staticres.cpp systemstub_sdl.cpp unpack.cpp util.cpp video.cpp
 
-SCALERS := scalers/scaler_nearest.cpp scalers/scaler_tv2x.cpp scalers/scaler_xbrz.cpp scalers/xbrz/xbrz.cpp
+SCALERS := scalers/scaler_nearest.cpp scalers/scaler_tv2x.cpp scalers/scaler_xbr.cpp
 
 OBJS = $(SRCS:.cpp=.o) $(SCALERS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d) $(SCALERS:.cpp=.d)

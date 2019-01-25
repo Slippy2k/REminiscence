@@ -1,12 +1,7 @@
 
-all: scaler_epx.so scaler_nearest.so scaler_tv2x.so scaler_xbrz.so
+all: scaler_nearest.so scaler_tv2x.so scaler_xbr.so
 
 CPPFLAGS += -O2 -fPIC -Iscale2x-4.0/ -Ihqx/include/ -DNDEBUG -DUSE_STATIC_SCALER
-
-OBJS_SCALER_EPX := scaler_epx.o scale2x-4.0/scale2x.o scale2x-4.0/scale3x.o scale2x-4.0/scalebit.o
-
-scaler_epx.so: $(OBJS_SCALER_EPX)
-	$(CXX) $(LDFLAGS) -fPIC -shared -o $@ $^
 
 OBJS_SCALER_NEAREST := scaler_nearest.o
 
@@ -18,10 +13,10 @@ OBJS_SCALER_TV2X := scaler_tv2x.o
 scaler_tv2x.so: $(OBJS_SCALER_TV2X)
 	$(CXX) $(LDFLAGS) -fPIC -shared -o $@ $^
 
-OBJS_SCALER_XBRZ := scaler_xbrz.o xbrz/xbrz.o
+OBJS_SCALER_XBR := scaler_xbr.o
 
-scaler_xbrz.so: $(OBJS_SCALER_XBRZ)
+scaler_xbr.so: $(OBJS_SCALER_XBR)
 	$(CXX) $(LDFLAGS) -fPIC -shared -o $@ $^
 
 clean:
-	rm -f $(OBJS_SCALER_EPX) $(OBJS_SCALER_NEAREST) $(OBJS_SCALER_TV2X) $(OBJS_SCALER_XBRZ) *.so
+	rm -f $(OBJS_SCALER_NEAREST) $(OBJS_SCALER_TV2X) $(OBJS_SCALER_XBR) *.so
