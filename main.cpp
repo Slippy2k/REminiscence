@@ -92,6 +92,7 @@ static void initOptions() {
 	g_options.use_text_cutscenes = false;
 	g_options.use_seq_cutscenes = true;
 	g_options.use_words_protection = false;
+	g_options.use_white_tshirt = false;
 	g_options.play_asc_cutscene = false;
 	g_options.play_caillou_cutscene = false;
 	g_options.play_metro_cutscene = false;
@@ -111,6 +112,7 @@ static void initOptions() {
 		{ "use_text_cutscenes", &g_options.use_text_cutscenes },
 		{ "use_seq_cutscenes", &g_options.use_seq_cutscenes },
 		{ "use_words_protection", &g_options.use_words_protection },
+		{ "use_white_tshirt", &g_options.use_white_tshirt },
 		{ "play_asc_cutscene", &g_options.play_asc_cutscene },
 		{ "play_caillou_cutscene", &g_options.play_caillou_cutscene },
 		{ "play_metro_cutscene", &g_options.play_metro_cutscene },

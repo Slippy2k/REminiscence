@@ -166,20 +166,26 @@ void Video::setPaletteColorBE(int num, int offset) {
 
 void Video::setPaletteSlotBE(int palSlot, int palNum) {
 	debug(DBG_VIDEO, "Video::setPaletteSlotBE()");
-	const uint8_t *p = _res->_pal + palNum * 0x20;
+	const uint8_t *p = _res->_pal + palNum * 32;
 	for (int i = 0; i < 16; ++i) {
 		const int color = READ_BE_UINT16(p); p += 2;
 		Color c = AMIGA_convertColor(color, true);
-		_stub->setPaletteEntry(palSlot * 0x10 + i, &c);
+		_stub->setPaletteEntry(palSlot * 16 + i, &c);
 	}
 }
 
 void Video::setPaletteSlotLE(int palSlot, const uint8_t *palData) {
 	debug(DBG_VIDEO, "Video::setPaletteSlotLE()");
 	for (int i = 0; i < 16; ++i) {
-		uint16_t color = READ_LE_UINT16(palData); palData += 2;
+		const uint16_t color = READ_LE_UINT16(palData + i * 2);
 		Color c = AMIGA_convertColor(color);
-		_stub->setPaletteEntry(palSlot * 0x10 + i, &c);
+		_stub->setPaletteEntry(palSlot * 16 + i, &c);
+	}
+	if (palSlot == 4 && g_options.use_white_tshirt) {
+		const Color color12 = AMIGA_convertColor(0x888);
+		const Color color13 = AMIGA_convertColor((palData == _conradPal2) ? 0x888 : 0xCCC);
+		_stub->setPaletteEntry(palSlot * 16 + 12, &color12);
+		_stub->setPaletteEntry(palSlot * 16 + 13, &color13);
 	}
 }
 
