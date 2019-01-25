@@ -154,7 +154,7 @@ static void initOptions() {
 }
 
 static void parseScaler(char *name, ScalerParameters *scalerParameters) {
-	struct {
+	static const struct {
 		const char *name;
 		int type;
 		const Scaler *scaler;
