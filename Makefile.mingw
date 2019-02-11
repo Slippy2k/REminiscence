@@ -18,7 +18,7 @@ DEPS := $(SRCS:.cpp=.d)
 
 ICON := dists/win32/resource.rc
 
-all: $(OBJDIR) rs.exe
+all: rs.exe
 
 rs.exe: $(OBJS) $(ICON).o
 	$(CXX) $(LDFLAGS) -o $@ $^ -static-libgcc -static-libstdc++ $(SDL_LIBS) -Wl,-Bstatic -lmodplug -lz
@@ -29,6 +29,6 @@ $(ICON).o: $(ICON)
 	$(WINDRES) -i $^ -o $@
 
 clean:
-	rm -f *.o *.d $(ICON).o
+	rm -f $(OBJS) $(DEPS) $(ICON).o
 
--include $(addprefix $(OBJDIR)/, $(DEPS))
+-include $(DEPS)
