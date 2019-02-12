@@ -352,46 +352,107 @@ void SystemStub_SDL::copyWidescreenMirror(int w, int h, const uint8_t *buf) {
 	}
 }
 
-static uint32_t blurPixel(int x, int y, const uint8_t *src, const uint32_t *pal, int pitch, int w, int h, const SDL_PixelFormat *fmt) {
-	static const uint8_t blurMat[3 * 3] = {
-		2, 4, 2,
-		4, 8, 4,
-		2, 4, 2
-	};
-	static const int blurMatSigma = 32 * 2;
+static void blur_h(int radius, const uint32_t *src, int srcPitch, int w, int h, const SDL_PixelFormat *fmt, uint32_t *dst, int dstPitch) {
 
-	const uint32_t redBlueMask = fmt->Rmask | fmt->Bmask;
-	const uint32_t greenMask = fmt->Gmask;
+	const int count = 2 * radius + 1;
 
-	uint32_t redBlueBlurSum = 0;
-	uint32_t greenBlurSum = 0;
+	for (int y = 0; y < h; ++y) {
 
-	for (int v = 0; v < 3; ++v) {
-		const int ym = CLIP(y + v - 1, 0, h - 1);
-		for (int u = 0; u < 3; ++u) {
-			const int xm = CLIP(x + u - 1, 0, w - 1);
-			const uint32_t color = pal[src[ym * pitch + xm]];
-			const int mul = blurMat[v * 3 + u];
-			redBlueBlurSum += (color & redBlueMask) * mul;
-			greenBlurSum += (color & greenMask) * mul;
+		uint32_t r = 0;
+		uint32_t g = 0;
+		uint32_t b = 0;
+
+		uint32_t color;
+
+		for (int x = -radius; x <= radius; ++x) {
+			color = src[MAX(x, 0)];
+			r += (color & fmt->Rmask) >> fmt->Rshift;
+			g += (color & fmt->Gmask) >> fmt->Gshift;
+			b += (color & fmt->Bmask) >> fmt->Bshift;
 		}
+		dst[0] = ((r / count) << fmt->Rshift) | ((g / count) << fmt->Gshift) | ((b / count) << fmt->Bshift);
+
+		for (int x = 1; x < w; ++x) {
+			color = src[MIN(x + radius, w - 1)];
+			r += (color & fmt->Rmask) >> fmt->Rshift;
+			g += (color & fmt->Gmask) >> fmt->Gshift;
+			b += (color & fmt->Bmask) >> fmt->Bshift;
+
+			color = src[MAX(x - radius - 1, 0)];
+			r -= (color & fmt->Rmask) >> fmt->Rshift;
+			g -= (color & fmt->Gmask) >> fmt->Gshift;
+			b -= (color & fmt->Bmask) >> fmt->Bshift;
+
+			dst[x] = ((r / count) << fmt->Rshift) | ((g / count) << fmt->Gshift) | ((b / count) << fmt->Bshift);
+		}
+
+		src += srcPitch;
+		dst += dstPitch;
 	}
-	return ((redBlueBlurSum / blurMatSigma) & redBlueMask) | ((greenBlurSum / blurMatSigma) & greenMask);
+}
+
+static void blur_v(int radius, const uint32_t *src, int srcPitch, int w, int h, const SDL_PixelFormat *fmt, uint32_t *dst, int dstPitch) {
+
+	const int count = 2 * radius + 1;
+
+	for (int x = 0; x < w; ++x) {
+
+		uint32_t r = 0;
+		uint32_t g = 0;
+		uint32_t b = 0;
+
+		uint32_t color;
+
+		for (int y = -radius; y <= radius; ++y) {
+			color = src[MAX(y, 0) * srcPitch];
+			r += (color & fmt->Rmask) >> fmt->Rshift;
+			g += (color & fmt->Gmask) >> fmt->Gshift;
+			b += (color & fmt->Bmask) >> fmt->Bshift;
+		}
+		dst[0] = ((r / count) << fmt->Rshift) | ((g / count) << fmt->Gshift) | ((b / count) << fmt->Bshift);
+
+		for (int y = 1; y < h; ++y) {
+			color = src[MIN(y + radius, h - 1) * srcPitch];
+			r += (color & fmt->Rmask) >> fmt->Rshift;
+			g += (color & fmt->Gmask) >> fmt->Gshift;
+			b += (color & fmt->Bmask) >> fmt->Bshift;
+
+			color = src[MAX(y - radius - 1, 0) * srcPitch];
+			r -= (color & fmt->Rmask) >> fmt->Rshift;
+			g -= (color & fmt->Gmask) >> fmt->Gshift;
+			b -= (color & fmt->Bmask) >> fmt->Bshift;
+
+			dst[y * dstPitch] = ((r / count) << fmt->Rshift) | ((g / count) << fmt->Gshift) | ((b / count) << fmt->Bshift);
+		}
+
+		++src;
+		++dst;
+	}
 }
 
 void SystemStub_SDL::copyWidescreenBlur(int w, int h, const uint8_t *buf) {
 	assert(w == _screenW && h == _screenH);
-	void *dst = 0;
+	void *ptr = 0;
 	int pitch = 0;
-	if (SDL_LockTexture(_widescreenTexture, 0, &dst, &pitch) == 0) {
+	if (SDL_LockTexture(_widescreenTexture, 0, &ptr, &pitch) == 0) {
 		assert((pitch & 3) == 0);
-		uint32_t *p = (uint32_t *)dst;
-		for (int y = 0; y < h; ++y) {
-			for (int x = 0; x < w; ++x) {
-				p[x] = blurPixel(x, y, buf, _rgbPalette, w, w, h, _fmt);
+
+		uint32_t *src = (uint32_t *)malloc(w * sizeof(uint32_t) * h * sizeof(uint32_t));
+		uint32_t *tmp = (uint32_t *)malloc(w * sizeof(uint32_t) * h * sizeof(uint32_t));
+		uint32_t *dst = (uint32_t *)ptr;
+
+		if (src && tmp) {
+			for (int i = 0; i < w * h; ++i) {
+				src[i] = _rgbPalette[buf[i]];
 			}
-			p += pitch / sizeof(uint32_t);
+			static const int radius = 8;
+			blur_h(radius, src, w, w, h, _fmt, tmp, w);
+			blur_v(radius, tmp, w, w, h, _fmt, dst, pitch / sizeof(uint32_t));
 		}
+
+		free(src);
+		free(tmp);
+
 		SDL_UnlockTexture(_widescreenTexture);
 	}
 }
