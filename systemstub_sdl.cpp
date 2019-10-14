@@ -537,6 +537,23 @@ void SystemStub_SDL::processEvents() {
 	}
 }
 
+// only used for the protection codes and level passwords
+static void setAsciiChar(PlayerInput &pi, const SDL_Keysym *key) {
+	if (key->sym >= SDLK_0 && key->sym <= SDLK_9) {
+		pi.lastChar = '0' + key->sym - SDLK_0;
+	} else if (key->sym >= SDLK_a && key->sym <= SDLK_z) {
+		pi.lastChar = 'A' + key->sym - SDLK_a;
+	} else if (key->scancode == SDL_SCANCODE_0) {
+		pi.lastChar = '0';
+	} else if (key->scancode >= SDL_SCANCODE_1 && key->scancode <= SDL_SCANCODE_9) {
+		pi.lastChar = '1' + key->scancode - SDL_SCANCODE_1;
+	} else if (key->sym == SDLK_SPACE || key->sym == SDLK_KP_SPACE) {
+		pi.lastChar = ' ';
+	} else {
+		pi.lastChar = 0;
+	}
+}
+
 void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 	switch (ev.type) {
 	case SDL_QUIT:
@@ -753,7 +770,7 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 			}
 			break;
 		}
-		_pi.lastChar = ev.key.keysym.sym;
+		setAsciiChar(_pi, &ev.key.keysym);
 		switch (ev.key.keysym.sym) {
 		case SDLK_LEFT:
 			_pi.dirMask &= ~PlayerInput::DIR_LEFT;
