@@ -22,7 +22,7 @@ static const uint32_t kPixelFormat = SDL_PIXELFORMAT_RGB888;
 ScalerParameters ScalerParameters::defaults() {
 	ScalerParameters params;
 	params.type = kScalerTypeInternal;
-	params.scaler = &_internalScaler;
+	params.name[0] = 0;
 	params.factor = _internalScaler.factorMin + (_internalScaler.factorMax - _internalScaler.factorMin) / 2;
 	return params;
 }
@@ -47,15 +47,16 @@ struct SystemStub_SDL : SystemStub {
 	void *_audioCbData;
 	int _screenshot;
 	ScalerType _scalerType;
-	const Scaler *_scaler;
 	int _scaleFactor;
+	const Scaler *_scaler;
+	void *_scalerSo;
 	int _widescreenMode;
 	SDL_Texture *_widescreenTexture;
 	int _wideMargin;
 	bool _enableWidescreen;
 
 	virtual ~SystemStub_SDL() {}
-	virtual void init(const char *title, int w, int h, bool fullscreen, int widescreenMode, ScalerParameters *scalerParameters);
+	virtual void init(const char *title, int w, int h, bool fullscreen, int widescreenMode, const ScalerParameters *scalerParameters);
 	virtual void destroy();
 	virtual bool hasWidescreen() const;
 	virtual void setScreenSize(int w, int h);
@@ -88,7 +89,8 @@ struct SystemStub_SDL : SystemStub {
 	void prepareGraphics();
 	void cleanupGraphics();
 	void changeGraphics(bool fullscreen, int scaleFactor);
-	void changeScaler(int scaler);
+	void setScaler(const ScalerParameters *parameters);
+	void changeScaler(int scalerNum);
 	void drawRect(int x, int y, int w, int h, uint8_t color);
 };
 
@@ -96,7 +98,7 @@ SystemStub *SystemStub_SDL_create() {
 	return new SystemStub_SDL();
 }
 
-void SystemStub_SDL::init(const char *title, int w, int h, bool fullscreen, int widescreenMode, ScalerParameters *scalerParameters) {
+void SystemStub_SDL::init(const char *title, int w, int h, bool fullscreen, int widescreenMode, const ScalerParameters *scalerParameters) {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
 	SDL_ShowCursor(SDL_DISABLE);
 	_caption = title;
@@ -108,9 +110,9 @@ void SystemStub_SDL::init(const char *title, int w, int h, bool fullscreen, int 
 	_screenBuffer = 0;
 	_fadeOnUpdateScreen = false;
 	_fullscreen = fullscreen;
-	_scalerType = scalerParameters->type;
-	_scaler = scalerParameters->scaler;
-	_scaleFactor = _scaler ? CLIP(scalerParameters->factor, _scaler->factorMin, _scaler->factorMax) : 1;
+	_scaler = 0;
+	_scalerSo = 0;
+	setScaler(scalerParameters);
 	memset(_rgbPalette, 0, sizeof(_rgbPalette));
 	memset(_darkPalette, 0, sizeof(_darkPalette));
 	_screenW = _screenH = 0;
@@ -142,6 +144,10 @@ void SystemStub_SDL::destroy() {
 	if (_fmt) {
 		SDL_FreeFormat(_fmt);
 		_fmt = 0;
+	}
+	if (_scalerSo) {
+		SDL_UnloadObject(_scalerSo);
+		_scalerSo = 0;
 	}
 	if (_controller) {
 		SDL_GameControllerClose(_controller);
@@ -995,39 +1001,97 @@ void SystemStub_SDL::changeGraphics(bool fullscreen, int scaleFactor) {
 	prepareGraphics();
 }
 
-void SystemStub_SDL::changeScaler(int scaler) {
-	ScalerParameters scalerParameters = ScalerParameters::defaults();
-	switch (scaler) {
+void SystemStub_SDL::setScaler(const ScalerParameters *parameters) {
+	static const struct {
+		const char *name;
+		int type;
+		const Scaler *scaler;
+	} scalers[] = {
+		{ "point", kScalerTypePoint, 0 },
+		{ "linear", kScalerTypeLinear, 0 },
+		{ "scale", kScalerTypeInternal, &_internalScaler },
+#ifdef USE_STATIC_SCALER
+		{ "nearest", kScalerTypeInternal, &scaler_nearest },
+		{ "tv2x", kScalerTypeInternal, &scaler_tv2x },
+		{ "xbr", kScalerTypeInternal, &scaler_xbr },
+#endif
+		{ 0, -1 }
+	};
+	bool found = false;
+	for (int i = 0; scalers[i].name; ++i) {
+		if (strcmp(scalers[i].name, parameters->name) == 0) {
+			_scalerType = (ScalerType)scalers[i].type;
+			_scaler = scalers[i].scaler;
+			found = true;
+			break;
+		}
+	}
+	if (!found) {
+#ifdef _WIN32
+		static const char *libSuffix = "dll";
+#else
+		static const char *libSuffix = "so";
+#endif
+		char libname[64];
+		snprintf(libname, sizeof(libname), "scaler_%s.%s", parameters->name, libSuffix);
+		_scalerSo = SDL_LoadObject(libname);
+		if (!_scalerSo) {
+			warning("Scaler '%s' not found, using default", libname);
+		} else {
+			static const char *kSoSym = "getScaler";
+			void *symbol = SDL_LoadFunction(_scalerSo, kSoSym);
+			if (!symbol) {
+				warning("Symbol '%s' not found in '%s'", kSoSym, libname);
+			} else {
+				typedef const Scaler *(*GetScalerProc)();
+				const Scaler *scaler = ((GetScalerProc)symbol)();
+				const int tag = scaler ? scaler->tag : 0;
+				if (tag != SCALER_TAG) {
+					warning("Unexpected tag %d for scaler '%s'", tag, libname);
+				} else {
+					_scalerType = kScalerTypeExternal;
+					_scaler = scaler;
+				}
+			}
+		}
+	}
+	_scaleFactor = _scaler ? CLIP(parameters->factor, _scaler->factorMin, _scaler->factorMax) : 1;
+}
+
+void SystemStub_SDL::changeScaler(int scalerNum) {
+	ScalerType type = kScalerTypeInternal;
+	const Scaler *scaler = 0;
+	switch (scalerNum) {
 	case 0:
-		scalerParameters.type = kScalerTypePoint;
+		type = kScalerTypePoint;
 		break;
 	case 1:
-		scalerParameters.type = kScalerTypeLinear;
+		type = kScalerTypeLinear;
 		break;
 	case 2:
-		scalerParameters.type = kScalerTypeInternal;
-		scalerParameters.scaler = &_internalScaler;
+		type = kScalerTypeInternal;
+		scaler = &_internalScaler;
 		break;
 #ifdef USE_STATIC_SCALER
 	case 3:
-		scalerParameters.type = kScalerTypeInternal;
-		scalerParameters.scaler = &scaler_nearest;
+		type = kScalerTypeInternal;
+		scaler = &scaler_nearest;
 		break;
 	case 4:
-		scalerParameters.type = kScalerTypeInternal;
-		scalerParameters.scaler = &scaler_tv2x;
+		type = kScalerTypeInternal;
+		scaler = &scaler_tv2x;
 		break;
 	case 5:
-		scalerParameters.type = kScalerTypeInternal;
-		scalerParameters.scaler = &scaler_xbr;
+		type = kScalerTypeInternal;
+		scaler = &scaler_xbr;
 		break;
 #endif
 	default:
 		return;
 	}
-	if (_scalerType != scalerParameters.type || scalerParameters.scaler != _scaler) {
-		_scalerType = scalerParameters.type;
-		_scaler = scalerParameters.scaler;
+	if (_scalerType != type || scaler != _scaler) {
+		_scalerType = type;
+		_scaler = scaler;
 		if (_scalerType == kScalerTypeInternal || _scalerType == kScalerTypeExternal) {
 			_scaleFactor = CLIP(_scaleFactor, _scaler->factorMin, _scaler->factorMax);
 		} else {
