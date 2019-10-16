@@ -40,3 +40,11 @@ const Scaler scaler_xbr = {
 	2, 4,
 	scale_xbr
 };
+
+#ifndef USE_STATIC_SCALER
+extern "C" {
+	const Scaler *getScaler() {
+		return &scaler_xbr;
+	}
+};
+#endif
