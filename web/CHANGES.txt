@@ -1,3 +1,6 @@
+* release 0.4.6
+	- fixed passwords and protection codes input
+
 * release 0.4.5
 	- added low-pass filtering for in-game music
 	- added support for 3DO background music (tunes/*.Cpc)
@@ -72,7 +75,7 @@
 
 * release 0.2.2
 	- added support for level background music
-	- added italian texts
+	- added Italian texts
 	- fixed PC-CD SEQ cutscenes numbering
 	- fixed several issues with Amiga data files
 

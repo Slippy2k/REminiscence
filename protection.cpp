@@ -196,7 +196,7 @@ bool Game::handleProtectionScreenWords() {
 	const uint8_t code = getRandomNumber() % kWordsCount;
 	const uint8_t *protectionData = _protectionWordData + code * 18;
 
-	const char *kSecurityCodeText = "SECURITY CODE";
+	static const char *kSecurityCodeText = "SECURITY CODE";
 	_vid.drawString(kSecurityCodeText, 72 + (114 - strlen(kSecurityCodeText) * 8) / 2, 158, 0xE4);
 	char buf[16];
 	snprintf(buf, sizeof(buf), "PAGE %d", protectionData[0]);
