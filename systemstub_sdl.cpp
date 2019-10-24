@@ -443,8 +443,8 @@ void SystemStub_SDL::copyWidescreenBlur(int w, int h, const uint8_t *buf) {
 	if (SDL_LockTexture(_widescreenTexture, 0, &ptr, &pitch) == 0) {
 		assert((pitch & 3) == 0);
 
-		uint32_t *src = (uint32_t *)malloc(w * sizeof(uint32_t) * h * sizeof(uint32_t));
-		uint32_t *tmp = (uint32_t *)malloc(w * sizeof(uint32_t) * h * sizeof(uint32_t));
+		uint32_t *src = (uint32_t *)malloc(w * h * sizeof(uint32_t));
+		uint32_t *tmp = (uint32_t *)malloc(w * h * sizeof(uint32_t));
 		uint32_t *dst = (uint32_t *)ptr;
 
 		if (src && tmp) {
