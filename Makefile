@@ -2,7 +2,6 @@
 SDL_CFLAGS   := `sdl2-config --cflags`
 SDL_LIBS     := `sdl2-config --libs`
 
-DL_LIBS      := -ldl
 MODPLUG_LIBS := -lmodplug
 TREMOR_LIBS  := -lvorbisidec -logg
 ZLIB_LIBS    := -lz
@@ -19,7 +18,7 @@ SCALERS := scalers/scaler_nearest.cpp scalers/scaler_tv2x.cpp scalers/scaler_xbr
 OBJS = $(SRCS:.cpp=.o) $(SCALERS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d) $(SCALERS:.cpp=.d)
 
-LIBS = $(SDL_LIBS) $(DL_LIBS) $(MODPLUG_LIBS) $(TREMOR_LIBS) $(ZLIB_LIBS)
+LIBS = $(SDL_LIBS) $(MODPLUG_LIBS) $(TREMOR_LIBS) $(ZLIB_LIBS)
 
 rs: $(OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
