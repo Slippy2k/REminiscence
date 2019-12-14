@@ -75,7 +75,7 @@ inline int mixBuffer(int16_t *&buf, const int8_t *data, Paula::Offset &offset, f
 
 template<bool stereo>
 int Paula::readBufferIntern(int16_t *buffer, const int numSamples) {
-	int samples = _stereo ? numSamples / 2 : numSamples;
+	int samples = stereo ? numSamples / 2 : numSamples;
 	while (samples > 0) {
 
 		// Handle 'interrupts'. This gives subclasses the chance to adjust the channel data
@@ -152,7 +152,7 @@ int Paula::readBufferIntern(int16_t *buffer, const int numSamples) {
 			}
 
 		}
-		buffer += _stereo ? nSamples * 2 : nSamples;
+		buffer += stereo ? nSamples * 2 : nSamples;
 		_curInt -= nSamples;
 		samples -= nSamples;
 	}
