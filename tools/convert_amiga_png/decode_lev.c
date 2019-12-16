@@ -71,14 +71,15 @@ static void blit_4v_8x8(unsigned char *dst, int x, int y, unsigned char *src, in
 
 	// printf("blit_4v_8x8 pos %d,%d shift %d\n", x, y, shift);
 	dst += (y * 256 + x) * 8;
-	for (y = 0; y < 8; ++y) {
-if (_tilesSega) {
-	for (i = 0; i < 4; ++i) {
-		dst[2 * i] = (src[i] >> 4) << shift;
-		dst[2 * i + 1] = (src[i] & 15) << shift;
-	}
-	src += 4;
-} else { // Amiga
+	for (y = 0; y < 8; ++y, dst += 256) {
+		if (_tilesSega) {
+			for (i = 0; i < 4; ++i) {
+				dst[2 * i] = (src[i] >> 4) << shift;
+				dst[2 * i + 1] = (src[i] & 15) << shift;
+			}
+			src += 4;
+			continue;
+		}
 		for (i = 0; i < 8; ++i) {
 			mask = 1 << (7 - i);
 			color = 0;
@@ -90,28 +91,27 @@ if (_tilesSega) {
 			dst[i] = (color << shift);
 		}
 		++src;
-}
-		dst += 256;
 	}
 }
 
 static void blit_mask_4v_8x8(unsigned char *dst, int x, int y, unsigned char *src, unsigned char *src_mask, int shift) {
 	int i, color, mask, bit, tmp;
 
-	// printf("blit_mask_4v_8x8 pos %d,%d shift %d\n", x, y, shift);
+//	printf("blit_mask_4v_8x8 pos %d,%d shift %d\n", x, y, shift);
 	dst += (y * 256 + x) * 8;
-	for (y = 0; y < 8; ++y) {
-if (_tilesSega) {
-	for (i = 0; i < 4; ++i) {
-		if ((src[i] >> 4) != 0) {
-			dst[2 * i] = (src[i] >> 4) << shift;
+	for (y = 0; y < 8; ++y, dst += 256) {
+		if (_tilesSega) {
+			for (i = 0; i < 4; ++i) {
+				if ((src[i] >> 4) != 0) {
+					dst[2 * i] = (src[i] >> 4) | 0x10;
+				}
+				if ((src[i] & 15) != 0) {
+					dst[2 * i + 1] = (src[i] & 15) | 0x10;
+				}
+			}
+			src += 4;
+			continue;
 		}
-		if ((src[i] & 15) != 0) {
-			dst[2 * i + 1] = (src[i] & 15) << shift;
-		}
-	}
-	src += 4;
-} else { // Amiga
 		for (i = 0; i < 8; ++i) {
 			mask = 1 << (7 - i);
 			color = 0;
@@ -129,8 +129,6 @@ if (_tilesSega) {
 			}
 		}
 		++src;
-}
-		dst += 256;
 	}
 }
 
@@ -245,6 +243,10 @@ static unsigned char *sub_EC94(unsigned char *a2) { // mirror_y
 	int i, j;
 	unsigned char *a0 = &_tileTable[32];
 
+	if (_tilesSega) {
+		return a2;
+	}
+
 	a2 += 24;
 	for (j = 0; j < 4; ++j) {
 		for (i = 0; i < 8; ++i) {
@@ -261,6 +263,10 @@ static unsigned char *sub_ED06(unsigned char *a2) { // mirror_x
 	int i;
 	unsigned char *a0 = &_tileTable[0];
 	unsigned char *a1 = &_tileLookupTable[0];
+
+	if (_tilesSega) {
+		return a2;
+	}
 
 	for (i = 0; i < 32; ++i) {
 		*a0++ = a1[*a2];
@@ -664,7 +670,11 @@ printf("pal %d %d %d\n", d1, movew(a0), movew(a0 + 2));
 		d2 = movew(pal + 1 * 32 + i * 2);
 		convert_amiga_color(_roomPalBuf, 16 + i, d2);
 		d2 = movew(pal + 2 * 32 + i * 2);
-		convert_amiga_color(_roomPalBuf, 32 + i, d2);
+		convert_amiga_color(_roomPalBuf, 2 * 16 + i, d2);
+		if (_currentLevel == 7) { // sizeof == 4 * 32
+			d2 = movew(pal + 3 * 32 + i * 2);
+			convert_amiga_color(_roomPalBuf, 3 * 16 + i, d2);
+		}
 	}
 	d1 = movew(a0); a0 += 2;
 	if ((byte_31D30 & 0x80) == 0) {
