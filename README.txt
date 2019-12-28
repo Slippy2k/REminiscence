@@ -69,6 +69,7 @@ In-game hotkeys :
     Alt S           write screenshot as .tga
     Ctrl S          save game state
     Ctrl L          load game state
+    Ctrl R          rewind game state buffer (requires --autosave)
     Ctrl + and -    change game state slot
     Function Keys   change game screen scaler
 

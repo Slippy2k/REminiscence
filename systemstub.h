@@ -35,6 +35,7 @@ struct PlayerInput {
 	bool save;
 	bool load;
 	int stateSlot;
+	bool rewind;
 
 	uint8_t dbgMask;
 	bool quit;

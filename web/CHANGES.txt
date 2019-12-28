@@ -1,4 +1,5 @@
 * release 0.4.6
+	- added rewind to automatic saves
 	- fixed passwords and protection codes input
 
 * release 0.4.5

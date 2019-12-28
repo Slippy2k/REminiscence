@@ -765,6 +765,9 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 			case SDLK_l:
 				_pi.load = true;
 				break;
+			case SDLK_r:
+				_pi.rewind = true;
+				break;
 			case SDLK_KP_PLUS:
 			case SDLK_PAGEUP:
 				_pi.stateSlot = 1;
