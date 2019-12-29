@@ -50,8 +50,8 @@ These paths can be changed using command line switches :
 
 The scaler option specifies the algorithm used to smoothen the image in
 addition to a scaling factor. External scalers are also supported, the suffix
-shall be used as the name. Eg. If you have scaler_xbrz.dll, you can pass
-'--scaler xbrz@2' to use that algorithm with a doubled window size (512x448).
+shall be used as the name. Eg. If you have scaler_xbr.dll, you can pass
+'--scaler xbr@2' to use that algorithm with a doubled window size (512x448).
 
 The widescreen option accepts two modes :
     'adjacent' : left and right rooms bitmaps will be drawn
