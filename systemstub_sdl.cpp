@@ -1,4 +1,3 @@
-
 /*
  * REminiscence - Flashback interpreter
  * Copyright (C) 2005-2019 Gregory Montoir (cyx@users.sourceforge.net)
@@ -110,9 +109,13 @@ void SystemStub_SDL::init(const char *title, int w, int h, bool fullscreen, int 
 	_screenBuffer = 0;
 	_fadeOnUpdateScreen = false;
 	_fullscreen = fullscreen;
+	_scalerType = kScalerTypeInternal;
+	_scaleFactor = 1;
 	_scaler = 0;
 	_scalerSo = 0;
-	setScaler(scalerParameters);
+	if (scalerParameters->name[0]) {
+		setScaler(scalerParameters);
+	}
 	memset(_rgbPalette, 0, sizeof(_rgbPalette));
 	memset(_darkPalette, 0, sizeof(_darkPalette));
 	_screenW = _screenH = 0;
