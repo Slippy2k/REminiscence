@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-VERSION = '0.4.6'
-
 SDL_TARBALL = [ 'REminiscence-%s-sdl2-win32.zip',
 	(
 		'CHANGES.txt',
@@ -76,9 +74,23 @@ SRC_TARBALL = [ 'REminiscence-%s.tar.bz2',
 	)
 ]
 
+SRC_DIR = '..'
 DST_DIR = '.'
 
-import os, tarfile, zipfile, hashlib
+import hashlib
+import os
+import re
+import tarfile
+import tempfile
+import zipfile
+
+def get_version():
+	f = file(os.path.join(SRC_DIR, 'README.txt'))
+	for line in f.readlines():
+		m = re.search('Release version: (\d+\.\d+\.\d+)', line.strip())
+		if m:
+			return m.group(1)
+	return None
 
 def print_md5(md5_file, filename):
 	m = hashlib.new('md5')
@@ -95,17 +107,38 @@ def build_zip_tarball(file_name, file_list):
 		zf.write(entry_path, entry_name)
 	zf.close()
 
+def fixup_makefile(filepath):
+	# remove references to scalers
+	temporary = tempfile.NamedTemporaryFile(delete=False)
+	sourcefile = file(filepath, 'r')
+	for line in sourcefile.readlines():
+		ndx = line.find('-DUSE_STATIC_SCALER')
+		if ndx != -1:
+			line = line[:ndx] + line[ndx + 20:]
+		elif line.startswith('SCALERS :='):
+			continue
+                temporary.write(line)
+        temporary.flush()
+        return temporary
+
 def build_bz2_tarball(file_name, file_list):
 	file_path = os.path.join(DST_DIR, file_name)
 	tf = tarfile.open(file_path, 'w:bz2')
 	for entry_path in file_list:
 		entry_name = file_name[0:-8] + '/' + os.path.split(entry_path)[1]
+		if entry_path == '../Makefile':
+			fileobj = fixup_makefile(entry_path)
+			tarinfo = tf.gettarinfo(name='Makefile', arcname=entry_name, fileobj=fileobj)
+			fileobj.seek(0)
+			tf.addfile(tarinfo, fileobj)
+			continue
 		tf.add(entry_path, entry_name)
 	tf.close()
 
-md5_file = file('CHECKSUMS-%s.MD5' % VERSION, 'w')
+version = get_version()
+md5_file = file('CHECKSUMS-%s.MD5' % version, 'w')
 for tarball in (SDL_TARBALL, SRC_TARBALL):
-	file_name = tarball[0] % VERSION
+	file_name = tarball[0] % version
 	file_list = tarball[1]
 	print "Generating '" + file_name + "'...",
 	if file_name.endswith('.zip'):
