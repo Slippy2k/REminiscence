@@ -387,7 +387,7 @@ void Game::mainLoop() {
 				playCutscene(0x41);
 				_endLoop = true;
 			} else {
-				if (_autoSave && loadGameState(kAutoSaveSlot)) {
+				if (_autoSave && _rewindLen != 0 && loadGameState(kAutoSaveSlot)) {
 					// autosave
 				} else if (_validSaveState && loadGameState(kIngameSaveSlot)) {
 					// ingame save
