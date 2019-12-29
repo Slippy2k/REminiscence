@@ -458,8 +458,8 @@ void Game::mainLoop() {
 	}
 	inp_handleSpecialKeys();
 	if (_autoSave && _stub->getTimeStamp() - _saveTimestamp >= kAutoSaveIntervalMs) {
-		// do not save if we just died
-		if (_pgeLive[0].life > 0) {
+		// do not save if we died or about to
+		if (_pgeLive[0].life > 0 && _deathCutsceneCounter == 0) {
 			saveGameState(kAutoSaveSlot);
 			_saveTimestamp = _stub->getTimeStamp();
 		}
