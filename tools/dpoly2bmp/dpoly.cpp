@@ -22,15 +22,20 @@ void DPoly::Decode(const char *setFile) {
 	}
 	assert(memcmp(hdr, "POLY\x00\x0A\x00\x02", 8) == 0) ;
 	ReadSequenceBuffer();
+	const int offset = GetShapeOffsetForSet(setFile);
 	if (strcasecmp(setFile, "CAILLOU-F.SET") == 0) {
 		fseek(_fp, 0x432, SEEK_SET);
-		ReadAffineBuffer();
+		ReadAffineBuffer(62, 0);
 	}
 	if (strcasecmp(setFile, "MEMOSTORY3.SET") == 0) {
 		fseek(_fp, 0x1C56, SEEK_SET);
-		ReadAffineBuffer();
+		ReadAffineBuffer(607, 119);
 	}
-	const int offset = GetShapeOffsetForSet(setFile);
+	if (strcasecmp(setFile, "JUPITERStation1.set") == 0) {
+		fseek(_fp, 0x443A, SEEK_SET);
+		ReadAffineBuffer(1231, 379);
+	}
+	printf("bytes skipped %ld\n", offset - ftell(_fp));
 	fseek(_fp, offset, SEEK_SET);
 	for (int counter = 0; ; ++counter) {
 		const int groupCount = freadUint16BE(_fp);
@@ -53,6 +58,7 @@ void DPoly::Decode(const char *setFile) {
 			WriteShapeToBitmap(counter, i);
 		}
 	}
+	printf("pos 0x%x\n", (int)ftell(_fp));
 	if (1) {
 		_gfx.setClippingRect(GFX_CLIP_X, GFX_CLIP_Y, GFX_CLIP_W, GFX_CLIP_H);
 		for (int i = 0; _seqOffsets[i] != 0; ++i) {
@@ -222,11 +228,11 @@ void DPoly::ReadSequenceBuffer() {
 		assert(num < MAX_SEQUENCES);
 		_seqOffsets[num++] = ftell(_fp);
 		mark = freadUint16BE(_fp);
-		count = freadUint16BE(_fp);
-		printf("sequence - background %d count %d pos 0x%x\n", mark, count, (int)ftell(_fp));
-		if (count == 0) {
+		if (mark == 0xFFFF) {
 			break;
 		}
+		count = freadUint16BE(_fp);
+		printf("sequence - background %d count %d pos 0x%x\n", mark, count, (int)ftell(_fp));
 		for (i = 0; i < count; ++i) {
 			const int ret = fread(buf, 1, sizeof(buf), _fp);
 			if (ret != sizeof(buf)) {
@@ -235,9 +241,10 @@ void DPoly::ReadSequenceBuffer() {
 			printf("  frame=%d .x=%d .y=%d\n", READ_BE_UINT16(buf), (int16_t)READ_BE_UINT16(buf + 2), (int16_t)READ_BE_UINT16(buf + 4));
 		}
 	}
+	printf("pos 0x%x\n", (int)ftell(_fp));
 }
 
-void DPoly::ReadAffineBuffer() {
+void DPoly::ReadAffineBuffer(int rotations, int unk) {
 	int i, mark, count;
 
 	mark = freadUint16BE(_fp);
@@ -249,13 +256,28 @@ void DPoly::ReadAffineBuffer() {
 		int y1 = (int16_t)freadUint16BE(_fp);
 		printf("  bounds=%d .x1=%d .y1=%d\n", i, x1, y1);
 	}
+	printf("pos 0x%x\n", (int)ftell(_fp));
 	mark = freadUint16BE(_fp);
 	assert(mark == 0xFFFF);
-	for (i = 0; i < 62; ++i) {
+	for (i = 0; i < rotations; ++i) {
 		int r1 = (int16_t)freadUint16BE(_fp);
 		int r2 = (int16_t)freadUint16BE(_fp);
 		int r3 = (int16_t)freadUint16BE(_fp);
-		printf("  rotation .r1=%d .r2=%d .r3=%d\n", r1, r2, r3);
+		printf("  rotation=%d .r1=%d .r2=%d .r3=%d\n", i, r1, r2, r3);
+	}
+	if (unk != 0) {
+		mark = freadUint16BE(_fp);
+		assert(mark == 0xFFFF);
+		for (i = 0; i < unk; ++i) {
+			uint32_t val1 = freadUint32BE(_fp);
+			assert(val1 == 0xFFFFFFFF);
+			uint32_t val2 = freadUint32BE(_fp);
+			assert(val2 == 0x02020202);
+			uint32_t val3 = freadUint32BE(_fp);
+			assert(val3 == 0);
+			uint32_t val4 = freadUint32BE(_fp);
+			assert(val4 == 0x40404040);
+		}
 	}
 	printf("pos 0x%x\n", (int)ftell(_fp));
 }

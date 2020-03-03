@@ -33,7 +33,7 @@ struct DPoly {
 	void ReadShapeMarker();
 	void ReadPaletteMarker();
 	void ReadSequenceBuffer();
-	void ReadAffineBuffer();
+	void ReadAffineBuffer(int rotations, int unk);
 	void WriteShapeToBitmap(int group, int shape);
 	void WriteFrameToBitmap(int frame);
 	void DoFrameLUT();
