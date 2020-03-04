@@ -14,6 +14,7 @@
 #define GFX_CLIP_Y  50
 #define GFX_CLIP_W 240
 #define GFX_CLIP_H 128
+#define MAX_ROTATIONS 2048
 
 struct DPoly {
 	const char *_setFile;
@@ -24,15 +25,20 @@ struct DPoly {
 	uint32_t _seqOffsets[MAX_SEQUENCES];
 	uint32_t _shapesOffsets[2][MAX_SHAPES]; // background, foreground
 	uint32_t _rgb[DRAWING_BUFFER_W * DRAWING_BUFFER_H];
+	uint16_t _rotPt[MAX_SHAPES][2];
+	int _points;
+	uint32_t _rotMat[MAX_ROTATIONS][3];
+	int _rotations;
+	int _currentShapeRot;
 
 	void Decode(const char *setFile);
-	void DecodeShape(int count, int dx, int dy);
+	void DecodeShape(int count, int dx, int dy, int shape = -1);
 	void DecodePalette();
 	void SetPalette(const uint16_t *pal);
 	int  GetShapeOffsetForSet(const char *filename);
 	void ReadShapeMarker();
 	void ReadPaletteMarker();
-	void ReadSequenceBuffer();
+	int  ReadSequenceBuffer();
 	void ReadAffineBuffer(int rotations, int unk);
 	void WriteShapeToBitmap(int group, int shape);
 	void WriteFrameToBitmap(int frame);

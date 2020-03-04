@@ -1,4 +1,5 @@
 
+#include <math.h>
 #include <sys/param.h>
 #include "bitmap.h"
 #include "dpoly.h"
@@ -21,20 +22,22 @@ void DPoly::Decode(const char *setFile) {
 		fprintf(stderr, "fread() failed, ret %d", ret);
 	}
 	assert(memcmp(hdr, "POLY\x00\x0A\x00\x02", 8) == 0) ;
-	ReadSequenceBuffer();
-	const int offset = GetShapeOffsetForSet(setFile);
+	const int count = ReadSequenceBuffer();
+	_points = 0;
+	_rotations = 0;
 	if (strcasecmp(setFile, "CAILLOU-F.SET") == 0) {
 		fseek(_fp, 0x432, SEEK_SET);
 		ReadAffineBuffer(62, 0);
 	}
 	if (strcasecmp(setFile, "MEMOSTORY3.SET") == 0) {
 		fseek(_fp, 0x1C56, SEEK_SET);
-		ReadAffineBuffer(607, 119);
+		ReadAffineBuffer(607, count);
 	}
-	if (strcasecmp(setFile, "JUPITERStation1.set") == 0) {
+	if (strcasecmp(setFile, "JUPITERStation1.set") == 0 || strcasecmp(setFile, "TAKEMecha1-F.set") == 0) {
 		fseek(_fp, 0x443A, SEEK_SET);
-		ReadAffineBuffer(1231, 379);
+		ReadAffineBuffer(1231, count);
 	}
+	const int offset = GetShapeOffsetForSet(setFile);
 	printf("bytes skipped %ld\n", offset - ftell(_fp));
 	fseek(_fp, offset, SEEK_SET);
 	for (int counter = 0; ; ++counter) {
@@ -60,6 +63,7 @@ void DPoly::Decode(const char *setFile) {
 	}
 	printf("pos 0x%x\n", (int)ftell(_fp));
 	if (1) {
+		int total = 0;
 		_gfx.setClippingRect(GFX_CLIP_X, GFX_CLIP_Y, GFX_CLIP_W, GFX_CLIP_H);
 		for (int i = 0; _seqOffsets[i] != 0; ++i) {
 			// memset(_rgb, 0, sizeof(_rgb));
@@ -72,6 +76,7 @@ void DPoly::Decode(const char *setFile) {
 			if (background < MAX_SHAPES) {
 				const int shapeOffset = _shapesOffsets[0][background];
 				if (shapeOffset != 0) {
+					_currentShapeRot = -1;
 					memset(_gfx._layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 					fseek(_fp, shapeOffset, SEEK_SET);
 					int count = freadUint16BE(_fp);
@@ -88,24 +93,27 @@ void DPoly::Decode(const char *setFile) {
 				int frame = freadUint16BE(_fp);
 				int dx = (int16_t)freadUint16BE(_fp);
 				int dy = (int16_t)freadUint16BE(_fp);
+				fprintf(stdout, "sequence %d shape %d frame %d dx %d dy %d total %d\n", i, j, frame, dx, dy, total);
 				if (frame < MAX_SHAPES) {
 					const int shapeOffset = _shapesOffsets[1][frame];
 					if (shapeOffset != 0) {
+						_currentShapeRot = (total < _rotations) ? total : -1;
 						memset(_gfx._layer, 0, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 						fseek(_fp, shapeOffset, SEEK_SET);
 						int count = freadUint16BE(_fp);
-						DecodeShape(count, dx, dy);
+						DecodeShape(count, dx, dy, frame);
 						DecodePalette();
 						DoFrameLUT();
 					}
 				}
+				++total;
 			}
 			WriteFrameToBitmap(i);
 		}
 	}
 }
 
-void DPoly::DecodeShape(int count, int dx, int dy) {
+void DPoly::DecodeShape(int count, int dx, int dy, int shape) {
 	count--;
 	assert(count >= 0);
 	for (int j = 0; j < count; ++j) {
@@ -115,7 +123,7 @@ void DPoly::DecodeShape(int count, int dx, int dy) {
 		int iy = (int16_t)freadUint16BE(_fp);
 		int color1 = freadByte(_fp);
 		int color2 = freadByte(_fp);
-		printf(" shape %d/%d x=%d y=%d color1=%d color2=%d\n", j, count, ix, iy, color1, color2);
+		printf(" shape %d/%d ix=%d iy=%d color1=%d color2=%d\n", j, count, ix, iy, color1, color2);
 		_gfx.setClippingRect(8, 50, 240, 128);
 		if (numVertices == 255) {
 			int rx = (int16_t)freadUint16BE(_fp);
@@ -129,10 +137,30 @@ void DPoly::DecodeShape(int count, int dx, int dy) {
 		assert((numVertices & 0x80) == 0);
 		Point vertices[MAX_VERTICES];
 		assert(numVertices < MAX_VERTICES);
-		for (int i = 0; i < numVertices; ++i) {
-			vertices[i].x = dx + (int16_t)freadUint16BE(_fp);
-			vertices[i].y = dy + (int16_t)freadUint16BE(_fp);
-			printf("  vertex %d/%d x=%d y=%d\n", i, numVertices, vertices[i].x, vertices[i].y);
+		if (shape != -1 && _currentShapeRot != -1 && _rotMat[_currentShapeRot][0] != 0) {
+
+			// assert(_rotMat[_currentShapeRot][1] == 180);
+			assert(_rotMat[_currentShapeRot][2] == 90);
+
+			const float s =  sin(_rotMat[_currentShapeRot][0] * M_PI / 180);
+			const float c = -cos(_rotMat[_currentShapeRot][0] * M_PI / 180);
+
+			assert(shape < _points);
+			const int ox = _rotPt[shape][0];
+			const int oy = _rotPt[shape][1];
+
+			for (int i = 0; i < numVertices; ++i) {
+				int x = (ox - (int16_t)freadUint16BE(_fp));
+				int y = (oy - (int16_t)freadUint16BE(_fp));
+				vertices[i].x = dx + ox + int(x * c - y * s);
+				vertices[i].y = dy + oy + int(x * s + y * c);
+			}
+		} else {
+			for (int i = 0; i < numVertices; ++i) {
+				vertices[i].x = dx + (int16_t)freadUint16BE(_fp);
+				vertices[i].y = dy + (int16_t)freadUint16BE(_fp);
+				printf("  vertex %d/%d x=%d y=%d\n", i, numVertices, vertices[i].x, vertices[i].y);
+			}
 		}
 		_gfx.drawPolygon(color1, false, vertices, numVertices);
 	}
@@ -215,7 +243,7 @@ void DPoly::ReadPaletteMarker() {
 	assert(mark0 == 0); // && (mark1 != 0 && mark1 < 16));
 }
 
-void DPoly::ReadSequenceBuffer() {
+int DPoly::ReadSequenceBuffer() {
 	int i, mark, count, num;
 	unsigned char buf[6];
 
@@ -242,6 +270,7 @@ void DPoly::ReadSequenceBuffer() {
 		}
 	}
 	printf("pos 0x%x\n", (int)ftell(_fp));
+	return num;
 }
 
 void DPoly::ReadAffineBuffer(int rotations, int unk) {
@@ -250,12 +279,16 @@ void DPoly::ReadAffineBuffer(int rotations, int unk) {
 	mark = freadUint16BE(_fp);
 	assert(mark == 0xFFFF);
 	count = freadUint16BE(_fp);
-	printf("unk count %d\n", count);
+	printf("shapes origin points count %d\n", count);
+	assert(count < MAX_SHAPES);
 	for (i = 0; i < count; ++i) {
-		int x1 = (int16_t)freadUint16BE(_fp);
-		int y1 = (int16_t)freadUint16BE(_fp);
-		printf("  bounds=%d .x1=%d .y1=%d\n", i, x1, y1);
+		int ox = (int16_t)freadUint16BE(_fp);
+		int oy = (int16_t)freadUint16BE(_fp);
+		printf("  origin=%d .x1=%d .y1=%d\n", i, ox, oy);
+		_rotPt[i][0] = ox;
+		_rotPt[i][1] = oy;
 	}
+	_points = count;
 	printf("pos 0x%x\n", (int)ftell(_fp));
 	mark = freadUint16BE(_fp);
 	assert(mark == 0xFFFF);
@@ -264,8 +297,13 @@ void DPoly::ReadAffineBuffer(int rotations, int unk) {
 		int r2 = (int16_t)freadUint16BE(_fp);
 		int r3 = (int16_t)freadUint16BE(_fp);
 		printf("  rotation=%d .r1=%d .r2=%d .r3=%d\n", i, r1, r2, r3);
+		assert(i < MAX_ROTATIONS);
+		_rotMat[i][0] = r1;
+		_rotMat[i][1] = r2;
+		_rotMat[i][2] = r3;
 	}
-	if (unk != 0) {
+	_rotations = rotations;
+	if (unk != 0 && 0) {
 		mark = freadUint16BE(_fp);
 		assert(mark == 0xFFFF);
 		for (i = 0; i < unk; ++i) {
