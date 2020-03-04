@@ -332,35 +332,24 @@ void DPoly::WriteShapeToBitmap(int group, int shape) {
 }
 
 void DPoly::WriteFrameToBitmap(int frame) {
-	char rgbPath[MAXPATHLEN];
-	strcpy(rgbPath, _setFile);
-	char *p = strrchr(rgbPath, '.');
+	char tgaPath[MAXPATHLEN];
+	strcpy(tgaPath, _setFile);
+	char *p = strrchr(tgaPath, '.');
 	assert(p);
-	sprintf(p, "-FRAME-%03d.RGBA", frame);
+	sprintf(p, "-FRAME-%03d.TGA", frame);
 	const uint32_t *src = _rgb + GFX_CLIP_Y * DRAWING_BUFFER_W + GFX_CLIP_X;
-	WriteFile_RAW_RGB(rgbPath, GFX_CLIP_W, GFX_CLIP_H, DRAWING_BUFFER_W, src);
-	char pngPath[MAXPATHLEN];
-	strcpy(pngPath, rgbPath);
-	p = strrchr(pngPath, '.');
-	assert(p);
-	strcpy(p + 1, "PNG");
-	char cmd[MAXPATHLEN];
-	snprintf(cmd, sizeof(cmd), "convert -size %dx%d -depth 8 %s %s", GFX_CLIP_W, GFX_CLIP_H, rgbPath, pngPath);
-	int ret = system(cmd);
-	if (ret != 0) {
-		fprintf(stderr, "system() failed, ret %d\n", ret);
-	}
+	WriteFile_TGA_RGB(tgaPath, GFX_CLIP_W, GFX_CLIP_H, DRAWING_BUFFER_W, src);
 }
 
-static uint32_t RGBA(int color, const uint8_t *palette) {
-	return 0xFF000000 | (palette[color * 3 + 2] << 16) | (palette[color * 3 + 1] << 8) | palette[color * 3];
+static uint32_t BGRA(int color, const uint8_t *palette) {
+	return 0xFF000000 | (palette[color * 3] << 16) | (palette[color * 3 + 1] << 8) | palette[color * 3 + 2];
 }
 
 void DPoly::DoFrameLUT() {
 	for (int i = 0; i < DRAWING_BUFFER_W * DRAWING_BUFFER_H; ++i) {
 		const int color = _gfx._layer[i];
 		if (color != 0) {
-			_rgb[i] = RGBA(color, _currentPalette);
+			_rgb[i] = BGRA(color, _currentPalette);
 		}
 	}
 }

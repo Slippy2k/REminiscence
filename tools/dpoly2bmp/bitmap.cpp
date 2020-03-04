@@ -54,9 +54,21 @@ void WriteFile_BMP_PAL(const char *filename, int w, int h, int pitch, const uint
 	}
 }
 
-void WriteFile_RAW_RGB(const char *filename, int w, int h, int pitch, const uint32_t *bits) {
+void WriteFile_TGA_RGB(const char *filename, int w, int h, int pitch, const uint32_t *bits) {
 	FILE *fp = fopen(filename, "wb");
 	if (fp) {
+		fputc(0, fp); // 0, ID Length
+		fputc(0, fp); // 1, ColorMap Type
+		fputc(2, fp); // 2, Image Type (uncompressed true color)
+		fwriteUint16LE(fp, 0); // 3, colourmapstart
+		fwriteUint16LE(fp, 0); // 5, colourmaplength
+		fputc(0, fp); // 7, colourmapbits
+		fwriteUint16LE(fp, 0); // 8, xstart
+		fwriteUint16LE(fp, 0); // 10, ystart
+		fwriteUint16LE(fp, w); // 12
+		fwriteUint16LE(fp, h); // 14
+		fputc(32, fp); // 16, bitdepth
+		fputc((1 << 5), fp); // 17, descriptor (top)
 		for (int i = 0; i < h; ++i) {
 			fwrite(bits, w * sizeof(uint32_t), 1, fp);
 			bits += pitch;
