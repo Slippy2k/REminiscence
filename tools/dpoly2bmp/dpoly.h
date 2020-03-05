@@ -30,6 +30,7 @@ struct DPoly {
 	uint32_t _rotMat[MAX_ROTATIONS][3];
 	int _rotations;
 	int _currentShapeRot;
+	uint8_t _unkData[MAX_SEQUENCES * 4];
 
 	void Decode(const char *setFile);
 	void DecodeShape(int count, int dx, int dy, int shape = -1);
@@ -37,9 +38,10 @@ struct DPoly {
 	void SetPalette(const uint16_t *pal);
 	int  GetShapeOffsetForSet(const char *filename);
 	void ReadShapeMarker();
-	void ReadPaletteMarker();
+	int  ReadPaletteMarker();
 	int  ReadSequenceBuffer();
 	void ReadAffineBuffer(int rotations, int unk);
+	void DumpPalette();
 	void WriteShapeToBitmap(int group, int shape);
 	void WriteFrameToBitmap(int frame);
 	void DoFrameLUT();
