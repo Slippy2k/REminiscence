@@ -7,6 +7,7 @@
 #include "file.h"
 #include "graphics.h"
 
+static const bool kNoClipping = false;
 
 void DPoly::Decode(const char *setFile) {
 	_fp = fopen(setFile, "rb");
@@ -15,6 +16,15 @@ void DPoly::Decode(const char *setFile) {
 	}
 	_setFile = setFile;
 	_gfx._layer = (uint8_t *)malloc(DRAWING_BUFFER_W * DRAWING_BUFFER_H);
+	int gfxOffsetX = 0;
+	int gfxOffsetY = 0;
+	if (kNoClipping) {
+		_gfx.setClippingRect(0, 0, DRAWING_BUFFER_W, DRAWING_BUFFER_H);
+		gfxOffsetX = GFX_CLIP_X;
+		gfxOffsetY = GFX_CLIP_Y;
+	} else {
+		_gfx.setClippingRect(GFX_CLIP_X, GFX_CLIP_Y, GFX_CLIP_W, GFX_CLIP_H);
+	}
 	memset(_seqOffsets, 0, sizeof(_seqOffsets));
 	memset(_shapesOffsets, 0, sizeof(_shapesOffsets));
 	uint8_t hdr[8];
@@ -62,7 +72,7 @@ void DPoly::Decode(const char *setFile) {
 			const int numShapes = freadUint16BE(_fp);
 			printf("counter %d group %d/%d numShapes %d pos 0x%X\n", counter, i, groupCount, numShapes, pos);
 			memset(_gfx._layer, 0xFF, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
-			DecodeShape(numShapes, 0, 0);
+			DecodeShape(numShapes, gfxOffsetX, gfxOffsetY);
 			DecodePalette();
 			DumpPalette();
 			WriteShapeToBitmap(counter, i);
@@ -73,7 +83,6 @@ void DPoly::Decode(const char *setFile) {
 	printf("fpos4 0x%x (0x%x)\n", (int)ftell(_fp), (int)st.st_size);
 	if (1) {
 		int total = 0;
-		_gfx.setClippingRect(GFX_CLIP_X, GFX_CLIP_Y, GFX_CLIP_W, GFX_CLIP_H);
 		for (int i = 0; _seqOffsets[i] != 0; ++i) {
 			// memset(_rgb, 0, sizeof(_rgb));
 			for (size_t j = 0; j < sizeof(_rgb) / sizeof(uint32_t); ++j) {
@@ -91,7 +100,7 @@ void DPoly::Decode(const char *setFile) {
 				fseek(_fp, shapeOffset, SEEK_SET);
 				memset(_gfx._layer, 0xFF, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 				const int count = freadUint16BE(_fp);
-				DecodeShape(count, 0, 0);
+				DecodeShape(count, gfxOffsetX, gfxOffsetY);
 				DecodePalette();
 				DoFrameLUT();
 			}
@@ -101,8 +110,8 @@ void DPoly::Decode(const char *setFile) {
 			for (int j = 0; j < shapesCount; ++j) {
 				fseek(_fp, _seqOffsets[i] + 4 + j * 6, SEEK_SET);
 				int frame = freadUint16BE(_fp);
-				int dx = (int16_t)freadUint16BE(_fp);
-				int dy = (int16_t)freadUint16BE(_fp);
+				int dx = gfxOffsetX + (int16_t)freadUint16BE(_fp);
+				int dy = gfxOffsetY + (int16_t)freadUint16BE(_fp);
 				fprintf(stdout, "sequence %d foreground shape %d frame %d dx %d dy %d total %d\n", i, j, frame, dx, dy, total);
 				assert(frame < MAX_SHAPES);
 				const int shapeOffset = _shapesOffsets[1][frame];
@@ -134,7 +143,6 @@ void DPoly::DecodeShape(int count, int dx, int dy, int shape) {
 		int color2 = freadByte(_fp);
 		printf(" shape %d/%d ix=%d iy=%d color1=%d color2=%d\n", j, count, ix, iy, color1, color2);
 		assert(color1 == color2);
-		_gfx.setClippingRect(8, 50, 240, 128);
 		if (numVertices == 255) {
 			int rx = (int16_t)freadUint16BE(_fp);
 			int ry = (int16_t)freadUint16BE(_fp);
@@ -356,8 +364,11 @@ void DPoly::WriteFrameToBitmap(int frame) {
 	char *p = strrchr(tgaPath, '.');
 	assert(p);
 	sprintf(p, "-FRAME-%03d.TGA", frame);
-	const uint32_t *src = _rgb + GFX_CLIP_Y * DRAWING_BUFFER_W + GFX_CLIP_X;
-	WriteFile_TGA_RGB(tgaPath, GFX_CLIP_W, GFX_CLIP_H, DRAWING_BUFFER_W, src);
+	if (kNoClipping) {
+		WriteFile_TGA_RGB(tgaPath, DRAWING_BUFFER_W, DRAWING_BUFFER_H, DRAWING_BUFFER_W, _rgb);
+	} else {
+		WriteFile_TGA_RGB(tgaPath, GFX_CLIP_W, GFX_CLIP_H, DRAWING_BUFFER_W, _rgb + GFX_CLIP_Y * DRAWING_BUFFER_W + GFX_CLIP_X);
+	}
 }
 
 static uint32_t BGRA(int color, const uint8_t *palette) {

@@ -98,7 +98,7 @@ SystemStub *SystemStub_OGL_create() {
 }
 
 void OGLStub::init(const char *title) {
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
+	SDL_Init(SDL_INIT_VIDEO);
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	SDL_WM_SetCaption(title, NULL);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -245,7 +245,7 @@ void OGLStub::addPolygonToList(uint8 color, const Point *pts, uint8 numPts) {
 }
 
 void OGLStub::blitList() {
-	glClearColor(0, 0, 0, 0);
+	glClearColor(0, 0, 0, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glShadeModel(GL_SMOOTH);
 	DrawList::const_iterator it = _drawList.begin();
@@ -276,8 +276,8 @@ void OGLStub::clearList() {
 void OGLStub::resize(uint16 w, uint16 h) {	
 	glViewport(0, 0, w, h);
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
    	glOrtho(0, SCREEN_W, 0, SCREEN_H, 0, 1);
 
 	glMatrixMode(GL_MODELVIEW);

@@ -9,9 +9,9 @@
 #define MAX_SHAPES    256
 #define MAX_VERTICES  256
 #define DRAWING_BUFFER_W 256
-#define DRAWING_BUFFER_H 224
-#define GFX_CLIP_X   8
-#define GFX_CLIP_Y  50
+#define DRAWING_BUFFER_H 256
+#define GFX_CLIP_X ((DRAWING_BUFFER_W - GFX_CLIP_W) / 2)
+#define GFX_CLIP_Y ((DRAWING_BUFFER_H - GFX_CLIP_H) / 2)
 #define GFX_CLIP_W 240
 #define GFX_CLIP_H 128
 #define MAX_ROTATIONS 2048
