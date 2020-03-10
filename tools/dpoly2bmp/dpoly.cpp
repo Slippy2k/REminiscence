@@ -9,12 +9,36 @@
 
 static const bool kNoClipping = false;
 
+static void findOffsetsForSet(const char *filename, uint32_t *shapesOffset, uint32_t *affinesOffset, uint32_t *count) {
+	*shapesOffset = 0;
+	*affinesOffset = 0;
+	*count = 0;
+	FILE *fp = fopen("dpoly.txt", "r");
+	if (fp) {
+		char buf[256];
+		int found = 0;
+		while (fgets(buf, sizeof(buf), fp)) {
+			if (buf[0] == '#') {
+				continue;
+			}
+			if (found) {
+				if (sscanf(buf, "\t0x%x,0x%x,%d,", shapesOffset, affinesOffset, count) > 1) {
+					break;
+				}
+			}
+			found = (strncasecmp(buf, filename, strlen(filename)) == 0);
+		}
+		fclose(fp);
+	}
+}
+
 void DPoly::Decode(const char *setFile) {
 	_fp = fopen(setFile, "rb");
 	if (!_fp) {
 		return;
 	}
-	_setFile = setFile;
+	const char *p = strrchr(setFile, '/');
+	_setFile = p ? p + 1 : setFile;
 	_gfx._layer = (uint8_t *)malloc(DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 	int gfxOffsetX = 0;
 	int gfxOffsetY = 0;
@@ -38,22 +62,20 @@ void DPoly::Decode(const char *setFile) {
 	ret = fread(_unkData, count, 4, _fp);
 	const uint32_t unk = freadUint32BE(_fp);
 	printf("fpos2 0x%x unk 0x%x\n", (int)ftell(_fp) - 4, unk);
-	assert(unk == 0xFFFFFFFF);
+	//assert(unk == 0xFFFFFFFF);
+	uint32_t shapesOffset, affinesOffset, affinesCount;
+	findOffsetsForSet(_setFile, &shapesOffset, &affinesOffset, &affinesCount);
+	if (shapesOffset == 0) {
+		fprintf(stderr, "set file '%s' has no known offsets\n", _setFile);
+		return;
+	}
 	_points = 0;
 	_rotations = 0;
-	if (strcasecmp(setFile, "CAILLOU-F.SET") == 0) {
-		fseek(_fp, 0x432, SEEK_SET);
-		ReadAffineBuffer(62, 0);
+	if (affinesOffset != 0) {
+		fseek(_fp, affinesOffset, SEEK_SET);
+		ReadAffineBuffer(affinesCount, count);
 	}
-	if (strcasecmp(setFile, "MEMOSTORY3.SET") == 0) {
-		fseek(_fp, 0x1C56, SEEK_SET);
-		ReadAffineBuffer(607, count);
-	}
-	if (strcasecmp(setFile, "JUPITERStation1.set") == 0 || strcasecmp(setFile, "TAKEMecha1-F.set") == 0) {
-		fseek(_fp, 0x443A, SEEK_SET);
-		ReadAffineBuffer(1231, count);
-	}
-	const int offset = GetShapeOffsetForSet(setFile);
+	const int offset = shapesOffset;
 	printf("fpos3 0x%x (0x%x)\n", (int)ftell(_fp), offset);
 	fseek(_fp, offset, SEEK_SET);
 	for (int counter = 0; ; ++counter) {
@@ -207,34 +229,6 @@ void DPoly::SetPalette(const uint16_t *pal) {
 	}
 }
 
-int DPoly::GetShapeOffsetForSet(const char *filename) {
-	if (strcasecmp(filename, "CAILLOU-F.SET") == 0) {
-		return 0x5E4;
-	}
-	if (strcasecmp(filename, "MEMOTECH.SET") == 0) {
-		return 0x52EC;
-	}
-	if (strcasecmp(filename, "MEMOSTORY0.SET") == 0) {
-		return 0x55D6;
-	}
-	if (strcasecmp(filename, "MEMOSTORY1.SET") == 0) {
-		return 0x7070;
-	}
-	if (strcasecmp(filename, "MEMOSTORY2.SET") == 0) {
-		return 0x49FA;
-	}
-	if (strcasecmp(filename, "MEMOSTORY3.SET") == 0) {
-		return 0x347E;
-	}
-	if (strcasecmp(filename, "JUPITERStation1.set") == 0) {
-		return 0x822A;
-	}
-	if (strcasecmp(filename, "TAKEMecha1-F.set") == 0) {
-		return 0x822A;
-	}
-	return 0;
-}
-
 /* 0x00 0x00 0x00 0x00 0x01 */
 void DPoly::ReadShapeMarker() {
 	int mark0, mark2, mark1;
@@ -308,21 +302,27 @@ void DPoly::ReadAffineBuffer(int rotations, int unk) {
 		_rotPt[i][1] = oy;
 	}
 	_points = count;
-	mark = freadUint16BE(_fp);
-	assert(mark == 0xFFFF);
-	for (i = 0; i < rotations; ++i) {
-		int r1 = (int16_t)freadUint16BE(_fp);
-		int r2 = (int16_t)freadUint16BE(_fp);
-		int r3 = (int16_t)freadUint16BE(_fp);
-		printf("  rotation=%d .r1=%d .r2=%d .r3=%d\n", i, r1, r2, r3);
-		assert(i < MAX_ROTATIONS);
-		_rotMat[i][0] = r1;
-		_rotMat[i][1] = r2;
-		_rotMat[i][2] = r3;
+	if (rotations != 0) {
+		mark = freadUint16BE(_fp);
+		assert(mark == 0xFFFF);
+		for (i = 0; i < rotations; ++i) {
+			int r1 = (int16_t)freadUint16BE(_fp);
+			int r2 = (int16_t)freadUint16BE(_fp);
+			int r3 = (int16_t)freadUint16BE(_fp);
+			printf("  rotation=%d .r1=%d .r2=%d .r3=%d\n", i, r1, r2, r3);
+			assert(i < MAX_ROTATIONS);
+			_rotMat[i][0] = r1;
+			_rotMat[i][1] = r2;
+			_rotMat[i][2] = r3;
+		}
 	}
 	_rotations = rotations;
 	if (unk != 0) {
 		mark = freadUint16BE(_fp);
+		if (mark != 0xFFFF) {
+			fseek(_fp, -2, SEEK_CUR);
+			return;
+		}
 		assert(mark == 0xFFFF);
 		for (i = 0; i < unk; ++i) {
 			uint32_t val1 = freadUint32BE(_fp);

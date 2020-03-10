@@ -36,7 +36,6 @@ struct DPoly {
 	void DecodeShape(int count, int dx, int dy, int shape = -1);
 	void DecodePalette();
 	void SetPalette(const uint16_t *pal);
-	int  GetShapeOffsetForSet(const char *filename);
 	void ReadShapeMarker();
 	int  ReadPaletteMarker();
 	int  ReadSequenceBuffer();
