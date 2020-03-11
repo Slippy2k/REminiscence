@@ -18,6 +18,7 @@ struct Cutscene {
 	typedef void (Cutscene::*OpcodeStub)();
 
 	enum {
+		MAX_VERTICES = 128,
 		NUM_OPCODES = 15,
 		TIMER_SLICE = 15
 	};
@@ -77,7 +78,7 @@ struct Cutscene {
 	uint32_t _rotMat[4];
 	uint8_t _primitiveColor;
 	uint8_t _clearScreen;
-	Point _vertices[0x80];
+	Point _vertices[MAX_VERTICES];
 	bool _hasAlphaColor;
 	uint8_t _varKey;
 	int16_t _shape_ix;

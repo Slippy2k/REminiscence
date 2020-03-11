@@ -724,7 +724,7 @@ void Cutscene::drawShapeScaleRotate(const uint8_t *data, int16_t zoom, int16_t b
 		_gfx.drawPoint(_primitiveColor, &pt);
 	} else {
 		int16_t x, y, a, shape_last_x, shape_last_y;
-		Point tempVertices[40];
+		Point tempVertices[MAX_VERTICES];
 		_shape_cur_x = b + READ_BE_UINT16(data); data += 2;
 		x = _shape_cur_x;
 		_shape_cur_y = c + READ_BE_UINT16(data); data += 2;
