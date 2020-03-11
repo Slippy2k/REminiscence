@@ -1,6 +1,6 @@
 
-#ifndef __GRAPHICS_H__
-#define __GRAPHICS_H__
+#ifndef GRAPHICS_H__
+#define GRAPHICS_H__
 
 #include "endian.h"
 
@@ -9,10 +9,13 @@ struct Point {
 };
 
 struct Graphics {
+	static const int AREA_POINTS_SIZE = 256 * 2; // maxY * sizeof(Point) / sizeof(int16_t)
 	uint8_t *_layer;
-	int16_t _areaPoints[0x1000];
+	int _layerPitch;
+	int16_t _areaPoints[AREA_POINTS_SIZE * 2];
 	int16_t _crx, _cry, _crw, _crh;
 
+	void setLayer(uint8_t *layer, int pitch);
 	void setClippingRect(int16_t vx, int16_t vy, int16_t vw, int16_t vh);
 	void drawPoint(uint8_t color, const Point *pt);
 	void drawLine(uint8_t color, const Point *pt1, const Point *pt2);
@@ -24,4 +27,4 @@ struct Graphics {
 	void drawPolygon(uint8_t color, bool hasAlpha, const Point *pts, uint8_t numPts);
 };
 
-#endif // __GRAPHICS_H__
+#endif // GRAPHICS_H__

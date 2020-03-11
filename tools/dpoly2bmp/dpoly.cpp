@@ -39,7 +39,7 @@ void DPoly::Decode(const char *setFile) {
 	}
 	const char *p = strrchr(setFile, '/');
 	_setFile = p ? p + 1 : setFile;
-	_gfx._layer = (uint8_t *)malloc(DRAWING_BUFFER_W * DRAWING_BUFFER_H);
+	_gfx.setLayer((uint8_t *)malloc(DRAWING_BUFFER_W * DRAWING_BUFFER_H), DRAWING_BUFFER_W);
 	int gfxOffsetX = 0;
 	int gfxOffsetY = 0;
 	if (kNoClipping) {
@@ -142,7 +142,11 @@ void DPoly::Decode(const char *setFile) {
 					fseek(_fp, shapeOffset, SEEK_SET);
 					memset(_gfx._layer, 0xFF, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 					const int count = freadUint16BE(_fp);
-					DecodeShape(count, dx, dy, frame);
+					if (_points == 0) {
+						DecodeShape(count, dx, dy, frame);
+					} else {
+						DrawShapeScaleRotate(count, dx, dy, frame);
+					}
 					DecodePalette();
 					DoFrameLUT();
 				}
@@ -151,6 +155,25 @@ void DPoly::Decode(const char *setFile) {
 			WriteFrameToBitmap(i);
 		}
 	}
+}
+
+#define SIN(a) (int16_t)(sin(a * M_PI / 180) * 256)
+#define COS(a) (int16_t)(cos(a * M_PI / 180) * 256)
+
+static uint32_t rotData[4];
+static Point _vertices[256];
+
+void setRotationTransform(uint16_t a, uint16_t b, uint16_t c) { // identity a:0 b:180 c:90
+        const int16_t sin_a = SIN(a);
+        const int16_t cos_a = COS(a);
+        const int16_t sin_c = SIN(c);
+        const int16_t cos_c = COS(c);
+        const int16_t sin_b = SIN(b);
+        const int16_t cos_b = COS(b);
+        rotData[0] = ((cos_a * cos_b) >> 8) - ((((cos_c * sin_a) >> 8) * sin_b) >> 8);
+        rotData[1] = ((sin_a * cos_b) >> 8) + ((((cos_c * cos_a) >> 8) * sin_b) >> 8);
+        rotData[2] = ( sin_c * sin_a) >> 8;
+        rotData[3] = (-sin_c * cos_a) >> 8;
 }
 
 void DPoly::DecodeShape(int count, int dx, int dy, int shape) {
@@ -177,32 +200,171 @@ void DPoly::DecodeShape(int count, int dx, int dy, int shape) {
 		assert((numVertices & 0x80) == 0);
 		Point vertices[MAX_VERTICES];
 		assert(numVertices < MAX_VERTICES);
-		if (shape != -1 && _currentShapeRot != -1 && _rotMat[_currentShapeRot][0] != 0) {
-
-			// assert(_rotMat[_currentShapeRot][1] == 180);
-			assert(_rotMat[_currentShapeRot][2] == 90);
-
-			const float s =  sin(_rotMat[_currentShapeRot][0] * M_PI / 180);
-			const float c = -cos(_rotMat[_currentShapeRot][0] * M_PI / 180);
-
-			assert(shape < _points);
-			const int ox = _rotPt[shape][0];
-			const int oy = _rotPt[shape][1];
-
-			for (int i = 0; i < numVertices; ++i) {
-				int x = (ox - (int16_t)freadUint16BE(_fp));
-				int y = (oy - (int16_t)freadUint16BE(_fp));
-				vertices[i].x = dx + ox + int(x * c - y * s);
-				vertices[i].y = dy + oy + int(x * s + y * c);
-			}
-		} else {
-			for (int i = 0; i < numVertices; ++i) {
-				vertices[i].x = dx + (int16_t)freadUint16BE(_fp);
-				vertices[i].y = dy + (int16_t)freadUint16BE(_fp);
-				printf("  vertex %d/%d x=%d y=%d\n", i, numVertices, vertices[i].x, vertices[i].y);
-			}
+		for (int i = 0; i < numVertices; ++i) {
+			int vx = (int16_t)freadUint16BE(_fp);
+			int vy = (int16_t)freadUint16BE(_fp);
+			vertices[i].x = dx + vx;
+			vertices[i].y = dy + vy;
 		}
 		_gfx.drawPolygon(color1, false, vertices, numVertices);
+	}
+}
+
+uint32_t _shape_cur_x16, _shape_cur_y16;
+int16_t _shape_cur_x, _shape_cur_y;
+uint32_t _shape_prev_x16, _shape_prev_y16;
+int16_t _shape_prev_x, _shape_prev_y;
+int16_t _shape_ox, _shape_oy;
+
+void DPoly::DrawShapeScaleRotate(int count, int dx, int dy, int shape) {
+
+	count--;
+	assert(count >= 0);
+
+	assert(shape != -1 && shape < _points);
+	const int _shape_ix = _rotPt[shape][0];
+	const int _shape_iy = _rotPt[shape][1];
+	const int d = dx;
+	const int e = dy;
+	int zoom = 512;
+	if (_currentShapeRot != -1) {
+		setRotationTransform(_rotMat[_currentShapeRot][0], _rotMat[_currentShapeRot][1], _rotMat[_currentShapeRot][2]);
+		zoom = _rotMat[_currentShapeRot][3];
+	} else {
+		setRotationTransform(0, 180, 90);
+	}
+	for (int j = 0; j < count; ++j) {
+		ReadShapeMarker();
+		int numVertices = freadByte(_fp);
+		const int ix = (int16_t)freadUint16BE(_fp);
+		const int iy = (int16_t)freadUint16BE(_fp);
+		int color1 = freadByte(_fp);
+		int color2 = freadByte(_fp);
+		printf(" shape %d/%d ix=%d iy=%d color1=%d color2=%d\n", j, count, ix, iy, color1, color2);
+		assert(color1 == color2);
+
+		int _shape_count = j;
+		int f = 0;
+		int g = 0;
+
+		if (numVertices & 0x80) {
+			int16_t x, y; //, ix, iy;
+			Point pr[2];
+			Point *pt = _vertices;
+			_shape_cur_x = ix; // = b + READ_BE_UINT16(data); data += 2;
+			_shape_cur_y = iy; // = c + READ_BE_UINT16(data); data += 2;
+			x = (int16_t)freadUint16BE(_fp); // READ_BE_UINT16(data); data += 2;
+			y = (int16_t)freadUint16BE(_fp); // READ_BE_UINT16(data); data += 2;
+			_shape_cur_x16 = _shape_ix - ix;
+			_shape_cur_y16 = _shape_iy - iy;
+			_shape_ox = _shape_cur_x = _shape_ix + ((_shape_cur_x16 * rotData[0] + _shape_cur_y16 * rotData[1]) >> 8);
+			_shape_oy = _shape_cur_y = _shape_iy + ((_shape_cur_x16 * rotData[2] + _shape_cur_y16 * rotData[3]) >> 8);
+			pr[0].x =  0;
+			pr[0].y = -y;
+			pr[1].x = -x;
+			pr[1].y =  y;
+			if (_shape_count == 0) {
+				f -= ((_shape_ix - _shape_cur_x) * zoom * 128 + 0x8000) >> 16;
+				g -= ((_shape_iy - _shape_cur_y) * zoom * 128 + 0x8000) >> 16;
+				pt->x = f;
+				pt->y = g;
+				++pt;
+				_shape_cur_x16 = f << 16;
+				_shape_cur_y16 = g << 16;
+			} else {
+				_shape_cur_x16 = _shape_prev_x16 + (_shape_cur_x - _shape_prev_x) * zoom * 128;
+				_shape_cur_y16 = _shape_prev_y16 + (_shape_cur_y - _shape_prev_y) * zoom * 128;
+				pt->x = (_shape_cur_x16 + 0x8000) >> 16;
+				pt->y = (_shape_cur_y16 + 0x8000) >> 16;
+				++pt;
+			}
+			for (int i = 0; i < 2; ++i) {
+				_shape_cur_x += pr[i].x;
+				_shape_cur_x16 += pr[i].x * zoom * 128;
+				pt->x = (_shape_cur_x16 + 0x8000) >> 16;
+				_shape_cur_y += pr[i].y;
+				_shape_cur_y16 += pr[i].y * zoom * 128;
+				pt->y = (_shape_cur_y16 + 0x8000) >> 16;
+				++pt;
+			}
+			_shape_prev_x = _shape_cur_x;
+			_shape_prev_y = _shape_cur_y;
+			_shape_prev_x16 = _shape_cur_x16;
+			_shape_prev_y16 = _shape_cur_y16;
+			Point po;
+			po.x = _vertices[0].x + d + _shape_ix;
+			po.y = _vertices[0].y + e + _shape_iy;
+			int16_t rx = _vertices[0].x - _vertices[2].x;
+			int16_t ry = _vertices[0].y - _vertices[1].y;
+			_gfx.drawEllipse(color1, false, &po, rx, ry);
+		} else {
+			int16_t x, y, a, shape_last_x, shape_last_y;
+			Point tempVertices[80];
+			_shape_cur_x = ix; // b + READ_BE_UINT16(data); data += 2;
+			x = _shape_cur_x;
+			_shape_cur_y = iy; // c + READ_BE_UINT16(data); data += 2;
+			y = _shape_cur_y;
+			_shape_cur_x16 = _shape_ix - x;
+			_shape_cur_y16 = _shape_iy - y;
+
+			a = _shape_ix + ((rotData[0] * _shape_cur_x16 + rotData[1] * _shape_cur_y16) >> 8);
+			if (_shape_count == 0) {
+				_shape_ox = a;
+			}
+			_shape_cur_x = shape_last_x = a;
+			a = _shape_iy + ((rotData[2] * _shape_cur_x16 + rotData[3] * _shape_cur_y16) >> 8);
+			if (_shape_count == 0) {
+				_shape_oy = a;
+			}
+			_shape_cur_y = shape_last_y = a;
+
+			Point *pt2 = tempVertices;
+			for (int i = 0; i < numVertices; ++i) {
+				int ix = (int16_t)freadUint16BE(_fp);
+				int iy = (int16_t)freadUint16BE(_fp);
+				_shape_cur_x16 = _shape_ix - ix;
+				_shape_cur_y16 = _shape_iy - iy;
+				a = _shape_ix + ((rotData[0] * _shape_cur_x16 + rotData[1] * _shape_cur_y16) >> 8);
+				pt2->x = a - shape_last_x;
+				shape_last_x = a;
+				a = _shape_iy + ((rotData[2] * _shape_cur_x16 + rotData[3] * _shape_cur_y16) >> 8);
+				pt2->y = a - shape_last_y;
+				shape_last_y = a;
+				++pt2;
+			}
+			Point *pt = _vertices;
+			if (_shape_count == 0) {
+				int ix = _shape_ox;
+				int iy = _shape_oy;
+				f -= (((_shape_ix - ix) * zoom * 128) + 0x8000) >> 16;
+				g -= (((_shape_iy - iy) * zoom * 128) + 0x8000) >> 16;
+				pt->x = f + _shape_ix + d;
+				pt->y = g + _shape_iy + e;
+//				++pt;
+				_shape_cur_x16 = f << 16;
+				_shape_cur_y16 = g << 16;
+			} else {
+				_shape_cur_x16 = _shape_prev_x16 + ((_shape_cur_x - _shape_prev_x) * zoom * 128);
+				pt->x = _shape_ix + d + ((_shape_cur_x16 + 0x8000) >> 16);
+				_shape_cur_y16 = _shape_prev_y16 + ((_shape_cur_y - _shape_prev_y) * zoom * 128);
+				pt->y = _shape_iy + e + ((_shape_cur_y16 + 0x8000) >> 16);
+//				++pt;
+			}
+			for (int i = 0; i < numVertices; ++i) {
+				_shape_cur_x += tempVertices[i].x;
+				_shape_cur_x16 += tempVertices[i].x * zoom * 128;
+				pt->x = d + _shape_ix + ((_shape_cur_x16 + 0x8000) >> 16);
+				_shape_cur_y += tempVertices[i].y;
+				_shape_cur_y16 += tempVertices[i].y * zoom * 128;
+				pt->y = e + _shape_iy + ((_shape_cur_y16 + 0x8000) >> 16);
+				++pt;
+			}
+			_shape_prev_x = _shape_cur_x;
+			_shape_prev_y = _shape_cur_y;
+			_shape_prev_x16 = _shape_cur_x16;
+			_shape_prev_y16 = _shape_cur_y16;
+			_gfx.drawPolygon(color1, false, _vertices, numVertices); // + 1);
+		}
 	}
 }
 
@@ -289,6 +451,18 @@ int DPoly::ReadSequenceBuffer() {
 void DPoly::ReadAffineBuffer(int rotations, int unk) {
 	int i, mark, count;
 
+	if (rotations != 0) {
+		fseek(_fp, -rotations * 2 - 2, SEEK_CUR);
+		printf("fpos2 0x%x\n", (int)ftell(_fp));
+		mark = freadUint16BE(_fp);
+		assert(mark == 0xFFFF);
+		for (i = 0; i < rotations; ++i) {
+			const int a = (int16_t)freadUint16BE(_fp);
+			printf("  a[%d]=%d (%d)\n", i, a, a + 512);
+			assert(i < MAX_ROTATIONS);
+			_rotMat[i][3] = 512 + a;
+		}
+	}
 	mark = freadUint16BE(_fp);
 	assert(mark == 0xFFFF);
 	count = freadUint16BE(_fp);

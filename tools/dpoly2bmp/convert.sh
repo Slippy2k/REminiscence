@@ -1,10 +1,11 @@
 #!/bin/sh
 
 do_file () {
+	echo "Converting $1..."
 	fn=$( basename $1 )
 	./dpoly2bmp $1 > $fn.TXT
 	rm -f $fn.mp4
-	ffmpeg -framerate 10 -pattern_type glob -i '*.TGA' -c:v libx264 $fn.mp4
+	#ffmpeg -framerate 10 -pattern_type glob -i '*.TGA' -c:v libx264 $fn.mp4
 	convert -delay 10 -loop 0 -layers Optimize *TGA $fn.gif
 	rm -f *.BMP *.TGA *.RGBA *.TXT
 }

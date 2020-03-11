@@ -27,13 +27,14 @@ struct DPoly {
 	uint32_t _rgb[DRAWING_BUFFER_W * DRAWING_BUFFER_H];
 	uint16_t _rotPt[MAX_SHAPES][2];
 	int _points;
-	uint32_t _rotMat[MAX_ROTATIONS][3];
+	uint32_t _rotMat[MAX_ROTATIONS][4];
 	int _rotations;
 	int _currentShapeRot;
 	uint8_t _unkData[MAX_SEQUENCES * 4];
 
 	void Decode(const char *setFile);
 	void DecodeShape(int count, int dx, int dy, int shape = -1);
+	void DrawShapeScaleRotate(int count, int dx, int dy, int shape);
 	void DecodePalette();
 	void SetPalette(const uint16_t *pal);
 	void ReadShapeMarker();

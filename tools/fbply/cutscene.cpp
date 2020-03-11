@@ -304,8 +304,8 @@ void Cutscene::op_drawShape1Helper(uint8 *data, int16 zoom, int16 b, int16 c, in
 
 		cut_shape_cur_x = b + READ_BE_UINT16(data); data += 2;
 		cut_shape_cur_y = c + READ_BE_UINT16(data); data += 2;
-		x = READ_BE_UINT16(data); data += 2;
-		y = READ_BE_UINT16(data); data += 2;
+		x = READ_BE_UINT16(data); data += 2; // ellipse rx
+		y = READ_BE_UINT16(data); data += 2; // ellipse ry
 		cut_shape_cur_x16 = 0;
 		cut_shape_cur_y16 = 0;
 		pr[0].x =  0;
@@ -435,6 +435,8 @@ void Cutscene::op_drawShape1() {
 	uint16 zoom = _cmdPtr.fetchWord() + 512;
 	cut_shape_ix = _cmdPtr.fetchByte();
 	cut_shape_iy = _cmdPtr.fetchByte();
+
+	initRotData(0, 180, 90); // so we can use drawShapeScaleRotate
 	
 	uint8 *shapeOffsetTable    = _polBuf.buf + READ_BE_UINT16(_polBuf.buf + 0x02);
 	uint8 *shapeDataTable      = _polBuf.buf + READ_BE_UINT16(_polBuf.buf + 0x0E);
@@ -473,13 +475,17 @@ void Cutscene::op_drawShape1() {
 				color += 0x10; // 2nd pal buf
 			}
 			_primitiveColor = 0xC0 + color;
-			op_drawShape1Helper(p, zoom, dx, dy, x, y, 0, 0);
+			op_drawShape2Helper(p, zoom, dx, dy, x, y, 0, 0);
 			++cut_shape_count;
 		}	
 	}
 }
 
 void Cutscene::op_drawShape2Helper(uint8 *data, int16 zoom, int16 b, int16 c, int16 d, int16 e, int16 f, int16 g) {
+	assert(f == 0 && g == 0);
+	// b == shape primitive dx, c == shape primitive dy
+	// d == shape x, e == shape y
+	assert(f == 0 && g == 0);
 	debug(DBG_CUTSCENE, "Cutscene::op_drawShape2Helper(%d, %d, %d, %d, %d, %d, %d)", zoom, b, c, d, e, f, g);
 	uint8 numVertices = *data++;
 	if (numVertices & 0x80) {
@@ -499,7 +505,7 @@ void Cutscene::op_drawShape2Helper(uint8 *data, int16 zoom, int16 b, int16 c, in
 		cut_shape_ox = cut_shape_cur_x = cut_shape_ix + ((cut_shape_cur_x16 * _rotData[0] + cut_shape_cur_y16 * _rotData[1]) >> 8);
 		cut_shape_oy = cut_shape_cur_y = cut_shape_iy + ((cut_shape_cur_x16 * _rotData[2] + cut_shape_cur_y16 * _rotData[3]) >> 8);
 
-		pr[0].x =  0;		
+		pr[0].x =  0;
 		pr[0].y = -y;
 		pr[1].x = -x;
 		pr[1].y =  y;

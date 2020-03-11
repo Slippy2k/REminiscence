@@ -1,6 +1,15 @@
 
 #include "graphics.h"
 
+template<typename T>
+inline T MIN(T v1, T v2) {
+	return (v1 < v2) ? v1 : v2;
+}
+
+void Graphics::setLayer(uint8_t *layer, int pitch) {
+	_layer = layer;
+	_layerPitch = pitch;
+}
 
 void Graphics::setClippingRect(int16_t rx, int16_t ry, int16_t rw, int16_t rh) {
 	_crx = rx;
@@ -11,7 +20,7 @@ void Graphics::setClippingRect(int16_t rx, int16_t ry, int16_t rw, int16_t rh) {
 
 void Graphics::drawPoint(uint8_t color, const Point *pt) {
 	if (pt->x >= 0 && pt->x < _crw && pt->y >= 0 && pt->y < _crh) {
-		*(_layer + (pt->y + _cry) * 256 + pt->x + _crx) = color;
+		*(_layer + (pt->y + _cry) * _layerPitch + pt->x + _crx) = color;
 	}
 }
 
@@ -86,6 +95,12 @@ void Graphics::addEllipseRadius(int16_t y, int16_t x1, int16_t x2) {
 void Graphics::drawEllipse(uint8_t color, bool hasAlpha, const Point *pt, int16_t rx, int16_t ry) {
 	if (rx <= 0 || ry <= 0) {
 		return;
+	}
+	if (rx > _crw) {
+		rx = _crw;
+	}
+	if (ry > _crh) {
+		ry = _crh;
 	}
 	bool flag = false;
 	int16_t y = pt->y - ry;
@@ -193,32 +208,28 @@ void Graphics::drawEllipse(uint8_t color, bool hasAlpha, const Point *pt, int16_
 
 void Graphics::fillArea(uint8_t color, bool hasAlpha) {
 	int16_t *pts = _areaPoints;
-	int16_t y1 = *pts++;
-	uint8_t *dst = _layer + (_cry + y1) * 256 + _crx;
+	uint8_t *dst = _layer + (_cry + *pts++) * _layerPitch + _crx;
 	int16_t x1 = *pts++;
 	if (x1 >= 0) {
 		if (hasAlpha && color > 0xC7) {
-			for (; x1 >= 0 && y1 < _crh; ++y1) {
-				int16_t x2 = *pts++;
-				if (x2 < _crw && x2 >= x1) {
-					int len = x2 - x1 + 1;
-					for (int i = 0; i < len; ++i) {
-						*(dst + x1 + i) |= color & 8; // XXX 0x88
-					}
+			do {
+				const int16_t x2 = MIN<int16_t>(_crw - 1, *pts++);
+				for (; x1 <= x2; ++x1) {
+					*(dst + x1) |= color & 8;
 				}
-				dst += 256;
+				dst += _layerPitch;
 				x1 = *pts++;
-			}
+			} while (x1 >= 0);
 		} else {
-			for (; x1 >= 0 && y1 < _crh; ++y1) {
-				int16_t x2 = *pts++;
-				if (x2 < _crw && x2 >= x1) {
-					int len = x2 - x1 + 1;
+			do {
+				const int16_t x2 = MIN<int16_t>(_crw - 1, *pts++);
+				if (x1 <= x2) {
+					const int len = x2 - x1 + 1;
 					memset(dst + x1, color, len);
 				}
-				dst += 256;
+				dst += _layerPitch;
 				x1 = *pts++;
-			}
+			} while (x1 >= 0);
 		}
 	}
 }
@@ -329,8 +340,8 @@ static void drawPolygonHelper2(int32_t &x, int16_t &y, int32_t &step, int16_t *&
 void Graphics::drawPolygon(uint8_t color, bool hasAlpha, const Point *pts, uint8_t numPts) {
 	assert(numPts * 4 < 0x100);
 
-	int16_t *apts1 = &_areaPoints[0x100];
-	int16_t *apts2 = &_areaPoints[0x100 + numPts * 2];
+	int16_t *apts1 = &_areaPoints[AREA_POINTS_SIZE];
+	int16_t *apts2 = &_areaPoints[AREA_POINTS_SIZE + numPts * 2];
 
 	int16_t xmin, xmax, ymin, ymax;
 	xmin = xmax = pts[0].x;
