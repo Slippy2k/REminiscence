@@ -8,6 +8,7 @@
 #include "graphics.h"
 
 static const bool kNoClipping = false;
+static const bool kDistinctShapePalette = false;
 
 static void findOffsetsForSet(const char *filename, uint32_t *shapesOffset, uint32_t *affinesOffset, uint32_t *count) {
 	*shapesOffset = 0;
@@ -84,7 +85,7 @@ void DPoly::Decode(const char *setFile) {
 			break;
 		}
 		if (counter >= 2) {
-			fprintf(stderr, "Unexpected group %d count %d\n", counter, groupCount);
+			fprintf(stderr, "Unexpected group %d count 0x%x\n", counter, groupCount);
 			break;
 		}
 		for (int i = 0; i < groupCount; ++i) {
@@ -110,23 +111,38 @@ void DPoly::Decode(const char *setFile) {
 			for (size_t j = 0; j < sizeof(_rgb) / sizeof(uint32_t); ++j) {
 				_rgb[j] = 0xFF000000;
 			}
-			fprintf(stdout, "sequence %d data 0x%x\n", i, READ_LE_UINT32(_unkData + i * 4));
+			const uint16_t palette = READ_BE_UINT16(_unkData + i * 4);
+			const uint16_t unk2 = READ_BE_UINT16(_unkData + i * 4);
+			fprintf(stdout, "sequence %d background_palette %d unk2 %d\n", i, palette, unk2);
 			// background
 			fseek(_fp, _seqOffsets[i], SEEK_SET);
 			int background = freadUint16BE(_fp);
 			fprintf(stdout, "sequence %d background shape %d\n", i, background);
 			assert(background < MAX_SHAPES);
+			if (palette != background) {
+				const int shapeOffset = _shapesOffsets[0][palette];
+				if (shapeOffset != 0) {
+					fseek(_fp, shapeOffset, SEEK_SET);
+					const int count = freadUint16BE(_fp);
+					DecodeShape(count, gfxOffsetX, gfxOffsetY);
+					DecodePalette();
+				}
+			}
 			const int shapeOffset = _shapesOffsets[0][background];
 			if (shapeOffset != 0) {
-				_currentShapeRot = -1;
 				fseek(_fp, shapeOffset, SEEK_SET);
 				memset(_gfx._layer, 0xFF, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
 				const int count = freadUint16BE(_fp);
 				DecodeShape(count, gfxOffsetX, gfxOffsetY);
-				DecodePalette();
+				if (palette == background) {
+					DecodePalette();
+				}
 				DoFrameLUT();
 			}
 			// shapes
+			if (!kDistinctShapePalette) {
+				memset(_gfx._layer, 0xFF, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
+			}
 			fseek(_fp, _seqOffsets[i] + 2, SEEK_SET);
 			int shapesCount = freadUint16BE(_fp);
 			for (int j = 0; j < shapesCount; ++j) {
@@ -140,7 +156,9 @@ void DPoly::Decode(const char *setFile) {
 				if (shapeOffset != 0) {
 					_currentShapeRot = (total < _rotations) ? total : -1;
 					fseek(_fp, shapeOffset, SEEK_SET);
-					memset(_gfx._layer, 0xFF, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
+					if (kDistinctShapePalette) {
+						memset(_gfx._layer, 0xFF, DRAWING_BUFFER_W * DRAWING_BUFFER_H);
+					}
 					const int count = freadUint16BE(_fp);
 					if (_points == 0) {
 						DecodeShape(count, dx, dy, frame);
@@ -148,9 +166,14 @@ void DPoly::Decode(const char *setFile) {
 						DrawShapeScaleRotate(count, dx, dy, frame);
 					}
 					DecodePalette();
-					DoFrameLUT();
+					if (kDistinctShapePalette) {
+						DoFrameLUT();
+					}
 				}
 				++total;
+			}
+			if (!kDistinctShapePalette) {
+				DoFrameLUT();
 			}
 			WriteFrameToBitmap(i);
 		}
@@ -161,7 +184,7 @@ void DPoly::Decode(const char *setFile) {
 #define COS(a) (int16_t)(cos(a * M_PI / 180) * 256)
 
 static uint32_t rotData[4];
-static Point _vertices[256];
+static Point _vertices[128], _tempVertices[128];
 
 void setRotationTransform(uint16_t a, uint16_t b, uint16_t c) { // identity a:0 b:180 c:90
         const int16_t sin_a = SIN(a);
@@ -299,7 +322,6 @@ void DPoly::DrawShapeScaleRotate(int count, int dx, int dy, int shape) {
 			_gfx.drawEllipse(color1, false, &po, rx, ry);
 		} else {
 			int16_t x, y, a, shape_last_x, shape_last_y;
-			Point tempVertices[80];
 			_shape_cur_x = ix; // b + READ_BE_UINT16(data); data += 2;
 			x = _shape_cur_x;
 			_shape_cur_y = iy; // c + READ_BE_UINT16(data); data += 2;
@@ -318,7 +340,7 @@ void DPoly::DrawShapeScaleRotate(int count, int dx, int dy, int shape) {
 			}
 			_shape_cur_y = shape_last_y = a;
 
-			Point *pt2 = tempVertices;
+			Point *pt2 = _tempVertices;
 			for (int i = 0; i < numVertices; ++i) {
 				int ix = (int16_t)freadUint16BE(_fp);
 				int iy = (int16_t)freadUint16BE(_fp);
@@ -351,11 +373,11 @@ void DPoly::DrawShapeScaleRotate(int count, int dx, int dy, int shape) {
 //				++pt;
 			}
 			for (int i = 0; i < numVertices; ++i) {
-				_shape_cur_x += tempVertices[i].x;
-				_shape_cur_x16 += tempVertices[i].x * zoom * 128;
+				_shape_cur_x += _tempVertices[i].x;
+				_shape_cur_x16 += _tempVertices[i].x * zoom * 128;
 				pt->x = d + _shape_ix + ((_shape_cur_x16 + 0x8000) >> 16);
-				_shape_cur_y += tempVertices[i].y;
-				_shape_cur_y16 += tempVertices[i].y * zoom * 128;
+				_shape_cur_y += _tempVertices[i].y;
+				_shape_cur_y16 += _tempVertices[i].y * zoom * 128;
 				pt->y = e + _shape_iy + ((_shape_cur_y16 + 0x8000) >> 16);
 				++pt;
 			}

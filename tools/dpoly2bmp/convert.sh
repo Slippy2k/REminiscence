@@ -17,6 +17,9 @@ do_file MEMOSTORY1.SET
 do_file MEMOSTORY2.SET
 do_file MEMOSTORY3.SET
 do_file TAKEMecha1-F.set
+do_file files/1_LOGOS/DELPHIN2.SET
+do_file files/1_LOGOS/SSIDELPH.SET
+do_file files/1_LOGOS/SUNDEL_F.SET
 do_file files/5_TAKEMA/TAKEMADO.SET
 do_file files/6_JUPITE/JUPITER2.SET
 do_file files/ALIMPONT.SET
