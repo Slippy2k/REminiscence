@@ -67,7 +67,7 @@ void Resource::init() {
 			_aba->readEntries();
 			_isDemo = true;
 		}
-		if (!fileExists("LEVEL1.MAP")) { // fbdemofr (no cutscenes)
+		if (!fileExists("LEVEL2.MAP")) { // fbdemofr (no cutscenes)
 			_isDemo = true;
 		}
 		break;

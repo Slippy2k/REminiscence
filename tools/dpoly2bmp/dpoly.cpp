@@ -112,7 +112,7 @@ void DPoly::Decode(const char *setFile) {
 				_rgb[j] = 0xFF000000;
 			}
 			const uint16_t palette = READ_BE_UINT16(_unkData + i * 4);
-			const uint16_t unk2 = READ_BE_UINT16(_unkData + i * 4);
+			const uint16_t unk2 = READ_BE_UINT16(_unkData + i * 4 + 2);
 			fprintf(stdout, "sequence %d background_palette %d unk2 %d\n", i, palette, unk2);
 			// background
 			fseek(_fp, _seqOffsets[i], SEEK_SET);
