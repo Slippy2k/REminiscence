@@ -1812,7 +1812,7 @@ void Game::playSound(uint8_t num, uint8_t softVol) {
 		// in-game music
 		_mix.playMusic(num);
 	} else if (num == 77) {
-		// triggered when Conrad reaches a platform
+		// triggered when Conrad draw his gun
 	} else {
 		warning("Unknown sound num %d", num);
 	}

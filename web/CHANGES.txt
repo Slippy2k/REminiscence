@@ -1,3 +1,6 @@
+* release 0.4.7
+	- added detection for Macintosh CD version
+
 * release 0.4.6
 	- added rewind to automatic saves
 	- fixed passwords and protection codes input
