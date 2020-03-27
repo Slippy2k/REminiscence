@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -239,12 +240,17 @@ static unsigned char _tileLookupTable[256];
 static int byte_31D30 = 255;
 static int _currentLevel;
 
-static unsigned char *sub_EC94(unsigned char *a2) { // mirror_y
+static unsigned char *mirror_y(unsigned char *a2) { // sub_EC94
 	int i, j;
 	unsigned char *a0 = &_tileTable[32];
 
 	if (_tilesSega) {
-		return a2;
+		static uint8_t buffer[32];
+		for (int y = 0; y < 8; ++y) {
+			memcpy(buffer + (7 - y) * 4, a2, 4);
+			a2 += 4;
+		}
+		return buffer;
 	}
 
 	a2 += 24;
@@ -259,13 +265,20 @@ static unsigned char *sub_EC94(unsigned char *a2) { // mirror_y
 	return _tileTable;
 }
 
-static unsigned char *sub_ED06(unsigned char *a2) { // mirror_x
+static unsigned char *mirror_x(unsigned char *a2) { // sub_ED06
 	int i;
 	unsigned char *a0 = &_tileTable[0];
 	unsigned char *a1 = &_tileLookupTable[0];
 
 	if (_tilesSega) {
-		return a2;
+		for (int y = 0; y < 8; ++y) {
+			for (int x = 0; x < 4; ++x) {
+				const uint8_t b = a2[3 - x];
+				*a0++ = (b >> 4) | ((b & 15) << 4);
+			}
+			a2 += 4;
+		}
+		return _tileTable;
 	}
 
 	for (i = 0; i < 32; ++i) {
@@ -295,10 +308,10 @@ static void loadLevelMapHelper() {
 				if (d0 != 0) {
 					a2 = a5 + d0 * 32;
 					if ((d3 & (1 << 12)) != 0) {
-						a2 = sub_EC94(a2);
+						a2 = mirror_y(a2);
 					}
 					if ((d3 & (1 << 11)) != 0) {
-						a2 = sub_ED06(a2);
+						a2 = mirror_x(a2);
 					}
 #if 0
 					for (n = 0; n < 4; ++n) {
@@ -373,10 +386,10 @@ static void loadLevelMapHelper() {
 			if (d0 != 0) {
 				a2 = a5 + d0 * 32;
 				if (d3 & (1 << 12)) {
-					a2 = sub_EC94(a2);
+					a2 = mirror_y(a2);
 				}
 				if (d3 & (1 << 11)) {
-					a2 = sub_ED06(a2);
+					a2 = mirror_x(a2);
 				}
 				if (_currentLevel != 0) {
 					d3 &= 0xDFFF;
