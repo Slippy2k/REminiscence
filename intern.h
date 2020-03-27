@@ -136,6 +136,7 @@ struct Options {
 	bool play_serrure_cutscene;
 	bool play_carte_cutscene;
 	bool play_gamesaved_sound;
+	bool restore_memo_cutscene;
 };
 
 struct Color {

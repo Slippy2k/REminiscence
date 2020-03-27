@@ -397,6 +397,8 @@ void Cutscene::op_drawShape() {
 	}
 }
 
+static int _paletteNum = -1;
+
 void Cutscene::op_setPalette() {
 	debug(DBG_CUT, "Cutscene::op_setPalette()");
 	uint8_t num = fetchNextCmdByte();
@@ -408,6 +410,7 @@ void Cutscene::op_setPalette() {
 		_palBuf[0x20] = 0x0F;
 		_palBuf[0x21] = 0xFF;
 	}
+	_paletteNum = num;
 }
 
 void Cutscene::op_drawCaptionText() {
@@ -864,6 +867,44 @@ void Cutscene::op_drawShapeScaleRotate() {
 	}
 }
 
+static const uint16_t memoSetPos[] = {
+	2, 0xffca, 0x0010, 2, 0xffcb, 0x000f, 2, 0xffcd, 0x000e, 2, 0xffd0, 0x000d, 2, 0xffd3, 0x000c, 2, 0xffd7, 0x000b,
+	2, 0xffd9, 0x000a, 2, 0xffdb, 0x0009, 2, 0xffdd, 0x0008, 2, 0xffdd, 0x0008, 2, 0xffdd, 0x0008, 2, 0xffdd, 0x0008,
+	2, 0xffdd, 0x0008, 2, 0xffdd, 0x0008, 2, 0xffdd, 0x0008, 2, 0xffdd, 0x0008, 4, 0xffe2, 0xfffe, 2, 0xffdd, 0x0008,
+	4, 0xffe2, 0xfffe, 2, 0xffdd, 0x0008, 4, 0xffe2, 0xfffe, 2, 0xffdd, 0x0008, 4, 0xffe2, 0xfffe, 2, 0xffdd, 0x0008,
+	2, 0xffdd, 0x0008, 2, 0xffdd, 0x0008, 2, 0xffdd, 0x0008, 2, 0xffdd, 0x0008, 2, 0xffdd, 0x0008, 2, 0xffdd, 0x0008,
+	2, 0xffdc, 0x0008, 2, 0xffda, 0x0008, 2, 0xffd6, 0x0009, 2, 0xffd2, 0x000b, 2, 0xffce, 0x000e, 2, 0xffc9, 0x0010,
+	2, 0xffc7, 0x0012, 2, 0xffc8, 0x0013, 2, 0xffca, 0x0015, 2, 0xffce, 0x0014, 2, 0xffd1, 0x0013, 2, 0xffd4, 0x0012,
+	2, 0xffd6, 0x0011, 2, 0xffd8, 0x0011, 2, 0xffd8, 0x0011, 2, 0xffd8, 0x0011, 2, 0xffd8, 0x0011, 2, 0xffd8, 0x0011,
+	2, 0xffd8, 0x0011, 2, 0xffd8, 0x0011, 4, 0xffdc, 0x0009, 2, 0xffd8, 0x0011, 4, 0xffdc, 0x0009, 2, 0xffd8, 0x0011,
+	4, 0xffdc, 0x0009, 2, 0xffd8, 0x0011, 2, 0xffd8, 0x0011, 2, 0xffd8, 0x0011, 2, 0xffd8, 0x0011, 2, 0xffd8, 0x0011,
+	2, 0xffd8, 0x0011, 2, 0xffd7, 0x0011, 2, 0xffd6, 0x0011, 2, 0xffd3, 0x0011, 2, 0xffcd, 0x0012, 2, 0xffc7, 0x0014,
+	2, 0xffc1, 0x0016
+};
+
+static uint32_t _memoSetOffset;
+
+static void readSetPalette(const uint8_t *p, uint16_t offset, uint16_t *palette);
+
+static int findSetPaletteColor(const uint16_t color, const uint16_t *paletteBuffer) {
+	int index = -1;
+	int currentSum = 0;
+	for (int l = 0; l < 32; ++l) {
+		if (color == paletteBuffer[l]) {
+			return l;
+		}
+		const int dr = ((color >> 8) & 15) - ((paletteBuffer[l] >> 8) & 15);
+		const int dg = ((color >> 4) & 15) - ((paletteBuffer[l] >> 4) & 15);
+		const int db =  (color       & 15) -  (paletteBuffer[l]       & 15);
+		const int sum = dr * dr + dg * dg + db * db;
+		if (index < 0 || sum < currentSum) {
+			currentSum = sum;
+			index = l;
+		}
+	}
+	return index;
+}
+
 void Cutscene::op_drawCreditsText() {
 	debug(DBG_CUT, "Cutscene::op_drawCreditsText()");
 	_creditsSlowText = 0xFF;
@@ -872,7 +913,35 @@ void Cutscene::op_drawCreditsText() {
 	}
 	memcpy(_page1, _page0, _vid->_layerSize);
 	_frameDelay = 10;
+
+	const bool drawMemoSetShape = g_options.restore_memo_cutscene && (_paletteNum == 19 || _paletteNum == 23) && (_memoSetOffset + 3) <= sizeof(memoSetPos);
+	if (drawMemoSetShape) {
+		uint16_t paletteBuffer[32];
+		for (int i = 0; i < 32; ++i) {
+			paletteBuffer[i] = READ_BE_UINT16(_palBuf + i * 2);
+		}
+		uint16_t tempPalette[16];
+		readSetPalette(_memoSetShape1Data, 0x462, tempPalette);
+		uint8_t paletteLut[32];
+		for (int k = 0; k < 16; ++k) {
+			const int index = findSetPaletteColor(tempPalette[k], paletteBuffer);
+			paletteLut[k] = 0xC0 + index;
+		}
+
+		_gfx.setLayer(_page1, _vid->_w);
+		drawSetShape(_memoSetShape1Data, 0, (int16_t)memoSetPos[_memoSetOffset + 1], (int16_t)memoSetPos[_memoSetOffset + 2], paletteLut);
+		_memoSetOffset += 3;
+		if (memoSetPos[_memoSetOffset] == 4) {
+			drawSetShape(_memoSetShape2Data, 0, (int16_t)memoSetPos[_memoSetOffset + 1], (int16_t)memoSetPos[_memoSetOffset + 2], paletteLut);
+			_memoSetOffset += 3;
+		}
+	}
+
 	setPalette();
+
+	if (drawMemoSetShape) {
+		SWAP(_page0, _page1);
+	}
 }
 
 void Cutscene::op_drawStringAtPos() {
@@ -994,6 +1063,11 @@ void Cutscene::mainLoop(uint16_t num) {
 	_cmdPtr = _cmdPtrBak = p + _baseOffset + offset;
 	_polPtr = getPolygonData();
 	debug(DBG_CUT, "_baseOffset = %d offset = %d", _baseOffset, offset);
+
+	_paletteNum = -1;
+	if (_id == kCineMemo && g_options.restore_memo_cutscene) {
+		_memoSetOffset = 0;
+	}
 
 	while (!_stub->_pi.quit && !_interrupted && !_stop) {
 		uint8_t op = fetchNextCmdByte();
@@ -1236,7 +1310,7 @@ static void readSetPalette(const uint8_t *p, uint16_t offset, uint16_t *palette)
 	}
 }
 
-void Cutscene::drawSetShape(const uint8_t *p, uint16_t offset, int x, int y, uint8_t *paletteLut) {
+void Cutscene::drawSetShape(const uint8_t *p, uint16_t offset, int x, int y, const uint8_t *paletteLut) {
 	const int count = READ_BE_UINT16(p + offset); offset += 2;
 	for (int i = 0; i < count - 1; ++i) {
 		offset += 5; // shape_marker

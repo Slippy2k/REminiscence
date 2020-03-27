@@ -29,6 +29,10 @@ struct Cutscene {
 		kTextJustifyCenter = 2,
 	};
 
+	enum {
+		kCineMemo = 48
+	};
+
 	struct SetShape {
 		uint16_t offset;
 		uint16_t size;
@@ -55,6 +59,8 @@ struct Cutscene {
 	static const Text _frTextsTable[];
 	static const Text _enTextsTable[];
 	static const uint8_t _caillouSetData[];
+	static const uint8_t _memoSetShape1Data[];
+	static const uint8_t _memoSetShape2Data[];
 
 	Graphics _gfx;
 	Resource *_res;
@@ -149,7 +155,7 @@ struct Cutscene {
 	void playText(const char *str);
 	void play();
 
-	void drawSetShape(const uint8_t *p, uint16_t offset, int x, int y, uint8_t *paletteLut);
+	void drawSetShape(const uint8_t *p, uint16_t offset, int x, int y, const uint8_t *paletteLut);
 	void playSet(const uint8_t *p, int offset);
 };
 
