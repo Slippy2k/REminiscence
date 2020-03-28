@@ -1876,13 +1876,21 @@ int Game::pge_op_setPiegePosModX(ObjectOpcodeArgs *args) {
 	return 0xFFFF;
 }
 
-// taxi, level4
+// taxi and teleporter
 int Game::pge_op_changeRoom(ObjectOpcodeArgs *args) {
 	InitPGE *init_pge_1 = args->pge->init_PGE;
 	assert(args->a >= 0 && args->a < 3);
 	const int16_t _ax = init_pge_1->counter_values[args->a];
-	if (_ax == 0 && !g_options.bypass_protection) {
-		warning("pge_op_changeRoom(): protection check");
+	if (_ax == 0 && !g_options.bypass_protection && !g_options.use_words_protection && !_res.isMac()) {
+		if (!handleProtectionScreenShape()) {
+			warning("Game::pge_op_changeRoom() protection check failed");
+			// when protection check fails, the changeRoom opcode is disabled,
+			// rendering the teleporter unusable.
+			//
+			// _pge_opcodeTable[0x82] = &Game::pge_op_nop;
+			// _pge_opTempVar1 = 0xFFFF;
+			// return;
+		}
 	}
 	const int16_t _bx = init_pge_1->counter_values[args->a + 1];
 	LivePGE *live_pge_1 = &_pgeLive[_bx];

@@ -66,8 +66,7 @@ void Resource::init() {
 			_aba = new ResourceAba(_fs);
 			_aba->readEntries();
 			_isDemo = true;
-		}
-		if (!fileExists("LEVEL2.MAP")) { // fbdemofr (no cutscenes)
+		} else if (!fileExists("LEVEL2.MAP")) { // fbdemofr (no cutscenes)
 			_isDemo = true;
 		}
 		break;

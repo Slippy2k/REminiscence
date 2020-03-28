@@ -59,8 +59,8 @@ struct Cutscene {
 	static const Text _frTextsTable[];
 	static const Text _enTextsTable[];
 	static const uint8_t _caillouSetData[];
-	static const uint8_t _memoSetShape1Data[];
 	static const uint8_t _memoSetShape2Data[];
+	static const uint8_t _memoSetShape4Data[];
 
 	Graphics _gfx;
 	Resource *_res;

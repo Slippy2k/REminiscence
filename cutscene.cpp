@@ -921,7 +921,7 @@ void Cutscene::op_drawCreditsText() {
 			paletteBuffer[i] = READ_BE_UINT16(_palBuf + i * 2);
 		}
 		uint16_t tempPalette[16];
-		readSetPalette(_memoSetShape1Data, 0x462, tempPalette);
+		readSetPalette(_memoSetShape2Data, 0x462, tempPalette);
 		uint8_t paletteLut[32];
 		for (int k = 0; k < 16; ++k) {
 			const int index = findSetPaletteColor(tempPalette[k], paletteBuffer);
@@ -929,10 +929,10 @@ void Cutscene::op_drawCreditsText() {
 		}
 
 		_gfx.setLayer(_page1, _vid->_w);
-		drawSetShape(_memoSetShape1Data, 0, (int16_t)memoSetPos[_memoSetOffset + 1], (int16_t)memoSetPos[_memoSetOffset + 2], paletteLut);
+		drawSetShape(_memoSetShape2Data, 0, (int16_t)memoSetPos[_memoSetOffset + 1], (int16_t)memoSetPos[_memoSetOffset + 2], paletteLut);
 		_memoSetOffset += 3;
 		if (memoSetPos[_memoSetOffset] == 4) {
-			drawSetShape(_memoSetShape2Data, 0, (int16_t)memoSetPos[_memoSetOffset + 1], (int16_t)memoSetPos[_memoSetOffset + 2], paletteLut);
+			drawSetShape(_memoSetShape4Data, 0, (int16_t)memoSetPos[_memoSetOffset + 1], (int16_t)memoSetPos[_memoSetOffset + 2], paletteLut);
 			_memoSetOffset += 3;
 		}
 	}
