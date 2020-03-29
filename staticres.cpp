@@ -25,8 +25,8 @@ const Cutscene::OpcodeStub Cutscene::_opcodeTable[] = {
 	&Cutscene::op_drawShapeScale,
 	&Cutscene::op_drawShapeScaleRotate,
 	/* 0x0C */
-	&Cutscene::op_drawCreditsText,
-	&Cutscene::op_drawStringAtPos,
+	&Cutscene::op_copyScreen,
+	&Cutscene::op_drawTextAtPos,
 	&Cutscene::op_handleKeys
 };
 

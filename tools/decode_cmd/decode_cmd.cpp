@@ -34,7 +34,7 @@ enum {
 	op_drawShapeScale,
 	op_drawShapeScaleRotate,
 	/* 0x0C */
-	op_drawCreditsText, // _delay = 10, update palette, copy page0 to page1
+	op_copyScreen, // _delay = 10, update palette, copy page0 to page1
 	op_drawStringAtPos,
 	op_handleKeys
 };
@@ -90,8 +90,8 @@ static void printOpcode(uint16_t addr, uint8_t opcode, int args[16]) {
 		fprintf(_out, " zoom:%d ix:%d iy:%d", args[3], args[4], args[5]);
 		fprintf(_out, " r1:%d r2:%d r3:%d", args[6], args[7], args[8]);
 		break;
-	case op_drawCreditsText:
-		fprintf(_out, "op_drawCreditsText");
+	case op_copyScreen:
+		fprintf(_out, "op_copyScreen");
 		break;
 	case op_drawStringAtPos:
 		fprintf(_out, "op_drawStringAtPos id:%d x:%d y:%d", args[0], args[1], args[2]);
@@ -190,7 +190,7 @@ static int parse(const uint8_t *buf, uint32_t size) {
 				i = 90;
 			}
 			break;
-		case op_drawCreditsText:
+		case op_copyScreen:
 			break;
 		case op_drawStringAtPos:
 			a = readWord(p); p += 2;

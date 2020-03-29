@@ -1,16 +1,23 @@
 
 # Flashback Cutscene Player
 
+- [Files](#files)
+- [Opcodes](#opcodes)
+- [Rendering](#rendering)
+- [Copy Protection](#copy-protection)
+- [Differences between Amiga and PC](#differences-between-amiga-and-pc)
+
+
 ## Files
 
 On PC :
 
-* .POL files contain shapes polygons and palette colors.
+* .POL files contain shapes vertices and palette colors.
 * .CMD files contain bytecode for one or several animations.
 
 The Amiga version bundles the two files into a single file (.CMP) compressed with bytekiller.
 
-All data is indexed, so a .POL file will contain 4 offsets table :
+All data is indexed, so a .POL file contains 4 tables of offsets :
 
 * shape offset
 * shape data
@@ -21,7 +28,7 @@ This allows to reduce and re-use vertices data.
 
 ## Opcodes
 
-The cutscene player routine interprets 14 opcodes.
+The cutscene player routine interprets 14 opcodes. These opcodes handle the rendering of the shapes, the display double buffering and the captions.
 
 Num | Name | Description
 ----|---------------------|--------------------------------------------------
@@ -32,12 +39,12 @@ Num | Name | Description
 4  | setPalette           | load 16 colors palette (RGB444)
 5  | markCurPos           | same as 0x00
 6  | drawCaptionText      | draw text below the animation
-7  | nop                  |
-8  | skip3                |
-9  | refreshAll           | same as 0x00 + updateKeys (0x0E)
+7  | nop                  | unknown (not referenced in any .CMD files)
+8  | skip3                | unknown (3 bytes)
+9  | refreshAll           | same as opcode 0 + updateKeys (opcode 14)
 10 | drawShapeScale       | draw shape with scaling
 11 | drawShapeScaleRotate | draw shape with scaling and rotation
-12 | drawCreditsText      | set delay = 10, update palette, copy page0 to page1
+12 | copyScreen      | set delay = 10, update palette, copy page0 to page1
 13 | drawTextAtPos        | draw string on top of the animation
 14 | handleKeys           | poll key inputs (used in Level 2 and job description cutscenes)
 
@@ -52,7 +59,7 @@ The cutscene player allocates 3 buffers of 240x128 bytes :
 ![intro0090](cutscene_0090.png)
 
 
-There are 3 drawing primitives :
+Shapes are composed of 3 drawing primitives :
 
 * polygon (n points)
 * ellipse
@@ -64,14 +71,18 @@ Each primitive can be transformed :
 * rotation
 * vertical and horizontal stretching
 
-Animations are based on a palette of 16 colors (RGB444), with alpha blending achieved by allocating the upper half of the palette colors to blended colors.
+
+Animations are based on a palette of 16 colors (RGB444), with transparency achieved by allocating the upper half of the palette colors to blended colors.
 Turning a pixel transparent is then done by or'ing its palette color index with 8 (bit 3).
 
-## Copy protection
+## Copy Protection
 
 The copy protection of the game relies on the same cutscene player to draw and zoom out the shapes.
 
-There are no external files, the data is embedded in the executable.
+![shape_amiga](shape_04.png)
+![shape_dos](shape_14.png)
+
+There are no external files, the shapes data is embedded in the executable.
 
 ## Differences between Amiga and PC
 
@@ -85,5 +96,3 @@ taxi
 ### Bugs
 
 espions
-
-## Texts ?
