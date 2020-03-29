@@ -1699,9 +1699,6 @@ void Game::loadLevelData() {
 	}
 
 	_cut._id = lvl->cutscene_id;
-	if (_res._isDemo && _currentLevel == 5) { // PC demo does not include TELEPORT.*
-		_cut._id = 0xFFFF;
-	}
 
 	_curMonsterNum = 0xFFFF;
 	_curMonsterFrame = 0;

@@ -741,6 +741,7 @@ void Resource::load(const char *objName, int objType, const char *ext) {
 			switch (objType) {
 			case OT_CMD:
 			case OT_POL:
+			case OT_CMP:
 				warning("Unable to load '%s' type %d", _entryName, objType);
 				return;
 			}
