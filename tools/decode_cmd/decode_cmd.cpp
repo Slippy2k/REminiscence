@@ -11,10 +11,26 @@ enum {
 
 static uint8_t _fileBuf[MAX_FILESIZE];
 
+static uint8_t _cineOff[1024];
+static uint8_t _cineTxt[8192];
+
 static FILE *_out = stdout;
 
 static uint16_t readWord(const uint8_t *p) {
 	return (p[0] << 8) | p[1]; // BE
+}
+
+static const char *getCineString(int num) {
+	if (num == 0xFFFF) {
+		return "";
+	}
+	num &= 0xFFF;
+	const uint32_t offset = readWord(_cineOff + num * 2);
+	uint8_t *end = (uint8_t *)memchr(_cineTxt + offset, 0xA, sizeof(_cineTxt) - offset);
+	if (end) {
+		*end = 0;
+	}
+	return (const char *)_cineTxt + offset;
 }
 
 enum {
@@ -64,7 +80,7 @@ static void printOpcode(uint16_t addr, uint8_t opcode, int args[16]) {
 		fprintf(_out, "op_markCurPos2");
 		break;
 	case op_drawCaptionString:
-		fprintf(_out, "op_drawCaptionString id:%d", args[0]);
+		fprintf(_out, "op_drawCaptionString id:%d // '%s'", args[0], getCineString(args[0]));
 		break;
 	case op_nop:
 		fprintf(_out, "op_nop");
@@ -94,7 +110,7 @@ static void printOpcode(uint16_t addr, uint8_t opcode, int args[16]) {
 		fprintf(_out, "op_copyScreen");
 		break;
 	case op_drawStringAtPos:
-		fprintf(_out, "op_drawStringAtPos id:%d x:%d y:%d", args[0], args[1], args[2]);
+		fprintf(_out, "op_drawStringAtPos id:%d x:%d y:%d // '%s'", args[0], args[1], args[2], getCineString(args[0]));
 		break;
 	case op_handleKeys:
 		fprintf(_out, "op_handleKeys");
@@ -215,7 +231,7 @@ static int parse(const uint8_t *buf, uint32_t size) {
 	return 0;
 }
 
-static int readFile(const char *path) {
+static int readFile(const char *path, uint8_t *dst, int dstSize) {
 	int count, size = 0;
 	FILE *fp;
 
@@ -224,8 +240,8 @@ static int readFile(const char *path) {
 		fseek(fp, 0, SEEK_END);
 		size = ftell(fp);
 		fseek(fp, 0, SEEK_SET);
-		assert(size <= MAX_FILESIZE);
-		count = fread(_fileBuf, 1, size, fp);
+		assert(size <= dstSize);
+		count = fread(dst, 1, size, fp);
 		if (count != size) {
 			fprintf(stderr, "Failed to read %d bytes (%d)\n", size, count);
 		}
@@ -235,11 +251,15 @@ static int readFile(const char *path) {
 }
 
 int main(int argc, char *argv[]) {
+	if (argc >= 4) {
+		readFile(argv[2], _cineOff, sizeof(_cineOff));
+		readFile(argv[3], _cineTxt, sizeof(_cineTxt));
+	}
 	if (argc >= 2) {
 		struct stat st;
 		if (stat(argv[1], &st) == 0 && S_ISREG(st.st_mode)) {
 			int i, count, offset;
-			const int size = readFile(argv[1]);
+			const int size = readFile(argv[1], _fileBuf, MAX_FILESIZE);
 			if (size != 0) {
 				count = readWord(_fileBuf) + 1;
 				for (i = 0; i < count; ++i) {
