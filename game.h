@@ -319,7 +319,7 @@ struct Game {
 	void pge_addToInventory(LivePGE *pge1, LivePGE *pge2, LivePGE *pge3);
 	int pge_updateCollisionState(LivePGE *pge, int16_t pge_dy, uint8_t var8);
 	int pge_ZOrder(LivePGE *pge, int16_t num, pge_ZOrderCallback compare, uint16_t unk);
-	void pge_updateGroup(uint8_t idx, uint8_t unk1, int16_t unk2);
+	void pge_updateGroup(uint8_t src_pge_index, uint8_t dst_pge_index, int16_t num);
 	void pge_removeFromInventory(LivePGE *pge1, LivePGE *pge2, LivePGE *pge3);
 	int pge_ZOrderByAnimY(LivePGE *pge1, LivePGE *pge2, uint8_t comp, uint8_t comp2);
 	int pge_ZOrderByAnimYIfType(LivePGE *pge1, LivePGE *pge2, uint8_t comp, uint8_t comp2);

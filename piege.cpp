@@ -908,7 +908,7 @@ int Game::pge_op_copyPiege(ObjectOpcodeArgs *args) {
 	dst->pos_y = src->pos_y;
 	dst->room_location = src->room_location;
 
-	dst->flags &= 0xFE;
+	dst->flags &= ~1;
 	if (src->flags & 1) {
 		dst->flags |= 1;
 	}
@@ -1785,7 +1785,6 @@ int Game::pge_op_isFacingConrad(ObjectOpcodeArgs *args) {
 						return 0xFFFF;
 				}
 			}
-
 		}
 	}
 	return 0;
@@ -1905,7 +1904,7 @@ int Game::pge_op_changeRoom(ObjectOpcodeArgs *args) {
 		InitPGE *init_pge_2 = live_pge_2->init_PGE;
 		init_pge_1 = live_pge_1->init_PGE;
 		if (init_pge_2->obj_node_number == init_pge_1->obj_node_number) {
-			live_pge_2->flags &= 0xFE;
+			live_pge_2->flags &= ~1;
 			if (live_pge_1->flags & 1) {
 				live_pge_2->flags |= 1;
 			}
@@ -2134,23 +2133,23 @@ int Game::pge_ZOrder(LivePGE *pge, int16_t num, pge_ZOrderCallback compare, uint
 	return 0;
 }
 
-void Game::pge_updateGroup(uint8_t idx, uint8_t unk1, int16_t unk2) {
-	debug(DBG_GAME, "Game::pge_updateGroup() idx=0x%X unk1=0x%X unk2=0x%X", idx, unk1, unk2);
-	LivePGE *pge = &_pgeLive[unk1];
+void Game::pge_updateGroup(uint8_t src_pge_index, uint8_t dst_pge_index, int16_t num) {
+	debug(DBG_GAME, "Game::pge_updateGroup() src=0x%X dst=0x%X num=0x%X", src_pge_index, dst_pge_index, num);
+	LivePGE *pge = &_pgeLive[dst_pge_index];
 	if (!(pge->flags & 4)) {
 		if (!(pge->init_PGE->flags & 1)) {
 			return;
 		}
 		pge->flags |= 4;
-		_pge_liveTable2[unk1] = pge;
+		_pge_liveTable2[dst_pge_index] = pge;
 	}
-	if (unk2 <= 4) {
+	if (num <= 4) {
 		uint8_t pge_room = pge->room_location;
-		pge = &_pgeLive[idx];
+		pge = &_pgeLive[src_pge_index];
 		if (pge_room != pge->room_location) {
 			return;
 		}
-		if (unk1 == 0 && _blinkingConradCounter != 0) {
+		if (dst_pge_index == 0 && _blinkingConradCounter != 0) {
 			return;
 		}
 		// XXX
@@ -2159,11 +2158,11 @@ void Game::pge_updateGroup(uint8_t idx, uint8_t unk1, int16_t unk2) {
 	if (le) {
 		// append to the list
 		_pge_nextFreeGroup = le->next_entry;
-		GroupPGE *_ax = _pge_groupsTable[unk1];
-		_pge_groupsTable[unk1] = le;
-		le->next_entry = _ax;
-		le->index = idx;
-		le->group_id = unk2;
+		GroupPGE *next = _pge_groupsTable[dst_pge_index];
+		_pge_groupsTable[dst_pge_index] = le;
+		le->next_entry = next;
+		le->index = src_pge_index;
+		le->group_id = num;
 	}
 }
 
