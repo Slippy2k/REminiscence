@@ -332,7 +332,7 @@ int Game::col_detectHitCallback4(LivePGE *pge1, LivePGE *pge2, int16_t unk1, int
 		if (pge1->init_PGE->object_type == unk2) {
 			if ((pge1->flags & 1) != (pge2->flags & 1)) {
 				if (col_detectHitCallbackHelper(pge1, unk1) == 0) {
-					pge_updateGroup(pge2->index, pge1->index, unk1);
+					pge_sendMessage(pge2->index, pge1->index, unk1);
 					return 1;
 				}
 			}
@@ -346,7 +346,7 @@ int Game::col_detectHitCallback5(LivePGE *pge1, LivePGE *pge2, int16_t unk1, int
 		if (pge1->init_PGE->object_type == unk2) {
 			if ((pge1->flags & 1) == (pge2->flags & 1)) {
 				if (col_detectHitCallbackHelper(pge1, unk1) == 0) {
-					pge_updateGroup(pge2->index, pge1->index, unk1);
+					pge_sendMessage(pge2->index, pge1->index, unk1);
 					return 1;
 				}
 			}
@@ -415,7 +415,7 @@ int Game::col_detectGunHitCallback2(LivePGE *pge1, LivePGE *pge2, int16_t arg4, 
 				}
 			}
 			if (col_detectHitCallbackHelper(pge1, id) != 0) {
-				pge_updateGroup(pge2->index, pge1->index, id);
+				pge_sendMessage(pge2->index, pge1->index, id);
 				return 1;
 			}
 		}
@@ -439,10 +439,9 @@ int Game::col_detectGunHitCallback3(LivePGE *pge1, LivePGE *pge2, int16_t arg4, 
 				}
 			}
 			if (col_detectHitCallbackHelper(pge1, id) != 0) {
-				pge_updateGroup(pge2->index, pge1->index, id);
+				pge_sendMessage(pge2->index, pge1->index, id);
 				return 1;
 			}
-
 		}
 	}
 	return 0;

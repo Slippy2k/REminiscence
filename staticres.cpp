@@ -3536,11 +3536,11 @@ const Game::pge_OpcodeProc Game::_pge_opcodeTable[] = {
 	&Game::pge_op_collides2o2u,
 	&Game::pge_op_collides2u2o,
 	&Game::pge_op_isInGroup,
-	&Game::pge_op_updateGroup0,
+	&Game::pge_op_sendMessageData0,
 	/* 0x24 */
-	&Game::pge_op_updateGroup1,
-	&Game::pge_op_updateGroup2,
-	&Game::pge_op_updateGroup3,
+	&Game::pge_op_sendMessageData1,
+	&Game::pge_op_sendMessageData2,
+	&Game::pge_op_sendMessageData3,
 	&Game::pge_op_isPiegeDead,
 	/* 0x28 */
 	&Game::pge_op_collides1u2o,

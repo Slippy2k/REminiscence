@@ -207,8 +207,8 @@ struct LivePGE {
 	InitPGE *init_PGE;
 };
 
-struct GroupPGE { // MessagePGE
-	GroupPGE *next_entry;
+struct MessagePGE {
+	MessagePGE *next_entry;
 	uint16_t index; // src_pge
 	uint16_t group_id; // msg_num
 };
