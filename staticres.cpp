@@ -3563,10 +3563,10 @@ const Game::pge_OpcodeProc Game::_pge_opcodeTable[] = {
 	&Game::pge_op_setCollisionState1,
 	&Game::pge_op_setCollisionState0,
 	/* 0x38 */
-	&Game::pge_op_isInGroup1,
-	&Game::pge_op_isInGroup2,
-	&Game::pge_op_isInGroup3,
-	&Game::pge_op_isInGroup4,
+	&Game::pge_hasMessageData0,
+	&Game::pge_hasMessageData1,
+	&Game::pge_hasMessageData2,
+	&Game::pge_hasMessageData3,
 	/* 0x3C */
 	&Game::pge_o_unk0x3C,
 	&Game::pge_o_unk0x3D,

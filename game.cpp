@@ -365,7 +365,7 @@ void Game::resetGameState() {
 	_deathCutsceneCounter = 0;
 	_saveStateCompleted = false;
 	_loadMap = true;
-	pge_resetGroups();
+	pge_resetMessages();
 	_blinkingConradCounter = 0;
 	_pge_processOBJ = false;
 	_pge_opTempVar1 = 0;
@@ -1738,7 +1738,7 @@ void Game::loadLevelData() {
 			_pge_liveTable1[pge->room_location] = pge;
 		}
 	}
-	pge_resetGroups();
+	pge_resetMessages();
 	_validSaveState = false;
 
 	_mix.playMusic(Mixer::MUSIC_TRACK + lvl->track);

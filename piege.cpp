@@ -10,7 +10,7 @@
 #include "systemstub.h"
 #include "util.h"
 
-void Game::pge_resetGroups() {
+void Game::pge_resetMessages() {
 	memset(_pge_messagesTable, 0, sizeof(_pge_messagesTable));
 	MessagePGE *le = &_pge_messages[0];
 	_pge_nextFreeMessage = le;
@@ -26,10 +26,10 @@ void Game::pge_resetGroups() {
 	le->group_id = 0;
 }
 
-void Game::pge_removeFromGroup(uint8_t idx) {
-	MessagePGE *le = _pge_messagesTable[idx];
+void Game::pge_clearMessages(uint8_t pge_index) {
+	MessagePGE *le = _pge_messagesTable[pge_index];
 	if (le) {
-		_pge_messagesTable[idx] = 0;
+		_pge_messagesTable[pge_index] = 0;
 		MessagePGE *next = _pge_nextFreeMessage;
 		while (le) {
 			MessagePGE *cur = le->next_entry;
@@ -43,13 +43,14 @@ void Game::pge_removeFromGroup(uint8_t idx) {
 	}
 }
 
-int Game::pge_isInGroup(LivePGE *pge_dst, uint16_t group_id, uint16_t counter) {
+int Game::pge_hasMessageData(LivePGE *pge, uint16_t group_id, uint16_t counter) const {
 	assert(counter >= 1 && counter <= 4);
-	uint16_t c = pge_dst->init_PGE->counter_values[counter - 1];
-	MessagePGE *le = _pge_messagesTable[pge_dst->index];
+	uint16_t pge_src_index = pge->init_PGE->counter_values[counter - 1];
+	const MessagePGE *le = _pge_messagesTable[pge->index];
 	while (le) {
-		if (le->group_id == group_id && le->index == c)
+		if (le->group_id == group_id && le->index == pge_src_index) {
 			return 1;
+		}
 		le = le->next_entry;
 	}
 	return 0;
@@ -129,7 +130,7 @@ void Game::pge_process(LivePGE *pge) {
 		Object *obj = &on->objects[pge->first_obj_number];
 		while (1) {
 			if (obj->type != pge->obj_type) {
-				pge_removeFromGroup(pge->index);
+				pge_clearMessages(pge->index);
 				return;
 			}
 			uint16_t _ax = pge_execute(pge, init_pge, obj);
@@ -156,7 +157,7 @@ void Game::pge_process(LivePGE *pge) {
 	}
 	pge_setupAnim(pge);
 	++pge->anim_seq;
-	pge_removeFromGroup(pge->index);
+	pge_clearMessages(pge->index);
 }
 
 void Game::pge_setupNextAnimFrame(LivePGE *pge, MessagePGE *le) {
@@ -960,20 +961,20 @@ int Game::pge_op_setCollisionState0(ObjectOpcodeArgs *args) {
 	return pge_updateCollisionState(args->pge, args->a, 0);
 }
 
-int Game::pge_op_isInGroup1(ObjectOpcodeArgs *args) {
-	return pge_isInGroup(args->pge, args->a, 1);
+int Game::pge_hasMessageData0(ObjectOpcodeArgs *args) {
+	return pge_hasMessageData(args->pge, args->a, 1);
 }
 
-int Game::pge_op_isInGroup2(ObjectOpcodeArgs *args) {
-	return pge_isInGroup(args->pge, args->a, 2);
+int Game::pge_hasMessageData1(ObjectOpcodeArgs *args) {
+	return pge_hasMessageData(args->pge, args->a, 2);
 }
 
-int Game::pge_op_isInGroup3(ObjectOpcodeArgs *args) {
-	return pge_isInGroup(args->pge, args->a, 3);
+int Game::pge_hasMessageData2(ObjectOpcodeArgs *args) {
+	return pge_hasMessageData(args->pge, args->a, 3);
 }
 
-int Game::pge_op_isInGroup4(ObjectOpcodeArgs *args) {
-	return pge_isInGroup(args->pge, args->a, 4);
+int Game::pge_hasMessageData3(ObjectOpcodeArgs *args) {
+	return pge_hasMessageData(args->pge, args->a, 4);
 }
 
 int Game::pge_o_unk0x3C(ObjectOpcodeArgs *args) {
@@ -1429,7 +1430,7 @@ int Game::pge_op_setCollisionState2(ObjectOpcodeArgs *args) {
 int Game::pge_op_saveState(ObjectOpcodeArgs *args) {
 	_saveStateCompleted = true;
 	_validSaveState = saveGameState(kIngameSaveSlot);
-	if (_validSaveState and g_options.play_gamesaved_sound) {
+	if (_validSaveState && g_options.play_gamesaved_sound) {
 		_mix.play(Resource::_gameSavedSoundData, Resource::_gameSavedSoundLen, 8000, Mixer::MAX_VOLUME);
 	}
 	return 0xFFFF;

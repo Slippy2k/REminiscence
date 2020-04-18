@@ -160,9 +160,9 @@ struct Game {
 	uint16_t _pge_compareVar1;
 	uint16_t _pge_compareVar2;
 
-	void pge_resetGroups();
-	void pge_removeFromGroup(uint8_t idx);
-	int pge_isInGroup(LivePGE *pge_dst, uint16_t group_id, uint16_t counter);
+	void pge_resetMessages();
+	void pge_clearMessages(uint8_t pge_index);
+	int pge_hasMessageData(LivePGE *pge, uint16_t group_id, uint16_t counter) const;
 	void pge_loadForCurrentLevel(uint16_t idx);
 	void pge_process(LivePGE *pge);
 	void pge_setupNextAnimFrame(LivePGE *pge, MessagePGE *le);
@@ -230,10 +230,10 @@ struct Game {
 	int pge_op_isInpMod(ObjectOpcodeArgs *args);
 	int pge_op_setCollisionState1(ObjectOpcodeArgs *args);
 	int pge_op_setCollisionState0(ObjectOpcodeArgs *args);
-	int pge_op_isInGroup1(ObjectOpcodeArgs *args);
-	int pge_op_isInGroup2(ObjectOpcodeArgs *args);
-	int pge_op_isInGroup3(ObjectOpcodeArgs *args);
-	int pge_op_isInGroup4(ObjectOpcodeArgs *args);
+	int pge_hasMessageData0(ObjectOpcodeArgs *args);
+	int pge_hasMessageData1(ObjectOpcodeArgs *args);
+	int pge_hasMessageData2(ObjectOpcodeArgs *args);
+	int pge_hasMessageData3(ObjectOpcodeArgs *args);
 	int pge_o_unk0x3C(ObjectOpcodeArgs *args);
 	int pge_o_unk0x3D(ObjectOpcodeArgs *args);
 	int pge_op_setPiegeCounter(ObjectOpcodeArgs *args);
