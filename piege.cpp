@@ -2069,7 +2069,6 @@ int Game::pge_updateCollisionState(LivePGE *pge, int16_t pge_dy, uint8_t var8) {
 
 		CollisionSlot2 *slot1 = _col_slots2Next;
 		int16_t i = 255;
-		pge_pos_x = i;
 		if (_pge_currentPiegeFacingDir) {
 			i = pge_unk1C - 1;
 			grid_data -= i;
@@ -2079,7 +2078,6 @@ int Game::pge_updateCollisionState(LivePGE *pge, int16_t pge_dy, uint8_t var8) {
 				slot1->data_size = pge_unk1C - 1;
 				assert(pge_unk1C < 0x70);
 				memset(grid_data, var8, pge_unk1C);
-				grid_data += pge_unk1C;
 				return 1;
 			} else {
 				++i;
