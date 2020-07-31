@@ -882,6 +882,7 @@ static const uint16_t memoSetPos[] = {
 	2, 0xffc1, 0x0016
 };
 
+static bool _drawMemoSetShapes;
 static uint32_t _memoSetOffset;
 
 static void readSetPalette(const uint8_t *p, uint16_t offset, uint16_t *palette);
@@ -914,8 +915,8 @@ void Cutscene::op_copyScreen() {
 	memcpy(_backPage, _frontPage, _vid->_layerSize);
 	_frameDelay = 10;
 
-	const bool drawMemoSetShape = g_options.restore_memo_cutscene && (_paletteNum == 19 || _paletteNum == 23) && (_memoSetOffset + 3) <= sizeof(memoSetPos);
-	if (drawMemoSetShape) {
+	const bool drawMemoShapes = _drawMemoSetShapes && (_paletteNum == 19 || _paletteNum == 23) && (_memoSetOffset + 3) <= sizeof(memoSetPos);
+	if (drawMemoShapes) {
 		uint16_t paletteBuffer[32];
 		for (int i = 0; i < 32; ++i) {
 			paletteBuffer[i] = READ_BE_UINT16(_palBuf + i * 2);
@@ -939,7 +940,7 @@ void Cutscene::op_copyScreen() {
 
 	updateScreen();
 
-	if (drawMemoSetShape) {
+	if (drawMemoShapes) {
 		SWAP(_frontPage, _backPage);
 	}
 }
@@ -1065,9 +1066,8 @@ void Cutscene::mainLoop(uint16_t num) {
 	debug(DBG_CUT, "_baseOffset = %d offset = %d", _baseOffset, offset);
 
 	_paletteNum = -1;
-	if (_id == kCineMemo && g_options.restore_memo_cutscene) {
-		_memoSetOffset = 0;
-	}
+	_drawMemoSetShapes = (_id == kCineMemo && g_options.restore_memo_cutscene);
+	_memoSetOffset = 0;
 
 	while (!_stub->_pi.quit && !_interrupted && !_stop) {
 		uint8_t op = fetchNextCmdByte();
