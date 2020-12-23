@@ -3535,7 +3535,7 @@ const Game::pge_OpcodeProc Game::_pge_opcodeTable[] = {
 	/* 0x20 */
 	&Game::pge_op_collides2o2u,
 	&Game::pge_op_collides2u2o,
-	&Game::pge_op_isInGroup,
+	&Game::pge_hasPiegeSentMessage,
 	&Game::pge_op_sendMessageData0,
 	/* 0x24 */
 	&Game::pge_op_sendMessageData1,
@@ -3626,7 +3626,7 @@ const Game::pge_OpcodeProc Game::_pge_opcodeTable[] = {
 	&Game::pge_op_setCollisionState2,
 	&Game::pge_op_saveState,
 	&Game::pge_o_unk0x6A,
-	&Game::pge_op_isInGroupSlice,
+	&Game::pge_isToggleable,
 	/* 0x6C */
 	&Game::pge_o_unk0x6C,
 	&Game::pge_op_isCollidingObject,

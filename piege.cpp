@@ -18,12 +18,12 @@ void Game::pge_resetMessages() {
 	while (n--) {
 		le->next_entry = le + 1;
 		le->index = 0;
-		le->group_id = 0;
+		le->msg_num = 0;
 		++le;
 	}
 	le->next_entry = 0;
 	le->index = 0;
-	le->group_id = 0;
+	le->msg_num = 0;
 }
 
 void Game::pge_clearMessages(uint8_t pge_index) {
@@ -35,7 +35,7 @@ void Game::pge_clearMessages(uint8_t pge_index) {
 			MessagePGE *cur = le->next_entry;
 			le->next_entry = next;
 			le->index = 0;
-			le->group_id = 0;
+			le->msg_num = 0;
 			next = le;
 			le = cur;
 		}
@@ -43,12 +43,12 @@ void Game::pge_clearMessages(uint8_t pge_index) {
 	}
 }
 
-int Game::pge_hasMessageData(LivePGE *pge, uint16_t group_id, uint16_t counter) const {
+int Game::pge_hasMessageData(LivePGE *pge, uint16_t msg_num, uint16_t counter) const {
 	assert(counter >= 1 && counter <= 4);
 	uint16_t pge_src_index = pge->init_PGE->counter_values[counter - 1];
 	const MessagePGE *le = _pge_messagesTable[pge->index];
 	while (le) {
-		if (le->group_id == group_id && le->index == pge_src_index) {
+		if (le->msg_num == msg_num && le->index == pge_src_index) {
 			return 1;
 		}
 		le = le->next_entry;
@@ -169,25 +169,25 @@ void Game::pge_setupNextAnimFrame(LivePGE *pge, MessagePGE *le) {
 	while (i < on->last_obj_number && pge->obj_type == obj->type) {
 		MessagePGE *next_le = le;
 		while (next_le) {
-			uint16_t groupId = next_le->group_id;
-			if (obj->opcode2 == 0x6B) { // pge_op_isInGroupSlice
+			uint16_t msgNum = next_le->msg_num;
+			if (obj->opcode2 == 0x6B) { // pge_isToggleable
 				if (obj->opcode_arg2 == 0) {
-					if (groupId == 1 || groupId == 2) goto set_anim;
+					if (msgNum == 1 || msgNum == 2) goto set_anim;
 				}
 				if (obj->opcode_arg2 == 1) {
-					if (groupId == 3 || groupId == 4) goto set_anim;
+					if (msgNum == 3 || msgNum == 4) goto set_anim;
 				}
-			} else if (groupId == obj->opcode_arg2) {
+			} else if (msgNum == obj->opcode_arg2) {
 				if (obj->opcode2 == 0x22 || obj->opcode2 == 0x6F) goto set_anim;
 			}
-			if (obj->opcode1 == 0x6B) { // pge_op_isInGroupSlice
+			if (obj->opcode1 == 0x6B) { // pge_isToggleable
 				if (obj->opcode_arg1 == 0) {
-					if (groupId == 1 || groupId == 2) goto set_anim;
+					if (msgNum == 1 || msgNum == 2) goto set_anim;
 				}
 				if (obj->opcode_arg1 == 1) {
-					if (groupId == 3 || groupId == 4) goto set_anim;
+					if (msgNum == 3 || msgNum == 4) goto set_anim;
 				}
-			} else if (groupId == obj->opcode_arg1) {
+			} else if (msgNum == obj->opcode_arg1) {
 				if (obj->opcode1 == 0x22 || obj->opcode1 == 0x6F) goto set_anim;
 			}
 			next_le = next_le->next_entry;
@@ -797,10 +797,10 @@ int Game::pge_op_collides2u2o(ObjectOpcodeArgs *args) {
 	return 0;
 }
 
-int Game::pge_op_isInGroup(ObjectOpcodeArgs *args) {
+int Game::pge_hasPiegeSentMessage(ObjectOpcodeArgs *args) {
 	MessagePGE *le = _pge_messagesTable[args->pge->index];
 	while (le) {
-		if (le->group_id == args->a) {
+		if (le->msg_num == args->a) {
 			return 0xFFFF;
 		}
 		le = le->next_entry;
@@ -1367,7 +1367,7 @@ int Game::pge_o_unk0x5F(ObjectOpcodeArgs *args) {
 int Game::pge_op_findAndCopyPiege(ObjectOpcodeArgs *args) {
 	MessagePGE *le = _pge_messagesTable[args->pge->index];
 	while (le) {
-		if (le->group_id == args->a) {
+		if (le->msg_num == args->a) {
 			args->a = le->index;
 			args->b = 0;
 			pge_op_copyPiege(args);
@@ -1545,20 +1545,20 @@ loc_0_15446:
 	return 0;
 }
 
-int Game::pge_op_isInGroupSlice(ObjectOpcodeArgs *args) {
+int Game::pge_isToggleable(ObjectOpcodeArgs *args) {
 	LivePGE *pge = args->pge;
 	MessagePGE *le = _pge_messagesTable[pge->index];
 	if (le) {
 		if (args->a == 0) {
 			do {
-				if (le->group_id == 1 || le->group_id == 2) {
+				if (le->msg_num == 1 || le->msg_num == 2) {
 					return 1;
 				}
 				le = le->next_entry;
 			} while (le);
 		} else {
 			do {
-				if (le->group_id == 3 || le->group_id == 4) {
+				if (le->msg_num == 3 || le->msg_num == 4) {
 					return 1;
 				}
 				le = le->next_entry;
@@ -1592,7 +1592,7 @@ int Game::pge_op_isCollidingObject(ObjectOpcodeArgs *args) {
 int Game::pge_o_unk0x6E(ObjectOpcodeArgs *args) {
 	MessagePGE *le = _pge_messagesTable[args->pge->index];
 	while (le) {
-		if (args->a == le->group_id) {
+		if (args->a == le->msg_num) {
 			pge_updateInventory(&_pgeLive[le->index], args->pge);
 			return 0xFFFF;
 		}
@@ -1606,7 +1606,7 @@ int Game::pge_o_unk0x6F(ObjectOpcodeArgs *args) {
 	LivePGE *pge = args->pge;
 	MessagePGE *le = _pge_messagesTable[pge->index];
 	while (le) {
-		if (args->a == le->group_id) {
+		if (args->a == le->msg_num) {
 			pge_sendMessage(pge->index, le->index, 0xC);
 			return 1;
 		}
@@ -1629,7 +1629,7 @@ int Game::pge_o_unk0x71(ObjectOpcodeArgs *args) {
 	LivePGE *pge = args->pge;
 	MessagePGE *le = _pge_messagesTable[pge->index];
 	while (le) {
-		if (le->group_id == args->a) {
+		if (le->msg_num == args->a) {
 			pge_reorderInventory(args->pge);
 			return 1;
 		}
@@ -2161,7 +2161,7 @@ void Game::pge_sendMessage(uint8_t src_pge_index, uint8_t dst_pge_index, int16_t
 		_pge_messagesTable[dst_pge_index] = le;
 		le->next_entry = next;
 		le->index = src_pge_index;
-		le->group_id = num;
+		le->msg_num = num;
 	}
 }
 

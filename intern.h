@@ -210,7 +210,7 @@ struct LivePGE {
 struct MessagePGE {
 	MessagePGE *next_entry;
 	uint16_t index; // src_pge
-	uint16_t group_id; // msg_num
+	uint16_t msg_num;
 };
 
 struct Object {

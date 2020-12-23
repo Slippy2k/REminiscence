@@ -355,33 +355,33 @@ int Game::col_detectHitCallback5(LivePGE *pge1, LivePGE *pge2, int16_t unk1, int
 	return 0;
 }
 
-int Game::col_detectHitCallbackHelper(LivePGE *pge, int16_t groupId) {
+int Game::col_detectHitCallbackHelper(LivePGE *pge, int16_t msgNum) {
 	InitPGE *init_pge = pge->init_PGE;
 	assert(init_pge->obj_node_number < _res._numObjectNodes);
 	ObjectNode *on = _res._objectNodesMap[init_pge->obj_node_number];
 	Object *obj = &on->objects[pge->first_obj_number];
 	int i = pge->first_obj_number;
 	while (pge->obj_type == obj->type && on->last_obj_number > i) {
-		if (obj->opcode2 == 0x6B) { // pge_op_isInGroupSlice
+		if (obj->opcode2 == 0x6B) { // pge_isToggleable
 			if (obj->opcode_arg2 == 0) {
-				if (groupId == 1 || groupId == 2) return 0xFFFF;
+				if (msgNum == 1 || msgNum == 2) return 0xFFFF;
 			}
 			if (obj->opcode_arg2 == 1) {
-				if (groupId == 3 || groupId == 4) return 0xFFFF;
+				if (msgNum == 3 || msgNum == 4) return 0xFFFF;
 			}
-		} else if (obj->opcode2 == 0x22) { // pge_op_isInGroup
-			if (obj->opcode_arg2 == groupId) return 0xFFFF;
+		} else if (obj->opcode2 == 0x22) { // pge_hasPiegeSentMessage
+			if (obj->opcode_arg2 == msgNum) return 0xFFFF;
 		}
 
-		if (obj->opcode1 == 0x6B) { // pge_op_isInGroupSlice
+		if (obj->opcode1 == 0x6B) { // pge_isToggleable
 			if (obj->opcode_arg1 == 0) {
-				if (groupId == 1 || groupId == 2) return 0xFFFF;
+				if (msgNum == 1 || msgNum == 2) return 0xFFFF;
 			}
 			if (obj->opcode_arg1 == 1) {
-				if (groupId == 3 || groupId == 4) return 0xFFFF;
+				if (msgNum == 3 || msgNum == 4) return 0xFFFF;
 			}
-		} else if (obj->opcode1 == 0x22) { // pge_op_isInGroup
-			if (obj->opcode_arg1 == groupId) return 0xFFFF;
+		} else if (obj->opcode1 == 0x22) { // pge_hasPiegeSentMessage
+			if (obj->opcode_arg1 == msgNum) return 0xFFFF;
 		}
 		++obj;
 		++i;
