@@ -209,6 +209,7 @@ int decode_3docel(FILE *fp, CelPicture *p) {
 			mask &= ~kMaskPDAT;
 		} else {
 			fprintf(stderr, "Unhandled tag '%c%c%c%c' size %d\n", tag[0], tag[1], tag[2], tag[3], size);
+			break;
 		}
 		fseek(fp, pos + size, SEEK_SET);
 	}
