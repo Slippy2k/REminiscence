@@ -23,7 +23,7 @@ all: rs.exe
 rs.exe: $(OBJS) $(ICON).o
 	$(CXX) $(LDFLAGS) -o $@ $^ -static-libgcc -static-libstdc++ $(SDL_LIBS) -Wl,-Bstatic -lmodplug -lz
 	$(STRIP) $@
-	upx -9 $@
+	# upx -9 $@
 
 $(ICON).o: $(ICON)
 	$(WINDRES) -i $^ -o $@

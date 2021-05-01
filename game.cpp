@@ -1808,6 +1808,8 @@ void Game::playSound(uint8_t num, uint8_t softVol) {
 	} else if (num >= 68 && num <= 75) {
 		// in-game music
 		_mix.playMusic(num);
+	} else if (num == 76) {
+		// metro
 	} else if (num == 77) {
 		// triggered when Conrad draw his gun
 	} else {
