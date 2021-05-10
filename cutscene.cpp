@@ -634,7 +634,7 @@ void Cutscene::op_drawShapeScale() {
 			_hasAlphaColor = (verticesOffset & 0x4000) != 0;
 			uint8_t color = *shapeData++;
 			if (_clearScreen == 0) {
-				color += 0x10; // 2nd paletter buffer
+				color += 0x10; // 2nd palette buffer
 			}
 			_primitiveColor = 0xC0 + color;
 			drawShapeScale(p, zoom, dx, dy, x, y, 0, 0);

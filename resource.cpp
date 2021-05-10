@@ -699,7 +699,7 @@ void Resource::load(const char *objName, int objType, const char *ext) {
 					_numSpc = READ_BE_UINT16(_spc) / 2;
 					break;
 				case OT_RP:
-					if (size != 0x4A) {
+					if (size != sizeof(_rp)) {
 						error("Unexpected size %d for '%s'", size, _entryName);
 					}
 					memcpy(_rp, dat, size);
@@ -825,7 +825,7 @@ void Resource::load_SPRM(File *f) {
 
 void Resource::load_RP(File *f) {
 	debug(DBG_RES, "Resource::load_RP()");
-	f->read(_rp, 0x4A);
+	f->read(_rp, sizeof(_rp));
 }
 
 void Resource::load_SPC(File *f) {

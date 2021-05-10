@@ -11,7 +11,6 @@
 #include "game.h"
 #include "seq_player.h"
 #include "systemstub.h"
-#include "unpack.h"
 #include "util.h"
 
 Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang, WidescreenMode widescreenMode, bool autoSave)
@@ -558,6 +557,7 @@ void Game::playCutscene(int id) {
 			}
 		}
 		if (id == 0x3D) {
+			_mix.playMusic(Mixer::MUSIC_TRACK + 9);
 			_cut.playCredits();
 		}
 		_mix.stopMusic();
