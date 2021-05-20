@@ -62,6 +62,7 @@ static Language detectLanguage(FileSystem *fs) {
 		Language language;
 	} table[] = {
 		// PC
+		{ "GLOB_FR.ABA", LANG_FR },
 		{ "ENGCINE.TXT", LANG_EN },
 		{ "FR_CINE.TXT", LANG_FR },
 		{ "GERCINE.TXT", LANG_DE },

@@ -35,7 +35,7 @@ void ResourceAba::readEntries(const char *aba) {
 		uint32_t nextOffset = 0;
 		for (int i = 0; i < entriesCount; ++i) {
 			const int j = currentCount + i;
-			f.read(_entries[j].name, sizeof(_entries[i].name));
+			f.read(_entries[j].name, sizeof(_entries[j].name));
 			_entries[j].offset = f.readUint32BE();
 			_entries[j].compressedSize = f.readUint32BE();
 			_entries[j].size = f.readUint32BE();

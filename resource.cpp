@@ -77,7 +77,6 @@ void Resource::init() {
 			for (int i = 0; _gameAba[i]; ++i) {
 				_aba->readEntries(_gameAba[i]);
 			}
-			_lang = LANG_FR;
 		} else if (!fileExists("LEVEL2.MAP")) { // fbdemofr (no cutscenes)
 			_isDemo = true;
 		}
