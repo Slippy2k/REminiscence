@@ -56,16 +56,28 @@ Resource::~Resource() {
 	delete _mac;
 }
 
+static const char *_demoAba = "DEMO_UK.ABA";
+
+static const char *_gameAba[] = {
+	"GLOB1_FB.ABA", "GLOB2_FB.ABA", "GLOB_FR.ABA", 0
+};
+
 void Resource::init() {
 	switch (_type) {
 	case kResourceTypeAmiga:
 		_isDemo = _fs->exists("demo.lev");
 		break;
 	case kResourceTypeDOS:
-		if (_fs->exists(ResourceAba::FILENAME)) { // fbdemous
+		if (_fs->exists(_demoAba)) { // fbdemous
 			_aba = new ResourceAba(_fs);
-			_aba->readEntries();
+			_aba->readEntries(_demoAba);
 			_isDemo = true;
+		} else if (_fs->exists(_gameAba[0])) { // Joystick HS #8 April 1996
+			_aba = new ResourceAba(_fs);
+			for (int i = 0; _gameAba[i]; ++i) {
+				_aba->readEntries(_gameAba[i]);
+			}
+			_lang = LANG_FR;
 		} else if (!fileExists("LEVEL2.MAP")) { // fbdemofr (no cutscenes)
 			_isDemo = true;
 		}
@@ -403,7 +415,7 @@ void Resource::load_CINE() {
 	case kResourceTypeDOS:
 		if (_cine_off == 0) {
 			snprintf(_entryName, sizeof(_entryName), "%sCINE.BIN", prefix);
-			if (!_fs->exists(_entryName)) {
+			if ((!_aba || !_aba->findEntry(_entryName)) && !_fs->exists(_entryName)) {
 				strcpy(_entryName, "ENGCINE.BIN");
 			}
 			File f;
@@ -428,7 +440,7 @@ void Resource::load_CINE() {
 		}
 		if (_cine_txt == 0) {
 			snprintf(_entryName, sizeof(_entryName), "%sCINE.TXT", prefix);
-			if (!_fs->exists(_entryName)) {
+			if ((!_aba || !_aba->findEntry(_entryName)) && !_fs->exists(_entryName)) {
 				strcpy(_entryName, "ENGCINE.TXT");
 			}
 			File f;
@@ -727,6 +739,10 @@ void Resource::load(const char *objName, int objType, const char *ext) {
 					break;
 				case OT_POL:
 					_pol = dat;
+					break;
+				case OT_SGD:
+					_sgd = dat;
+					_sgd[0] = 0; // clear number of entries, fix first offset
 					break;
 				case OT_BNQ:
 					_bnq = dat;
