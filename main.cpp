@@ -61,7 +61,7 @@ static Language detectLanguage(FileSystem *fs) {
 		const char *filename;
 		Language language;
 	} table[] = {
-		// PC
+		// DOS
 		{ "GLOB_FR.ABA", LANG_FR },
 		{ "ENGCINE.TXT", LANG_EN },
 		{ "FR_CINE.TXT", LANG_FR },

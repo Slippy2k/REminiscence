@@ -58,7 +58,7 @@ Resource::~Resource() {
 
 static const char *_demoAba = "DEMO_UK.ABA";
 
-static const char *_gameAba[] = {
+static const char *_joystickAba[] = {
 	"GLOB1_FB.ABA", "GLOB2_FB.ABA", "GLOB_FR.ABA", 0
 };
 
@@ -72,10 +72,10 @@ void Resource::init() {
 			_aba = new ResourceAba(_fs);
 			_aba->readEntries(_demoAba);
 			_isDemo = true;
-		} else if (_fs->exists(_gameAba[0])) { // Joystick HS #8 April 1996
+		} else if (_fs->exists(_joystickAba[0])) { // Joystick "Hors Serie" April 1996
 			_aba = new ResourceAba(_fs);
-			for (int i = 0; _gameAba[i]; ++i) {
-				_aba->readEntries(_gameAba[i]);
+			for (int i = 0; _joystickAba[i]; ++i) {
+				_aba->readEntries(_joystickAba[i]);
 			}
 		} else if (!fileExists("LEVEL2.MAP")) { // fbdemofr (no cutscenes)
 			_isDemo = true;
