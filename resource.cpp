@@ -1719,14 +1719,21 @@ void Resource::MAC_unloadCutscene() {
 }
 
 void Resource::MAC_loadCutscene(const char *cutscene) {
+	MAC_unloadCutscene();
 	char name[32];
-	free(_cmd);
+
 	snprintf(name, sizeof(name), "%s movie", cutscene);
 	stringLowerCase(name);
+	if (!_mac->findEntry(name)) {
+		return;
+	}
 	_cmd = decodeResourceMacData(name, true);
-	free(_pol);
+
 	snprintf(name, sizeof(name), "%s polygons", cutscene);
 	stringLowerCase(name);
+	if (!_mac->findEntry(name)) {
+		return;
+	}
 	_pol = decodeResourceMacData(name, true);
 }
 

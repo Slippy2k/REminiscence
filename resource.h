@@ -313,6 +313,15 @@ struct Resource {
 	const char *getMenuString(int num) const {
 		return (num >= 0 && num < LocaleData::LI_NUM) ? _textsTable[num] : "";
 	}
+	const uint8_t *getCreditsString(int num) {
+		assert(_type == kResourceTypeMac);
+		const int count = READ_BE_UINT16(_credits);
+		if (num < count) {
+			const int offset = READ_BE_UINT16(_credits + 2 + num * 2);
+			return _credits + offset;
+		}
+		return 0;
+	}
 	void clearBankData();
 	int getBankDataSize(uint16_t num);
 	uint8_t *findBankData(uint16_t num);

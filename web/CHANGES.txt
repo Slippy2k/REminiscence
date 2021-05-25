@@ -1,5 +1,6 @@
 * release 0.4.8
 	- added detection for DOS version with .ABA files
+	- added Macintosh credits
 
 * release 0.4.7
 	- added detection for Macintosh CD version

@@ -147,8 +147,14 @@ uint16_t Cutscene::findTextSeparators(const uint8_t *p, int len) {
 void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, uint8_t *page, int textJustify) {
 	debug(DBG_CUT, "Cutscene::drawText(x=%d, y=%d, c=%d, justify=%d)", x, y, color, textJustify);
 	int len = 0;
-	if (_res->_type == kResourceTypeMac) {
-		len = *p++;
+	if (_res->isMac()) {
+		if (p == _textBuf) {
+			while (p[len] != 0xA) {
+				++len;
+			}
+		} else {
+			len = *p++;
+		}
 	} else {
 		len = strlen((const char *)p);
 	}
@@ -197,16 +203,39 @@ void Cutscene::clearBackPage() {
 
 void Cutscene::drawCreditsText() {
 	if (_creditsSequence) {
-		if (_creditsKeepText != 0) {
-			if (_creditsSlowText == 0) {
-				_creditsKeepText = 0;
-			} else {
+		if (_creditsKeepText) {
+			if (_creditsSlowText) {
 				return;
 			}
+			_creditsKeepText = false;
 		}
 		if (_creditsTextCounter <= 0) {
-			const uint8_t code = *_textCurPtr;
-			if (code == 0xFF) {
+			uint8_t code;
+			const bool isMac = _res->isMac();
+			if (isMac && _creditsTextLen <= 0) {
+				const uint8_t *p = _res->getCreditsString(_creditsTextIndex++);
+				if (!p) {
+					return;
+				}
+				_creditsTextCounter = 60;
+				_creditsTextPosX = p[0];
+				_creditsTextPosY = p[1];
+				_creditsTextLen = p[2];
+				_textCurPtr = p + 2;
+				code = 0;
+			} else {
+				code = *_textCurPtr;
+			}
+			if (code == 0x7D && isMac) {
+				++_textCurPtr;
+				code = *_textCurPtr++;
+				_creditsTextLen -= 2;
+				assert(code > 0x30);
+				for (int i = 0; i < (code - 0x30); ++i) {
+					*_textCurBuf++ = ' ';
+				}
+				*_textCurBuf = 0xA;
+			} else if (code == 0xFF) {
 				_textBuf[0] = 0xA;
 			} else if (code == 0xFE) {
 				++_textCurPtr;
@@ -219,13 +248,19 @@ void Cutscene::drawCreditsText() {
 				_textCurBuf = _textBuf;
 				_textBuf[0] = 0xA;
 				++_textCurPtr;
-				if (_creditsSlowText != 0) {
-					_creditsKeepText = 0xFF;
+				if (_creditsSlowText) {
+					_creditsKeepText = true;
 				}
 			} else {
 				*_textCurBuf++ = code;
 				*_textCurBuf = 0xA;
 				++_textCurPtr;
+				if (isMac) {
+					--_creditsTextLen;
+					if (_creditsTextLen == 0) {
+						_creditsTextCounter = 600;
+					}
+				}
 			}
 		} else {
 			_creditsTextCounter -= 10;
@@ -276,7 +311,7 @@ void Cutscene::op_markCurPos() {
 	_frameDelay = 5;
 	updateScreen();
 	clearBackPage();
-	_creditsSlowText = 0;
+	_creditsSlowText = false;
 }
 
 void Cutscene::op_refreshScreen() {
@@ -284,7 +319,7 @@ void Cutscene::op_refreshScreen() {
 	_clearScreen = fetchNextCmdByte();
 	if (_clearScreen != 0) {
 		clearBackPage();
-		_creditsSlowText = 0;
+		_creditsSlowText = false;
 	}
 }
 
@@ -293,17 +328,17 @@ void Cutscene::op_waitForSync() {
 	if (_creditsSequence) {
 		uint16_t n = fetchNextCmdByte() * 2;
 		do {
-			_creditsSlowText = 0xFF;
+			_creditsSlowText = true;
 			_frameDelay = 3;
 			if (_textBuf == _textCurBuf) {
-				_creditsTextCounter = _res->isAmiga() ? 60 : 20;
+				_creditsTextCounter = _res->isDOS() ? 20 : 60;
 			}
 			memcpy(_backPage, _frontPage, _vid->_layerSize);
 			drawCreditsText();
 			updateScreen();
 		} while (--n);
 		clearBackPage();
-		_creditsSlowText = 0;
+		_creditsSlowText = false;
 	} else {
 		_frameDelay = fetchNextCmdByte() * 4;
 		sync(); // XXX handle input
@@ -457,7 +492,7 @@ void Cutscene::op_refreshAll() {
 	_frameDelay = 5;
 	updateScreen();
 	clearBackPage();
-	_creditsSlowText = 0xFF;
+	_creditsSlowText = true;
 	op_handleKeys();
 }
 
@@ -908,7 +943,7 @@ static int findSetPaletteColor(const uint16_t color, const uint16_t *paletteBuff
 
 void Cutscene::op_copyScreen() {
 	debug(DBG_CUT, "Cutscene::op_copyScreen()");
-	_creditsSlowText = 0xFF;
+	_creditsSlowText = true;
 	if (_textCurBuf == _textBuf) {
 		++_creditsTextCounter;
 	}
@@ -1167,15 +1202,17 @@ void Cutscene::prepare() {
 
 void Cutscene::playCredits() {
 	if (_res->isMac()) {
-		warning("Cutscene::playCredits() unimplemented");
-		return;
+		_res->MAC_loadCreditsText();
+		_creditsTextIndex = 0;
+		_creditsTextLen = 0;
+	} else {
+		_textCurPtr = _res->isAmiga() ? _creditsDataAmiga : _creditsDataDOS;
 	}
-	_textCurPtr = _res->isAmiga() ? _creditsDataAmiga : _creditsDataDOS;
 	_textBuf[0] = 0xA;
 	_textCurBuf = _textBuf;
 	_creditsSequence = true;
-	_creditsSlowText = 0;
-	_creditsKeepText = 0;
+	_creditsSlowText = false;
+	_creditsKeepText = false;
 	_creditsTextCounter = 0;
 	_interrupted = false;
 	const uint16_t *cut_seq = _creditsCutSeq;
