@@ -414,7 +414,7 @@ void Resource::load_CINE() {
 	case kResourceTypeDOS:
 		if (_cine_off == 0) {
 			snprintf(_entryName, sizeof(_entryName), "%sCINE.BIN", prefix);
-			if ((!_aba || !_aba->findEntry(_entryName)) && !_fs->exists(_entryName)) {
+			if (!fileExists(_entryName)) {
 				strcpy(_entryName, "ENGCINE.BIN");
 			}
 			File f;
@@ -439,7 +439,7 @@ void Resource::load_CINE() {
 		}
 		if (_cine_txt == 0) {
 			snprintf(_entryName, sizeof(_entryName), "%sCINE.TXT", prefix);
-			if ((!_aba || !_aba->findEntry(_entryName)) && !_fs->exists(_entryName)) {
+			if (!fileExists(_entryName)) {
 				strcpy(_entryName, "ENGCINE.TXT");
 			}
 			File f;
@@ -1445,7 +1445,7 @@ uint8_t *Resource::decodeResourceMacText(const char *name, const char *suffix) {
 	snprintf(buf, sizeof(buf), "%s %s", name, suffix);
 	const ResourceMacEntry *entry = _mac->findEntry(buf);
 	if (entry) {
-		return decodeResourceMacData(buf, false);
+		return decodeResourceMacData(entry, false);
 	} else { // CD version
 		if (strcmp(name, "Flashback") == 0) {
 			name = "Game";
@@ -1457,22 +1457,31 @@ uint8_t *Resource::decodeResourceMacText(const char *name, const char *suffix) {
 }
 
 uint8_t *Resource::decodeResourceMacData(const char *name, bool decompressLzss) {
-	_resourceMacDataSize = 0;
 	uint8_t *data = 0;
 	const ResourceMacEntry *entry = _mac->findEntry(name);
 	if (entry) {
-		_mac->_f.seek(_mac->_dataOffset + entry->dataOffset);
-		_resourceMacDataSize = _mac->_f.readUint32BE();
-		if (decompressLzss) {
-			data = decodeLzss(_mac->_f, _resourceMacDataSize);
-		} else {
-			data = (uint8_t *)malloc(_resourceMacDataSize);
-			if (data) {
-				_mac->_f.read(data, _resourceMacDataSize);
-			}
-		}
+		data = decodeResourceMacData(entry, decompressLzss);
 	} else {
+		_resourceMacDataSize = 0;
 		error("Resource '%s' not found", name);
+	}
+	return data;
+}
+
+uint8_t *Resource::decodeResourceMacData(const ResourceMacEntry *entry, bool decompressLzss) {
+	assert(entry);
+	_mac->_f.seek(_mac->_dataOffset + entry->dataOffset);
+	_resourceMacDataSize = _mac->_f.readUint32BE();
+	uint8_t *data = 0;
+	if (decompressLzss) {
+		data = decodeLzss(_mac->_f, _resourceMacDataSize);
+	} else {
+		data = (uint8_t *)malloc(_resourceMacDataSize);
+		if (!data) {
+			error("Failed to allocate %d bytes", _resourceMacDataSize);
+		} else {
+			_mac->_f.read(data, _resourceMacDataSize);
+		}
 	}
 	return data;
 }
@@ -1516,10 +1525,8 @@ void Resource::MAC_decodeDataCLUT(const uint8_t *ptr) {
 
 void Resource::MAC_loadClutData() {
 	uint8_t *ptr = decodeResourceMacData("Flashback colors", false);
-	if (ptr) {
-		MAC_decodeDataCLUT(ptr);
-		free(ptr);
-	}
+	MAC_decodeDataCLUT(ptr);
+	free(ptr);
 }
 
 void Resource::MAC_loadFontData() {
@@ -1590,46 +1597,36 @@ static const char *_macLevelNumbers[] = { "1", "2", "3", "4-1", "4-2", "5-1", "5
 
 void Resource::MAC_loadLevelData(int level) {
 	char name[64];
+
 	// .PGE
 	snprintf(name, sizeof(name), "Level %s objects", _macLevelNumbers[level]);
 	uint8_t *ptr = decodeResourceMacData(name, true);
-	if (ptr) {
-		decodePGE(ptr, _resourceMacDataSize);
-		free(ptr);
-	} else {
-		error("Failed to load '%s'", name);
-	}
+	decodePGE(ptr, _resourceMacDataSize);
+	free(ptr);
+
 	// .ANI
 	snprintf(name, sizeof(name), "Level %s sequences", _macLevelNumbers[level]);
 	_ani = decodeResourceMacData(name, true);
-	if (_ani) {
-		assert(READ_BE_UINT16(_ani) == 0x48D);
-	} else {
-		error("Failed to load '%s'", name);
-	}
+	assert(READ_BE_UINT16(_ani) == 0x48D);
+
 	// .OBJ
 	snprintf(name, sizeof(name), "Level %s conditions", _macLevelNumbers[level]);
 	ptr = decodeResourceMacData(name, true);
-	if (ptr) {
-		assert(READ_BE_UINT16(ptr) == 0xE6);
-		decodeOBJ(ptr, _resourceMacDataSize);
-		free(ptr);
-	} else {
-		error("Failed to load '%s'", name);
-	}
+	assert(READ_BE_UINT16(ptr) == 0xE6);
+	decodeOBJ(ptr, _resourceMacDataSize);
+	free(ptr);
+
 	// .CT
 	snprintf(name, sizeof(name), "Level %c map", _macLevelNumbers[level][0]);
 	ptr = decodeResourceMacData(name, true);
-	if (ptr) {
-		assert(_resourceMacDataSize == 0x1D00);
-		memcpy(_ctData, ptr, _resourceMacDataSize);
-		free(ptr);
-	} else {
-		error("Failed to load '%s'", name);
-	}
+	assert(_resourceMacDataSize == 0x1D00);
+	memcpy(_ctData, ptr, _resourceMacDataSize);
+	free(ptr);
+
 	// .SPC
 	snprintf(name, sizeof(name), "Objects %c", _macLevelNumbers[level][0]);
 	_spc = decodeResourceMacData(name, true);
+
 	// .TBN
 	snprintf(name, sizeof(name), "Level %s", _macLevelNumbers[level]);
 	_tbn = decodeResourceMacText(name, "names");
@@ -1641,10 +1638,8 @@ void Resource::MAC_loadLevelRoom(int level, int i, DecodeBuffer *dst) {
 	char name[64];
 	snprintf(name, sizeof(name), "Level %c Room %d", _macLevelNumbers[level][0], i);
 	uint8_t *ptr = decodeResourceMacData(name, true);
-	if (ptr) {
-		MAC_decodeImageData(ptr, 0, dst);
-		free(ptr);
-	}
+	MAC_decodeImageData(ptr, 0, dst);
+	free(ptr);
 }
 
 void Resource::MAC_clearClut16(Color *clut, uint8_t dest) {
@@ -1724,17 +1719,19 @@ void Resource::MAC_loadCutscene(const char *cutscene) {
 
 	snprintf(name, sizeof(name), "%s movie", cutscene);
 	stringLowerCase(name);
-	if (!_mac->findEntry(name)) {
+	const ResourceMacEntry *cmdEntry = _mac->findEntry(name);
+	if (!cmdEntry) {
 		return;
 	}
-	_cmd = decodeResourceMacData(name, true);
+	_cmd = decodeResourceMacData(cmdEntry, true);
 
 	snprintf(name, sizeof(name), "%s polygons", cutscene);
 	stringLowerCase(name);
-	if (!_mac->findEntry(name)) {
+	const ResourceMacEntry *polEntry = _mac->findEntry(name);
+	if (!polEntry) {
 		return;
 	}
-	_pol = decodeResourceMacData(name, true);
+	_pol = decodeResourceMacData(polEntry, true);
 }
 
 void Resource::MAC_loadCutsceneText() {
