@@ -1475,10 +1475,13 @@ uint8_t *Resource::decodeResourceMacData(const ResourceMacEntry *entry, bool dec
 	uint8_t *data = 0;
 	if (decompressLzss) {
 		data = decodeLzss(_mac->_f, _resourceMacDataSize);
+		if (!data) {
+			error("Failed to decompress '%s'", entry->name);
+		}
 	} else {
 		data = (uint8_t *)malloc(_resourceMacDataSize);
 		if (!data) {
-			error("Failed to allocate %d bytes", _resourceMacDataSize);
+			error("Failed to allocate %d bytes for '%s'", _resourceMacDataSize, entry->name);
 		} else {
 			_mac->_f.read(data, _resourceMacDataSize);
 		}
