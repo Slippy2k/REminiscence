@@ -31,6 +31,7 @@ struct Cutscene {
 
 	enum {
 		kCineMemo = 48,
+		kCineVoyage = 52,
 		kCineEspions = 57
 	};
 

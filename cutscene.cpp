@@ -984,11 +984,11 @@ void Cutscene::op_drawTextAtPos() {
 		if (!_creditsSequence) {
 			const uint8_t *str = _res->getCineString(strId & 0xFFF);
 			if (str) {
-				uint8_t color = 0xD0 + (strId >> 0xC);
+				const uint8_t color = 0xD0 + (strId >> 0xC);
 				drawText(x, y, str, color, _backPage, kTextJustifyCenter);
 			}
 			// 'voyage' - cutscene script redraws the string to refresh the screen
-			if (_id == 0x34 && (strId & 0xFFF) == 0x45) {
+			if (_id == kCineVoyage && (strId & 0xFFF) == 0x45) {
 				if ((_cmdPtr - _cmdPtrBak) == 0xA) {
 					_stub->copyRect(0, 0, _vid->_w, _vid->_h, _backPage, _vid->_w);
 					_stub->updateScreen(0);
