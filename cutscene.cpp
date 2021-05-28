@@ -453,15 +453,6 @@ void Cutscene::op_drawCaptionText() {
 	uint16_t strId = fetchNextCmdWord();
 	if (!_creditsSequence) {
 
-		// 'espions' - ignore last call, allows caption to be displayed longer on the screen
-		if (_id == 0x39 && strId == 0xFFFF) {
-			if ((_res->isDOS() && (_cmdPtr - _cmdPtrBak) == 0x10) || (_res->isAmiga() && (_cmdPtr - getCommandData()) == 0x9F3)) {
-				_frameDelay = 100;
-				updateScreen();
-				return;
-			}
-		}
-
 		const int h = 45 * _vid->_layerScale;
 		const int y = Video::GAMESCREEN_H * _vid->_layerScale - h;
 
@@ -474,6 +465,10 @@ void Cutscene::op_drawCaptionText() {
 				drawText(0, 129, str, 0xEF, _backPage, kTextJustifyAlign);
 				drawText(0, 129, str, 0xEF, _auxPage, kTextJustifyAlign);
 			}
+		} else if (_id == kCineEspions) {
+			// cutscene relies on drawCaptionText opcodes for timing
+			_frameDelay = 100;
+			sync();
 		}
 	}
 }
@@ -1134,9 +1129,9 @@ bool Cutscene::load(uint16_t cutName) {
 			name = "SERRURE";
 		}
 		_res->load(name, Resource::OT_CMP);
-		if (_id == 0x39 && _res->_lang != LANG_FR) {
+		if (_id == kCineEspions) {
 			//
-			// 'espions' - '... the power which we need' caption is missing in Amiga English.
+			// '... the power which we need' caption is missing.
 			// fixed in DOS version, opcodes order is wrong
 			//
 			// opcode 0 pos 0x323

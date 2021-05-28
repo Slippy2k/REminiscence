@@ -30,7 +30,8 @@ struct Cutscene {
 	};
 
 	enum {
-		kCineMemo = 48
+		kCineMemo = 48,
+		kCineEspions = 57
 	};
 
 	struct SetShape {
