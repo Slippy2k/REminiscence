@@ -1076,7 +1076,7 @@ void Resource::load_PGE(File *f) {
 		pge->skill = f->readByte();
 		pge->mirror_x = f->readByte();
 		pge->flags = f->readByte();
-		pge->unk1C = f->readByte();
+		pge->collision_data_len = f->readByte();
 		f->readByte();
 		pge->text_num = f->readUint16LE();
 	}
@@ -1107,7 +1107,7 @@ void Resource::decodePGE(const uint8_t *p, int size) {
 		pge->skill = *p++;
 		pge->mirror_x = *p++;
 		pge->flags = *p++;
-		pge->unk1C = *p++;
+		pge->collision_data_len = *p++;
 		++p;
 		pge->text_num = _readUint16(p); p += 2;
 	}

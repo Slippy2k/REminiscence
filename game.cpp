@@ -171,7 +171,6 @@ void Game::run() {
 				if (_demoBin != -1 && _inp_demPos >= _res._demLen) {
 					debug(DBG_DEMO, "End of demo");
 					// exit level
-					_demoBin = -1;
 					_endLoop = true;
 				}
 			}

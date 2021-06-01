@@ -42,13 +42,13 @@ void Game::col_clearState() {
 void Game::col_preparePiegeState(LivePGE *pge) {
 	debug(DBG_COL, "Game::col_preparePiegeState() pge_num=%ld", pge - &_pgeLive[0]);
 	CollisionSlot *ct_slot1, *ct_slot2;
-	if (pge->init_PGE->unk1C == 0) {
+	if (pge->init_PGE->collision_data_len == 0) {
 		pge->collision_slot = 0xFF;
 		return;
 	}
 	int i = 0;
 	ct_slot1 = 0;
-	for (int c = 0; c < pge->init_PGE->unk1C; ++c) {
+	for (int c = 0; c < pge->init_PGE->collision_data_len; ++c) {
 		ct_slot2 = _col_curSlot;
 		if (ct_slot2 + 1 > &_col_slots[255])
 			return;

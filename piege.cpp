@@ -2057,8 +2057,8 @@ void Game::pge_addToInventory(LivePGE *pge1, LivePGE *pge2, LivePGE *pge3) {
 	}
 }
 
-int Game::pge_updateCollisionState(LivePGE *pge, int16_t pge_dy, uint8_t var8) {
-	uint8_t pge_unk1C = pge->init_PGE->unk1C;
+int Game::pge_updateCollisionState(LivePGE *pge, int16_t pge_dy, uint8_t value) {
+	const uint8_t pge_collision_data_len = pge->init_PGE->collision_data_len;
 	if (!(pge->room_location & 0x80) && pge->room_location < 0x40) {
 		int8_t *grid_data = &_res._ctData[0x100] + 0x70 * pge->room_location;
 		int16_t pge_pos_y = ((pge->pos_y / 36) & ~1) + pge_dy;
@@ -2069,14 +2069,14 @@ int Game::pge_updateCollisionState(LivePGE *pge, int16_t pge_dy, uint8_t var8) {
 		CollisionSlot2 *slot1 = _col_slots2Next;
 		int16_t i = 255;
 		if (_pge_currentPiegeFacingDir) {
-			i = pge_unk1C - 1;
+			i = pge_collision_data_len - 1;
 			grid_data -= i;
 		}
 		while (slot1) {
 			if (slot1->unk2 == grid_data) {
-				slot1->data_size = pge_unk1C - 1;
-				assert(pge_unk1C < 0x70);
-				memset(grid_data, var8, pge_unk1C);
+				slot1->data_size = pge_collision_data_len - 1;
+				assert(pge_collision_data_len < 0x70);
+				memset(grid_data, value, pge_collision_data_len);
 				return 1;
 			} else {
 				++i;
@@ -2089,14 +2089,14 @@ int Game::pge_updateCollisionState(LivePGE *pge, int16_t pge_dy, uint8_t var8) {
 		if (_col_slots2Cur < &_col_slots2[255]) {
 			slot1 = _col_slots2Cur;
 			slot1->unk2 = grid_data;
-			slot1->data_size = pge_unk1C - 1;
+			slot1->data_size = pge_collision_data_len - 1;
 			uint8_t *dst = &slot1->data_buf[0];
 			int8_t *src = grid_data;
-			int n = pge_unk1C;
+			int n = pge_collision_data_len;
 			assert(n < 0x10);
 			while (n--) {
 				*dst++ = *src;
-				*src++ = var8;
+				*src++ = value;
 			}
 			++_col_slots2Cur;
 			slot1->next_slot = _col_slots2Next;

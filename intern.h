@@ -183,7 +183,7 @@ struct InitPGE {
 	uint8_t skill;
 	uint8_t mirror_x;
 	uint8_t flags; // 1:xflip 4:active
-	uint8_t unk1C; // collidable, collision_data_len
+	uint8_t collision_data_len;
 	uint16_t text_num;
 };
 
