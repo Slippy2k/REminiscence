@@ -42,6 +42,7 @@ void Mixer::play(const uint8_t *data, uint32_t len, uint16_t freq, uint8_t volum
 		if (cur->active) {
 			if (cur->chunk.data == data) {
 				cur->chunkPos = 0;
+				cur->volume = volume;
 				return;
 			}
 		} else {
