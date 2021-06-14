@@ -432,8 +432,22 @@ static bool isMovie(const ResourceMac &res) {
 	return (res._map.typesCount == 1) && memcmp(res._types[0].id, "moov", 4) == 0;
 }
 
-static uint32_t *cvidOffsets;
-static uint32_t cvidCount;
+struct QuicktimeMovieTrack {
+	uint32_t *offsetsTable;
+	uint32_t offsetsCount;
+
+	void read(int count, File &f) {
+		offsetsCount = count;
+		offsetsTable = (uint32_t *)malloc(count * sizeof(uint32_t));
+		for (int i = 0; i < count; ++i) {
+			offsetsTable[i] = f.readUint32BE();
+			fprintf(stdout, "offset %d 0x%x\n", i, offsetsTable[i]);
+		}
+	}
+};
+
+static QuicktimeMovieTrack _movieTracks[2];
+static int _movieTracksCount;
 
 static void parseQuicktimeAtom(ResourceMac &res, const char id[4], uint32_t baseOffset, uint32_t size, int level) {
 	uint32_t offset = 0;
@@ -452,22 +466,13 @@ static void parseQuicktimeAtom(ResourceMac &res, const char id[4], uint32_t base
 		} else if (memcmp(type, "stco", 4) == 0) {
 			res._f.readUint32BE();
 			const int count = res._f.readUint32BE();
-			fprintf(stdout, "STCO count:%d\n", count);
-			if (cvidOffsets) {
-				return;
-			}
-			cvidCount = count;
-			cvidOffsets = (uint32_t *)malloc(count * sizeof(uint32_t));
-			for (int i = 0; i < count; ++i) {
-				const uint32_t sampleOffset = res._f.readUint32BE();
-				fprintf(stdout, "offset[%d] = 0x%x\n", i, sampleOffset);
-				cvidOffsets[i] = sampleOffset;
-			}
+			fprintf(stdout, "Track #%d STCO count:%d\n", _movieTracksCount, count);
+			_movieTracks[_movieTracksCount].read(count, res._f);
 		} else if (memcmp(type, "stsz", 4) == 0) {
-			res._f.readUint32BE();
+			const int unk = res._f.readUint32BE();
 			const int sampleSize = res._f.readUint32BE();
 			const int sampleCount = res._f.readUint32BE();
-			fprintf(stdout, "STSZ count:%d size:%d\n", sampleCount, sampleSize);
+			fprintf(stdout, "Track #%d STSZ unk:%d count:%d size:%d\n", _movieTracksCount, unk, sampleCount, sampleSize);
 /*
 			for (int i = 0; i < sampleCount; ++i) {
 				const uint32_t sz = res._f.readUint32BE();
@@ -499,15 +504,16 @@ static void decodeMovie(ResourceMac &res) {
 		printf("atom size %d type '%s' (offset 0x%x 0x%x)\n", size, type, offset, dataSize);
 		if (memcmp(type, "trak", 4) == 0) {
 			parseQuicktimeAtom(res, type, offset, size - 8, 1);
+			++_movieTracksCount;
 		}
 		res._f.seek(nextOffset);
 		offset += size;
 	}
 	static uint8_t buffer[0x80000];
 	static uint8_t yuvFrame[384 * 192 * sizeof(uint16_t)];
-	for (int i = 0; i < cvidCount - 1; ++i) {
-		res._f.seek(0x80 + cvidOffsets[i]);
-		const int size  = cvidOffsets[i + 1] - cvidOffsets[i];
+	for (int i = 0; i < _movieTracks[0].offsetsCount - 1; ++i) {
+		res._f.seek(0x80 + _movieTracks[0].offsetsTable[i]);
+		const int size  = _movieTracks[0].offsetsTable[i + 1] - _movieTracks[0].offsetsTable[i];
 		res._f.read(buffer, size);
 		CinepakDecoder cvid;
 		cvid._yuvFrame = yuvFrame;
@@ -516,12 +522,14 @@ static void decodeMovie(ResourceMac &res) {
 		cvid._yuvPitch = 384 * sizeof(uint16_t);
 		cvid.decode(buffer, size);
 		char filename[32];
-		snprintf(filename, sizeof(filename), "DUMP/cinepak%04d.yuyv", i);
+		snprintf(filename, sizeof(filename), "DUMP/cinepak%04d.uyvy", i);
 		File f;
 		if (f.open(filename, "wb")) {
 			f.write(yuvFrame, sizeof(yuvFrame));
 			f.close();
-			// convert -sampling-factor 4:2:2 -size 384x192 -depth 8 uyvy:cinepak0040.yuyv result.png
+			char cmd[256];
+			snprintf(cmd, sizeof(cmd), "convert -sampling-factor 4:2:2 -size 384x192 -depth 8 uyvy:%s DUMP/cinepak%04d.jpg", filename, i);
+			system(cmd);
 		}
 	}
 }
