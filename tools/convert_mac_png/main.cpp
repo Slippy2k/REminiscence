@@ -429,8 +429,16 @@ static void decodePictureData(ResourceMac &res) {
 }
 
 static bool isMovie(const ResourceMac &res) {
-	return (res._map.typesCount == 1) && memcmp(res._types[0].id, "moov", 4) == 0;
+	return (res._map.typesCount >= 1) && memcmp(res._types[0].id, "moov", 4) == 0;
 }
+
+#define MAX_SOUND_CHUNKS 64
+
+struct SoundChunk {
+	uint32_t start;
+	uint32_t count;
+} _movieSoundChunks[MAX_SOUND_CHUNKS];
+static int _movieSoundChunksCount;
 
 struct QuicktimeMovieTrack {
 	uint32_t *offsetsTable;
@@ -446,7 +454,9 @@ struct QuicktimeMovieTrack {
 	}
 };
 
-static QuicktimeMovieTrack _movieTracks[2];
+#define MAX_TRACKS 8
+
+static QuicktimeMovieTrack _movieTracks[MAX_TRACKS];
 static int _movieTracksCount;
 
 static void parseQuicktimeAtom(ResourceMac &res, const char id[4], uint32_t baseOffset, uint32_t size, int level) {
@@ -473,12 +483,60 @@ static void parseQuicktimeAtom(ResourceMac &res, const char id[4], uint32_t base
 			const int sampleSize = res._f.readUint32BE();
 			const int sampleCount = res._f.readUint32BE();
 			fprintf(stdout, "Track #%d STSZ unk:%d count:%d size:%d\n", _movieTracksCount, unk, sampleCount, sampleSize);
-/*
-			for (int i = 0; i < sampleCount; ++i) {
-				const uint32_t sz = res._f.readUint32BE();
-				fprintf(stdout, "size[%d] = 0x%x\n", i, sz);
+			if (sz == 20) {
+				// sampleCount is total number of samples, constant size == sampleSize
+			} else {
+				for (int i = 0; i < sampleCount; ++i) {
+					const uint32_t sz = res._f.readUint32BE();
+					fprintf(stdout, "size[%d] = 0x%x\n", i, sz);
+				}
 			}
-*/
+		} else if (memcmp(type, "stsc", 4) == 0) {
+			res._f.readUint32BE();
+			int sampleChunkCount = res._f.readUint32BE();
+			for (int i = 0; i < sampleChunkCount; ++i) {
+				int first = res._f.readUint32BE() - 1;
+				int count = res._f.readUint32BE(); // number of samples
+				int id = res._f.readUint32BE();
+				fprintf(stdout, "Track #%d STSC first:%d count:%d\n", _movieTracksCount, first, count);
+				if (_movieTracksCount == 3) {
+					_movieSoundChunks[i].start = first;
+					_movieSoundChunks[i].count = count;
+				}
+			}
+			_movieSoundChunksCount = sampleChunkCount;
+			fprintf(stdout, "soundChunks %d\n", sampleChunkCount);
+			assert(sampleChunkCount <= MAX_SOUND_CHUNKS);
+		} else if (memcmp(type, "stsd", 4) == 0) {
+			res._f.readUint32BE();
+			int entriesCount = res._f.readUint32BE();
+			fprintf(stdout, "Track #%d STSD count:%d\n", _movieTracksCount, entriesCount);
+			for (int i = 0; i < entriesCount; ++i) {
+				int sz = res._f.readUint32BE();
+				int fmt = res._f.readUint32BE();
+
+				res._f.readUint32BE();
+				res._f.readUint16BE();
+				res._f.readUint16BE();
+				char p[5];
+				memcpy(p, &fmt, 4);
+				p[4] = 0;
+				fprintf(stdout, "format %s\n", p);
+
+				int stsdVersion = res._f.readUint16BE();
+				res._f.readUint16BE(); // revision level
+				res._f.readUint32BE(); // vendor
+
+				int channels = res._f.readUint16BE();                  // channel count
+				int bitsPerSample = res._f.readUint16BE();      // sample size
+
+				res._f.readUint16BE(); // compression id = 0
+				res._f.readUint16BE(); // packet size = 0
+
+				int sampleRate = res._f.readUint32BE() >> 16;
+				fprintf(stdout, "channels %d bps %d rate %d\n", channels, bitsPerSample, sampleRate);
+
+			}
 		}
 		res._f.seek(nextOffset);
 		offset += sz;
@@ -510,6 +568,8 @@ static void decodeMovie(ResourceMac &res) {
 		offset += size;
 	}
 	static uint8_t buffer[0x80000];
+int video_track = 0;
+if (0) {
 	static uint8_t yuvFrame[384 * 192 * sizeof(uint16_t)];
 	for (int i = 0; i < _movieTracks[0].offsetsCount - 1; ++i) {
 		res._f.seek(0x80 + _movieTracks[0].offsetsTable[i]);
@@ -531,6 +591,27 @@ static void decodeMovie(ResourceMac &res) {
 			snprintf(cmd, sizeof(cmd), "convert -sampling-factor 4:2:2 -size 384x192 -depth 8 uyvy:%s DUMP/cinepak%04d.jpg", filename, i);
 			system(cmd);
 		}
+	}
+}
+int audio_track = 3;
+	static const char *filename = "DUMP/movie_u8_22khz.raw";
+	File f;
+	if (f.open(filename, "wb")) {
+		int j = 1;
+		int size = _movieSoundChunks[0].count;
+		for (int i = 0; i < _movieTracks[audio_track].offsetsCount; ++i) {
+			res._f.seek(0x80 + _movieTracks[audio_track].offsetsTable[i]);
+			if (i >= _movieSoundChunks[j].start) {
+				assert(i == _movieSoundChunks[j].start);
+				size = _movieSoundChunks[j].count;
+				++j;
+			}
+			fprintf(stdout, "sound chunk %d size %d\n", i, size);
+			res._f.read(buffer, size);
+			f.write(buffer, size);
+		}
+		f.close();
+		// sox -r 22050 -c 1 -b 8 -e unsigned DUMP/movie_u8_22khz.raw 1.wav
 	}
 }
 
