@@ -432,24 +432,33 @@ static bool isMovie(const ResourceMac &res) {
 	return (res._map.typesCount >= 1) && memcmp(res._types[0].id, "moov", 4) == 0;
 }
 
-#define MAX_SOUND_CHUNKS 64
-
-struct SoundChunk {
+struct q_stsc_t {
 	uint32_t start;
 	uint32_t count;
-} _movieSoundChunks[MAX_SOUND_CHUNKS];
-static int _movieSoundChunksCount;
+};
 
 struct QuicktimeMovieTrack {
-	uint32_t *offsetsTable;
-	uint32_t offsetsCount;
+	uint32_t *stcoTable;
+	uint32_t stcoSize;
 
-	void read(int count, File &f) {
-		offsetsCount = count;
-		offsetsTable = (uint32_t *)malloc(count * sizeof(uint32_t));
+	q_stsc_t *stscTable;
+	uint32_t stscSize;
+
+	void read_stco(int count, File &f) {
+		stcoSize = count;
+		stcoTable = (uint32_t *)malloc(count * sizeof(uint32_t));
 		for (int i = 0; i < count; ++i) {
-			offsetsTable[i] = f.readUint32BE();
-			fprintf(stdout, "offset %d 0x%x\n", i, offsetsTable[i]);
+			stcoTable[i] = f.readUint32BE();
+		}
+	}
+
+	void read_stsc(int count, File &f) {
+		stscSize = count;
+		stscTable = (q_stsc_t *)malloc(count * sizeof(q_stsc_t));
+		for (int i = 0; i < count; ++i) {
+			stscTable[i].start = f.readUint32BE() - 1;
+			stscTable[i].count = f.readUint32BE(); // number of samples
+			f.readUint32BE();
 		}
 	}
 };
@@ -459,7 +468,10 @@ struct QuicktimeMovieTrack {
 static QuicktimeMovieTrack _movieTracks[MAX_TRACKS];
 static int _movieTracksCount;
 
-static void parseQuicktimeAtom(ResourceMac &res, const char id[4], uint32_t baseOffset, uint32_t size, int level) {
+static int _audioTrackIndex = -1;
+static int _videoTrackIndex = -1;
+
+static void parseQuicktimeAtom(ResourceMac &res, uint32_t size, int level) {
 	uint32_t offset = 0;
 	while (offset < size) {
 		uint32_t sz = res._f.readUint32BE();
@@ -471,13 +483,16 @@ static void parseQuicktimeAtom(ResourceMac &res, const char id[4], uint32_t base
 			fputc('\t', stdout);
 		}
 		fprintf(stdout, " atom %s size %d\n", type, sz);
-		if (memcmp(type, "mdia", 4) == 0 || memcmp(type, "minf", 4) == 0 /* parent:'mdia' */ || memcmp(type, "stbl", 4) == 0 /* parent:'minf' */ ) {
-			parseQuicktimeAtom(res, type, baseOffset + offset, sz - 8, level + 1);
+		if (memcmp(type, "trak", 4) == 0) {
+			parseQuicktimeAtom(res, sz - 8, level + 1);
+			++_movieTracksCount;
+		} else if (memcmp(type, "mdia", 4) == 0 /* parent:'trak' */ || memcmp(type, "minf", 4) == 0 /* parent:'mdia' */ || memcmp(type, "stbl", 4) == 0 /* parent:'minf' */ ) {
+			parseQuicktimeAtom(res, sz - 8, level + 1);
 		} else if (memcmp(type, "stco", 4) == 0) {
 			res._f.readUint32BE();
 			const int count = res._f.readUint32BE();
 			fprintf(stdout, "Track #%d STCO count:%d\n", _movieTracksCount, count);
-			_movieTracks[_movieTracksCount].read(count, res._f);
+			_movieTracks[_movieTracksCount].read_stco(count, res._f);
 		} else if (memcmp(type, "stsz", 4) == 0) {
 			const int unk = res._f.readUint32BE();
 			const int sampleSize = res._f.readUint32BE();
@@ -485,7 +500,7 @@ static void parseQuicktimeAtom(ResourceMac &res, const char id[4], uint32_t base
 			fprintf(stdout, "Track #%d STSZ unk:%d count:%d size:%d\n", _movieTracksCount, unk, sampleCount, sampleSize);
 			if (sz == 20) {
 				// sampleCount is total number of samples, constant size == sampleSize
-			} else {
+			} else if (0) {
 				for (int i = 0; i < sampleCount; ++i) {
 					const uint32_t sz = res._f.readUint32BE();
 					fprintf(stdout, "size[%d] = 0x%x\n", i, sz);
@@ -493,49 +508,30 @@ static void parseQuicktimeAtom(ResourceMac &res, const char id[4], uint32_t base
 			}
 		} else if (memcmp(type, "stsc", 4) == 0) {
 			res._f.readUint32BE();
-			int sampleChunkCount = res._f.readUint32BE();
-			for (int i = 0; i < sampleChunkCount; ++i) {
-				int first = res._f.readUint32BE() - 1;
-				int count = res._f.readUint32BE(); // number of samples
-				int id = res._f.readUint32BE();
-				fprintf(stdout, "Track #%d STSC first:%d count:%d\n", _movieTracksCount, first, count);
-				if (_movieTracksCount == 3) {
-					_movieSoundChunks[i].start = first;
-					_movieSoundChunks[i].count = count;
-				}
-			}
-			_movieSoundChunksCount = sampleChunkCount;
-			fprintf(stdout, "soundChunks %d\n", sampleChunkCount);
-			assert(sampleChunkCount <= MAX_SOUND_CHUNKS);
+			const int count = res._f.readUint32BE();
+			fprintf(stdout, "Track #%d STSC count:%d\n", _movieTracksCount, count);
+			_movieTracks[_movieTracksCount].read_stsc(count, res._f);
 		} else if (memcmp(type, "stsd", 4) == 0) {
 			res._f.readUint32BE();
 			int entriesCount = res._f.readUint32BE();
 			fprintf(stdout, "Track #%d STSD count:%d\n", _movieTracksCount, entriesCount);
 			for (int i = 0; i < entriesCount; ++i) {
 				int sz = res._f.readUint32BE();
-				int fmt = res._f.readUint32BE();
+				char fmt[5];
+				res._f.read(fmt, 4);
+				fmt[4] = 0;
 
 				res._f.readUint32BE();
 				res._f.readUint16BE();
 				res._f.readUint16BE();
-				char p[5];
-				memcpy(p, &fmt, 4);
-				p[4] = 0;
-				fprintf(stdout, "format %s\n", p);
-
-				int stsdVersion = res._f.readUint16BE();
-				res._f.readUint16BE(); // revision level
-				res._f.readUint32BE(); // vendor
-
-				int channels = res._f.readUint16BE();                  // channel count
-				int bitsPerSample = res._f.readUint16BE();      // sample size
-
-				res._f.readUint16BE(); // compression id = 0
-				res._f.readUint16BE(); // packet size = 0
-
-				int sampleRate = res._f.readUint32BE() >> 16;
-				fprintf(stdout, "channels %d bps %d rate %d\n", channels, bitsPerSample, sampleRate);
-
+				fprintf(stdout, "format %s\n", fmt);
+				if (memcmp(fmt, "cvid", 4) == 0) {
+					_videoTrackIndex = _movieTracksCount;
+					fprintf(stdout, "videoTrack %d\n", _videoTrackIndex);
+				} else if (memcmp(fmt, "raw", 3) == 0) {
+					_audioTrackIndex = _movieTracksCount;
+					fprintf(stdout, "audioTrack %d\n", _audioTrackIndex);
+				}
 			}
 		}
 		res._f.seek(nextOffset);
@@ -553,27 +549,13 @@ static void decodeMovie(ResourceMac &res) {
 	res._f.read(atomType, 4);
 	atomType[4] = 0;
 	printf("atom size %d type '%s'\n", atomSize, atomType);
-	for (uint32_t offset = 8; offset < dataSize; ) {
-		uint32_t size = res._f.readUint32BE();
-		char type[5];
-		res._f.read(type, 4);
-		type[4] = 0;
-		uint32_t nextOffset = res._f.tell() + size - 8;
-		printf("atom size %d type '%s' (offset 0x%x 0x%x)\n", size, type, offset, dataSize);
-		if (memcmp(type, "trak", 4) == 0) {
-			parseQuicktimeAtom(res, type, offset, size - 8, 1);
-			++_movieTracksCount;
-		}
-		res._f.seek(nextOffset);
-		offset += size;
-	}
+	parseQuicktimeAtom(res, dataSize - 8, 1);
 	static uint8_t buffer[0x80000];
-int video_track = 0;
-if (0) {
 	static uint8_t yuvFrame[384 * 192 * sizeof(uint16_t)];
-	for (int i = 0; i < _movieTracks[0].offsetsCount - 1; ++i) {
-		res._f.seek(0x80 + _movieTracks[0].offsetsTable[i]);
-		const int size  = _movieTracks[0].offsetsTable[i + 1] - _movieTracks[0].offsetsTable[i];
+	for (int i = 0; i < _movieTracks[_videoTrackIndex].stcoSize - 1; ++i) {
+		res._f.seek(0x80 + _movieTracks[_videoTrackIndex].stcoTable[i]);
+		// todo: get size for chunks from stsc/stsz
+		const int size  = _movieTracks[_videoTrackIndex].stcoTable[i + 1] - _movieTracks[_videoTrackIndex].stcoTable[i];
 		res._f.read(buffer, size);
 		CinepakDecoder cvid;
 		cvid._yuvFrame = yuvFrame;
@@ -592,27 +574,27 @@ if (0) {
 			system(cmd);
 		}
 	}
-}
-int audio_track = 3;
 	static const char *filename = "DUMP/movie_u8_22khz.raw";
 	File f;
 	if (f.open(filename, "wb")) {
-		int j = 1;
-		int size = _movieSoundChunks[0].count;
-		for (int i = 0; i < _movieTracks[audio_track].offsetsCount; ++i) {
-			res._f.seek(0x80 + _movieTracks[audio_track].offsetsTable[i]);
-			if (i >= _movieSoundChunks[j].start) {
-				assert(i == _movieSoundChunks[j].start);
-				size = _movieSoundChunks[j].count;
-				++j;
+		q_stsc_t *stsc = _movieTracks[_audioTrackIndex].stscTable;
+		int size = stsc->count;
+		++stsc;
+		for (int i = 0; i < _movieTracks[_audioTrackIndex].stcoSize; ++i) {
+			res._f.seek(0x80 + _movieTracks[_audioTrackIndex].stcoTable[i]);
+			if (i >= stsc->start) {
+				assert(i == stsc->start);
+				size = stsc->count;
+				++stsc;
 			}
-			fprintf(stdout, "sound chunk %d size %d\n", i, size);
+			// fprintf(stdout, "sound chunk %d size %d\n", i, size);
 			res._f.read(buffer, size);
 			f.write(buffer, size);
 		}
 		f.close();
 		// sox -r 22050 -c 1 -b 8 -e unsigned DUMP/movie_u8_22khz.raw 1.wav
 	}
+	// todo: call ffmmpeg to mux to .mp4
 }
 
 int main(int argc, char *argv[]) {
