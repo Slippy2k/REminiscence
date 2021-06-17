@@ -71,6 +71,10 @@ void CinepakDecoder::decode(const uint8_t *data, int dataSize) {
 	const int strips = readWord();
 	assert(strips <= kMaxStrips);
 
+        if (memcmp(_data, "\xFE\x00\x00\x06\x00\x00", 6) == 0) {
+                _data += 6;
+        }
+
 	_xPos = _yPos = 0;
 	int yMax = 0;
 	for (int strip = 0; strip < strips; ++strip) {
@@ -195,6 +199,9 @@ void CinepakDecoder::decode(const uint8_t *data, int dataSize) {
 					}
 				}
 				break;
+			default:
+				fprintf(stdout, "Unhandled chunk 0x%x\n", chunkType);
+				return;
 			}
 			_data += chunkSize;
 		}

@@ -469,7 +469,7 @@ struct QuicktimeMovieTrack {
 		for (int i = 0; i < count; ++i) {
 			stscTable[i].start = f.readUint32BE() - 1;
 			stscTable[i].count = f.readUint32BE(); // number of samples
-			fprintf(stdout, "stsc start;%d count:%d\n", stscTable[i].start, stscTable[i].count);
+			fprintf(stdout, "stsc start:%d count:%d\n", stscTable[i].start, stscTable[i].count);
 			f.readUint32BE();
 		}
 	}
@@ -560,11 +560,22 @@ static void decodeMovie(ResourceMac &res) {
 	parseQuicktimeAtom(res, dataSize - 8, 1);
 	static uint8_t buffer[0x80000];
 	static uint8_t yuvFrame[MOV_W * MOV_H * sizeof(uint16_t)];
-	// todo: handle stsc table
-	assert(_movieTracks[_videoTrackIndex].stcoSize == _movieTracks[_videoTrackIndex].stszSize);
+	assert(_movieTracks[_videoTrackIndex].stcoSize <= _movieTracks[_videoTrackIndex].stszSize);
+	q_stsc_t *stsc = _movieTracks[_videoTrackIndex].stscTable;
+	++stsc;
+	int j = 0;
 	for (int i = 0; i < _movieTracks[_videoTrackIndex].stcoSize; ++i) {
 		res._f.seek(0x80 + _movieTracks[_videoTrackIndex].stcoTable[i]);
-		const int size  = _movieTracks[_videoTrackIndex].stszTable[i];
+		int size = 0;
+		if (stsc < &_movieTracks[_videoTrackIndex].stscTable[_movieTracks[_videoTrackIndex].stscSize] && i == stsc->start) {
+			for (int k = 0; k < stsc->count; ++k) {
+				size += _movieTracks[_videoTrackIndex].stszTable[j++];
+			}
+			++stsc;
+		} else {
+			size  = _movieTracks[_videoTrackIndex].stszTable[j++];
+		}
+		assert(size <= sizeof(buffer));
 		res._f.read(buffer, size);
 		CinepakDecoder cvid;
 		cvid._yuvFrame = yuvFrame;
