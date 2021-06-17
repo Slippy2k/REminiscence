@@ -441,6 +441,9 @@ struct QuicktimeMovieTrack {
 	uint32_t *stcoTable;
 	uint32_t stcoSize;
 
+	uint32_t *stszTable;
+	uint32_t stszSize;
+
 	q_stsc_t *stscTable;
 	uint32_t stscSize;
 
@@ -452,12 +455,21 @@ struct QuicktimeMovieTrack {
 		}
 	}
 
+	void read_stsz(int count, File &f) {
+		stszSize = count;
+		stszTable = (uint32_t *)malloc(count * sizeof(uint32_t));
+		for (int i = 0; i < count; ++i) {
+			stszTable[i] = f.readUint32BE();
+		}
+	}
+
 	void read_stsc(int count, File &f) {
 		stscSize = count;
 		stscTable = (q_stsc_t *)malloc(count * sizeof(q_stsc_t));
 		for (int i = 0; i < count; ++i) {
 			stscTable[i].start = f.readUint32BE() - 1;
 			stscTable[i].count = f.readUint32BE(); // number of samples
+			fprintf(stdout, "stsc start;%d count:%d\n", stscTable[i].start, stscTable[i].count);
 			f.readUint32BE();
 		}
 	}
@@ -500,11 +512,8 @@ static void parseQuicktimeAtom(ResourceMac &res, uint32_t size, int level) {
 			fprintf(stdout, "Track #%d STSZ unk:%d count:%d size:%d\n", _movieTracksCount, unk, sampleCount, sampleSize);
 			if (sz == 20) {
 				// sampleCount is total number of samples, constant size == sampleSize
-			} else if (0) {
-				for (int i = 0; i < sampleCount; ++i) {
-					const uint32_t sz = res._f.readUint32BE();
-					fprintf(stdout, "size[%d] = 0x%x\n", i, sz);
-				}
+			} else {
+				_movieTracks[_movieTracksCount].read_stsz(sampleCount, res._f);
 			}
 		} else if (memcmp(type, "stsc", 4) == 0) {
 			res._f.readUint32BE();
@@ -520,10 +529,6 @@ static void parseQuicktimeAtom(ResourceMac &res, uint32_t size, int level) {
 				char fmt[5];
 				res._f.read(fmt, 4);
 				fmt[4] = 0;
-
-				res._f.readUint32BE();
-				res._f.readUint16BE();
-				res._f.readUint16BE();
 				fprintf(stdout, "format %s\n", fmt);
 				if (memcmp(fmt, "cvid", 4) == 0) {
 					_videoTrackIndex = _movieTracksCount;
@@ -539,6 +544,9 @@ static void parseQuicktimeAtom(ResourceMac &res, uint32_t size, int level) {
 	}
 }
 
+static const int MOV_W = 384;
+static const int MOV_H = 192;
+
 static void decodeMovie(ResourceMac &res) {
 	const ResourceEntry *entry = &res._entries[0][0];
 	res._f.seek(res._dataOffset + entry->dataOffset);
@@ -551,17 +559,18 @@ static void decodeMovie(ResourceMac &res) {
 	printf("atom size %d type '%s'\n", atomSize, atomType);
 	parseQuicktimeAtom(res, dataSize - 8, 1);
 	static uint8_t buffer[0x80000];
-	static uint8_t yuvFrame[384 * 192 * sizeof(uint16_t)];
-	for (int i = 0; i < _movieTracks[_videoTrackIndex].stcoSize - 1; ++i) {
+	static uint8_t yuvFrame[MOV_W * MOV_H * sizeof(uint16_t)];
+	// todo: handle stsc table
+	assert(_movieTracks[_videoTrackIndex].stcoSize == _movieTracks[_videoTrackIndex].stszSize);
+	for (int i = 0; i < _movieTracks[_videoTrackIndex].stcoSize; ++i) {
 		res._f.seek(0x80 + _movieTracks[_videoTrackIndex].stcoTable[i]);
-		// todo: get size for chunks from stsc/stsz
-		const int size  = _movieTracks[_videoTrackIndex].stcoTable[i + 1] - _movieTracks[_videoTrackIndex].stcoTable[i];
+		const int size  = _movieTracks[_videoTrackIndex].stszTable[i];
 		res._f.read(buffer, size);
 		CinepakDecoder cvid;
 		cvid._yuvFrame = yuvFrame;
-		cvid._yuvW = 384;
-		cvid._yuvH = 192;
-		cvid._yuvPitch = 384 * sizeof(uint16_t);
+		cvid._yuvW = MOV_W;
+		cvid._yuvH = MOV_H;
+		cvid._yuvPitch = MOV_W * sizeof(uint16_t);
 		cvid.decode(buffer, size);
 		char filename[32];
 		snprintf(filename, sizeof(filename), "DUMP/cinepak%04d.uyvy", i);
