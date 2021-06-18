@@ -483,6 +483,7 @@ static int _movieTracksCount;
 static int _audioTrackIndex = -1;
 static int _videoTrackIndex = -1;
 
+// todo: use function pointers for each atom, also pass 'parentAtom' as parameter
 static void parseQuicktimeAtom(ResourceMac &res, uint32_t size, int level) {
 	uint32_t offset = 0;
 	while (offset < size) {
@@ -506,10 +507,10 @@ static void parseQuicktimeAtom(ResourceMac &res, uint32_t size, int level) {
 			fprintf(stdout, "Track #%d STCO count:%d\n", _movieTracksCount, count);
 			_movieTracks[_movieTracksCount].read_stco(count, res._f);
 		} else if (memcmp(type, "stsz", 4) == 0) {
-			const int unk = res._f.readUint32BE();
+			res._f.readUint32BE();
 			const int sampleSize = res._f.readUint32BE();
 			const int sampleCount = res._f.readUint32BE();
-			fprintf(stdout, "Track #%d STSZ unk:%d count:%d size:%d\n", _movieTracksCount, unk, sampleCount, sampleSize);
+			fprintf(stdout, "Track #%d STSZ count:%d size:%d\n", _movieTracksCount, sampleCount, sampleSize);
 			if (sz == 20) {
 				// sampleCount is total number of samples, constant size == sampleSize
 			} else {
@@ -547,7 +548,14 @@ static void parseQuicktimeAtom(ResourceMac &res, uint32_t size, int level) {
 static const int MOV_W = 384;
 static const int MOV_H = 192;
 
-static void decodeMovie(ResourceMac &res) {
+static void decodeMovie(ResourceMac &res, const char *filename) {
+	char name[256];
+	const char *p = strrchr(filename, '/');
+	strcpy(name, p ? (p + 1) : filename);
+	char *ext = strchr(name, '.');
+	if (ext) {
+		*ext = 0;
+	}
 	const ResourceEntry *entry = &res._entries[0][0];
 	res._f.seek(res._dataOffset + entry->dataOffset);
 	const uint32_t dataSize = res._f.readUint32BE();
@@ -562,18 +570,18 @@ static void decodeMovie(ResourceMac &res) {
 	static uint8_t yuvFrame[MOV_W * MOV_H * sizeof(uint16_t)];
 	assert(_movieTracks[_videoTrackIndex].stcoSize <= _movieTracks[_videoTrackIndex].stszSize);
 	q_stsc_t *stsc = _movieTracks[_videoTrackIndex].stscTable;
+	int count = stsc->count;
 	++stsc;
 	int j = 0;
 	for (int i = 0; i < _movieTracks[_videoTrackIndex].stcoSize; ++i) {
 		res._f.seek(0x80 + _movieTracks[_videoTrackIndex].stcoTable[i]);
-		int size = 0;
 		if (stsc < &_movieTracks[_videoTrackIndex].stscTable[_movieTracks[_videoTrackIndex].stscSize] && i == stsc->start) {
-			for (int k = 0; k < stsc->count; ++k) {
-				size += _movieTracks[_videoTrackIndex].stszTable[j++];
-			}
+			count = stsc->count;
 			++stsc;
-		} else {
-			size  = _movieTracks[_videoTrackIndex].stszTable[j++];
+		}
+		int size = 0;
+		for (int k = 0; k < count; ++k) {
+			size += _movieTracks[_videoTrackIndex].stszTable[j++];
 		}
 		assert(size <= sizeof(buffer));
 		res._f.read(buffer, size);
@@ -583,27 +591,28 @@ static void decodeMovie(ResourceMac &res) {
 		cvid._yuvH = MOV_H;
 		cvid._yuvPitch = MOV_W * sizeof(uint16_t);
 		cvid.decode(buffer, size);
-		char filename[32];
-		snprintf(filename, sizeof(filename), "DUMP/cinepak%04d.uyvy", i);
+		char tmpname[32];
+		snprintf(tmpname, sizeof(tmpname), "DUMP/%s_%04d.uyvy", name, i);
 		File f;
-		if (f.open(filename, "wb")) {
+		if (f.open(tmpname, "wb")) {
 			f.write(yuvFrame, sizeof(yuvFrame));
 			f.close();
 			char cmd[256];
-			snprintf(cmd, sizeof(cmd), "convert -sampling-factor 4:2:2 -size 384x192 -depth 8 uyvy:%s DUMP/cinepak%04d.jpg", filename, i);
+			snprintf(cmd, sizeof(cmd), "convert -sampling-factor 4:2:2 -size 384x192 -depth 8 uyvy:%s DUMP/%s_%04d.jpg", tmpname, name, i);
 			system(cmd);
+			unlink(tmpname);
 		}
 	}
-	static const char *filename = "DUMP/movie_u8_22khz.raw";
+	char tmpname[32];
+	snprintf(tmpname, sizeof(tmpname), "DUMP/%s.raw", name);
 	File f;
-	if (f.open(filename, "wb")) {
+	if (f.open(tmpname, "wb")) {
 		q_stsc_t *stsc = _movieTracks[_audioTrackIndex].stscTable;
 		int size = stsc->count;
 		++stsc;
 		for (int i = 0; i < _movieTracks[_audioTrackIndex].stcoSize; ++i) {
 			res._f.seek(0x80 + _movieTracks[_audioTrackIndex].stcoTable[i]);
-			if (i >= stsc->start) {
-				assert(i == stsc->start);
+			if (stsc < &_movieTracks[_audioTrackIndex].stscTable[_movieTracks[_audioTrackIndex].stscSize] && i == stsc->start) {
 				size = stsc->count;
 				++stsc;
 			}
@@ -612,9 +621,14 @@ static void decodeMovie(ResourceMac &res) {
 			f.write(buffer, size);
 		}
 		f.close();
-		// sox -r 22050 -c 1 -b 8 -e unsigned DUMP/movie_u8_22khz.raw 1.wav
+		char cmd[256];
+		snprintf(cmd, sizeof(cmd), "sox -r 22050 -c 1 -b 8 -e unsigned %s DUMP/%s.wav", tmpname, name);
+		system(cmd);
+		unlink(tmpname);
 	}
-	// todo: call ffmmpeg to mux to .mp4
+	char cmd[256];
+	snprintf(cmd, sizeof(cmd), "ffmpeg -framerate 16 -f image2 -i 'DUMP/%s_%%04d.jpg' -i DUMP/%s.wav DUMP/%s.mp4", name, name, name);
+	system(cmd);
 }
 
 int main(int argc, char *argv[]) {
@@ -655,9 +669,10 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	if (optind < argc) {
-		ResourceMac res(argv[optind]);
-		if (isMovie(res)) {
-			decodeMovie(res);
+		const char *filename = argv[optind];
+		ResourceMac res(filename);
+		if (isMovie(res)) { // todo: recurse if 'Movies' directory
+			decodeMovie(res, filename);
 			return 0;
 		}
 		if (decodeSound) {
