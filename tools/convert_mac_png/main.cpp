@@ -482,6 +482,7 @@ static int _movieTracksCount;
 
 static int _audioTrackIndex = -1;
 static int _videoTrackIndex = -1;
+static int _msecs;
 
 // todo: use function pointers for each atom, also pass 'parentAtom' as parameter
 static void parseQuicktimeAtom(ResourceMac &res, uint32_t size, int level) {
@@ -501,6 +502,14 @@ static void parseQuicktimeAtom(ResourceMac &res, uint32_t size, int level) {
 			++_movieTracksCount;
 		} else if (memcmp(type, "mdia", 4) == 0 /* parent:'trak' */ || memcmp(type, "minf", 4) == 0 /* parent:'mdia' */ || memcmp(type, "stbl", 4) == 0 /* parent:'minf' */ ) {
 			parseQuicktimeAtom(res, sz - 8, level + 1);
+		} else if (memcmp(type, "mvhd", 4) == 0) {
+			int version = res._f.readUint32BE() & 0xFF;
+			res._f.readUint32BE(); // creation time
+			res._f.readUint32BE(); // modification time
+			int timeScale = res._f.readUint32BE();
+			int duration = res._f.readUint32BE();
+			fprintf(stdout, "MVHD version %d timeScale %d duration %d secs %f\n", version, timeScale, duration, duration / (float)timeScale);
+			_msecs = 1000 * duration / timeScale;
 		} else if (memcmp(type, "stco", 4) == 0) {
 			res._f.readUint32BE();
 			const int count = res._f.readUint32BE();
@@ -573,6 +582,7 @@ static void decodeMovie(ResourceMac &res, const char *filename) {
 	int count = stsc->count;
 	++stsc;
 	int j = 0;
+	int totalFrames = 0;
 	for (int i = 0; i < _movieTracks[_videoTrackIndex].stcoSize; ++i) {
 		res._f.seek(0x80 + _movieTracks[_videoTrackIndex].stcoTable[i]);
 		if (stsc < &_movieTracks[_videoTrackIndex].stscTable[_movieTracks[_videoTrackIndex].stscSize] && i == stsc->start) {
@@ -602,7 +612,9 @@ static void decodeMovie(ResourceMac &res, const char *filename) {
 			system(cmd);
 			unlink(tmpname);
 		}
+		++totalFrames;
 	}
+	fprintf(stdout, "fr %d\n", totalFrames * 1000 / _msecs);
 	char tmpname[32];
 	snprintf(tmpname, sizeof(tmpname), "DUMP/%s.raw", name);
 	File f;
@@ -627,7 +639,7 @@ static void decodeMovie(ResourceMac &res, const char *filename) {
 		unlink(tmpname);
 	}
 	char cmd[256];
-	snprintf(cmd, sizeof(cmd), "ffmpeg -framerate 16 -f image2 -i 'DUMP/%s_%%04d.jpg' -i DUMP/%s.wav DUMP/%s.mp4", name, name, name);
+	snprintf(cmd, sizeof(cmd), "ffmpeg -framerate 15 -f image2 -i 'DUMP/%s_%%04d.jpg' -i DUMP/%s.wav DUMP/%s.mp4", name, name, name);
 	system(cmd);
 }
 
