@@ -614,7 +614,8 @@ static void decodeMovie(ResourceMac &res, const char *filename) {
 		}
 		++totalFrames;
 	}
-	fprintf(stdout, "fr %d\n", totalFrames * 1000 / _msecs);
+	const int frameRate = totalFrames * 1000 / _msecs;
+	fprintf(stdout, "fr %d\n", frameRate);
 	char tmpname[32];
 	snprintf(tmpname, sizeof(tmpname), "DUMP/%s.raw", name);
 	File f;
@@ -628,7 +629,6 @@ static void decodeMovie(ResourceMac &res, const char *filename) {
 				size = stsc->count;
 				++stsc;
 			}
-			// fprintf(stdout, "sound chunk %d size %d\n", i, size);
 			res._f.read(buffer, size);
 			f.write(buffer, size);
 		}
@@ -639,7 +639,7 @@ static void decodeMovie(ResourceMac &res, const char *filename) {
 		unlink(tmpname);
 	}
 	char cmd[256];
-	snprintf(cmd, sizeof(cmd), "ffmpeg -framerate 15 -f image2 -i 'DUMP/%s_%%04d.jpg' -i DUMP/%s.wav DUMP/%s.mp4", name, name, name);
+	snprintf(cmd, sizeof(cmd), "ffmpeg -framerate %d -f image2 -i 'DUMP/%s_%%04d.jpg' -i DUMP/%s.wav DUMP/%s.mp4", frameRate, name, name, name);
 	system(cmd);
 }
 
