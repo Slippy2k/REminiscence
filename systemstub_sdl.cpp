@@ -785,15 +785,19 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 		setAsciiChar(_pi, &ev.key.keysym);
 		switch (ev.key.keysym.sym) {
 		case SDLK_LEFT:
+		case SDLK_KP_4:
 			_pi.dirMask &= ~PlayerInput::DIR_LEFT;
 			break;
 		case SDLK_RIGHT:
+		case SDLK_KP_6:
 			_pi.dirMask &= ~PlayerInput::DIR_RIGHT;
 			break;
 		case SDLK_UP:
+		case SDLK_KP_8:
 			_pi.dirMask &= ~PlayerInput::DIR_UP;
 			break;
 		case SDLK_DOWN:
+		case SDLK_KP_2:
 			_pi.dirMask &= ~PlayerInput::DIR_DOWN;
 			break;
 		case SDLK_SPACE:
@@ -829,15 +833,19 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 		}
 		switch (ev.key.keysym.sym) {
 		case SDLK_LEFT:
+		case SDLK_KP_4:
 			_pi.dirMask |= PlayerInput::DIR_LEFT;
 			break;
 		case SDLK_RIGHT:
+		case SDLK_KP_6:
 			_pi.dirMask |= PlayerInput::DIR_RIGHT;
 			break;
 		case SDLK_UP:
+		case SDLK_KP_8:
 			_pi.dirMask |= PlayerInput::DIR_UP;
 			break;
 		case SDLK_DOWN:
+		case SDLK_KP_2:
 			_pi.dirMask |= PlayerInput::DIR_DOWN;
 			break;
 		case SDLK_BACKSPACE:
