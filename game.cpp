@@ -1909,11 +1909,11 @@ void Game::handleInventory() {
 					}
 					icon_x_pos += 32;
 				}
-				if (current_line != 0) {
-					drawIcon(78, 120, 176, 0xA); // down arrow
-				}
-				if (current_line != num_lines - 1) {
+				if (current_line != (g_options.order_inventory_original ? 0 : (num_lines - 1))) {
 					drawIcon(77, 120, 143, 0xA); // up arrow
+				}
+				if (current_line != (g_options.order_inventory_original ? (num_lines - 1) : 0)) {
+					drawIcon(78, 120, 176, 0xA); // down arrow
 				}
 			} else {
 				char buf[50];
@@ -1927,18 +1927,35 @@ void Game::handleInventory() {
 			_stub->sleep(80);
 			inp_update();
 
-			if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
-				_stub->_pi.dirMask &= ~PlayerInput::DIR_UP;
-				if (current_line < num_lines - 1) {
-					++current_line;
-					current_item = current_line * 4;
+			if (g_options.order_inventory_original) {
+				if (_stub->_pi.dirMask & PlayerInput::DIR_DOWN) {
+					_stub->_pi.dirMask &= ~PlayerInput::DIR_DOWN;
+					if (current_line < num_lines - 1) {
+						++current_line;
+						current_item = current_line * 4;
+					}
 				}
-			}
-			if (_stub->_pi.dirMask & PlayerInput::DIR_DOWN) {
-				_stub->_pi.dirMask &= ~PlayerInput::DIR_DOWN;
-				if (current_line > 0) {
-					--current_line;
-					current_item = current_line * 4;
+				if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
+					_stub->_pi.dirMask &= ~PlayerInput::DIR_UP;
+					if (current_line > 0) {
+						--current_line;
+						current_item = current_line * 4;
+					}
+				}
+			} else {
+				if (_stub->_pi.dirMask & PlayerInput::DIR_UP) {
+					_stub->_pi.dirMask &= ~PlayerInput::DIR_UP;
+					if (current_line < num_lines - 1) {
+						++current_line;
+						current_item = current_line * 4;
+					}
+				}
+				if (_stub->_pi.dirMask & PlayerInput::DIR_DOWN) {
+					_stub->_pi.dirMask &= ~PlayerInput::DIR_DOWN;
+					if (current_line > 0) {
+						--current_line;
+						current_item = current_line * 4;
+					}
 				}
 			}
 			if (_stub->_pi.dirMask & PlayerInput::DIR_LEFT) {

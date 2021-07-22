@@ -1,4 +1,5 @@
 * release 0.4.9
+	- added option to match original inventory items order
 	- fixed repeating sounds volume
 
 * release 0.4.8
