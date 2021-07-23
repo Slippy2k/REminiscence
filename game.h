@@ -248,7 +248,7 @@ struct Game {
 	int pge_o_unk0x47(ObjectOpcodeArgs *args);
 	int pge_o_unk0x48(ObjectOpcodeArgs *args);
 	int pge_o_unk0x49(ObjectOpcodeArgs *args);
-	int pge_o_unk0x4A(ObjectOpcodeArgs *args);
+	int pge_op_killInventoryPiege(ObjectOpcodeArgs *args);
 	int pge_op_killPiege(ObjectOpcodeArgs *args);
 	int pge_op_isInCurrentRoom(ObjectOpcodeArgs *args);
 	int pge_op_isNotInCurrentRoom(ObjectOpcodeArgs *args);

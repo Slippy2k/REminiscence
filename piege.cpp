@@ -1180,7 +1180,7 @@ int Game::pge_o_unk0x49(ObjectOpcodeArgs *args) {
 	return pge_ZOrder(&_pgeLive[0], args->a, &Game::pge_ZOrderIfIndex, args->pge->init_PGE->counter_values[0]);
 }
 
-int Game::pge_o_unk0x4A(ObjectOpcodeArgs *args) {
+int Game::pge_op_killInventoryPiege(ObjectOpcodeArgs *args) {
 	LivePGE *pge = args->pge;
 	pge->room_location = 0xFE;
 	pge->flags &= ~4;

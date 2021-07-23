@@ -3585,7 +3585,7 @@ const Game::pge_OpcodeProc Game::_pge_opcodeTable[] = {
 	/* 0x48 */
 	&Game::pge_o_unk0x48,
 	&Game::pge_o_unk0x49,
-	&Game::pge_o_unk0x4A,
+	&Game::pge_op_killInventoryPiege,
 	&Game::pge_op_killPiege,
 	/* 0x4C */
 	&Game::pge_op_isInCurrentRoom,
