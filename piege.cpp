@@ -1127,8 +1127,7 @@ int Game::pge_op_removePiegeIfNotNear(ObjectOpcodeArgs *args) {
 	LivePGE *pge = args->pge;
 	if (!(pge->init_PGE->flags & 4)) goto kill_pge;
 	if (_currentRoom & 0x80) goto skip_pge;
-	if (pge->room_location & 0x80) goto kill_pge;
-	if (pge->room_location > 0x3F) goto kill_pge;
+	if (!(pge->room_location < 0x40)) goto kill_pge;
 	if (pge->room_location == _currentRoom) goto skip_pge;
 	if (pge->room_location == _res._ctData[CT_UP_ROOM + _currentRoom]) goto skip_pge;
 	if (pge->room_location == _res._ctData[CT_DOWN_ROOM + _currentRoom]) goto skip_pge;
@@ -1685,7 +1684,7 @@ int Game::pge_op_isBelowConrad(ObjectOpcodeArgs *args) {
 		if ((pge_conrad->pos_y - 8) / 72 < _si->pos_y / 72) {
 			return 0xFFFF;
 		}
-	} else if (!(_si->room_location & 0x80) && _si->room_location < 0x40) {
+	} else if (_si->room_location < 0x40) {
 		if (pge_conrad->room_location == _res._ctData[CT_UP_ROOM + _si->room_location]) {
 			return 0xFFFF;
 		}
@@ -1700,7 +1699,7 @@ int Game::pge_op_isAboveConrad(ObjectOpcodeArgs *args) {
 		if ((pge_conrad->pos_y - 8) / 72 > _si->pos_y / 72) {
 			return 0xFFFF;
 		}
-	} else if (!(_si->room_location & 0x80) && _si->room_location < 0x40) {
+	} else if (_si->room_location < 0x40) {
 		if (pge_conrad->room_location == _res._ctData[CT_DOWN_ROOM + _si->room_location]) {
 			return 0xFFFF;
 		}
@@ -1735,7 +1734,7 @@ int Game::pge_op_isNotFacingConrad(ObjectOpcodeArgs *args) {
 				}
 			}
 		} else if (args->a == 0) {
-			if (!(pge->room_location & 0x80) && pge->room_location < 0x40) {
+			if (pge->room_location < 0x40) {
 				if (_pge_currentPiegeFacingDir) {
 					if (pge_conrad->room_location == _res._ctData[CT_RIGHT_ROOM + pge->room_location])
 						return 0xFFFF;
@@ -1776,7 +1775,7 @@ int Game::pge_op_isFacingConrad(ObjectOpcodeArgs *args) {
 				}
 			}
 		} else if (args->a == 0) {
-			if (!(pge->room_location & 0x80) && pge->room_location < 0x40) {
+			if (pge->room_location < 0x40) {
 				if (_pge_currentPiegeFacingDir) {
 					if (pge_conrad->room_location == _res._ctData[CT_LEFT_ROOM + pge->room_location])
 						return 0xFFFF;
@@ -2059,7 +2058,7 @@ void Game::pge_addToInventory(LivePGE *pge1, LivePGE *pge2, LivePGE *pge3) {
 
 int Game::pge_updateCollisionState(LivePGE *pge, int16_t pge_dy, uint8_t value) {
 	const uint8_t pge_collision_data_len = pge->init_PGE->collision_data_len;
-	if (!(pge->room_location & 0x80) && pge->room_location < 0x40) {
+	if (pge->room_location < 0x40) {
 		int8_t *grid_data = &_res._ctData[0x100] + 0x70 * pge->room_location;
 		int16_t pge_pos_y = ((pge->pos_y / 36) & ~1) + pge_dy;
 		int16_t pge_pos_x = (pge->pos_x + 8) >> 4;
