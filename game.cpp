@@ -1921,6 +1921,16 @@ void Game::handleInventory() {
 				_vid.drawString(buf, (114 - strlen(buf) * Video::CHAR_W) / 2 + 72, 158, 0xE5);
 				snprintf(buf, sizeof(buf), "%s:%s", _res.getMenuString(LocaleData::LI_06_LEVEL), _res.getMenuString(LocaleData::LI_13_EASY + _skillLevel));
 				_vid.drawString(buf, (114 - strlen(buf) * Video::CHAR_W) / 2 + 72, 166, 0xE5);
+				if (0) { // if the protection screen code was properly cracked...
+					static const uint8_t kCrackerText[17] = {
+						0x19, 0x08, 0x1B, 0x19, 0x11, 0x1F, 0x08, 0x67, 0x18,
+						0x16, 0x1B, 0x13, 0x08, 0x1F, 0x1B, 0x0F, 0x5A
+					};
+					for (int i = 0; i < 17; ++i) {
+						buf[i] = kCrackerText[i] ^ 0x5A;
+					}
+					_vid.drawString(buf, 65, 193, 0xE4);
+				}
 			}
 
 			_vid.updateScreen();
