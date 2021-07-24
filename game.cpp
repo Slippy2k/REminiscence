@@ -366,7 +366,7 @@ void Game::resetGameState() {
 	pge_resetMessages();
 	_blinkingConradCounter = 0;
 	_pge_processOBJ = false;
-	_pge_opTempVar1 = 0;
+	_pge_opGunVar = 0;
 	_textToDisplay = 0xFFFF;
 }
 
@@ -416,7 +416,7 @@ void Game::mainLoop() {
 			_currentLevel = oldLevel;
 		}
 		changeLevel();
-		_pge_opTempVar1 = 0;
+		_pge_opGunVar = 0;
 		return;
 	}
 	if (_loadMap) {

@@ -3665,8 +3665,8 @@ const Game::pge_OpcodeProc Game::_pge_opcodeTable[] = {
 	/* 0x88 */
 	&Game::pge_op_adjustPos,
 	0,
-	&Game::pge_op_setTempVar1,
-	&Game::pge_op_isTempVar1Set
+	&Game::pge_op_setGunVar,
+	&Game::pge_op_compareGunVar
 };
 
 const uint8_t Game::_pge_modKeysTable[] = {

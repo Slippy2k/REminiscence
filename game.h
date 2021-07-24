@@ -155,7 +155,7 @@ struct Game {
 	bool _pge_currentPiegeFacingDir; // (false == left)
 	bool _pge_processOBJ;
 	uint8_t _pge_inpKeysMask;
-	uint16_t _pge_opTempVar1;
+	uint16_t _pge_opGunVar;
 	uint16_t _pge_opTempVar2;
 	uint16_t _pge_compareVar1;
 	uint16_t _pge_compareVar2;
@@ -310,8 +310,8 @@ struct Game {
 	int pge_o_unk0x86(ObjectOpcodeArgs *args);
 	int pge_op_playSoundGroup(ObjectOpcodeArgs *args);
 	int pge_op_adjustPos(ObjectOpcodeArgs *args);
-	int pge_op_setTempVar1(ObjectOpcodeArgs *args);
-	int pge_op_isTempVar1Set(ObjectOpcodeArgs *args);
+	int pge_op_setGunVar(ObjectOpcodeArgs *args);
+	int pge_op_compareGunVar(ObjectOpcodeArgs *args);
 	int pge_setCurrentInventoryObject(LivePGE *pge);
 	void pge_updateInventory(LivePGE *pge1, LivePGE *pge2);
 	void pge_reorderInventory(LivePGE *pge);

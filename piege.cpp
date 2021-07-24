@@ -1886,7 +1886,7 @@ int Game::pge_op_changeRoom(ObjectOpcodeArgs *args) {
 			// rendering the teleporter unusable.
 			//
 			// _pge_opcodeTable[0x82] = &Game::pge_op_nop;
-			// _pge_opTempVar1 = 0xFFFF;
+			// _pge_opGunVar = 0;
 			// return;
 		}
 	}
@@ -1977,13 +1977,13 @@ int Game::pge_op_adjustPos(ObjectOpcodeArgs *args) {
 	return 0xFFFF;
 }
 
-int Game::pge_op_setTempVar1(ObjectOpcodeArgs *args) {
-	_pge_opTempVar1 = args->a;
+int Game::pge_op_setGunVar(ObjectOpcodeArgs *args) {
+	_pge_opGunVar = args->a;
 	return 0xFFFF;
 }
 
-int Game::pge_op_isTempVar1Set(ObjectOpcodeArgs *args) {
-	if (_pge_opTempVar1 != args->a) {
+int Game::pge_op_compareGunVar(ObjectOpcodeArgs *args) {
+	if (_pge_opGunVar != args->a) {
 		return 0;
 	} else {
 		return 0xFFFF;
