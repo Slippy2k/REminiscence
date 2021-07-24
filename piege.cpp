@@ -359,6 +359,13 @@ void Game::pge_prepare() {
 			pge = pge->next_PGE_in_room;
 		}
 	}
+	if (0) {
+		// this is part of the game protection, the changeRoom opcode is
+		// swapped with the protection screen so that it triggers when
+		// Conrad uses the teleporter or changes to another room.
+		//
+		// _pge_opcodeTable[0x82] = pge_op_protectionScreen;
+	}
 	for (uint16_t i = 0; i < _res._pgeNum; ++i) {
 		LivePGE *pge = _pge_liveTable2[i];
 		if (pge && _currentRoom != pge->room_location) {
@@ -1876,6 +1883,7 @@ int Game::pge_op_setPiegePosModX(ObjectOpcodeArgs *args) {
 
 // taxi and teleporter
 int Game::pge_op_changeRoom(ObjectOpcodeArgs *args) {
+	// pge_op_protectionScreen
 	InitPGE *init_pge_1 = args->pge->init_PGE;
 	assert(args->a >= 0 && args->a < 3);
 	const int16_t _ax = init_pge_1->counter_values[args->a];
@@ -1890,16 +1898,17 @@ int Game::pge_op_changeRoom(ObjectOpcodeArgs *args) {
 			// return;
 		}
 	}
+	// pge_op_changeRoom
 	const int16_t _bx = init_pge_1->counter_values[args->a + 1];
 	LivePGE *live_pge_1 = &_pgeLive[_bx];
 	LivePGE *live_pge_2 = &_pgeLive[_ax];
 	int8_t pge_room = live_pge_1->room_location;
 	if (pge_room >= 0 && pge_room < 0x40) {
-		int8_t _al = live_pge_2->room_location;
+		const int8_t room = live_pge_2->room_location;
 		live_pge_2->pos_x = live_pge_1->pos_x;
 		live_pge_2->pos_y = live_pge_1->pos_y;
 		live_pge_2->room_location = live_pge_1->room_location;
-		pge_addToCurrentRoomList(live_pge_2, _al);
+		pge_addToCurrentRoomList(live_pge_2, room);
 		InitPGE *init_pge_2 = live_pge_2->init_PGE;
 		init_pge_1 = live_pge_1->init_PGE;
 		if (init_pge_2->obj_node_number == init_pge_1->obj_node_number) {
