@@ -1184,7 +1184,7 @@ int Game::pge_op_killInventoryPiege(ObjectOpcodeArgs *args) {
 	pge->room_location = 0xFE;
 	pge->flags &= ~4;
 	_pge_liveTable2[pge->index] = 0;
-	LivePGE *inv_pge = pge_getInventoryItemBefore(&_pgeLive[args->a], pge);
+	LivePGE *inv_pge = pge_getPreviousInventoryItem(&_pgeLive[args->a], pge);
 	if (inv_pge == &_pgeLive[args->a]) {
 		if (pge->index != inv_pge->current_inventory_PGE) {
 			return 1;
@@ -1991,7 +1991,7 @@ int Game::pge_op_isTempVar1Set(ObjectOpcodeArgs *args) {
 }
 
 int Game::pge_setCurrentInventoryObject(LivePGE *pge) {
-	LivePGE *_bx = pge_getInventoryItemBefore(&_pgeLive[0], pge);
+	LivePGE *_bx = pge_getPreviousInventoryItem(&_pgeLive[0], pge);
 	if (_bx == &_pgeLive[0]) {
 		if (_bx->current_inventory_PGE != pge->index) {
 			return 0;
@@ -2010,14 +2010,14 @@ void Game::pge_updateInventory(LivePGE *pge1, LivePGE *pge2) {
 	if (pge2->unkF != 0xFF) {
 		pge_reorderInventory(pge2);
 	}
-	LivePGE *_ax = pge_getInventoryItemBefore(pge1, 0);
+	LivePGE *_ax = pge_getPreviousInventoryItem(pge1, 0);
 	pge_addToInventory(_ax, pge2, pge1);
 }
 
 void Game::pge_reorderInventory(LivePGE *pge) {
 	if (pge->unkF != 0xFF) {
 		LivePGE *_bx = &_pgeLive[pge->unkF];
-		LivePGE *_di = pge_getInventoryItemBefore(_bx, pge);
+		LivePGE *_di = pge_getPreviousInventoryItem(_bx, pge);
 		if (_di == _bx) {
 			if (_di->current_inventory_PGE == pge->index) {
 				pge_removeFromInventory(_di, pge, _bx);
@@ -2030,7 +2030,7 @@ void Game::pge_reorderInventory(LivePGE *pge) {
 	}
 }
 
-LivePGE *Game::pge_getInventoryItemBefore(LivePGE *pge, LivePGE *last_pge) {
+LivePGE *Game::pge_getPreviousInventoryItem(LivePGE *pge, LivePGE *last_pge) {
 	LivePGE *_di = pge;
 	uint8_t n = _di->current_inventory_PGE;
 	while (n != 0xFF) {
@@ -2149,7 +2149,12 @@ void Game::pge_sendMessage(uint8_t src_pge_index, uint8_t dst_pge_index, int16_t
 		if (dst_pge_index == 0 && _blinkingConradCounter != 0) {
 			return;
 		}
-		// XXX
+		if (0) {
+			// zoom on piege handling
+			const int type = _pgeLive[dst_pge_index].init_PGE->object_type;
+			if (type == 1 || type == 10) {
+			}
+		}
 	}
 	MessagePGE *le = _pge_nextFreeMessage;
 	if (le) {

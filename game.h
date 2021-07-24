@@ -315,7 +315,7 @@ struct Game {
 	int pge_setCurrentInventoryObject(LivePGE *pge);
 	void pge_updateInventory(LivePGE *pge1, LivePGE *pge2);
 	void pge_reorderInventory(LivePGE *pge);
-	LivePGE *pge_getInventoryItemBefore(LivePGE *pge, LivePGE *last_pge);
+	LivePGE *pge_getPreviousInventoryItem(LivePGE *pge, LivePGE *last_pge);
 	void pge_addToInventory(LivePGE *pge1, LivePGE *pge2, LivePGE *pge3);
 	int pge_updateCollisionState(LivePGE *pge, int16_t pge_dy, uint8_t value);
 	int pge_ZOrder(LivePGE *pge, int16_t num, pge_ZOrderCallback compare, uint16_t unk);
