@@ -335,15 +335,17 @@ bool SeqPlayer::mix(int16_t *buf, int samples) {
 		return true;
 	}
 	while (_soundQueue && samples > 0) {
-		*buf++ = _soundQueue->data[_soundQueue->read];
-		++_soundQueue->read;
+		const int count = MIN(samples, _soundQueue->size - _soundQueue->read);
+		memcpy(buf, _soundQueue->data + _soundQueue->read, count * sizeof(int16_t));
+		buf += count;
+		_soundQueue->read += count;
 		if (_soundQueue->read == _soundQueue->size) {
 			SoundBufferQueue *next = _soundQueue->next;
 			free(_soundQueue->data);
 			free(_soundQueue);
 			_soundQueue = next;
 		}
-		--samples;
+		samples -= count;
 	}
 	return true;
 }
