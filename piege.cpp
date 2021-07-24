@@ -1265,14 +1265,11 @@ int Game::pge_op_incLife(ObjectOpcodeArgs *args) {
 	return 1;
 }
 
-// level2, Ian
 int Game::pge_op_setPiegeDefaultAnim(ObjectOpcodeArgs *args) {
 	assert(args->a >= 0 && args->a < 4);
-	int16_t r = args->pge->init_PGE->counter_values[args->a];
-	args->pge->room_location = r;
-	if (r == 1) {
-		// this happens after death tower, on earth, when Conrad passes
-		// by the first policeman who's about to shoot him in the back
+	InitPGE *init_pge = args->pge->init_PGE;
+	args->pge->room_location = init_pge->counter_values[args->a];
+	if (init_pge->object_type == 1) {
 		_loadMap = true;
 	}
 	pge_setupDefaultAnim(args->pge);
