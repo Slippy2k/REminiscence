@@ -76,7 +76,7 @@ void Game::pge_loadForCurrentLevel(uint16_t idx) {
 	live_pge->collision_slot = 0xFF;
 	live_pge->next_inventory_PGE = 0xFF;
 	live_pge->current_inventory_PGE = 0xFF;
-	live_pge->unkF = 0xFF;
+	live_pge->ref_inventory_PGE = 0xFF;
 	live_pge->anim_number = 0;
 	live_pge->index = idx;
 	live_pge->next_PGE_in_room = 0;
@@ -358,13 +358,6 @@ void Game::pge_prepare() {
 			}
 			pge = pge->next_PGE_in_room;
 		}
-	}
-	if (0) {
-		// this is part of the game protection, the changeRoom opcode is
-		// swapped with the protection screen so that it triggers when
-		// Conrad uses the teleporter or changes to another room.
-		//
-		// _pge_opcodeTable[0x82] = pge_op_protectionScreen;
 	}
 	for (uint16_t i = 0; i < _res._pgeNum; ++i) {
 		LivePGE *pge = _pge_liveTable2[i];
@@ -1848,7 +1841,7 @@ int Game::pge_o_unk0x7F(ObjectOpcodeArgs *args) {
 		CollisionSlot *slot = _col_slotsTable[var4];
 		while (slot) {
 			if (slot->live_pge != args->pge) {
-				if (slot->live_pge->init_PGE->object_type == 3 && var2 != slot->live_pge->unkF) {
+				if (slot->live_pge->init_PGE->object_type == 3 && var2 != slot->live_pge->ref_inventory_PGE) {
 					return 0;
 				}
 			}
@@ -1862,7 +1855,7 @@ int Game::pge_o_unk0x7F(ObjectOpcodeArgs *args) {
 }
 
 int Game::pge_op_setPiegePosX(ObjectOpcodeArgs *args) {
-	uint8_t pge_num = args->pge->unkF;
+	uint8_t pge_num = args->pge->ref_inventory_PGE;
 	if (pge_num != 0xFF) {
 		args->pge->pos_x = _pgeLive[pge_num].pos_x;
 	}
@@ -1870,7 +1863,7 @@ int Game::pge_op_setPiegePosX(ObjectOpcodeArgs *args) {
 }
 
 int Game::pge_op_setPiegePosModX(ObjectOpcodeArgs *args) {
-	uint8_t pge_num = args->pge->unkF;
+	uint8_t pge_num = args->pge->ref_inventory_PGE;
 	if (pge_num != 0xFF) {
 		int16_t dx = _pgeLive[pge_num].pos_x % 256;
 		if (dx >= args->pge->pos_x) {
@@ -1885,14 +1878,9 @@ int Game::pge_op_setPiegePosModX(ObjectOpcodeArgs *args) {
 int Game::pge_op_changeRoom(ObjectOpcodeArgs *args) {
 	// pge_op_protectionScreen
 	InitPGE *init_pge_1 = args->pge->init_PGE;
-	assert(args->a >= 0 && args->a < 3);
 	const int16_t _ax = init_pge_1->counter_values[args->a];
-	if (_ax == 0 && !g_options.bypass_protection && !g_options.use_words_protection && !_res.isMac()) {
+	if (_ax == 0 && !g_options.bypass_protection && !g_options.use_words_protection && (_res.isAmiga() || _res.isDOS())) {
 		if (!handleProtectionScreenShape()) {
-			warning("Game::pge_op_changeRoom() protection check failed");
-			// when protection check fails, the changeRoom opcode is disabled,
-			// rendering the teleporter unusable.
-			//
 			// _pge_opcodeTable[0x82] = &Game::pge_op_nop;
 			// _pge_opGunVar = 0;
 			// return;
@@ -2016,7 +2004,7 @@ int Game::pge_setCurrentInventoryObject(LivePGE *pge) {
 }
 
 void Game::pge_updateInventory(LivePGE *pge1, LivePGE *pge2) {
-	if (pge2->unkF != 0xFF) {
+	if (pge2->ref_inventory_PGE != 0xFF) {
 		pge_reorderInventory(pge2);
 	}
 	LivePGE *_ax = pge_getPreviousInventoryItem(pge1, 0);
@@ -2024,8 +2012,8 @@ void Game::pge_updateInventory(LivePGE *pge1, LivePGE *pge2) {
 }
 
 void Game::pge_reorderInventory(LivePGE *pge) {
-	if (pge->unkF != 0xFF) {
-		LivePGE *_bx = &_pgeLive[pge->unkF];
+	if (pge->ref_inventory_PGE != 0xFF) {
+		LivePGE *_bx = &_pgeLive[pge->ref_inventory_PGE];
 		LivePGE *_di = pge_getPreviousInventoryItem(_bx, pge);
 		if (_di == _bx) {
 			if (_di->current_inventory_PGE == pge->index) {
@@ -2055,7 +2043,7 @@ LivePGE *Game::pge_getPreviousInventoryItem(LivePGE *pge, LivePGE *last_pge) {
 }
 
 void Game::pge_addToInventory(LivePGE *pge1, LivePGE *pge2, LivePGE *pge3) {
-	pge2->unkF = pge3->index;
+	pge2->ref_inventory_PGE = pge3->index;
 	if (pge1 == pge3) {
 		pge2->next_inventory_PGE = pge1->current_inventory_PGE;
 		pge1->current_inventory_PGE = pge2->index;
@@ -2178,7 +2166,7 @@ void Game::pge_sendMessage(uint8_t src_pge_index, uint8_t dst_pge_index, int16_t
 }
 
 void Game::pge_removeFromInventory(LivePGE *pge1, LivePGE *pge2, LivePGE *pge3) {
-	pge2->unkF = 0xFF;
+	pge2->ref_inventory_PGE = 0xFF;
 	if (pge3 == pge1) {
 		pge3->current_inventory_PGE = pge2->next_inventory_PGE;
 		pge2->next_inventory_PGE = 0xFF;

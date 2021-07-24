@@ -195,11 +195,11 @@ struct LivePGE {
 	uint8_t anim_seq;
 	uint8_t room_location;
 	int16_t life;
-	int16_t counter_value; // msg
+	int16_t counter_value;
 	uint8_t collision_slot;
 	uint8_t next_inventory_PGE;
 	uint8_t current_inventory_PGE;
-	uint8_t unkF; // unk_inventory_PGE
+	uint8_t ref_inventory_PGE;
 	uint16_t anim_number;
 	uint8_t flags;
 	uint8_t index;

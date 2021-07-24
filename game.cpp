@@ -56,7 +56,7 @@ void Game::run() {
 		break;
 	}
 
-	if (!g_options.bypass_protection && !g_options.use_words_protection && !_res.isMac()) {
+	if (!g_options.bypass_protection && !g_options.use_words_protection && (_res.isAmiga() || _res.isDOS())) {
 		while (!handleProtectionScreenShape()) {
 			if (_stub->_pi.quit) {
 				return;
@@ -2109,7 +2109,7 @@ void Game::saveState(File *f) {
 		f->writeByte(pge->collision_slot);
 		f->writeByte(pge->next_inventory_PGE);
 		f->writeByte(pge->current_inventory_PGE);
-		f->writeByte(pge->unkF);
+		f->writeByte(pge->ref_inventory_PGE);
 		f->writeUint16BE(pge->anim_number);
 		f->writeByte(pge->flags);
 		f->writeByte(pge->index);
@@ -2173,7 +2173,7 @@ void Game::loadState(File *f) {
 		pge->collision_slot = f->readByte();
 		pge->next_inventory_PGE = f->readByte();
 		pge->current_inventory_PGE = f->readByte();
-		pge->unkF = f->readByte();
+		pge->ref_inventory_PGE = f->readByte();
 		pge->anim_number = f->readUint16BE();
 		pge->flags = f->readByte();
 		pge->index = f->readByte();
