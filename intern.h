@@ -173,7 +173,7 @@ struct InitPGE {
 	int16_t pos_y;
 	uint16_t obj_node_number;
 	uint16_t life;
-	int16_t counter_values[4]; // data
+	int16_t data[4];
 	uint8_t object_type;
 	uint8_t init_room;
 	uint8_t room_location;

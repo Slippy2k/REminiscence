@@ -231,7 +231,7 @@ int16_t Game::col_detectHit(LivePGE *pge, int16_t arg2, int16_t arg4, col_Callba
 	if (pge_room < 0 || pge_room >= 0x40) {
 		return 0;
 	}
-	int16_t thr = pge->init_PGE->counter_values[0];
+	int16_t thr = pge->init_PGE->data[0];
 	if (thr > 0) {
 		pos_dx = -1;
 		pos_dy = -1;
@@ -452,9 +452,9 @@ int Game::col_detectGunHit(LivePGE *pge, int16_t arg2, int16_t arg4, col_Callbac
 	if (pge_room < 0 || pge_room >= 0x40) return 0;
 	int16_t thr, pos_dx, pos_dy;
 	if (argC == -1) {
-		thr = pge->init_PGE->counter_values[0];
+		thr = pge->init_PGE->data[0];
 	} else {
-		thr = pge->init_PGE->counter_values[3];
+		thr = pge->init_PGE->data[3];
 	}
 	if (thr > 0) {
 		pos_dx = -1;

@@ -1064,7 +1064,7 @@ void Resource::load_PGE(File *f) {
 		pge->obj_node_number = f->readUint16LE();
 		pge->life = f->readUint16LE();
 		for (int lc = 0; lc < 4; ++lc) {
-			pge->counter_values[lc] = f->readUint16LE();
+			pge->data[lc] = f->readUint16LE();
 		}
 		pge->object_type = f->readByte();
 		pge->init_room = f->readByte();
@@ -1095,7 +1095,7 @@ void Resource::decodePGE(const uint8_t *p, int size) {
 		pge->obj_node_number = _readUint16(p); p += 2;
 		pge->life = _readUint16(p); p += 2;
 		for (int lc = 0; lc < 4; ++lc) {
-			pge->counter_values[lc] = _readUint16(p); p += 2;
+			pge->data[lc] = _readUint16(p); p += 2;
 		}
 		pge->object_type = *p++;
 		pge->init_room = *p++;
