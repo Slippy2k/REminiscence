@@ -3606,7 +3606,7 @@ const Game::pge_OpcodeProc Game::_pge_opcodeTable[] = {
 	&Game::pge_op_setLifeCounter,
 	&Game::pge_op_decLifeCounter,
 	&Game::pge_op_playCutscene,
-	&Game::pge_op_isTempVar2Set,
+	&Game::pge_op_compareUnkVar,
 	/* 0x5C */
 	&Game::pge_op_playDeathCutscene,
 	&Game::pge_o_unk0x5D,

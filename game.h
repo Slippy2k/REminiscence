@@ -156,7 +156,6 @@ struct Game {
 	bool _pge_processOBJ;
 	uint8_t _pge_inpKeysMask;
 	uint16_t _pge_opGunVar;
-	uint16_t _pge_opTempVar2;
 	uint16_t _pge_compareVar1;
 	uint16_t _pge_compareVar2;
 
@@ -264,7 +263,7 @@ struct Game {
 	int pge_op_setLifeCounter(ObjectOpcodeArgs *args);
 	int pge_op_decLifeCounter(ObjectOpcodeArgs *args);
 	int pge_op_playCutscene(ObjectOpcodeArgs *args);
-	int pge_op_isTempVar2Set(ObjectOpcodeArgs *args);
+	int pge_op_compareUnkVar(ObjectOpcodeArgs *args);
 	int pge_op_playDeathCutscene(ObjectOpcodeArgs *args);
 	int pge_o_unk0x5D(ObjectOpcodeArgs *args);
 	int pge_o_unk0x5E(ObjectOpcodeArgs *args);

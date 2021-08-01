@@ -359,7 +359,6 @@ void Game::resetGameState() {
 	_animBuffers._curPos[3] = 0xFF;
 	_currentRoom = _res._pgeInit[0].init_room;
 	_cut._deathCutsceneId = 0xFFFF;
-	_pge_opTempVar2 = 0xFFFF;
 	_deathCutsceneCounter = 0;
 	_saveStateCompleted = false;
 	_loadMap = true;

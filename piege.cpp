@@ -1293,8 +1293,9 @@ int Game::pge_op_playCutscene(ObjectOpcodeArgs *args) {
 	return 1;
 }
 
-int Game::pge_op_isTempVar2Set(ObjectOpcodeArgs *args) {
-	if (_pge_opTempVar2 == args->a) {
+// unused
+int Game::pge_op_compareUnkVar(ObjectOpcodeArgs *args) {
+	if (args->a == 0xFFFF) {
 		return 1;
 	}
 	return 0;
