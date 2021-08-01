@@ -1026,7 +1026,7 @@ void Game::drawString(const uint8_t *p, int x, int y, uint8_t color, bool hcente
 }
 
 void Game::prepareAnims() {
-	if (!(_currentRoom & 0x80) && _currentRoom < 0x40) {
+	if (_currentRoom < 0x40) {
 		int8_t pge_room;
 		LivePGE *pge = _pge_liveTable1[_currentRoom];
 		while (pge) {

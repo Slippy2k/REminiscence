@@ -435,7 +435,7 @@ void Game::pge_setupOtherPieges(LivePGE *pge, InitPGE *init_pge) {
 			_currentRoom = room;
 			col_prepareRoomState();
 			_loadMap = true;
-			if (!(_currentRoom & 0x80) && _currentRoom < 0x40) {
+			if (_currentRoom < 0x40) {
 				LivePGE *pge_it = _pge_liveTable1[_currentRoom];
 				while (pge_it) {
 					if (pge_it->init_PGE->flags & 4) {
