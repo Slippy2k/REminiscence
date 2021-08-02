@@ -1538,6 +1538,10 @@ bool Game::hasLevelMap(int level, int room) const {
 	return false;
 }
 
+static bool isMetro(int level, int room) {
+	return level == 1 && (room == 0 || room == 13 || room == 38 || room == 51);
+}
+
 void Game::loadLevelMap() {
 	debug(DBG_GAME, "Game::loadLevelMap() room=%d", _currentRoom);
 	bool widescreenUpdated = false;
@@ -1572,14 +1576,14 @@ void Game::loadLevelMap() {
 	case kResourceTypeDOS:
 		if (_stub->hasWidescreen() && _widescreenMode == kWidescreenAdjacentRooms) {
 			const int leftRoom = _res._ctData[CT_LEFT_ROOM + _currentRoom];
-			if (leftRoom > 0 && hasLevelMap(_currentLevel, leftRoom)) {
+			if (leftRoom > 0 && hasLevelMap(_currentLevel, leftRoom) && !isMetro(_currentLevel, leftRoom)) {
 				_vid.PC_decodeMap(_currentLevel, leftRoom);
 				_stub->copyWidescreenLeft(Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._backLayer);
 			} else {
 				_stub->copyWidescreenLeft(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
 			}
 			const int rightRoom = _res._ctData[CT_RIGHT_ROOM + _currentRoom];
-			if (rightRoom > 0 && hasLevelMap(_currentLevel, rightRoom)) {
+			if (rightRoom > 0 && hasLevelMap(_currentLevel, rightRoom) && !isMetro(_currentLevel, rightRoom)) {
 				_vid.PC_decodeMap(_currentLevel, rightRoom);
 				_stub->copyWidescreenRight(Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._backLayer);
 			} else {
