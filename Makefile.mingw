@@ -6,7 +6,7 @@ CXX     := i686-w64-mingw32-g++
 STRIP   := i686-w64-mingw32-strip
 WINDRES := i686-w64-mingw32-windres
 
-CXXFLAGS += -O2 -Wall $(SDL_CFLAGS) -DUSE_MODPLUG -DMODPLUG_STATIC -DUSE_ZLIB
+CXXFLAGS += -O2 -Wall $(SDL_CFLAGS) -DUSE_MODPLUG -DMODPLUG_STATIC -DUSE_STB_VORBIS -DUSE_ZLIB
 
 SRCS := collision.cpp cpc_player.cpp cutscene.cpp decode_mac.cpp file.cpp fs.cpp game.cpp graphics.cpp main.cpp \
 	menu.cpp mixer.cpp mod_player.cpp ogg_player.cpp piege.cpp protection.cpp resource.cpp resource_aba.cpp \
