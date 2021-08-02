@@ -126,12 +126,11 @@ void Game::run() {
 					_skillLevel = kSkillNormal;
 					_currentLevel = _demoInputs[_demoBin].level;
 					_randSeed = 0;
-					_mix.stopMusic();
-					break;
+				} else {
+					_demoBin = -1;
+					_skillLevel = _menu._skill;
+					_currentLevel = _menu._level;
 				}
-				_demoBin = -1;
-				_skillLevel = _menu._skill;
-				_currentLevel = _menu._level;
 				_mix.stopMusic();
 				break;
 			case kResourceTypeAmiga:
@@ -479,9 +478,7 @@ void Game::playCutscene(int id) {
 		_cut._id = id;
 	}
 	if (_cut._id != 0xFFFF) {
-		if (_stub->hasWidescreen()) {
-			_stub->enableWidescreen(false);
-		}
+		ToggleWidescreenStack tws(_stub, false);
 		_mix.stopMusic();
 		if (_res._hasSeqData) {
 			int num = 0;
@@ -530,22 +527,20 @@ void Game::playCutscene(int id) {
 					} else {
 						_cut._id = 0xFFFF;
 					}
+					_mix.stopMusic();
 					return;
 				}
 			}
 		}
-		if (_cut._id != 0x4A) {
-			_mix.playMusic(Cutscene::_musicTable[_cut._id]);
-		}
+		_mix.playMusic(Cutscene::_musicTable[_cut._id]);
 		_cut.play();
 		if (id == 0xD && !_cut._interrupted) {
-			const bool extendedIntroduction = (_res._type == kResourceTypeDOS || _res._type == kResourceTypeMac);
-			if (extendedIntroduction) {
-				_cut._id = 0x4A;
+			if (!_res.isAmiga()) {
+				_cut._id = 0x4A; // second part of the introduction cutscene
 				_cut.play();
 			}
 		}
-		if (_res._type == kResourceTypeMac && !(id == 0x48 || id == 0x49)) { // continue or score screens
+		if (_res.isMac() && !(id == 0x48 || id == 0x49)) { // continue or score screens
 			// restore palette entries modified by the cutscene player (0xC and 0xD)
 			Color palette[32];
 			_res.MAC_copyClut16(palette, 0, 0x37);
@@ -559,9 +554,6 @@ void Game::playCutscene(int id) {
 			_cut.playCredits();
 		}
 		_mix.stopMusic();
-		if (_stub->hasWidescreen()) {
-			_stub->enableWidescreen(true);
-		}
 	}
 }
 

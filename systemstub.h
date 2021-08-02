@@ -99,6 +99,22 @@ struct LockAudioStack {
 	SystemStub *_stub;
 };
 
+struct ToggleWidescreenStack {
+	ToggleWidescreenStack(SystemStub *stub, bool state)
+		: _stub(stub), _state(state) {
+		if (_stub->hasWidescreen()) {
+			_stub->enableWidescreen(_state);
+		}
+	}
+	~ToggleWidescreenStack() {
+		if (_stub->hasWidescreen()) {
+			_stub->enableWidescreen(!_state);
+		}
+	}
+	SystemStub *_stub;
+	bool _state;
+};
+
 extern SystemStub *SystemStub_SDL_create();
 
 #endif // SYSTEMSTUB_H__
