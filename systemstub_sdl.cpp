@@ -740,8 +740,8 @@ void SystemStub_SDL::processEvent(const SDL_Event &ev, bool &paused) {
 				break;
 			case SDLK_s: {
 					char name[32];
-					snprintf(name, sizeof(name), "screenshot-%03d.tga", _screenshot);
-					saveTGA(name, (const uint8_t *)_screenBuffer, _screenW, _screenH);
+					snprintf(name, sizeof(name), "screenshot-%03d.bmp", _screenshot);
+					saveBMP(name, (const uint8_t *)_screenBuffer, 0, _screenW, _screenH);
 					++_screenshot;
 					debug(DBG_INFO, "Written '%s'", name);
 				}
