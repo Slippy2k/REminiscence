@@ -1,0 +1,16 @@
+
+pge_op_changeRoom : pge_op_0x82_protection_screen2
+pge_op_changeRoomHelper : pge_op_0x82_change_room
+
+_protection_screenCounter : _protection_screen1_shown_flag
+_protection_counter : _protection_screen1_input_flag
+
+_game_inDemoMode : _demo_mode_flag
+
+_protection_unkVar1 : _protection_pge_opcode_tbl_0x82
+_protection_unkVar2 : _protection_screen2_input_flag
+
+_game_ctVarCount1 ; _protection_grid_sync_counter1
+_game_ctVarCount2 ; _protection_grid_sync_counter2
+
+_protection_randomVar2 ; _protection_symbol_rand_var

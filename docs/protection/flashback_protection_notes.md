@@ -1,66 +1,63 @@
 
 # Flashback Protection Notes
 
-Being released in the early 90s, the developers from Delphine Software protected the game code to prevent piracy.
+Being released in the early 90s, the developers from [Delphine Software](https://www.mobygames.com/company/delphine-software-international) protected the game code to prevent piracy.
 
 On start (and later in the game !), the player would have to lookup some symbols in the manual provided with the game.
 
 This document tries to list the game engine routines related to the game protection.
 
-The addresses and instructions are based on the disassembly of French DOS version executable.
+The addresses and instructions are based on the disassembly of the French DOS version executable.
 
 
 
 ## Anti debugging
 
-To make it difficult to attach a debugger to the executable, the game sets up its own vector routine on INT 3.
+
+The game executable sets up its own vector routine for the [interrupt 3](https://en.wikipedia.org/wiki/INT_%28x86_instruction%29%23INT3).
 
 ```
-seg000:7CC3 isr_int3 proc far          ; DATA XREF: protection_installVector+Eo
-seg000:7CC3                                         ; sub_0_17CA3+1o
+seg000:7CC3 isr_int3
 seg000:7CC3       inc _timer_counter
 seg000:7CC7       inc _protection_symbol_rand_var
 seg000:7CCB       iret
 
-seg000:7C94       push ds
 seg000:7C95       mov dx, offset isr_int3
 seg000:7C98       mov ax, cs
 seg000:7C9A       mov ds, ax
-seg000:7C9C       assume ds:seg000
 seg000:7C9C       mov ax, 2503h
 seg000:7C9F       int 21h
 ```
 
-The interrupt is called within the timer routine itself.
+That interrupt is itself triggered from the [timer vector](https://stanislavs.org/helppc/8253.html).
 
 ```
 seg000:7CEC isr_int8 proc far               ; DATA XREF: timer_sync+4Eo
-seg000:7CEC       push ds
-seg000:7CED       push ax
-seg000:7CEE       mov ax, seg dseg
-seg000:7CF1       mov ds, ax
-seg000:7CF3       xor byte_1B73_3661C, 1
 seg000:7CF8       jz loc_0_17D2A
 seg000:7CFA       int 3                             ; Trap to Debugger
 
 seg000:7B69       mov dx, offset isr_int8
 seg000:7B6C       mov ax, cs
 seg000:7B6E       mov ds, ax
-seg000:7B70       assume ds:seg000
 seg000:7B70       mov ax, 2508h
 ```
 
-If a debugger was attached to the code, it would be called way too frequently.
-To continue with analysing, calls to int 3 would have to be nop'ed.
+If a debugger was attached to the program, it would be called (too) frequently.
 
 
 ## Protection Screen 1
 
-The protection first shows when starting the game.
+The protection first shows when starting the game after loading the level data files.
 
-![fb-protection-symbol](fb-protection-symbol.png)
+![fb-protection-symbol](https://imgur.com/TtV1ey8)
 
-Find the call is relatively starigforward, as the 'CODE' letter can be found in clear in the code.
+```
+seg000:13F4       call load_level_data
+...
+seg000:1401       call protection_screen1
+```
+
+The call is relatively straightforward to locate as the 'CODE' letters can be found in clear in the code.
 
 ```
 seg000:D7BE       mov di, offset _cut_textBuf
@@ -76,31 +73,23 @@ seg000:D7D1       mov byte ptr [di], 20h ; ' '
 seg000:D7D4       inc di
 ```
 
-A first approach would nop the calls to the protection.
+The function call should not simply be bypassed, as the protection rountine sets two flags.
 
-```
-seg000:13F4       call load_level_data
-...
-seg000:1401       call protection_screen1
-```
-
-But this would not work as the protection routine actually set two flags.
-
-The first flag is set in the protection screen function when entering 
+The first flag is set after the screen is displayed (eg. the function was actually called).
 
 ```
 seg000:D86E       inc _protection_screen1_shown_flag
 ```
 
-And the second flag ise set when the code entered by the player match the symbol.
+And the second flag is set when the code entered by the player matches the symbol.
 
 ```
 seg000:D986       mov _protection_screen1_input_flag, 0FFh
 ```
 
-The first flag is read to nag the game cracker when opening the inventory.
+The first flag is checked in the inventory and nags the game cracker.
 
-![fb-protection-inventory-cracker](fb-protection-inventory-cracker.png)
+![fb-protection-inventory-cracker](https://imgur.com/X36fD1V)
 
 The text cannot be found in clear in the executable as it is xor'ed.
 
@@ -136,9 +125,9 @@ seg000:2B18 .L1:
 
 The second flag conditions the game cutscenes.
 
-![fb-protection-cutscene-holocube](fb-protection-cutscene-holocube.png)
+![fb-protection-cutscene-holocube](https://imgur.com/uvC2cHc)
 
-Not setting it would result in the cutscenes being skipped.
+Cutscenes are skipped if it is not set.
 
 ```
 seg000:14DB       cmp _demo_mode_flag, 0
@@ -152,14 +141,15 @@ seg000:14EC       call near ptr cut_play
 seg000:14EF       add sp, 2
 ```
 
+
 ## Protection Screen 2
 
 The second protection screen is shown later in the game when switching rooms by using a teleporter or taking a taxi.
 
-![fb-protection-taxi-1](fb-protection-taxi-1.png) ![fb-protection-taxi-2](fb-protection-taxi-2.png)
+![fb-protection-taxi-1](https://imgur.com/UmPQfsv) ![fb-protection-taxi-2](https://imgur.com/7Mq3nS4)
 
-Internally, the game engine has an opcode table for the game objects. One of these opcodes (0x82) handles moving an
-object to a different room.
+Internally, the game engine has an opcode table for the game objects.
+One of these opcodes (0x82) handles moving an object to a different room.
 
 Initially, the table is initialized with a different routine than the `change_room` opcode.
 
@@ -171,8 +161,8 @@ dseg:0D39       dw offset pge_op_0x83_has_inventory_item
 dseg:0D3B       dw offset pge_op_0x84_change_level
 ```
 
-This opcode contains another protection screen, also requiring to lookup the symbols in the manual. The code
-is duplicated from the first screen and this time, the 'code' letters are obfuscated.
+This `protection_screen2' opcode contains another protection screen, also requiring to lookup the symbols in the manual.
+The code is duplicated from the first screen routine and this time, the 'code' letters are obfuscated.
 
 ```
 seg000:6E07       mov di, offset _text_buffer
@@ -188,8 +178,8 @@ seg000:6E28       mov byte ptr [di+4], 1Dh
 seg000:6E2C       add byte ptr [di+4], 3
 ```
 
-If the code entered by the player matches the symbol, the game engine updates the opcodes table with the real
-change_room opcode, calls it and set a flag.
+If the code entered by the player matches the symbol, the game engine updates the opcodes table with the real change_room opcode,
+calls it and finally sets a flag.
 
 ```
 seg000:1448       mov si, offset pge_op_0x82_protection_screen2 ; &_pge_opcode_tbl[0x82]
@@ -210,8 +200,8 @@ seg000:700D       call bx
 seg000:702E       mov _protection_screen2_input_flag, 0FFh
 ```
 
-However, if the symbols entered do not match after 3 tries, the game continues but patches the jump table opcod
-with a 'nop', rendering the teleporter and taxi unsable.
+However, if the symbols entered do not match after 3 tries, the game continues but patches the opcode 0x82 table with a 'nop',
+rendering the teleporter and taxi unsable.
 
 ```
 seg000:6D33       mov si, offset _pge_opcode_tbl
@@ -225,10 +215,8 @@ seg000:7072       mov [bx], ax
 seg000:7096       mov _protection_screen2_input_flag, 0
 ```
 
-The `_protection_screen2_input_flag` flag is set to swap 
-
-Similar to the first protection screen, there is flag that is set when the protection screen exits. This is used to
-swap again the opcodes table 0x82 opcode with the protection screen.
+Similar to the first protection screen, there is flag that is set when the protection screen exits.
+This is used to swap again the opcode 0x82 with the protection screen routine.
 
 ```
 seg000:21DF       mov si, offset _pge_opcode_tbl
@@ -252,15 +240,15 @@ seg000:2247 .L1:
 
 The third protection found in the game engine is related to the room grid. Conrad would sometimes fall randomly.
 
-![fb-protection-grid-fall](fb-protection-grid-fall.png)
+![fb-protection-grid-fall](https://imgur.com/kYJK0Z4)
 
 Internally, each object movement in a room is restricted to a grid of 16 horizontal by 3 vertical cells (256 / 16 and 224 / 72).
 
-![fb-protection-grid-room](fb-protection-grid-room.png)
+![fb-protection-grid-room](https://imgur.com/6pgs040)
 
 The attribute of each cell (eg. collide, walk) can be queried by some of the opcodes.
 
-The engine increments two counters and if they ran out of sync, the grid opcodes 2d (+2x,+1y) and 2u (+2x,-1y) are swapped.
+The engine increments two counters and if they ran out of sync, the grid opcodes 2d (x+2,y+1) and 2u (x+2,y-1) are swapped.
 
 ```
 seg000:4828       mov bx, offset _pge_opcode_tbl

@@ -1,0 +1,270 @@
+
+protection
+        _protection_unkVar1 : op_changeRoom opcode
+        _protection_unkVar2 : flag if opcode op_changeRoom has been changed
+
+
+mainLoop
+
+seg000:1448       mov si, offset pge_op_changeRoomHelper
+seg000:144B       mov _protection_unkVar1, si
+
+seg000:14DB loc_0_114DB:                            ; CODE XREF: game_mainLoop+148j
+seg000:14DB       cmp _game_inDemoMode, 0
+seg000:14E0       jnz loc_0_114E9
+seg000:14E2       cmp _protection_counter, 0
+seg000:14E7       jz loc_0_114F2
+seg000:14E9 
+seg000:14E9 loc_0_114E9:                            ; CODE XREF: game_mainLoop+168j
+seg000:14E9       push 1
+seg000:14EB       push cs
+seg000:14EC       call near ptr cut_play
+
+seg000:1684       cmp _protection_counter, 0
+seg000:1689       jnz swap_PGE_opcodes
+seg000:168B       jmp exit_game
+seg000:168E ; ---------------------------------------------------------------------------
+seg000:168E 
+seg000:168E swap_PGE_opcodes:                       ; CODE XREF: game_mainLoop+30Aj
+seg000:168E                                         ; game_mainLoop+311j
+seg000:168E       mov si, offset _pge_opcodeTable
+seg000:1691       xor ah, ah
+seg000:1693       mov al, _inp_keysMask
+seg000:1696       add ax, ax
+seg000:1698       add si, ax
+seg000:169A       mov bx, [si]
+seg000:169C       cmp word_1B73_36594, 64
+seg000:16A1       jnz loc_0_116A8
+seg000:16A3       xchg bx, [si-2]
+seg000:16A6       mov [si], bx
+
+FFFFFFFF KM_UP  = 1
+FFFFFFFF KM_DOWN  = 2
+FFFFFFFF KM_LEFT  = 4
+FFFFFFFF KM_RIGHT  = 8
+FFFFFFFF KM_ENTER  = 10h
+FFFFFFFF KM_SPACE  = 20h
+FFFFFFFF KM_SHIFT  = 40h
+FFFFFFFF KM_TAB  = 70h
+FFFFFFFF KM_ESC  = 80h
+
+
+
+
+pge_prepare
+
+seg000:21DF       mov si, offset _pge_opcodeTable
+seg000:21E2       add si, 104h                      ; si = 0xD37 (o_protection_screen())
+seg000:21E6       mov [bp+prot_op1], si
+seg000:21E9       mov si, offset pge_op_changeRoom
+seg000:21EC       mov [bp+prot_op2], si
+
+seg000:2234 loc_0_12234:                            ; CODE XREF: pge_prepare+1Cj
+seg000:2234       mov bx, [bp+prot_op1]
+seg000:2237       mov ax, [bp+prot_op2]
+seg000:223A       cmp _protection_unkVar2, 0
+seg000:223F       jnz loc_0_12247
+seg000:2241       cmp [bx], ax
+seg000:2243       jz loc_0_12247
+seg000:2245       mov [bx], ax
+
+
+
+
+pge_op_changeRoom / pge_op_protectionScreen
+
+-- fail
+seg000:6FF5       call near ptr inp_keybReadCharacter
+seg000:6FF8       mov si, [bp-2]
+seg000:6FFB       mov bx, _protection_unkVar1
+seg000:6FFF       mov [si], bx
+seg000:7001       mov _game_loadMap, 0FFFFh
+seg000:7007       push word ptr [bp+6]
+seg000:700A       push word ptr [bp+4]
+seg000:700D       call bx ; vid_detectVGA
+seg000:700F       add sp, 4
+seg000:7012       mov _cut_newPal, 0
+seg000:7017       mov _cut_height, 0FFFFh
+seg000:701D       mov _cut_polVar4, 0FFFFh
+seg000:7023       mov _cut_unkVar7, 0FFFFh
+seg000:7029       mov _null_var1, 0
+seg000:702E       mov _protection_unkVar2, 0FFh
+seg000:7033       mov _pge_opTempVar1, 0FFFFh
+
+-- pass
+seg000:7062       mov _inp_disableVector, 0
+seg000:7067       mov byte_1B73_3662D, 0
+seg000:706C       mov bx, [bp-2]
+seg000:706F       mov ax, offset pge_op_nop
+seg000:7072       mov [bx], ax
+seg000:7074       mov _game_loadMap, 0FFFFh
+seg000:707A       mov _cut_newPal, 0FFh
+seg000:707F       mov _cut_height, 0
+seg000:7085       mov _cut_polVar4, 0
+seg000:708B       mov _cut_unkVar7, 0
+seg000:7091       mov _null_var1, 0FFh
+seg000:7096       mov _protection_unkVar2, 0
+seg000:709B       mov _pge_opTempVar1, 0
+seg000:70A1       nop
+seg000:70A2       push cs
+seg000:70A3       call near ptr snd_sync
+seg000:70A6       mov byte_1B73_36653, 1
+
+
+protection_screen1
+
+-- fail
+seg000:D9C1       mov _protection_counter, 0
+-- pass
+seg000:D986       mov _protection_counter, 0FFh
+
+
+
+
+seg000:7CC3 protection_vectorInt3 proc far          ; DATA XREF: protection_installVector+Eo
+seg000:7CC3                                         ; sub_0_17CA3+1o
+seg000:7CC3       inc _timer_counter
+seg000:7CC7       inc _protection_randomVar2
+seg000:7CCB       iret
+seg000:7CCB protection_vectorInt3 endp
+
+seg000:7C87 protection_installVector proc far       ; CODE XREF: snd_initSoundAndInput+33p
+seg000:7C87       mov ax, 3503h
+seg000:7C8A       int 21h                           ; DOS - 2+ - GET INTERRUPT VECTOR
+seg000:7C8A                                         ; AL = interrupt number
+seg000:7C8A                                         ; Return: ES:BX = value of interrupt vector
+seg000:7C8C       mov _protection_prev_int3_vector_ptr, bx
+seg000:7C90       mov _protection_prev_int3_vector_seg, es
+seg000:7C94       push ds
+seg000:7C95       mov dx, offset protection_vectorInt3
+seg000:7C98       mov ax, cs
+seg000:7C9A       mov ds, ax
+seg000:7C9C       assume ds:seg000
+seg000:7C9C       mov ax, 2503h
+seg000:7C9F       int 21h                           ; DOS - SET INTERRUPT VECTOR
+seg000:7C9F                                         ; AL = interrupt number
+seg000:7C9F                                         ; DS:DX = new vector to be used for specified interrupt
+seg000:7CA1       pop ds
+seg000:7CA2       assume ds:dseg
+seg000:7CA2       retf
+seg000:7CA2 protection_installVector endp
+seg000:7CA2 
+seg000:7CA3 ; [0000000F BYTES: COLLAPSED FUNCTION sub_0_17CA3. PRESS KEYPAD "+" TO EXPAND]
+seg000:7CB2 
+seg000:7CB2 ; ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦ S U B R O U T I N E ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦
+seg000:7CB2 
+seg000:7CB2 
+seg000:7CB2 protection_restoreVector proc far       ; CODE XREF: game_restoreIntrVectors+11p
+seg000:7CB2       push ds
+seg000:7CB3       mov dx, _protection_prev_int3_vector_ptr
+seg000:7CB7       mov ax, _protection_prev_int3_vector_seg
+seg000:7CBA       mov ds, ax
+seg000:7CBC       mov ax, 2503h
+seg000:7CBF       int 21h                           ; DOS - SET INTERRUPT VECTOR
+seg000:7CBF                                         ; AL = interrupt number
+seg000:7CBF                                         ; DS:DX = new vector to be used for specified interrupt
+seg000:7CC1       pop ds
+seg000:7CC2       retf
+seg000:7CC2 protection_restoreVector endp
+
+
+handleInventory
+
+seg000:2AE5       cmp _game_inDemoMode, 0
+seg000:2AEA       jnz loc_0_12B18
+seg000:2AEC       cmp _protection_screenCounter, 0
+seg000:2AF1       jnz loc_0_12B18
+seg000:2AF3       cld
+seg000:2AF4       push ds
+seg000:2AF5       pop es
+seg000:2AF6       assume es:dseg
+seg000:2AF6       mov si, offset _protection_floutString
+seg000:2AF9       mov di, offset _game_textBuffer
+seg000:2AFC       mov bx, di
+seg000:2AFE 
+seg000:2AFE loc_0_12AFE:                            ; CODE XREF: game_handleInventory+2F2j
+seg000:2AFE       lodsb
+seg000:2AFF       xor al, 5Ah
+seg000:2B01       stosb
+seg000:2B02       cmp al, 0
+seg000:2B04       jnz loc_0_12AFE
+seg000:2B06       push 0E4h ; 'S'
+seg000:2B09       push 0C1h ; '-'
+seg000:2B0C       push 41h ; 'A'
+seg000:2B0E       push ds
+seg000:2B0F       push bx
+seg000:2B10       nop
+seg000:2B11       push cs
+seg000:2B12       call near ptr vid_drawString
+seg000:2B15       add sp, 0Ah
+
+
+seg000:7CEC timer_int8Vector proc far               ; DATA XREF: timer_sync+4Eo
+seg000:7CEC       push ds
+seg000:7CED       push ax
+seg000:7CEE       mov ax, seg dseg
+seg000:7CF1       mov ds, ax
+seg000:7CF3       xor byte_1B73_3661C, 1
+seg000:7CF8       jz loc_0_17D2A
+seg000:7CFA       int 3                             ; Trap to Debugger
+
+
+seg000:78FD loc_0_178FD:                            ; CODE XREF: inp_keybVector+Fj
+seg000:78FD       mov _inp_unkVar10, 0FFh
+seg000:7902       pushf
+seg000:7903       call dword ptr _inp_keyb_prev_vector_ptr
+seg000:7907       cmp byte_1B73_3662D, 1 ; set to protection_screen1
+seg000:790C       jnz loc_0_17912
+seg000:790E       inc _game_ctVarCount2
+
+
+seg000:678C loc_0_1678C:                            ; CODE XREF: pge_op_changeRoomHelper+40j
+seg000:678C       inc _game_ctVarCount2
+seg000:6790       mov ax, 0
+seg000:6793       mov al, [di+t_live_PGE.room_location]
+seg000:6796       mov bx, [si+t_live_PGE.pos_x]
+seg000:6799       mov [di+t_live_PGE.pos_x], bx
+seg000:679C       mov bx, [si+t_live_PGE.pos_y]
+seg000:679F       mov [di+t_live_PGE.pos_y], bx
+seg000:67A2       mov bl, [si+t_live_PGE.room_location]
+seg000:67A5       mov [di+t_live_PGE.room_location], bl
+seg000:67A8       inc _game_ctVarCount1
+seg000:67AC       push ax
+seg000:67AD       push di
+seg000:67AE       call pge_addToCurrentRoomList
+
+
+seg000:161D       cmp byte_1B73_36590, 0
+seg000:1622       jz loc_0_11645
+seg000:1624       dec byte_1B73_36590
+seg000:1628       jnz loc_0_11645
+seg000:162A       mov _pge_zoomPiegeNum, 0
+seg000:162F       mov al, _game_ctVarCount2
+seg000:1632       mov ah, byte ptr word_1B73_36594
+seg000:1636       add al, ah
+seg000:1638       cmp ah, 40h ; '@'
+seg000:163B       jl loc_0_11642
+seg000:163D       mov _game_ctVarCount2, 24
+
+
+
+
+seg000:480E col_prepareRoomState
+
+seg000:4828       mov bx, offset _pge_opcodeTable
+seg000:482B       add bx, 34h ; '4'
+seg000:482E       mov [bp+pge_opcode_table_0x1A], bx
+
+seg000:489F       cmp _game_ctVarCount1, 4
+seg000:48A4       jl loc_0_148C3
+seg000:48A6       mov al, _game_ctVarCount2
+seg000:48A9       sub al, 10
+seg000:48AB       cmp _game_ctVarCount1, al
+seg000:48AF       jl loc_0_148C3 ; if (count1 >= 4 && count1 >= (count2 - 10))
+seg000:48B1       mov si, [bp+pge_opcode_table_0x1A]
+seg000:48B4       mov ax, [si]                      ; opcode_0x1A - pge_op_doesNotCollide2u,
+seg000:48B6       mov bx, [si+4]                    ; opcode_0x1C - pge_op_doesNotCollide2d,
+seg000:48B9       mov [si+4], ax
+seg000:48BC       mov [si], bx
+seg000:48BE       add _game_ctVarCount2, 12
+seg000:48C3 loc_0_148C3
