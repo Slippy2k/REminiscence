@@ -1417,6 +1417,10 @@ uint8_t *Resource::loadBankData(uint16_t num) {
 		dataOffset &= 0xFFFF;
 	}
 	const int size = getBankDataSize(num);
+	if (size == 0) {
+		warning("Invalid bank data %d", num);
+		return _bankDataHead;
+	}
 	const int avail = _bankDataTail - _bankDataHead;
 	if (avail < size) {
 		clearBankData();
