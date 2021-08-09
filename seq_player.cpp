@@ -220,6 +220,7 @@ SeqPlayer::SeqPlayer(SystemStub *stub, Mixer *mixer)
 	: _stub(stub), _buf(0), _mix(mixer) {
 	_soundQueuePreloadSize = 0;
 	_soundQueue = 0;
+	_soundQueueTail = 0;
 }
 
 SeqPlayer::~SeqPlayer() {
@@ -258,15 +259,13 @@ void SeqPlayer::play(File *f) {
 				}
 				if (sbq) {
 					LockAudioStack las(_stub);
-					if (!_soundQueue) {
-						_soundQueue = sbq;
+					if (_soundQueueTail) {
+						_soundQueueTail->next = sbq;
 					} else {
-						SoundBufferQueue *p = _soundQueue;
-						while (p->next) {
-							p = p->next;
-						}
-						p->next = sbq;
+						assert(!_soundQueue);
+						_soundQueue = sbq;
 					}
+					_soundQueueTail = sbq;
 					if (_soundQueuePreloadSize < kSoundPreloadSize) {
 						++_soundQueuePreloadSize;
 					}
@@ -276,7 +275,7 @@ void SeqPlayer::play(File *f) {
 				uint8_t buf[256 * 3];
 				_demux.readPalette(buf);
 				for (int i = 0; i < 256 * 3; ++i) {
-					buf[i] = (buf[i] << 2) | (buf[i] & 3);
+					buf[i] = (buf[i] << 2) | (buf[i] >> 4);
 				}
 				_stub->setPalette(buf, 256);
 			}
@@ -326,6 +325,7 @@ void SeqPlayer::play(File *f) {
 			free(_soundQueue);
 			_soundQueue = next;
 		}
+		_soundQueueTail = 0;
 		_soundQueuePreloadSize = 0;
 	}
 }
@@ -346,6 +346,9 @@ bool SeqPlayer::mix(int16_t *buf, int samples) {
 			_soundQueue = next;
 		}
 		samples -= count;
+	}
+	if (!_soundQueue) {
+		_soundQueueTail = 0;
 	}
 	return true;
 }

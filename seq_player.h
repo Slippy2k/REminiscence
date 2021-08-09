@@ -74,7 +74,7 @@ struct SeqPlayer {
 	Mixer *_mix;
 	SeqDemuxer _demux;
 	int _soundQueuePreloadSize;
-	SoundBufferQueue *_soundQueue;
+	SoundBufferQueue *_soundQueue, *_soundQueueTail;
 };
 
 #endif // SEQ_PLAYER_H__
