@@ -269,9 +269,9 @@ struct BankSlot {
 
 struct CollisionSlot2 {
 	CollisionSlot2 *next_slot;
-	int8_t *unk2;
+	int8_t *unk2; // grid_data_pos
 	uint8_t data_size;
-	uint8_t data_buf[0x10]; // XXX check size
+	uint8_t data_buf[0x10]; // <= InitPGE.collision_data_len
 };
 
 struct InventoryItem {
