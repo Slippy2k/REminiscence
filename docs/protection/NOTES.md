@@ -1,14 +1,18 @@
 
-Flashback from Delphine Software came with a protection requiring the manual.
-On start (and later in the game !), the player would have to lookup some symbols in ther manual provided with the game.
+# Flashback Protection Notes
 
-Patching the game executable to not display these screens is not really straightforward as the original programmers spent some effort protecting their game.
+Being released in the early 90s, the developers from Delphine Software protected the game code to prevent piracy.
 
-This document tries to list the part of the game engine to be patched to fully unprotect the game.
+On start (and later in the game !), the player would have to lookup some symbols in the manual provided with the game.
+
+This document tries to list the game engine routines to be patched to fully unprotect the game.
+
+The addresses and instructions are based on the French DOS version.
 
 
+## Anti debugging
 
-First of all, the executable set up a vector on the debug interrupt and calls it at regular interval in the timer interrupt.
+To make it difficult to attach a debugger to the executable, the game sets up its own vector routine on INT 3.
 
 ```
 seg000:7CC3 protection_vectorInt3 proc far          ; DATA XREF: protection_installVector+Eo
@@ -31,9 +35,10 @@ seg000:7C98       mov ax, cs
 seg000:7C9A       mov ds, ax
 seg000:7C9C       assume ds:seg000
 seg000:7C9C       mov ax, 2503h
-seg000:7C9F       int 21h 
+seg000:7C9F       int 21h
 ```
 
+The interrupt is called within the timer routine itself.
 
 ```
 seg000:7CEC timer_int8Vector proc far               ; DATA XREF: timer_sync+4Eo
@@ -78,10 +83,13 @@ seg000:7B70       mov ax, 2508h
 
 If any debugger was attached to the code, it would be called way too frequently. To continue with analysing, calls to int 3 would have to be nop'ed.
 
-The protection first shows when starting the first level.
+## Protection Screen 1
 
+The protection first shows when starting the game.
 
-Find the call is relatively starigforward, as the 'PROTECTION' letter can be found in clear.
+![fb-protection-symbol](fb-protection-symbol.png)
+
+Find the call is relatively starigforward, as the 'CODE' letter can be found in clear in the code.
 
 ```
 seg000:D7BE       mov di, offset _cut_textBuf
@@ -105,48 +113,117 @@ seg000:13F4       call load_level_data
 seg000:1401       call protection_screen1
 ```
 
-But simply removing the call, would result in the inventory nagging the game cracker.
+But this would not work as 
 
+The protection routine actually set two flags.
 
-The protection screen actually sets a flag when exiting with symbols matching.
+The condition flag is set in the protection screen function when entering 
 
-That flag has to be set.
+```
+seg000:D86E       inc _protection_screenCounter ; _protection_screen1_shown_flag
+```
+
+And another flag when the code entered by the player match the symbol.
+
+Another side effect of bypassing the function is related to the below flag that would not be set
+
+```
+seg000:D986       mov _protection_counter, 0FFh ; _protection_screen1_input_flag
+```
+
+The first flag is read to nag the game cracker.
+
+![fb-protection-inventory-cracker](fb-protection-inventory-cracker.png)
 
 The text cannot be found in clear in the executable as it is xor'ed.
 
 ```
-dseg:137A _crackerStringData db 19h, 8, 1Bh, 19h, 11h, 1Fh, 8, 67h, 18h, 16h, 1Bh, 13h, 8, 1Fh, 1Bh, 0Fh, 5Ah                  ; == "CRACKER=BLAIREAU"
+; CRACKER=BLAIREAU
+dseg:137A _crackerStringData db 19h, 8, 1Bh, 19h, 11h, 1Fh, 8, 67h, 18h, 16h, 1Bh, 13h, 8, 1Fh, 1Bh, 0Fh, 5Ah
+```
 
+```
 seg000:2AEC       cmp _protection_screenCounter, 0
-seg000:2AF1       jnz loc_0_12B18
-seg000:2AF3       cld
-seg000:2AF4       push ds
-seg000:2AF5       pop es
-seg000:2AF6       assume es:dseg
+seg000:2AF1       jnz .L1
+...
 seg000:2AF6       mov si, offset _crackerStringData
 seg000:2AF9       mov di, offset _textBuffer
 seg000:2AFC       mov bx, di
-seg000:2AFE loc_0_12AFE:
+seg000:2AFE .L2:
 seg000:2AFE       lodsb
 seg000:2AFF       xor al, 5Ah
 seg000:2B01       stosb
 seg000:2B02       cmp al, 0
-seg000:2B04       jnz loc_0_12AFE
-seg000:2B06       push 0E4h ; 'S'
-seg000:2B09       push 0C1h ; '-'
-seg000:2B0C       push 41h ; 'A'
+seg000:2B04       jnz .L2
+seg000:2B06       push 0E4h ; color
+seg000:2B09       push 0C1h ; y_pos
+seg000:2B0C       push 41h  ; x_pos
 seg000:2B0E       push ds
 seg000:2B0F       push bx
 seg000:2B10       nop
 seg000:2B11       push cs
 seg000:2B12       call near ptr draw_string
 seg000:2B15       add sp, 0Ah
-seg000:2B18 loc_0_12B18: 
+seg000:2B18 .L1:
+```
+
+The second flag conditions the game cutscenes.
+
+```
+seg000:14DB       cmp _game_inDemoMode, 0
+seg000:14E0       jnz .L1
+seg000:14E2       cmp _protection_counter, 0
+seg000:14E7       jz loc_0_114F2
+seg000:14E9 .L1:
+seg000:14E9       push 1 ; load_map_flag
+seg000:14EB       push cs
+seg000:14EC       call near ptr cut_play
+seg000:14EF       add sp, 2
+```
+
+the main loop also modifies this counter
+
+```
+seg000:153B       inc _protection_counter ; 0xFF -> 0x00
+seg000:153F       mov ax, [di+t_live_PGE.pos_x]
+seg000:1542       add ax, 8
+seg000:1545       sar ax, 4
+seg000:1548       mov _col_currentPiegeGridPosX, ax
+seg000:154B       push di
+seg000:154C       call pge_process
+seg000:154F       add sp, 2
+seg000:1552       dec _protection_counter ; 0x00 -> 0xFF
+```
+
+It was also apparently intended to swap the jump table based on the inputs but one flag is never set
+
+```
+seg000:167D       cmp _game_inDemoMode, 0
+seg000:1682       jnz swap_PGE_opcodes
+seg000:1684       cmp _protection_counter, 0
+seg000:1689       jnz swap_PGE_opcodes
+seg000:168B       jmp exit_game
+seg000:168E swap_PGE_opcodes:
+seg000:168E       mov si, offset _pge_opcodeTable
+seg000:1691       xor ah, ah
+seg000:1693       mov al, _inp_keysMask
+seg000:1696       add ax, ax
+seg000:1698       add si, ax
+seg000:169A       mov bx, [si]
+seg000:169C       cmp word_1B73_36594, 64
+seg000:16A1       jnz loc_0_116A8
+seg000:16A3       xchg bx, [si-2]
+seg000:16A6       mov [si], bx
 ```
 
 
 
-The second protection screen is called later in the game when switching room by using a teleporter or a taxi.
+## Protection Screen 2
+
+The second protection screen is shown later in the game when switching rooms by using a teleporter or a taxi.
+
+![fb-protection-taxi-1](fb-protection-taxi-1.png) ![fb-protection-taxi-2](fb-protection-taxi-2.png)
+
 Internally, the game engine has jump table for the game objects. There is one opcode when Conrad changing rooms.
 
 This opcode contains the protection screen, duplicated and this time, and the text 'code' letters are obfuscated.
@@ -165,11 +242,39 @@ seg000:6E28       mov byte ptr [di+4], 1Dh
 seg000:6E2C       add byte ptr [di+4], 3
 ```
 
-If the symbols entered do not match, the game continues but patches the jump table opcode with a 'nop', rendering the
-teleporter unsable.
+If the symbols entered do not match after 3 tries, the game continues but patches the jump table opcode with
+a 'nop', rendering the teleporter unsable.
 
-If however the symbols match, the game engine replaces the changeRoom opcode with one that does not have the protection call.
-One way to patch the game here is to directly patch the jump table with the correct opcode.
+```
+seg000:6D33       mov si, offset _pge_opcodeTable
+seg000:6D36       add si, 104h                      ; pge_op_changeRoom
+seg000:6D3A       mov [bp-2], si
+...
+seg000:706C       mov bx, [bp-2]
+seg000:706F       mov ax, offset pge_op_nop
+seg000:7072       mov [bx], ax
+
+seg000:7096       mov _protection_unkVar2, 0 ; _protection_screen2_input_flag
+```
+
+If however the symbols match, the game engine replaces the changeRoom opcode with one that does not have the protection call and calls it.
+
+```
+seg000:1448       mov si, offset pge_op_changeRoomHelper ;
+seg000:144B       mov _protection_unkVar1, si
+
+; update the jump table
+seg000:6FF8       mov si, [bp-2]
+seg000:6FFB       mov bx, _protection_unkVar1
+seg000:6FFF       mov [si], bx
+
+; calls the original opcode
+seg000:700D       call bx
+
+seg000:702E       mov _protection_unkVar2, 0FFh ; _protection_screen_2_input_flag
+```
+
+Similar to the first protection screen, there is another flag, if bypassed, then the opcode will keep being swapped.
 
 ```
 seg000:21DF       mov si, offset _pge_opcodeTable
@@ -178,7 +283,7 @@ seg000:21E6       mov [bp+prot_op1], si
 seg000:21E9       mov si, offset pge_op_changeRoom
 seg000:21EC       mov [bp+prot_op2], si
 
-seg000:2234 loc_0_12234:                            ; CODE XREF: pge_prepare+1Cj
+seg000:2234 loc_0_12234:
 seg000:2234       mov bx, [bp+prot_op1]
 seg000:2237       mov ax, [bp+prot_op2]
 seg000:223A       cmp _protection_unkVar2, 0
@@ -188,6 +293,10 @@ seg000:2243       jz loc_0_12247
 seg000:2245       mov [bx], ax
 ```
 
+The jump_table could be modified to use the correct opcode.
+
+
+## Room Grid
 
 
 There is a third protection in the game engine. Later in the game, Conrad could fall from lift and ground. This is also done
