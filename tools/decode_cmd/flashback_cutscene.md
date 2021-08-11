@@ -82,7 +82,7 @@ The copy protection of the game relies on the same cutscene player to draw and z
 ![shape_amiga](shape_04.png)
 ![shape_dos](shape_14.png)
 
-There are no external files, the shapes data is embedded in the executable.
+There are no external files, shapes data is embedded in the executable.
 
 ## Differences between Amiga and PC
 

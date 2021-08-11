@@ -14,3 +14,9 @@ _game_ctVarCount1 ; _protection_grid_sync_counter1
 _game_ctVarCount2 ; _protection_grid_sync_counter2
 
 _protection_randomVar2 ; _protection_symbol_rand_var
+
+
+
+
+https://www.gog.com/forum/flashback/some_bug_antipiracy_memory_about_this_game
+https://web.archive.org/web/20110723033203/https://pferrie.tripod.com/misc/lowlevel5.htm

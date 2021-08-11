@@ -7,7 +7,7 @@ On start (and later in the game !), the player would have to lookup some symbols
 
 This document tries to list the game engine routines related to the game protection.
 
-The addresses and instructions are based on the disassembly of the French DOS version executable.
+The addresses and routines are based on the disassembly of the French DOS version executable.
 
 
 
@@ -49,7 +49,7 @@ If a debugger was attached to the program, it would be called (too) frequently.
 
 The protection first shows when starting the game after loading the level data files.
 
-![fb-protection-symbol](https://imgur.com/TtV1ey8)
+![fb-protection-symbol](https://imgur.com/TtV1ey8.png)
 
 ```
 seg000:13F4       call load_level_data
@@ -57,7 +57,7 @@ seg000:13F4       call load_level_data
 seg000:1401       call protection_screen1
 ```
 
-The call is relatively straightforward to locate as the 'CODE' letters can be found in clear in the code.
+The call is relatively straightforward to locate as the `CODE` letters can be found in clear in the code.
 
 ```
 seg000:D7BE       mov di, offset _cut_textBuf
@@ -81,17 +81,17 @@ The first flag is set after the screen is displayed (eg. the function was actual
 seg000:D86E       inc _protection_screen1_shown_flag
 ```
 
-And the second flag is set when the code entered by the player matches the symbol.
+The second flag is set when the code entered by the player matches the symbol.
 
 ```
 seg000:D986       mov _protection_screen1_input_flag, 0FFh
 ```
 
-The first flag is checked in the inventory and nags the game cracker.
+The first flag is checked when displaying the inventory and nags the game cracker if the flag is not set.
 
-![fb-protection-inventory-cracker](https://imgur.com/X36fD1V)
+![fb-protection-inventory-cracker](https://imgur.com/X36fD1V.png)
 
-The text cannot be found in clear in the executable as it is xor'ed.
+The text cannot be found in clear in the executable as it is obfuscated.
 
 ```
 ; CRACKER=BLAIREAU
@@ -125,9 +125,9 @@ seg000:2B18 .L1:
 
 The second flag conditions the game cutscenes.
 
-![fb-protection-cutscene-holocube](https://imgur.com/uvC2cHc)
+![fb-protection-cutscene-holocube](https://imgur.com/uvC2cHc.png)
 
-Cutscenes are skipped if it is not set.
+Cutscenes are skipped if the flag is not set.
 
 ```
 seg000:14DB       cmp _demo_mode_flag, 0
@@ -144,11 +144,12 @@ seg000:14EF       add sp, 2
 
 ## Protection Screen 2
 
-The second protection screen is shown later in the game when switching rooms by using a teleporter or taking a taxi.
+The protection screen is shown a second time, later in the game, when switching rooms by using the teleporter or taking a taxi.
 
-![fb-protection-taxi-1](https://imgur.com/UmPQfsv) ![fb-protection-taxi-2](https://imgur.com/7Mq3nS4)
+![fb-protection-taxi-1](https://imgur.com/UmPQfsv.png) ![fb-protection-taxi-2](https://imgur.com/7Mq3nS4.png)
 
 Internally, the game engine has an opcode table for the game objects.
+
 One of these opcodes (0x82) handles moving an object to a different room.
 
 Initially, the table is initialized with a different routine than the `change_room` opcode.
@@ -161,8 +162,9 @@ dseg:0D39       dw offset pge_op_0x83_has_inventory_item
 dseg:0D3B       dw offset pge_op_0x84_change_level
 ```
 
-This `protection_screen2' opcode contains another protection screen, also requiring to lookup the symbols in the manual.
-The code is duplicated from the first screen routine and this time, the 'code' letters are obfuscated.
+This `protection_screen2` opcode contains another protection screen, also requiring to lookup the symbols in the manual.
+
+The code is duplicated from the first screen routine and, this time, the `CODE` letters are obfuscated.
 
 ```
 seg000:6E07       mov di, offset _text_buffer
@@ -178,11 +180,11 @@ seg000:6E28       mov byte ptr [di+4], 1Dh
 seg000:6E2C       add byte ptr [di+4], 3
 ```
 
-If the code entered by the player matches the symbol, the game engine updates the opcodes table with the real change_room opcode,
-calls it and finally sets a flag.
+If the code entered by the player matches the symbol, the game engine updates the opcodes table with the real
+`change_room` opcode, calls it and finally sets a flag.
 
 ```
-seg000:1448       mov si, offset pge_op_0x82_protection_screen2 ; &_pge_opcode_tbl[0x82]
+seg000:1448       mov si, offset pge_op_0x82_change_room ; &_pge_opcode_tbl[0x82]
 seg000:144B       mov _protection_pge_opcode_tbl_0x82, si
 ...
 seg000:6D33       mov si, offset _pge_opcode_tbl
@@ -216,7 +218,8 @@ seg000:7096       mov _protection_screen2_input_flag, 0
 ```
 
 Similar to the first protection screen, there is flag that is set when the protection screen exits.
-This is used to swap again the opcode 0x82 with the protection screen routine.
+
+This is used to swap again the opcode 0x82 with the protection screen routine if it does not have the expected value.
 
 ```
 seg000:21DF       mov si, offset _pge_opcode_tbl
@@ -238,17 +241,18 @@ seg000:2247 .L1:
 
 ## Room Grid
 
-The third protection found in the game engine is related to the room grid. Conrad would sometimes fall randomly.
+The third protection found in the game engine is related to the room grid. Conrad would sometimes fall randomly and can even trigger the `no room` error.
 
-![fb-protection-grid-fall](https://imgur.com/kYJK0Z4)
+![fb-protection-grid-fall](https://imgur.com/kYJK0Z4.png) ![fb-protection-no-room](https://imgur.com/NdmOPaC.png)
 
 Internally, each object movement in a room is restricted to a grid of 16 horizontal by 3 vertical cells (256 / 16 and 224 / 72).
 
-![fb-protection-grid-room](https://imgur.com/6pgs040)
+![fb-protection-grid-room](https://imgur.com/6pgs040.png)
 
 The attribute of each cell (eg. collide, walk) can be queried by some of the opcodes.
 
-The engine increments two counters and if they ran out of sync, the grid opcodes 2d (x+2,y+1) and 2u (x+2,y-1) are swapped.
+The engine increments two counters based on the previous flags.
+If they ran out of sync, the grid opcodes 2d (x+2,y+1) and 2u (x+2,y-1) are swapped, basically inverting floor and ceiling cells.
 
 ```
 seg000:4828       mov bx, offset _pge_opcode_tbl
