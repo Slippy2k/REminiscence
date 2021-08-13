@@ -32,9 +32,7 @@ struct SeqDemuxer {
 
 	int _frameOffset;
 	int _audioDataOffset;
-	int _audioDataSize;
 	int _paletteDataOffset;
-	int _paletteDataSize;
 	int _videoData;
 	struct {
 		int size;
