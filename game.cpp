@@ -417,6 +417,10 @@ void Game::mainLoop() {
 		_pge_opGunVar = 0;
 		return;
 	}
+	if (_currentLevel == 3 && _cut._id == 50) {
+		// do not draw next room when boarding taxi
+		return;
+	}
 	if (_loadMap) {
 		if (_currentRoom == 0xFF || !hasLevelMap(_currentLevel, _pgeLive[0].room_location)) {
 			_cut._id = 6;
