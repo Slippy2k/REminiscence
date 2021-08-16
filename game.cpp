@@ -1572,14 +1572,14 @@ void Game::loadLevelMap() {
 	case kResourceTypeDOS:
 		if (_stub->hasWidescreen() && _widescreenMode == kWidescreenAdjacentRooms) {
 			const int leftRoom = _res._ctData[CT_LEFT_ROOM + _currentRoom];
-			if (leftRoom > 0 && hasLevelMap(_currentLevel, leftRoom) && !isMetro(_currentLevel, leftRoom)) {
+			if (leftRoom >= 0 && hasLevelMap(_currentLevel, leftRoom) && !isMetro(_currentLevel, leftRoom)) {
 				_vid.PC_decodeMap(_currentLevel, leftRoom);
 				_stub->copyWidescreenLeft(Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._backLayer);
 			} else {
 				_stub->copyWidescreenLeft(Video::GAMESCREEN_W, Video::GAMESCREEN_H, 0);
 			}
 			const int rightRoom = _res._ctData[CT_RIGHT_ROOM + _currentRoom];
-			if (rightRoom > 0 && hasLevelMap(_currentLevel, rightRoom) && !isMetro(_currentLevel, rightRoom)) {
+			if (rightRoom >= 0 && hasLevelMap(_currentLevel, rightRoom) && !isMetro(_currentLevel, rightRoom)) {
 				_vid.PC_decodeMap(_currentLevel, rightRoom);
 				_stub->copyWidescreenRight(Video::GAMESCREEN_W, Video::GAMESCREEN_H, _vid._backLayer);
 			} else {
@@ -1592,14 +1592,14 @@ void Game::loadLevelMap() {
 	case kResourceTypeMac:
 		if (_stub->hasWidescreen() && _widescreenMode == kWidescreenAdjacentRooms) {
 			const int leftRoom = _res._ctData[CT_LEFT_ROOM + _currentRoom];
-			if (leftRoom > 0 && hasLevelMap(_currentLevel, leftRoom)) {
+			if (leftRoom >= 0 && hasLevelMap(_currentLevel, leftRoom)) {
 				_vid.MAC_decodeMap(_currentLevel, leftRoom);
 				_stub->copyWidescreenLeft(_vid._w, _vid._h, _vid._backLayer);
 			} else {
 				_stub->copyWidescreenLeft(_vid._w, _vid._h, 0);
 			}
 			const int rightRoom = _res._ctData[CT_RIGHT_ROOM + _currentRoom];
-			if (rightRoom > 0 && hasLevelMap(_currentLevel, rightRoom)) {
+			if (rightRoom >= 0 && hasLevelMap(_currentLevel, rightRoom)) {
 				_vid.MAC_decodeMap(_currentLevel, rightRoom);
 				_stub->copyWidescreenRight(_vid._w, _vid._h, _vid._backLayer);
 			} else {
