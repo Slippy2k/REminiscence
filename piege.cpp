@@ -369,7 +369,7 @@ void Game::pge_prepare() {
 
 void Game::pge_setupDefaultAnim(LivePGE *pge) {
 	const uint8_t *anim_data = _res.getAniData(pge->obj_type);
-	if (pge->anim_seq < _res._readUint16(anim_data)) {
+	if (1 || pge->anim_seq < _res._readUint16(anim_data)) { /* matches disassembly but should probably be >= */
 		pge->anim_seq = 0;
 	}
 	const uint8_t *anim_frame = anim_data + 6 + pge->anim_seq * 4;
