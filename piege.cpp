@@ -69,8 +69,12 @@ void Game::pge_loadForCurrentLevel(uint16_t idx) {
 	live_pge->room_location = init_pge->init_room;
 
 	live_pge->life = init_pge->life;
-	if (_skillLevel >= 2 && init_pge->object_type == 10) {
-		live_pge->life *= 2;
+	if (init_pge->object_type == 10) {
+		if (_cheats & kCheatOneHitKill) {
+			live_pge->life = 1;
+		} else if (_skillLevel >= 2) {
+			live_pge->life *= 2;
+		}
 	}
 	live_pge->counter_value = 0;
 	live_pge->collision_slot = 0xFF;
@@ -317,6 +321,9 @@ int Game::pge_execute(LivePGE *live_pge, InitPGE *init_pge, const Object *obj) {
 		--live_pge->life;
 		if (init_pge->object_type == 1) {
 			_pge_processOBJ = true;
+			if (_cheats & kCheatLifeCounter) {
+				++live_pge->life;
+			}
 		} else if (init_pge->object_type == 10) {
 			_score += 100;
 		}
@@ -2141,7 +2148,7 @@ void Game::pge_sendMessage(uint8_t src_pge_index, uint8_t dst_pge_index, int16_t
 		if (pge_room != pge->room_location) {
 			return;
 		}
-		if (dst_pge_index == 0 && _blinkingConradCounter != 0) {
+		if (dst_pge_index == 0 && (_blinkingConradCounter != 0 || (_cheats & kCheatNoHit) != 0)) {
 			return;
 		}
 		if (0) {

@@ -19,6 +19,12 @@ struct File;
 struct FileSystem;
 struct SystemStub;
 
+enum {
+	kCheatOneHitKill = 1 << 0,
+	kCheatNoHit = 1 << 1,
+	kCheatLifeCounter = 1 << 2
+};
+
 struct Game {
 	typedef int (Game::*pge_OpcodeProc)(ObjectOpcodeArgs *args);
 	typedef int (Game::*pge_ZOrderCallback)(LivePGE *, LivePGE *, uint8_t, uint8_t);
@@ -71,6 +77,7 @@ struct Game {
 	const char *_savePath;
 	File _rewindBuffer[kRewindSize];
 	int _rewindPtr, _rewindLen;
+	uint32_t _cheats;
 
 	const uint8_t *_stringsTable;
 	const char **_textsTable;
@@ -102,7 +109,7 @@ struct Game {
 	bool _autoSave;
 	uint32_t _saveTimestamp;
 
-	Game(SystemStub *, FileSystem *, const char *savePath, int level, ResourceType ver, Language lang, WidescreenMode widescreenMode, bool autoSave);
+	Game(SystemStub *, FileSystem *, const char *savePath, int level, ResourceType ver, Language lang, WidescreenMode widescreenMode, bool autoSave, uint32_t cheats);
 
 	void run();
 	void displayTitleScreenAmiga();

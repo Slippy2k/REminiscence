@@ -13,7 +13,7 @@
 #include "systemstub.h"
 #include "util.h"
 
-Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang, WidescreenMode widescreenMode, bool autoSave)
+Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, ResourceType ver, Language lang, WidescreenMode widescreenMode, bool autoSave, uint32_t cheats)
 	: _cut(&_res, stub, &_vid), _menu(&_res, stub, &_vid),
 	_mix(fs, stub), _res(fs, ver, lang), _seq(stub, &_mix), _vid(&_res, stub, widescreenMode),
 	_stub(stub), _fs(fs), _savePath(savePath) {
@@ -26,6 +26,7 @@ Game::Game(SystemStub *stub, FileSystem *fs, const char *savePath, int level, Re
 	_autoSave = autoSave;
 	_rewindPtr = -1;
 	_rewindLen = 0;
+	_cheats = cheats;
 }
 
 void Game::run() {
