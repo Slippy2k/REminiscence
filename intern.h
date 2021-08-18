@@ -174,7 +174,7 @@ struct InitPGE {
 	uint16_t obj_node_number;
 	uint16_t life;
 	int16_t data[4];
-	uint8_t object_type;
+	uint8_t object_type; // 1:conrad, 10:monster
 	uint8_t init_room;
 	uint8_t room_location;
 	uint8_t init_flags;
@@ -210,7 +210,7 @@ struct LivePGE {
 
 struct MessagePGE {
 	MessagePGE *next_entry;
-	uint16_t index; // src_pge
+	uint16_t src_pge;
 	uint16_t msg_num;
 };
 

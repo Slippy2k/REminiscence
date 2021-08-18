@@ -16,12 +16,12 @@ void Game::pge_resetMessages() {
 	int n = 0xFF;
 	while (n--) {
 		le->next_entry = le + 1;
-		le->index = 0;
+		le->src_pge = 0;
 		le->msg_num = 0;
 		++le;
 	}
 	le->next_entry = 0;
-	le->index = 0;
+	le->src_pge = 0;
 	le->msg_num = 0;
 }
 
@@ -33,7 +33,7 @@ void Game::pge_clearMessages(uint8_t pge_index) {
 		while (le) {
 			MessagePGE *cur = le->next_entry;
 			le->next_entry = next;
-			le->index = 0;
+			le->src_pge = 0;
 			le->msg_num = 0;
 			next = le;
 			le = cur;
@@ -47,7 +47,7 @@ int Game::pge_hasMessageData(LivePGE *pge, uint16_t msg_num, uint16_t counter) c
 	uint16_t pge_src_index = pge->init_PGE->data[counter - 1];
 	const MessagePGE *le = _pge_messagesTable[pge->index];
 	while (le) {
-		if (le->msg_num == msg_num && le->index == pge_src_index) {
+		if (le->msg_num == msg_num && le->src_pge == pge_src_index) {
 			return 1;
 		}
 		le = le->next_entry;
@@ -1370,7 +1370,7 @@ int Game::pge_op_findAndCopyPiege(ObjectOpcodeArgs *args) {
 	MessagePGE *le = _pge_messagesTable[args->pge->index];
 	while (le) {
 		if (le->msg_num == args->a) {
-			args->a = le->index;
+			args->a = le->src_pge;
 			args->b = 0;
 			pge_op_copyPiege(args);
 			return 1;
@@ -1595,7 +1595,7 @@ int Game::pge_o_unk0x6E(ObjectOpcodeArgs *args) {
 	MessagePGE *le = _pge_messagesTable[args->pge->index];
 	while (le) {
 		if (args->a == le->msg_num) {
-			pge_updateInventory(&_pgeLive[le->index], args->pge);
+			pge_updateInventory(&_pgeLive[le->src_pge], args->pge);
 			return 0xFFFF;
 		}
 		le = le->next_entry;
@@ -1609,7 +1609,7 @@ int Game::pge_o_unk0x6F(ObjectOpcodeArgs *args) {
 	MessagePGE *le = _pge_messagesTable[pge->index];
 	while (le) {
 		if (args->a == le->msg_num) {
-			pge_sendMessage(pge->index, le->index, 0xC);
+			pge_sendMessage(pge->index, le->src_pge, 0xC);
 			return 1;
 		}
 		le = le->next_entry;
@@ -2164,7 +2164,7 @@ void Game::pge_sendMessage(uint8_t src_pge_index, uint8_t dst_pge_index, int16_t
 		MessagePGE *next = _pge_messagesTable[dst_pge_index];
 		_pge_messagesTable[dst_pge_index] = le;
 		le->next_entry = next;
-		le->index = src_pge_index;
+		le->src_pge = src_pge_index;
 		le->msg_num = num;
 	}
 }
