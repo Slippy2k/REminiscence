@@ -2150,10 +2150,12 @@ void Game::pge_sendMessage(uint8_t src_pge_index, uint8_t dst_pge_index, int16_t
 		if (dst_pge_index == 0 && (_blinkingConradCounter != 0 || (_cheats & kCheatNoHit) != 0)) {
 			return;
 		}
-		const int type = _pgeLive[dst_pge_index].init_PGE->object_type;
-		if (type == 1 || type == 10) {
-			_pge_zoomPiegeNum = dst_pge_index;
-			_pge_zoomCounter = 0;
+		if (_stub->_pi.dbgMask & PlayerInput::DF_AUTOZOOM) {
+			const int type = _pgeLive[dst_pge_index].init_PGE->object_type;
+			if (type == 1 || type == 10) {
+				_pge_zoomPiegeNum = dst_pge_index;
+				_pge_zoomCounter = 0;
+			}
 		}
 	}
 	MessagePGE *le = _pge_nextFreeMessage;
@@ -2316,7 +2318,7 @@ void Game::pge_updateZoom() {
 		LivePGE *pge = &_pgeLive[_pge_zoomPiegeNum];
 		if (pge->room_location != _currentRoom) {
 			_pge_zoomPiegeNum = 0;
-		} else if(_pge_zoomCounter < 30) {
+		} else if (_pge_zoomCounter < 30) {
 			int x = pge->pos_x + ((_pgeLive[0].flags & 1) ? 22 - kZoomW : -12);
 			x = CLIP(x, 0, Video::GAMESCREEN_W - kZoomW);
 			if (_pge_zoomCounter != 0 && _pge_zoomX != x) {

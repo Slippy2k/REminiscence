@@ -1093,7 +1093,7 @@ void SystemStub_SDL::setScaler(const ScalerParameters *parameters) {
 			}
 		}
 	}
-	_scaleFactor = _scaler ? CLIP(parameters->factor, _scaler->factorMin, _scaler->factorMax) : 1;
+	_scaleFactor = _scaler ? CLIP(parameters->factor, _scaler->factorMin, _scaler->factorMax) : parameters->factor;
 }
 
 void SystemStub_SDL::changeScaler(int scalerNum) {
