@@ -165,6 +165,9 @@ struct Game {
 	uint16_t _pge_opGunVar;
 	uint16_t _pge_compareVar1;
 	uint16_t _pge_compareVar2;
+	uint8_t _pge_zoomPiegeNum;
+	uint8_t _pge_zoomCounter;
+	int _pge_zoomX, _pge_zoomY;
 
 	void pge_resetMessages();
 	void pge_clearMessages(uint8_t pge_index);
@@ -337,6 +340,7 @@ struct Game {
 	int pge_ZOrderIfTypeAndSameDirection(LivePGE *pge1, LivePGE *pge2, uint8_t comp, uint8_t comp2);
 	int pge_ZOrderIfTypeAndDifferentDirection(LivePGE *pge1, LivePGE *pge2, uint8_t comp, uint8_t comp2);
 	int pge_ZOrderByNumber(LivePGE *pge1, LivePGE *pge2, uint8_t comp, uint8_t comp2);
+	void pge_updateZoom();
 
 
 	// collision

@@ -2150,11 +2150,10 @@ void Game::pge_sendMessage(uint8_t src_pge_index, uint8_t dst_pge_index, int16_t
 		if (dst_pge_index == 0 && (_blinkingConradCounter != 0 || (_cheats & kCheatNoHit) != 0)) {
 			return;
 		}
-		if (0) {
-			// zoom on piege handling
-			const int type = _pgeLive[dst_pge_index].init_PGE->object_type;
-			if (type == 1 || type == 10) {
-			}
+		const int type = _pgeLive[dst_pge_index].init_PGE->object_type;
+		if (type == 1 || type == 10) {
+			_pge_zoomPiegeNum = dst_pge_index;
+			_pge_zoomCounter = 0;
 		}
 	}
 	MessagePGE *le = _pge_nextFreeMessage;
@@ -2273,4 +2272,70 @@ int Game::pge_ZOrderIfTypeAndDifferentDirection(LivePGE *pge1, LivePGE *pge2, ui
 
 int Game::pge_ZOrderByNumber(LivePGE *pge1, LivePGE *pge2, uint8_t comp, uint8_t comp2) {
 	return pge1 - pge2;
+}
+
+static int pge_zoomDx(int prev_x, int cur_x) {
+	int dx = ABS(cur_x - prev_x);
+	if (dx < 4) {
+		dx = 1;
+	} else if (dx < 8) {
+		dx = 2;
+	} else if (dx < 16) {
+		dx = 4;
+	} else {
+		dx = 8;
+	}
+	return (prev_x < cur_x) ? dx : -dx;
+}
+
+static int pge_zoomDy(int prev_y, int cur_y, bool flag) {
+	int dy = ABS(cur_y - prev_y);
+	if (flag) {
+		if (dy < 2) {
+			return 0;
+		}
+	} else {
+		if (dy < 4) {
+			return 0;
+		}
+	}
+	if (dy < 8) {
+		dy = 2;
+	} else if (dy < 16) {
+		dy = 4;
+	} else {
+		dy = 8;
+	}
+	return (prev_y < cur_y) ? dy : -dy;
+}
+
+void Game::pge_updateZoom() {
+	static const int kZoomW = Video::GAMESCREEN_W / 2;
+	static const int kZoomH = Video::GAMESCREEN_H / 2;
+	if (_pge_zoomPiegeNum != 0) {
+		LivePGE *pge = &_pgeLive[_pge_zoomPiegeNum];
+		if (pge->room_location != _currentRoom) {
+			_pge_zoomPiegeNum = 0;
+		} else if(_pge_zoomCounter < 30) {
+			int x = pge->pos_x + ((_pgeLive[0].flags & 1) ? 22 - kZoomW : -12);
+			x = CLIP(x, 0, Video::GAMESCREEN_W - kZoomW);
+			if (_pge_zoomCounter != 0 && _pge_zoomX != x) {
+				const int dx = pge_zoomDx(_pge_zoomX, x);
+				x = _pge_zoomX + dx;
+			}
+			_pge_zoomX = x;
+			int y = pge->pos_y - 24 - kZoomH / 2;
+			y = CLIP(y, 0, Video::GAMESCREEN_H - kZoomH);
+			if (_pge_zoomCounter != 0 && _pge_zoomY != y) {
+				const int dy = pge_zoomDy(_pge_zoomY, y, (pge->ref_inventory_PGE != 0xFF));
+				y = _pge_zoomY + dy;
+			}
+			_pge_zoomY = y;
+			_stub->zoomRect(x, y, kZoomW, kZoomH);
+		}
+		++_pge_zoomCounter;
+		if (_pge_zoomCounter == 40) {
+			_pge_zoomPiegeNum = 0;
+		}
+	}
 }

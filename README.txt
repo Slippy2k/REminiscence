@@ -67,17 +67,12 @@ In-game hotkeys :
     Alt Enter         toggle windowed / fullscreen mode
     Alt + and -       increase or decrease game screen scaler factor
     Alt S             take screenshot
+    Ctrl G            toggle auto zoom (DOS version only)
     Ctrl S            save game state
     Ctrl L            load game state
     Ctrl R            rewind game state buffer (requires --autosave)
     Ctrl + and -      change game state slot
     Function Keys     change game screen scaler
-
-Debug hotkeys :
-
-    Ctrl F            toggle fast mode
-    Ctrl I            toggle unlimited energy
-    Ctrl B            toggle display of updated dirty blocks
 
 
 Credits:

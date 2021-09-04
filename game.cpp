@@ -367,6 +367,9 @@ void Game::resetGameState() {
 	_pge_processOBJ = false;
 	_pge_opGunVar = 0;
 	_textToDisplay = 0xFFFF;
+	_pge_zoomPiegeNum = 0;
+	_pge_zoomCounter = 0;
+	_pge_zoomX = _pge_zoomY = 0;
 }
 
 void Game::mainLoop() {
@@ -432,6 +435,9 @@ void Game::mainLoop() {
 			_loadMap = false;
 			_vid.fullRefresh();
 		}
+	}
+	if (_res.isDOS() && (_stub->_pi.dbgMask & PlayerInput::DF_AUTOZOOM) != 0) {
+		pge_updateZoom();
 	}
 	prepareAnims();
 	drawAnims();
