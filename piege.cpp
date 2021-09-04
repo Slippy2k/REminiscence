@@ -1301,7 +1301,7 @@ int Game::pge_op_playCutscene(ObjectOpcodeArgs *args) {
 
 // unused
 int Game::pge_op_compareUnkVar(ObjectOpcodeArgs *args) {
-	if (args->a == 0xFFFF) {
+	if (args->a == -1) {
 		return 1;
 	}
 	return 0;
