@@ -147,16 +147,12 @@ uint16_t Cutscene::findTextSeparators(const uint8_t *p, int len) {
 void Cutscene::drawText(int16_t x, int16_t y, const uint8_t *p, uint16_t color, uint8_t *page, int textJustify) {
 	debug(DBG_CUT, "Cutscene::drawText(x=%d, y=%d, c=%d, justify=%d)", x, y, color, textJustify);
 	int len = 0;
-	if (_res->isMac()) {
-		if (p == _textBuf) {
-			while (p[len] != 0xA) {
-				++len;
-			}
-		} else {
-			len = *p++;
-		}
+	if (p != _textBuf && _res->isMac()) {
+		len = *p++;
 	} else {
-		len = strlen((const char *)p);
+		while (p[len] != 0xA && p[len]) {
+			++len;
+		}
 	}
 	Video::drawCharFunc dcf = _vid->_drawChar;
 	const uint8_t *fnt = (_res->_lang == LANG_JP) ? Video::_font8Jp : _res->_fnt;
