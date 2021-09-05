@@ -309,6 +309,9 @@ void Cutscene::op_markCurPos() {
 	_cmdPtrBak = _cmdPtr;
 	drawCreditsText();
 	_frameDelay = 5;
+	if (_id == kCineDebut && !_creditsSequence) {
+		_frameDelay = 7;
+	}
 	updateScreen();
 	clearBackPage();
 	_creditsSlowText = false;
