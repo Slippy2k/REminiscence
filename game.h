@@ -396,7 +396,7 @@ struct Game {
 	bool saveGameState(uint8_t slot);
 	bool loadGameState(uint8_t slot);
 	void saveState(File *f);
-	void loadState(File *f);
+	void loadState(File *f, int version);
 	void clearStateRewind();
 	bool saveStateRewind();
 	bool loadStateRewind();

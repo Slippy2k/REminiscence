@@ -640,10 +640,10 @@ void Game::showFinalScore() {
 }
 
 bool Game::handleConfigPanel() {
-	const int x = 7;
-	const int y = 10;
-	const int w = 17;
-	const int h = 12;
+	static const int x = 7;
+	static const int y = 10;
+	static const int w = 17;
+	static const int h = 12;
 
 	_vid._charShadowColor = 0xE2;
 	_vid._charFrontColor = 0xEE;
@@ -2022,6 +2022,9 @@ void Game::makeGameStateName(uint8_t slot, char *buf) {
 	sprintf(buf, "rs-level%d-%02d.state", _currentLevel + 1, slot);
 }
 
+// 3: persist _pge_opGunVar
+static const int kSaveVersion = 3;
+
 static const uint32_t TAG_FBSV = 0x46425356;
 
 bool Game::saveGameState(uint8_t slot) {
@@ -2037,7 +2040,7 @@ bool Game::saveGameState(uint8_t slot) {
 	} else {
 		// header
 		f.writeUint32BE(TAG_FBSV);
-		f.writeUint16BE(2);
+		f.writeUint16BE(kSaveVersion);
 		char buf[32];
 		memset(buf, 0, sizeof(buf));
 		snprintf(buf, sizeof(buf), "level=%d room=%d", _currentLevel + 1, _currentRoom);
@@ -2069,15 +2072,15 @@ bool Game::loadGameState(uint8_t slot) {
 		if (id != TAG_FBSV) {
 			warning("Bad save state format");
 		} else {
-			uint16_t ver = f.readUint16BE();
-			if (ver != 2) {
+			const uint16_t version = f.readUint16BE();
+			if (version < 2) {
 				warning("Invalid save state version");
 			} else {
 				// header
 				char buf[32];
 				f.read(buf, sizeof(buf));
 				// contents
-				loadState(&f);
+				loadState(&f, version);
 				if (f.ioErr()) {
 					warning("I/O error when loading game state");
 				} else {
@@ -2146,9 +2149,10 @@ void Game::saveState(File *f) {
 		f->writeByte(cs2->data_size);
 		f->write(cs2->data_buf, 0x10);
 	}
+	f->writeUint16BE(_pge_opGunVar);
 }
 
-void Game::loadState(File *f) {
+void Game::loadState(File *f, int version) {
 	uint16_t i;
 	uint32_t off;
 	_skillLevel = f->readByte();
@@ -2225,6 +2229,9 @@ void Game::loadState(File *f) {
 		}
 	}
 	resetGameState();
+	if (version >= 3) {
+		_pge_opGunVar = f->readUint16BE();
+	}
 }
 
 void Game::clearStateRewind() {
@@ -2266,7 +2273,7 @@ bool Game::loadStateRewind() {
 	}
 	File &f = _rewindBuffer[ptr];
 	f.seek(0);
-	loadState(&f);
+	loadState(&f, kSaveVersion);
 	if (_rewindLen > 0) {
 		--_rewindLen;
 	}
